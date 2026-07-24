@@ -15,8 +15,40 @@ model Task {
   nama      String
   pic       String
   status    String   @default("To Do") // To Do, In Progress, Done
-  startDate DateTime
+  prioritas String   @default("Medium") // Low, Medium, High, Urgent
+  kategori  String   @default("Umum")
+  progress  Int      @default(0)
+  deskripsi String?
+  catatan   String?
+  fileUrl   String?
+  fileName  String?
+  filesJson      String?
+  isAllDay       Boolean  @default(true)
+  startTime      String?
+  endTime        String?
+  repetisi       String?  @default("Tidak Berulang")
+  additionalPics String?
+  editCount      Int      @default(0)
+  lastEditedAt   DateTime?
+  historyLogsJson String?
+  startDate      DateTime
   endDate   DateTime
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  title     String
+  message   String
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+}
+
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
   updatedAt DateTime @updatedAt
 }

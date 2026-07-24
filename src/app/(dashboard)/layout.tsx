@@ -1,5 +1,8 @@
 'use client';
 import Sidebar from "@/components/Sidebar";
+import NotificationBell from '@/components/NotificationBell';
+import TaskSummaryWidget from '@/components/TaskSummaryWidget';
+import FocusModeToggle from '@/components/FocusModeToggle';
 
 export default function DashboardLayout({
   children,
@@ -9,9 +12,12 @@ export default function DashboardLayout({
   return (
     <>
       <Sidebar />
-      <div style={{ marginLeft: '250px', padding: '24px', width: 'calc(100% - 250px)' }}>
+      <main className="main-content">
         {children}
-      </div>
+      </main>
+      <NotificationBell />
+      <TaskSummaryWidget />
+      <FocusModeToggle />
     </>
   );
 }

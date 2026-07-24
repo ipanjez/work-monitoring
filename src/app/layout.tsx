@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { FilterProvider } from "@/context/FilterContext";
+import { Toaster } from 'react-hot-toast';
+import { NotificationProvider } from '@/context/NotificationContext';
+import NotificationBell from '@/components/NotificationBell';
+import IdleTimer from '@/components/IdleTimer';
+import FocusModeToggle from '@/components/FocusModeToggle';
 
 export const metadata: Metadata = {
-  title: "Dashboard Pekerjaan",
-  description: "Dashboard Monitoring Pekerjaan Departemen",
+  title: "Dashboard Monitoring Pekerjaan",
+  description: "Dashboard Monitoring & Manajemen Pekerjaan Departemen",
 };
 
 export default function RootLayout({
@@ -13,12 +20,38 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
-      <body>
-        <Sidebar />
-        <main className="main-content">
-          {children}
-        </main>
+    <html lang="id" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <ThemeProvider>
+          <FilterProvider>
+            <NotificationProvider>
+              {children}
+              <Toaster 
+                position="top-right" 
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                  },
+                  success: {
+                    style: {
+                      background: 'var(--accent-primary)',
+                    },
+                  },
+                  error: {
+                    style: {
+                      background: 'var(--danger)',
+                    },
+                  },
+                }} 
+              />
+            </NotificationProvider>
+          </FilterProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

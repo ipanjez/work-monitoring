@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📊 Dashboard Monitoring Pekerjaan 📋
 
-## Getting Started
+Selamat datang di **Dashboard Monitoring Pekerjaan**! Sebuah aplikasi web modern dan responsif yang dirancang untuk memonitor, mengelola, dan melacak daftar pekerjaan harian, proyek, serta aktivitas tim secara efisien. 🚀
 
-First, run the development server:
+Proyek ini dilengkapi dengan antarmuka yang sangat estetik, manajemen data yang terpusat melalui API dan Database SQLite, serta dilengkapi dengan fitur penjadwalan dan pelaporan *real-time* untuk membantu tim Anda tetap produktif. 🏆
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Fitur Unggulan
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif.
+- 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
+- ☁️ **Sistem Database Sentral:** Menggunakan *Prisma ORM* dengan SQLite untuk penyimpanan data lokal yang solid, cepat, dan tersinkronisasi di berbagai perangkat dalam jaringan lokal Anda.
+- 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
+- 📈 **Pelaporan & Ekspor:** Statistik langsung tentang pekerjaan harian, mingguan, serta kemampuan mengekspor data ke PDF, Excel, dan integrasi dengan Google Calendar.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 Cara Penggunaan & Instalasi
 
-To learn more about Next.js, take a look at the following resources:
+Ikuti langkah-langkah mudah berikut untuk menjalankan proyek ini di perangkat atau jaringan Anda:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Clone repositori ini** ke direktori lokal Anda:
+   ```bash
+   git clone https://github.com/ipanjez/work-monitoring.git
+   ```
+2. **Instal Dependensi:** 
+   Masuk ke folder `dashboard-app` dan jalankan instalasi:
+   ```bash
+   cd dashboard-app
+   npm install
+   ```
+3. **Konfigurasi Lingkungan:**
+   Buat file `.env` di *root folder* `dashboard-app` dengan isi kredensial *database* SQLite Anda, misalnya:
+   ```env
+   DATABASE_URL="file:./dev.db"
+   ```
+4. **Jalankan Migrasi Database:**
+   Siapkan tabel-tabel pada database dengan Prisma:
+   ```bash
+   npx prisma db push
+   ```
+5. **Mulai Server:**
+   Jalankan perintah ini untuk mengaktifkan aplikasi di jaringan lokal Anda (bisa diakses perangkat lain):
+   ```bash
+   npm run dev -- -H 0.0.0.0
+   ```
+   Cukup buka alamat IP komputer Anda di *browser* (contoh: `http://192.168.1.10:3000`) untuk langsung mulai berkolaborasi!
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 👨‍💻 Kredit & Pembuat
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Proyek ini dirancang dan dikembangkan dengan penuh semangat oleh **ipanjez**. 
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Mari terhubung, berdiskusi, dan berkolaborasi bersama saya melalui platform di bawah ini:
+
+[![GitHub](https://img.shields.io/badge/GitHub-ipanjez-181717?style=flat&logo=github)](https://github.com/ipanjez)
+[![Instagram](https://img.shields.io/badge/Instagram-ipanjez-E4405F?style=flat&logo=instagram)](https://instagram.com/ipanjez)
+[![Facebook](https://img.shields.io/badge/Facebook-ipanjez-1877F2?style=flat&logo=facebook)](https://facebook.com/ipanjez)
+[![Gravatar](https://img.shields.io/badge/Gravatar-ipanjez-1E8CBE?style=flat&logo=gravatar)](https://gravatar.com/ipanjez)

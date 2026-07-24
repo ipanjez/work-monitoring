@@ -7,43 +7,142 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
     return NextResponse.json(tasks);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error fetching tasks:', error);
+    return NextResponse.json({ error: error.message || 'Failed to fetch tasks' }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // Handle array for import
+
+    const parseDate = (d: any) => {
+      if (!d) return new Date();
+      const parsed = new Date(d);
+      return isNaN(parsed.getTime()) ? new Date() : parsed;
+    };
+
+    const initialLog = JSON.stringify([{ action: "Pekerjaan dibuat", timestamp: new Date().toISOString() }]);
+
+    // Handle array for bulk import
     if (Array.isArray(body)) {
       const created = await prisma.$transaction(
         body.map((task) => prisma.task.create({
           data: {
-            nama: task.nama,
-            pic: task.pic,
+            nama: String(task.nama || 'Tanpa Nama'),
+            pic: String(task.pic || 'Unassigned'),
             status: task.status || 'To Do',
-            startDate: new Date(task.startDate),
-            endDate: new Date(task.endDate),
+            prioritas: task.prioritas || 'Medium',
+            kategori: task.kategori || 'Umum',
+            progress: Number(task.progress) || 0,
+            deskripsi: task.deskripsi || null,
+            catatan: task.catatan || null,
+            fileUrl: task.fileUrl || null,
+            fileName: task.fileName || null,
+            startDate: parseDate(task.startDate),
+            endDate: parseDate(task.endDate),
           }
         }))
       );
       return NextResponse.json(created);
     }
 
-    const { nama, pic, status, startDate, endDate } = body;
-    const task = await prisma.task.create({
-      data: {
-        nama,
-        pic,
-        status: status || 'To Do',
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-      },
-    });
-    return NextResponse.json(task);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    const { 
+      nama, pic, status, prioritas, kategori, progress, 
+      deskripsi, catatan, fileUrl, fileName, filesJson, 
+      isAllDay, startTime, endTime, repetisi, additionalPics, 
+      startDate, endDate 
+    } = body;
+    
+    if (!nama || !pic) {
+      return NextResponse.json({ error: 'Nama dan PIC wajib diisi' }, { status: 400 });
+    }
+
+    const finalStatus = status || 'To Do';
+    let finalProgress = Number(progress) || 0;
+    
+    if (finalStatus === 'Done') {
+      finalProgress = 100;
+    } else if (finalStatus === 'In Progress' && finalProgress === 0) {
+      finalProgress = 50;
+    } else if (finalStatus === 'To Do') {
+      finalProgress = 0;
+    }
+
+    try {
+      const task = await prisma.task.create({
+        data: {
+          nama: String(nama),
+          pic: String(pic),
+          status: finalStatus,
+          prioritas: prioritas || 'Medium',
+          kategori: kategori || 'Umum',
+          progress: finalProgress,
+          deskripsi: deskripsi || null,
+          catatan: catatan || null,
+          fileUrl: fileUrl || null,
+          fileName: fileName || null,
+          filesJson: filesJson || null,
+          isAllDay: isAllDay !== undefined ? Boolean(isAllDay) : true,
+          startTime: startTime || '08:00',
+          endTime: endTime || '17:00',
+          repetisi: repetisi || 'Tidak Berulang',
+          additionalPics: additionalPics || null,
+          editCount: 0,
+          lastEditedAt: null,
+          historyLogsJson: initialLog,
+          startDate: parseDate(startDate),
+          endDate: parseDate(endDate),
+        },
+      });
+
+      return NextResponse.json(task);
+    } catch (createErr: any) {
+      console.error('Primary task creation failed, trying fallback 1:', createErr);
+      
+      try {
+        const task = await prisma.task.create({
+          data: {
+            nama: String(nama),
+            pic: String(pic),
+            status: finalStatus,
+            prioritas: prioritas || 'Medium',
+            kategori: kategori || 'Umum',
+            progress: finalProgress,
+            deskripsi: deskripsi || null,
+            catatan: catatan || null,
+            fileUrl: fileUrl || null,
+            fileName: fileName || null,
+            startDate: parseDate(startDate),
+            endDate: parseDate(endDate),
+          },
+        });
+
+        return NextResponse.json(task);
+      } catch (fallbackErr: any) {
+        console.error('Fallback 1 failed, trying minimal fallback:', fallbackErr);
+
+        const task = await prisma.task.create({
+          data: {
+            nama: String(nama),
+            pic: String(pic),
+            status: finalStatus,
+            prioritas: prioritas || 'Medium',
+            kategori: kategori || 'Umum',
+            progress: finalProgress,
+            deskripsi: deskripsi || null,
+            catatan: catatan || null,
+            startDate: parseDate(startDate),
+            endDate: parseDate(endDate),
+          },
+        });
+
+        return NextResponse.json(task);
+      }
+    }
+  } catch (error: any) {
+    console.error('Error creating task:', error);
+    return NextResponse.json({ error: error.message || 'Failed to create task' }, { status: 500 });
   }
 }
