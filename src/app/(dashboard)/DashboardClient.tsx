@@ -59,16 +59,16 @@ type Task = {
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
-  // Table specific states
   const [tableSearch, setTableSearch] = useState('');
   const [sortField, setSortField] = useState<'endDate' | 'nama' | 'pic' | 'kategori' | 'status'>('endDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -129,7 +129,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     }
 
     let matchDate = false;
-    if (globalTargetFilter === 'Semua Waktu') {
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchDate = true;
     } else {
       if (taskStart <= endBoundary && taskEnd >= startBoundary) {
@@ -581,7 +581,25 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
               <option value="Minggu Ini">Minggu Ini</option>
               <option value="Bulan Ini">Bulan Ini</option>
               <option value="Semua Waktu">Semua Waktu</option>
+              <option value="Custom">Custom...</option>
             </select>
+            {globalTargetFilter === 'Custom' && (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <input 
+                  type="date" 
+                  value={globalCustomStartDate}
+                  onChange={(e) => setGlobalCustomStartDate(e.target.value)}
+                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                />
+                <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                <input 
+                  type="date" 
+                  value={globalCustomEndDate}
+                  onChange={(e) => setGlobalCustomEndDate(e.target.value)}
+                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -749,8 +767,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         } catch(e) { return ''; }
                       })()}
                       • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
+                    {t.deskripsi && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} dangerouslySetInnerHTML={{ __html: t.deskripsi }} />
+                    )}
                     {t.fileUrl && (
-                      <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px' }}>
+                      <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px', marginTop: '4px' }}>
                         <Paperclip size={12} /> {t.fileName || 'Lampiran'}
                       </a>
                     )}
@@ -782,6 +803,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '14px', width: '200px' }}
               />
             </div>
+            <button
+              onClick={() => setShowAllActiveTasks(!showAllActiveTasks)}
+              style={{ fontSize: '13px', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--accent-primary)', color: showAllActiveTasks ? '#fff' : 'var(--accent-primary)', background: showAllActiveTasks ? 'var(--accent-primary)' : 'transparent', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+            >
+              {showAllActiveTasks ? 'Tampilkan Top 10' : 'Tampilkan Semua'}
+            </button>
           </div>
 
           <div style={{ overflowX: 'auto', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
@@ -808,7 +835,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 </tr>
               </thead>
               <tbody>
-                {dynamicTableTasks.length > 0 ? dynamicTableTasks.map(t => {
+                {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
                   const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
                   return (
                     <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => router.push('/tasks')}>

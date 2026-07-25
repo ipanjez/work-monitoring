@@ -225,14 +225,13 @@ export default function Sidebar() {
                 <option value="Custom">Pilih Tanggal...</option>
               </select>
               {globalTargetFilter === 'Custom' && (
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '-4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '-4px' }}>
                   <input 
                     type="date" 
                     value={globalCustomStartDate}
                     onChange={(e) => setGlobalCustomStartDate(e.target.value)}
                     style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
                   />
-                  <span style={{ color: 'var(--text-secondary)' }}>-</span>
                   <input 
                     type="date" 
                     value={globalCustomEndDate}

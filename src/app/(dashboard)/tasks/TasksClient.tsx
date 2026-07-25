@@ -26,7 +26,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -214,7 +214,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
 
     let matchesTarget = false;
-    if (globalTargetFilter === 'Semua Waktu') {
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchesTarget = true;
     } else {
       if (start <= endBoundary && end >= startBoundary) {
@@ -919,7 +919,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <option value="Minggu Ini">Minggu Ini</option>
               <option value="Bulan Ini">Bulan Ini</option>
               <option value="Semua Waktu">Semua Waktu</option>
+              <option value="Custom">Custom...</option>
             </select>
+            {globalTargetFilter === 'Custom' && (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <input 
+                  type="date" 
+                  value={globalCustomStartDate}
+                  onChange={(e) => setGlobalCustomStartDate(e.target.value)}
+                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                />
+                <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                <input 
+                  type="date" 
+                  value={globalCustomEndDate}
+                  onChange={(e) => setGlobalCustomEndDate(e.target.value)}
+                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                />
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
