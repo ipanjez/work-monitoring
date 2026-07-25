@@ -10,6 +10,33 @@ import toast from 'react-hot-toast';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
+const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!logs || logs.length === 0) return null;
+  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 3, 0));
+  
+  return (
+    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
+      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
+      {visibleLogs.map((log: any, lidx: number) => (
+        <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
+          <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+          <span style={{ color: 'var(--text-primary)' }}>- {log.status}</span>
+        </div>
+      ))}
+      {logs.length > 3 && (
+        <button 
+          type="button"
+          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? 'Sembunyikan' : `Tampilkan ${logs.length - 3} log lainnya...`}
+        </button>
+      )}
+    </div>
+  );
+};
+
 export type EditingTaskType = Partial<Task> & {
   filesList?: FileItem[];
   additionalPicsList?: string[];
@@ -734,15 +761,7 @@ export default function TaskAddEditModal({
                       </div>
                       
                       {subTask.logs && subTask.logs.length > 0 && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-                          <div style={{ fontWeight: 600, marginBottom: '4px' }}>Log Status:</div>
-                          {subTask.logs.map((log: any, lidx: number) => (
-                            <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-                              <span style={{ color: 'var(--text-primary)' }}>- {log.status}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <SubTaskLogViewer logs={subTask.logs} />
                       )}
 
                     </div>
