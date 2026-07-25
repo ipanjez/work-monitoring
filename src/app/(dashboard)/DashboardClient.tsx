@@ -163,6 +163,18 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   // PIC Bar Data
   const picCounts = filteredTasks.reduce((acc, task) => {
     acc[task.pic] = (acc[task.pic] || 0) + 1;
+    if (task.additionalPics) {
+      try {
+        const additional = JSON.parse(task.additionalPics);
+        if (Array.isArray(additional)) {
+          additional.forEach(apic => {
+            if (apic && typeof apic === 'string' && apic.trim() !== '') {
+              acc[apic.trim()] = (acc[apic.trim()] || 0) + 1;
+            }
+          });
+        }
+      } catch (e) {}
+    }
     return acc;
   }, {} as Record<string, number>);
 
