@@ -130,7 +130,6 @@ export default function GuidePage() {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Section 4: Keamanan & Pengaturan */}
         <div className="glass" style={{ display: 'flex', flexWrap: 'wrap-reverse', overflow: 'hidden', borderRadius: '16px' }}>
