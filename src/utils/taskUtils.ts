@@ -100,8 +100,25 @@ export const getPriorityBadgeClass = (p?: string | null) => {
 export const getGoogleCalendarUrl = (task: Task) => {
   const extraPics = getAdditionalPics(task);
   const allPicsStr = [task.pic, ...extraPics].join(', ');
-  const title = encodeURIComponent(task.nama);
-  const details = encodeURIComponent(`PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi || '-'}`);
+  const title = encodeURIComponent(`[${task.kategori || 'Pekerjaan'}] ${task.nama}`);
+
+  let subTasksStr = '';
+  if (task.subTasksJson) {
+    try {
+      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
+      }
+    } catch (e) {}
+  }
+
+  const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
+  const fileStr = task.fileUrl ? `\n\nLampiran:\n${task.fileUrl}` : '';
+
+  const details = encodeURIComponent(
+    `PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`
+  );
+  
   const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
 };
@@ -112,9 +129,22 @@ export const handleExportICS = (task: Task) => {
   const extraPics = getAdditionalPics(task);
   const allPicsStr = [task.pic, ...extraPics].join(', ');
 
+  let subTasksStr = '';
+  if (task.subTasksJson) {
+    try {
+      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
+      }
+    } catch (e) {}
+  }
+
+  const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
+  const fileStr = task.fileUrl ? `\n\nLampiran:\n${task.fileUrl}` : '';
+
   const event: EventAttributes = {
     title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
-    description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi || '-'}`,
+    description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`,
     start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
     end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
   };
