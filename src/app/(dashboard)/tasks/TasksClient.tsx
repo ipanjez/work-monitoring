@@ -581,16 +581,24 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
+        let wsname = wb.SheetNames.find(name => name.toLowerCase().includes('pekerjaan') || name.toLowerCase().includes('task')) || wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const rawData = XLSX.utils.sheet_to_json(ws);
+
+        const data = rawData.map((r: any) => {
+          const normalized: any = {};
+          for (const k in r) {
+             normalized[k.trim().toLowerCase()] = r[k];
+          }
+          return normalized;
+        });
 
         const formattedData = data.map((row: any) => {
-          let p = Number(row['Progress'] || 0);
+          let p = Number(row['progress (%)'] || row['progress'] || 0);
           if (isNaN(p)) p = 0;
           
           let subTasksJson = null;
-          const subPekerjaanRaw = row['Sub Pekerjaan'] || row.subPekerjaan;
+          const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
              const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
              const subTasks = lines.map(line => {
@@ -613,7 +621,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
              if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
           
-          const additionalPicsStr = row['PIC Tambahan'] || row.picTambahan || '';
+          const additionalPicsStr = row['pic tambahan'] || row['pictambahan'] || '';
           let additionalPicsJson = null;
           if (additionalPicsStr) {
             const picsArr = additionalPicsStr.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -621,20 +629,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           }
           
           return {
-            nama: row['Nama Pekerjaan'] || row.nama || 'Tanpa Nama',
-            pic: row['PIC Utama'] || row['PIC'] || row.pic || 'Unassigned',
-            status: row['Status'] || row.status || 'To Do',
-            prioritas: row['Prioritas'] || row.prioritas || 'Medium',
-            kategori: row['Kategori'] || row.kategori || 'Umum',
+            nama: row['nama pekerjaan'] || row['nama'] || 'Tanpa Nama',
+            pic: row['pic utama'] || row['pic'] || 'Unassigned',
+            status: row['status'] || 'To Do',
+            prioritas: row['prioritas'] || 'Medium',
+            kategori: row['kategori'] || 'Umum',
             progress: p,
-            deskripsi: row['Deskripsi'] || row.deskripsi || '',
-            catatan: row['Catatan'] || row.catatan || '',
-            startDate: row['Tanggal Mulai'] || row.startDate || new Date().toISOString(),
-            endDate: row['Tenggat Waktu'] || row.endDate || new Date().toISOString(),
+            deskripsi: row['deskripsi'] || '',
+            catatan: row['catatan'] || '',
+            startDate: row['tanggal mulai'] || row['startdate'] || new Date().toISOString(),
+            endDate: row['tenggat waktu'] || row['enddate'] || new Date().toISOString(),
             ...(subTasksJson ? { subTasksJson } : {}),
             ...(additionalPicsJson ? { additionalPics: additionalPicsJson } : {}),
           };
-        });
+        }).filter((d: any) => d.nama !== 'Tanpa Nama' || d.pic !== 'Unassigned');
+
+        if (formattedData.length === 0) {
+          toast.error('Tidak ada data valid di Excel. Pastikan header sesuai template.');
+          return;
+        }
 
         await fetch('/api/tasks', {
           method: 'POST',
