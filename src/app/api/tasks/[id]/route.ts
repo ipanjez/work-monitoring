@@ -50,8 +50,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       } catch (e) {}
     }
 
+    const changes: string[] = [];
+    if (existingTask) {
+      if (status !== undefined && status !== existingTask.status) changes.push(`Status (${existingTask.status} ➔ ${status})`);
+      if (prioritas !== undefined && prioritas !== existingTask.prioritas) changes.push(`Prioritas (${existingTask.prioritas} ➔ ${prioritas})`);
+      if (kategori !== undefined && kategori !== existingTask.kategori) changes.push(`Kategori (${existingTask.kategori || 'Umum'} ➔ ${kategori})`);
+      if (pic !== undefined && pic !== existingTask.pic) changes.push(`PIC (${existingTask.pic} ➔ ${pic})`);
+      if (nama !== undefined && nama !== existingTask.nama) changes.push(`Nama Pekerjaan`);
+      if (deskripsi !== undefined && deskripsi !== existingTask.deskripsi) changes.push(`Deskripsi`);
+      
+      const formatDt = (d: any) => d ? new Date(d).toISOString().split('T')[0] : '';
+      if (startDate !== undefined && formatDt(startDate) !== formatDt(existingTask.startDate)) changes.push(`Tgl Mulai`);
+      if (endDate !== undefined && formatDt(endDate) !== formatDt(existingTask.endDate)) changes.push(`Tgl Selesai`);
+      if (subTasksJson !== undefined && subTasksJson !== existingTask.subTasksJson) changes.push(`Sub Pekerjaan`);
+    }
+
     currentLogs.push({
       action: `Diedit ke-${newCount} kali`,
+      details: changes.length > 0 ? `${changes.join(', ')}` : '',
       timestamp: now.toISOString(),
     });
 

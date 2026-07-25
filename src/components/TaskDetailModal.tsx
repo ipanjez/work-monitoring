@@ -120,11 +120,18 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile }: TaskD
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                     Timeline Aktivitas:
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '120px', overflowY: 'auto' }}>
                     {getHistoryLogs(task).map((log, idx) => (
-                      <div key={idx} style={{ fontSize: '11px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                        <span>• {log.action}</span>
-                        <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                      <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ fontWeight: 600 }}>• {log.action}</span>
+                          <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                        </div>
+                        {(log as any).details && (
+                          <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '10px' }}>
+                            Diubah: {(log as any).details}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
