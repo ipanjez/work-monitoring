@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Plus, Paperclip, File, Eye } from 'lucide-react';
+import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { Task, FileItem, SubTask } from '@/utils/taskUtils';
@@ -686,9 +686,44 @@ export default function TaskAddEditModal({
                             <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
                           </select>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <button 
+                            type="button" 
+                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === 0 ? 0.3 : 1 }}
+                            disabled={idx === 0}
+                            title="Geser ke Atas"
+                            onClick={() => {
+                              if (idx === 0) return;
+                              const updated = [...(editingTask.subTasksList || [])];
+                              const temp = updated[idx - 1];
+                              updated[idx - 1] = updated[idx];
+                              updated[idx] = temp;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          >
+                            <ArrowUp size={16} />
+                          </button>
+                          <button 
+                            type="button" 
+                            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === (editingTask.subTasksList?.length || 0) - 1 ? 0.3 : 1 }}
+                            disabled={idx === (editingTask.subTasksList?.length || 0) - 1}
+                            title="Geser ke Bawah"
+                            onClick={() => {
+                              if (idx === (editingTask.subTasksList?.length || 0) - 1) return;
+                              const updated = [...(editingTask.subTasksList || [])];
+                              const temp = updated[idx + 1];
+                              updated[idx + 1] = updated[idx];
+                              updated[idx] = temp;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          >
+                            <ArrowDown size={16} />
+                          </button>
+                        </div>
                         <button 
                           type="button" 
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
+                          title="Hapus"
                           onClick={() => {
                             const updated = editingTask.subTasksList!.filter((_, i) => i !== idx);
                             setEditingTask({ ...editingTask, subTasksList: updated });
