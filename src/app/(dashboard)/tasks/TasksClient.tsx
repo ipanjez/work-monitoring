@@ -63,6 +63,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetch('/api/settings')
@@ -75,6 +76,42 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   }, []);
 
   const refreshData = () => router.refresh();
+
+  const handleToggleSelectAll = () => {
+    if (selectedTasks.size === processedTasks.length && processedTasks.length > 0) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(processedTasks.map(t => t.id)));
+    }
+  };
+
+  const handleToggleSelect = (taskId: number) => {
+    const newSet = new Set(selectedTasks);
+    if (newSet.has(taskId)) {
+      newSet.delete(taskId);
+    } else {
+      newSet.add(taskId);
+    }
+    setSelectedTasks(newSet);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTasks.size === 0) return;
+    if (!window.confirm(`Anda yakin ingin menghapus ${selectedTasks.size} pekerjaan yang dipilih?`)) return;
+    
+    const ids = Array.from(selectedTasks).join(',');
+    try {
+      await fetch(`/api/tasks?ids=${ids}`, { method: 'DELETE' });
+      toast.success(`${selectedTasks.size} Pekerjaan berhasil dihapus!`);
+      setSelectedTasks(new Set());
+      const res = await fetch('/api/tasks');
+      const updatedTasks = await res.json();
+      setTasks(updatedTasks);
+      refreshData();
+    } catch (e: any) {
+      toast.error('Gagal menghapus beberapa pekerjaan');
+    }
+  };
 
   const defaultCategoryList = ['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi'];
   const allCategoryOptions = Array.from(new Set([...defaultCategoryList, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c)), ...masterCats]));
@@ -859,11 +896,56 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </div>
 
       {/* Main Table with Sortable Columns */}
-      <div id="task-table-container" className="glass" style={{ padding: '24px', overflow: 'hidden' }}>
+      
+        <AnimatePresence>
+          {selectedTasks.size > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              style={{ background: 'var(--surface-color)', border: '1px solid var(--accent-primary)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={18} color="var(--accent-primary)" />
+                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
+                  {selectedTasks.size} Pekerjaan Terpilih
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setSelectedTasks(new Set())}
+                  style={{ padding: '6px 12px', fontSize: '13px' }}
+                >
+                  Batal
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={handleBulkDelete}
+                  style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                >
+                  <Trash2 size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Hapus Terpilih
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div id="task-table-container" className="glass" style={{ padding: '24px', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '13px' }}>
+
+                  <th style={{ padding: '14px 12px', width: '40px', textAlign: 'center' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={processedTasks.length > 0 && selectedTasks.size === processedTasks.length}
+                      onChange={handleToggleSelectAll}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </th>
                 <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Pekerjaan {renderSortIcon('nama')}

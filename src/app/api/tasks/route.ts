@@ -148,3 +148,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Failed to create task' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const idsParam = searchParams.get('ids');
+    if (idsParam) {
+      const ids = idsParam.split(',').map(Number).filter(id => !isNaN(id));
+      if (ids.length > 0) {
+        await prisma.task.deleteMany({
+          where: { id: { in: ids } }
+        });
+        return NextResponse.json({ success: true, count: ids.length });
+      }
+    }
+    return NextResponse.json({ error: 'No IDs provided' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error in bulk delete:', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete tasks' }, { status: 500 });
+  }
+}
+
