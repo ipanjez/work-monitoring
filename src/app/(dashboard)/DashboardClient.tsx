@@ -662,13 +662,13 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Bar data={categoryData} options={categoryOptions} />
             </div>
+          </div>
+
           <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu (Tahun Ini)</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Line data={timelineData} options={timelineOptions} />
             </div>
-          </div>
-
           </div>
         </div>
 
