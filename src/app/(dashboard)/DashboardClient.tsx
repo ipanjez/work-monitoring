@@ -1,7 +1,8 @@
 'use client';
 import toast from 'react-hot-toast';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -58,7 +59,7 @@ type Task = {
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
-  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -405,6 +406,37 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
+  const handleCopyImage = async () => {
+    if (!dashboardRef.current) return;
+    try {
+      if (addActivityLog) {
+        addActivityLog('COPY_DASHBOARD', 'Salin Dashboard', 'Menyalin gambar dashboard ke clipboard', 'info');
+      }
+      const canvas = await html2canvas(dashboardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc'
+      });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            toast.success('Dashboard berhasil disalin sebagai gambar!');
+          } catch (err) {
+            console.error('Clipboard write error:', err);
+            toast.error('Gagal menyalin gambar. Pastikan browser memberikan izin.');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('html2canvas error:', error);
+      toast.error('Gagal membuat gambar dashboard.');
+    }
+  };
+
+
   const handleExportExcelSummary = () => {
     if (addActivityLog) {
       addActivityLog('EXPORT_EXCEL', 'Export Laporan', 'Mengekspor data pekerjaan ke format Excel', 'info');
@@ -568,11 +600,18 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           >
             <FileText size={16} /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
           </button>
+          <button 
+            className="btn" 
+            onClick={handleCopyImage}
+            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
+          >
+            <Copy size={16} /> Copy Image
+          </button>
         </div>
       </div>
 
-      {/* Main Report Container for PDF export */}
-      <div id="dashboard-report-container">
+      {/* Main Report Container for PDF export and image copy */}
+      <div id="dashboard-report-container" ref={dashboardRef}>
         {/* KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
           <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
