@@ -18,6 +18,7 @@ export type LogItem = {
 export type SubTaskLog = {
   status: string;
   timestamp: string;
+  description?: string;
 };
 
 export type SubTask = {

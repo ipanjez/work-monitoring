@@ -615,7 +615,10 @@ export default function TaskAddEditModal({
                       borderRadius: '8px'
                     }
                   }}
-                  onBlur={newContent => setEditingTask({ ...editingTask, deskripsi: newContent })}
+                  onBlur={newContent => {
+                    const cleaned = newContent === '<p><br></p>' ? '' : newContent;
+                    setEditingTask({ ...editingTask, deskripsi: cleaned });
+                  }}
                   onChange={() => {}}
                 />
               </div>
@@ -650,9 +653,9 @@ export default function TaskAddEditModal({
                   {editingTask.subTasksList?.map((subTask, idx) => (
                     <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <input 
+                        <textarea 
                           className="input" 
-                          style={{ flex: 1 }}
+                          style={{ flex: 1, resize: 'vertical', minHeight: '60px' }}
                           placeholder="Deskripsi Sub Pekerjaan..." 
                           value={subTask.text} 
                           onChange={e => {
@@ -661,29 +664,42 @@ export default function TaskAddEditModal({
                             setEditingTask({ ...editingTask, subTasksList: updated });
                           }} 
                         />
-                        <select 
-                          className="input" 
-                          style={{ width: '130px', flexShrink: 0, 
-                            backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                             subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                             'var(--surface-color)',
-                            color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                          }}
-                          value={subTask.status}
-                          onChange={e => {
-                            const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Done';
-                            const updated = [...(editingTask.subTasksList || [])];
-                            updated[idx].status = newStatus;
-                            setEditingTask({ ...editingTask, subTasksList: updated });
-                          }}
-                        >
-                          <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
-                          <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
-                          <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <select 
+                            className="input" 
+                            style={{ width: '140px', flexShrink: 0, 
+                              backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
+                                               subTask.status === 'In Progress' ? 'var(--warning)' : 
+                                               'var(--surface-color)',
+                              color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
+                            }}
+                            value={subTask.status}
+                            onChange={e => {
+                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Done';
+                              const updated = [...(editingTask.subTasksList || [])];
+                              updated[idx].status = newStatus;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          >
+                            <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
+                            <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
+                            <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
+                          </select>
+                          <input 
+                            className="input"
+                            style={{ width: '140px', fontSize: '11px', padding: '4px 8px' }}
+                            placeholder="Catatan Log..."
+                            value={(subTask as any).pendingLogDesc || ''}
+                            onChange={e => {
+                              const updated = [...(editingTask.subTasksList || [])];
+                              (updated[idx] as any).pendingLogDesc = e.target.value;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          />
+                        </div>
                         <button 
                           type="button" 
-                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px', alignSelf: 'center' }}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
                           onClick={() => {
                             const updated = editingTask.subTasksList!.filter((_, i) => i !== idx);
                             setEditingTask({ ...editingTask, subTasksList: updated });
@@ -696,14 +712,30 @@ export default function TaskAddEditModal({
                       {subTask.logs && subTask.logs.length > 0 && (
                         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
                           <div style={{ fontWeight: 600, marginBottom: '2px' }}>Log Status:</div>
-                          {subTask.logs.map((log, lidx) => (
-                            <div key={lidx} style={{ display: 'flex', gap: '8px' }}>
-                              <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-                              <span>- {log.status}</span>
+                          {subTask.logs.map((log: any, lidx: number) => (
+                            <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '4px' }}>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+                                <span>- {log.status}</span>
+                                {log.description && (
+                                  <button type="button" style={{ fontSize: '10px', padding: '2px 6px', background: 'var(--accent-primary)', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer' }} onClick={(e) => {
+                                    const el = (e.target as HTMLButtonElement).parentElement?.nextElementSibling as HTMLElement;
+                                    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                                  }}>
+                                    Lihat
+                                  </button>
+                                )}
+                              </div>
+                              {log.description && (
+                                <div style={{ display: 'none', padding: '4px 8px', background: 'var(--surface-color)', borderRadius: '4px', marginTop: '2px', fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                                  {log.description}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
+
                     </div>
                   ))}
                   {(!editingTask.subTasksList || editingTask.subTasksList.length === 0) && (

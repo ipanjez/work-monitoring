@@ -332,16 +332,26 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         
         processedSubTasks = processedSubTasks.map((st: any) => {
           const originalSt = originalSubTasks.find((o: any) => o.id === st.id);
-          if (originalSt && originalSt.status !== st.status) {
-            return { ...st, logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }] };
+          let logsToAppend = [];
+          if (originalSt) {
+            if (originalSt.status !== st.status) {
+              logsToAppend.push({ status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString(), description: st.pendingLogDesc || '' });
+            } else if (st.pendingLogDesc) {
+              logsToAppend.push({ status: `Catatan ditambahkan`, timestamp: new Date().toISOString(), description: st.pendingLogDesc });
+            }
+          } else {
+            logsToAppend.push({ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString(), description: st.pendingLogDesc || '' });
           }
-          if (!originalSt) {
-            return { ...st, logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }] };
-          }
-          return st;
+          
+          const newLogs = [...(st.logs || []), ...logsToAppend];
+          const { pendingLogDesc, ...cleanSt } = st;
+          return { ...cleanSt, logs: newLogs };
         });
       } else {
-        processedSubTasks = processedSubTasks.map((st: any) => ({ ...st, logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }] }));
+        processedSubTasks = processedSubTasks.map((st: any) => {
+          const { pendingLogDesc, ...cleanSt } = st;
+          return { ...cleanSt, logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString(), description: pendingLogDesc || '' }] };
+        });
       }
 
       let parentStatusToSave = payloadData.status;

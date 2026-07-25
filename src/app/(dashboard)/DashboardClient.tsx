@@ -1,4 +1,5 @@
 'use client';
+import toast from 'react-hot-toast';
 
 import { useState, useEffect } from 'react';
 import {
@@ -14,7 +15,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut, Pie, Line } from 'react-chartjs-2';
-import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown } from 'lucide-react';
+import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown , Copy} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -664,7 +665,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div className="glass" style={{ padding: '24px', minHeight: '340px', gridColumn: '1 / -1' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu (Tahun Ini)</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Line data={timelineData} options={timelineOptions} />
@@ -685,7 +686,14 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '10px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>{t.nama}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC: {t.pic} • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC: {t.pic} 
+                      {t.additionalPics && (() => {
+                        try {
+                          const arr = JSON.parse(t.additionalPics);
+                          return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
+                        } catch(e) { return ''; }
+                      })()}
+                      • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
                     {t.fileUrl && (
                       <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px' }}>
                         <Paperclip size={12} /> {t.fileName || 'Lampiran'}
@@ -766,6 +774,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <User size={14} color="var(--text-secondary)" />
                           {t.pic}
+                          {t.additionalPics && (() => {
+                            try {
+                              const arr = JSON.parse(t.additionalPics);
+                              return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
+                            } catch(e) { return ''; }
+                          })()}
                         </div>
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
