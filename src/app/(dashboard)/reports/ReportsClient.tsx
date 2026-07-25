@@ -247,7 +247,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Kinerja');
     XLSX.writeFile(wb, `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    addActivityLog('Download', `Mengunduh Laporan Kinerja (${filteredTasks.length} pekerjaan)`, 'success');
+    addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja (${filteredTasks.length} pekerjaan)`, 'success');
   };
 
   return (
