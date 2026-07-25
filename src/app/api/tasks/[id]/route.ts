@@ -9,7 +9,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       nama, pic, status, prioritas, kategori, progress, 
       deskripsi, catatan, fileUrl, fileName, filesJson, 
       isAllDay, startTime, endTime, repetisi, additionalPics, 
-      startDate, endDate 
+      startDate, endDate, subTasksJson 
     } = body;
 
     const parseDate = (d: any) => {
@@ -75,6 +75,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           ...(additionalPics !== undefined && { additionalPics }),
           ...(startDate && { startDate: parseDate(startDate) }),
           ...(endDate && { endDate: parseDate(endDate) }),
+          ...(subTasksJson !== undefined && { subTasksJson }),
           editCount: newCount,
           lastEditedAt: now,
           historyLogsJson: JSON.stringify(currentLogs),

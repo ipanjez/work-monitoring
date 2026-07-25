@@ -5,9 +5,9 @@ import toast from 'react-hot-toast';
 
 export type NotificationItem = {
   id: number;
-  nama: string;
-  pic: string;
-  status: string;
+  nama?: string;
+  pic?: string;
+  status?: string;
   updatedAt: string;
   isRead: boolean;
   title?: string;

@@ -5,7 +5,7 @@ import { useFilter } from '@/context/FilterContext';
 import { Activity, CheckCircle, Clock, AlertCircle, AlertTriangle, ArrowUp, Minus, ArrowDown } from 'lucide-react';
 
 export default function TaskSummaryWidget() {
-  const { globalPicFilter, globalTimeFilter } = useFilter();
+  const { globalPicFilter, globalTargetFilter } = useFilter();
   const [tasks, setTasks] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -46,19 +46,19 @@ export default function TaskSummaryWidget() {
     let startBoundary = today.getTime();
     let endBoundary = today.getTime() + 86400000 - 1;
 
-    if (globalTimeFilter === 'Minggu Ini') {
+    if (globalTargetFilter === 'Minggu Ini') {
       const day = today.getDay();
       const diff = today.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(new Date(today).setDate(diff));
       startBoundary = monday.getTime();
       endBoundary = startBoundary + (7 * 86400000) - 1;
-    } else if (globalTimeFilter === 'Bulan Ini') {
+    } else if (globalTargetFilter === 'Bulan Ini') {
       startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
     }
 
     let matchDate = false;
-    if (globalTimeFilter === 'Semua Waktu') {
+    if (globalTargetFilter === 'Semua Waktu') {
       matchDate = true;
     } else {
       if (taskStart <= endBoundary && taskEnd >= startBoundary) {

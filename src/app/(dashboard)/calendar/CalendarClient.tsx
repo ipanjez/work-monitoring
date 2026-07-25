@@ -32,6 +32,9 @@ const localizer = dateFnsLocalizer({
 export type FileItem = {
   url: string;
   name: string;
+  uploadedAt?: string;
+  deletedAt?: string;
+  isDeleted?: boolean;
 };
 
 export type LogItem = {
@@ -39,19 +42,32 @@ export type LogItem = {
   timestamp: string;
 };
 
+export type SubTaskLog = {
+  status: string;
+  timestamp: string;
+};
+
+export type SubTask = {
+  id: string;
+  text: string;
+  status: 'To Do' | 'In Progress' | 'Done';
+  logs: SubTaskLog[];
+};
+
 export type Task = {
   id: number;
   nama: string;
   pic: string;
   status: string;
-  prioritas?: string | null;
-  kategori?: string | null;
-  progress?: number | null;
+  prioritas: string;
+  kategori: string;
+  progress: number;
   deskripsi?: string | null;
   catatan?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
   filesJson?: string | null;
+  subTasksJson?: string | null;
   isAllDay?: boolean | null;
   startTime?: string | null;
   endTime?: string | null;
@@ -61,6 +77,7 @@ export type Task = {
   lastEditedAt?: string | Date | null;
   historyLogsJson?: string | null;
   createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
   startDate: string | Date;
   endDate: string | Date;
 };
@@ -72,9 +89,9 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [editingTask, setEditingTask] = useState<Partial<Task> & { filesList?: FileItem[]; additionalPicsList?: string[]; isCustomCategory?: boolean; isCustomPic?: boolean; customRecurrenceSettings?: any } | null>(null);
-  const [customAdditionalPics, setCustomAdditionalPics] = useState<boolean[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Partial<Task> & { filesList?: FileItem[]; additionalPicsList?: string[]; subTasksList?: SubTask[]; isCustomCategory?: boolean; isCustomPic?: boolean; customRecurrenceSettings?: any } | null>(null);
+  const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -645,7 +662,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       {/* Task Pop-up Detail Modal */}
       <AnimatePresence>
         {selectedTask && (
-          <div className="modal-overlay" onClick={() => setSelectedTask(null)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '650px' }}
@@ -745,6 +762,50 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   </p>
                 )}
 
+                {/* Sub-Tasks Display */}
+                {selectedTask.subTasksJson && (() => {
+                  let subTasks: SubTask[] = [];
+                  try {
+                    subTasks = JSON.parse(selectedTask.subTasksJson);
+                  } catch (e) {}
+                  
+                  if (subTasks.length === 0) return null;
+                  
+                  return (
+                    <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', marginTop: '4px' }}>
+                      <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Sub Pekerjaan</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {subTasks.map(subTask => (
+                          <div key={subTask.id} style={{ padding: '8px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                              <span style={{ fontWeight: 500, fontSize: '13px' }}>{subTask.text}</span>
+                              <span style={{ 
+                                padding: '3px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600,
+                                backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
+                                                 subTask.status === 'In Progress' ? 'var(--warning)' : 
+                                                 'var(--surface-color)',
+                                color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
+                              }}>
+                                {subTask.status}
+                              </span>
+                            </div>
+                            {subTask.logs && subTask.logs.length > 0 && (
+                              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', paddingLeft: '2px' }}>
+                                {subTask.logs.map((log, lidx) => (
+                                  <div key={lidx} style={{ display: 'flex', gap: '6px' }}>
+                                    <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                                    <span>- {log.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Multiple Files Detail Display */}
                 {getTaskFiles(selectedTask).length > 0 && (
                   <div>
@@ -753,19 +814,28 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {getTaskFiles(selectedTask).map((f, idx) => (
-                        <button 
-                          key={idx}
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ justifyContent: 'space-between', fontSize: '12px', width: '100%' }}
-                          onClick={() => setPreviewFile(f)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Paperclip size={14} color="var(--accent-primary)" />
-                            <span>{f.name}</span>
+                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
+                              <Paperclip size={14} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
+                              <span style={{ fontSize: '12px', color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
+                            </div>
+                            {!f.isDeleted && (
+                              <button 
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ padding: '2px 6px' }}
+                                onClick={() => setPreviewFile(f)}
+                              >
+                                <Eye size={12} color="var(--text-secondary)" />
+                              </button>
+                            )}
                           </div>
-                          <Eye size={14} color="var(--text-secondary)" />
-                        </button>
+                          <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                            {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd/MM/yyyy HH:mm')}</span>}
+                            {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '4px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd/MM/yyyy HH:mm')}</span>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -794,7 +864,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       {/* Edit / Add Task Modal on Calendar */}
       <AnimatePresence>
         {isEditModalOpen && editingTask && (
-          <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '650px' }}
@@ -1200,7 +1270,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       {/* Interactive Copyable Error Details Modal */}
       <AnimatePresence>
         {errorMessage && (
-          <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setErrorMessage(null)}>
+          <div className="modal-overlay" style={{ zIndex: 1100 }}>
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}
@@ -1255,7 +1325,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       {/* In-App File Preview Modal */}
       <AnimatePresence>
         {previewFile && (
-          <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}

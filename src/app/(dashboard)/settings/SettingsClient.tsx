@@ -43,6 +43,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       .then(data => {
         if (data.master_categories) setCategories(data.master_categories);
         if (data.master_pics) setPics(data.master_pics);
+        if (data.dept_name) setDeptName(data.dept_name);
       })
       .catch(e => console.error(e));
   }, []);
@@ -151,8 +152,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     e.preventDefault();
     localStorage.setItem('master_categories', JSON.stringify(categories));
     localStorage.setItem('master_pics', JSON.stringify(pics));
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dept_name: deptName })
+    })
+    .then(() => {
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+      window.dispatchEvent(new Event('deptNameChanged'));
+    })
+    .catch(console.error);
   };
 
   const handleBackupDatabase = () => {
@@ -454,7 +465,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               const feedUrl = `${window.location.origin}/api/calendar/feed`;
               import('@/utils/clipboard').then(({ copyToClipboard }) => {
                 copyToClipboard(feedUrl);
-                toast.success('URL Kalender berhasil disalin ke clipboard!');
                 alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars'\n3. Pilih 'From URL'\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
               });
             }}

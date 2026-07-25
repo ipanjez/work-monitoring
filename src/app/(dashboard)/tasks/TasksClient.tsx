@@ -15,15 +15,33 @@ import toast from 'react-hot-toast';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
+import dynamic from 'next/dynamic';
+
+const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 export type FileItem = {
   url: string;
   name: string;
+  uploadedAt?: string;
+  deletedAt?: string;
+  isDeleted?: boolean;
 };
 
 export type LogItem = {
   action: string;
   timestamp: string;
+};
+
+export type SubTaskLog = {
+  status: string;
+  timestamp: string;
+};
+
+export type SubTask = {
+  id: string;
+  text: string;
+  status: 'To Do' | 'In Progress' | 'Done';
+  logs: SubTaskLog[];
 };
 
 export type Task = {
@@ -39,6 +57,7 @@ export type Task = {
   fileUrl?: string | null;
   fileName?: string | null;
   filesJson?: string | null;
+  subTasksJson?: string | null;
   isAllDay?: boolean | null;
   startTime?: string | null;
   endTime?: string | null;
@@ -82,11 +101,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [editingTask, setEditingTask] = useState<Partial<Task> & { filesList?: FileItem[]; additionalPicsList?: string[]; isCustomCategory?: boolean; isCustomPic?: boolean; customRecurrenceSettings?: any } | null>(null);
-  const [customAdditionalPics, setCustomAdditionalPics] = useState<boolean[]>([]);
+  const [editingTask, setEditingTask] = useState<Partial<Task> & { filesList?: FileItem[]; additionalPicsList?: string[]; isCustomCategory?: boolean; isCustomPic?: boolean; customRecurrenceSettings?: any; subTasksList?: SubTask[] } | null>(null);
+  const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
   
   // Interactive Copyable Error Modal State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showExcelInfo, setShowExcelInfo] = useState(false);
 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
@@ -264,6 +284,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       catatan: '',
       filesList: [],
       additionalPicsList: [],
+      subTasksList: [],
       isAllDay: true,
       startTime: '08:00',
       endTime: '17:00',
@@ -288,10 +309,18 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       } catch (e) {}
     }
 
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        parsedSubTasks = JSON.parse(task.subTasksJson);
+      } catch (e) {}
+    }
+
     setEditingTask({
       ...task,
       filesList: getTaskFiles(task),
       additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks,
       isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : true,
       startTime: task.startTime || '08:00',
       endTime: task.endTime || '17:00',
@@ -351,7 +380,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       if (!res.ok) throw new Error('Upload failed');
 
       const data = await res.json();
-      const newUploadedFiles: FileItem[] = data.files || [];
+      const newUploadedFiles: FileItem[] = data.files ? data.files.map((f: any) => ({ ...f, uploadedAt: new Date().toISOString() })) : [];
       const currentList = editingTask.filesList || [];
       const updatedList = [...currentList, ...newUploadedFiles];
 
@@ -373,12 +402,17 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const handleRemoveFileFromEdit = (index: number) => {
     if (!editingTask || !editingTask.filesList) return;
-    const updated = editingTask.filesList.filter((_, idx) => idx !== index);
+    const updated = [...editingTask.filesList];
+    updated[index] = {
+      ...updated[index],
+      isDeleted: true,
+      deletedAt: new Date().toISOString()
+    };
     setEditingTask({
       ...editingTask,
       filesList: updated,
-      fileUrl: updated[0]?.url || '',
-      fileName: updated[0]?.name || '',
+      fileUrl: updated.find(f => !f.isDeleted)?.url || '',
+      fileName: updated.find(f => !f.isDeleted)?.name || '',
     });
   };
 
@@ -402,14 +436,58 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         ? editingTask.filesList 
         : (editingTask.fileUrl ? [{ url: editingTask.fileUrl, name: editingTask.fileName || 'File Lampiran' }] : []);
 
+      // Process subtask logs on save
+      let processedSubTasks = editingTask.subTasksList ? [...editingTask.subTasksList] : [];
+      if (!isNew) {
+        const originalTask = tasks.find(t => t.id === editingTask.id);
+        const originalSubTasks = originalTask?.subTasksJson ? JSON.parse(originalTask.subTasksJson) : [];
+        
+        processedSubTasks = processedSubTasks.map(st => {
+          const originalSt = originalSubTasks.find((o: any) => o.id === st.id);
+          if (originalSt && originalSt.status !== st.status) {
+            return {
+              ...st,
+              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
+            };
+          }
+          // If new subtask, and user changed status from 'To Do' before saving
+          if (!originalSt && st.status !== 'To Do') {
+            return {
+              ...st,
+              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
+            };
+          }
+          return st;
+        });
+      } else {
+        // If it's a completely new task, just add logs for subtasks that were created and immediately changed
+        processedSubTasks = processedSubTasks.map(st => {
+          if (st.status !== 'To Do') {
+            return {
+              ...st,
+              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
+            };
+          }
+          return st;
+        });
+      }
+
+      // Auto update parent status if all subtasks are Done
+      let parentStatusToSave = editingTask.status;
+      if (processedSubTasks.length > 0 && processedSubTasks.every(st => st.status === 'Done')) {
+        parentStatusToSave = 'Done';
+      }
+
       const payload = {
         ...editingTask,
+        status: parentStatusToSave,
         startDate: editingTask.startDate || new Date().toISOString().split('T')[0],
         endDate: editingTask.endDate || new Date().toISOString().split('T')[0],
         repetisi: editingTask.repetisi === 'Custom' ? `CUSTOM_RECURRENCE:${JSON.stringify(editingTask.customRecurrenceSettings)}` : editingTask.repetisi,
-        fileUrl: filesListToSave[0]?.url || editingTask.fileUrl || null,
-        fileName: filesListToSave[0]?.name || editingTask.fileName || null,
+        fileUrl: filesListToSave.find(f => !f.isDeleted)?.url || editingTask.fileUrl || null,
+        fileName: filesListToSave.find(f => !f.isDeleted)?.name || editingTask.fileName || null,
         filesJson: filesListToSave.length > 0 ? JSON.stringify(filesListToSave) : null,
+        subTasksJson: processedSubTasks.length > 0 ? JSON.stringify(processedSubTasks) : null,
         additionalPics: filteredExtraPics.length > 0 ? JSON.stringify(filteredExtraPics) : null,
       };
 
@@ -515,6 +593,120 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+
+      const workbook = new ExcelJS.Workbook();
+      
+      // Buat sheet konfigurasi tersembunyi untuk referensi dropdown panjang
+      const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
+      const uniquePics = existingPics.length > 0 ? existingPics : ['Unassigned'];
+      configSheet.getColumn('A').values = uniquePics;
+      
+      const worksheet = workbook.addWorksheet('Template Pekerjaan');
+
+      // Tentukan Header
+      worksheet.columns = [
+        { header: 'Nama Pekerjaan', key: 'nama', width: 35 },
+        { header: 'PIC', key: 'pic', width: 25 },
+        { header: 'Kategori', key: 'kategori', width: 20 },
+        { header: 'Prioritas', key: 'prioritas', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Progress', key: 'progress', width: 12 },
+        { header: 'Tanggal Mulai', key: 'startDate', width: 15 },
+        { header: 'Tenggat Waktu', key: 'endDate', width: 15 },
+        { header: 'Deskripsi', key: 'deskripsi', width: 40 },
+        { header: 'Catatan', key: 'catatan', width: 40 },
+        { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 50 },
+      ];
+
+      // Beri warna pada header
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF10B981' }
+      };
+
+      // Auto wrap untuk kolom K (Sub Pekerjaan)
+      worksheet.getColumn('K').alignment = { wrapText: true, vertical: 'top' };
+
+      // Tambahkan Contoh Isian di baris ke-2
+      const exampleRow = worksheet.addRow({
+        nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
+        pic: uniquePics[0] || 'Unassigned',
+        kategori: 'Umum',
+        prioritas: 'High',
+        status: 'In Progress',
+        progress: 50,
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: format(new Date(), 'yyyy-MM-dd'),
+        deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
+        catatan: 'Contoh catatan',
+        subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
+      });
+      // Beri warna latar abu-abu muda untuk baris contoh
+      exampleRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF3F4F6' }
+        };
+        cell.font = { italic: true, color: { argb: 'FF4B5563' } };
+      });
+
+      // Tambahkan Data Validation untuk 1000 baris pertama
+      for (let i = 2; i <= 1000; i++) {
+        // PIC (Ambil dari hidden sheet agar tidak kena limit 255 karakter)
+        worksheet.getCell(`B${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$A$1:$A$${uniquePics.length}`]
+        };
+
+        // Prioritas
+        worksheet.getCell(`D${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Low,Medium,High,Urgent"']
+        };
+
+        // Status
+        worksheet.getCell(`E${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"To Do,In Progress,Done"']
+        };
+
+        // Progress (Angka 0-100)
+        worksheet.getCell(`F${i}`).dataValidation = {
+          type: 'whole',
+          operator: 'between',
+          allowBlank: true,
+          showInputMessage: true,
+          promptTitle: 'Progress',
+          prompt: 'Masukkan angka antara 0 hingga 100',
+          formulae: [0, 100]
+        };
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Template_Import_Pekerjaan.xlsx';
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Template berhasil diunduh!');
+    } catch (err) {
+      console.error('Error generating template:', err);
+      toast.error('Gagal membuat template Excel.');
+    }
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -528,18 +720,48 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
 
-        const formattedData = data.map((row: any) => ({
-          nama: row['Nama Pekerjaan'] || row.nama || 'Tanpa Nama',
-          pic: row['PIC'] || row.pic || 'Unassigned',
-          status: row['Status'] || row.status || 'To Do',
-          prioritas: row['Prioritas'] || row.prioritas || 'Medium',
-          kategori: row['Kategori'] || row.kategori || 'Umum',
-          progress: Number(row['Progress']) || 0,
-          deskripsi: row['Deskripsi'] || row.deskripsi || '',
-          catatan: row['Catatan'] || row.catatan || '',
-          startDate: row['Tanggal Mulai'] || row.startDate || new Date().toISOString(),
-          endDate: row['Tenggat Waktu'] || row.endDate || new Date().toISOString(),
-        }));
+        const formattedData = data.map((row: any) => {
+          let p = Number(row['Progress'] || 0);
+          if (isNaN(p)) p = 0;
+          
+          let subTasksJson = null;
+          const subPekerjaanRaw = row['Sub Pekerjaan'] || row.subPekerjaan;
+          if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
+             const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
+             const subTasks = lines.map(line => {
+                const match = line.match(/^\[(.*?)\]\s+(.*)/);
+                let status = 'To Do';
+                let text = line.trim();
+                if (match && ['To Do', 'In Progress', 'Done'].includes(match[1])) {
+                   status = match[1];
+                   text = match[2].trim();
+                } else if (match) {
+                   text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
+                }
+                return {
+                   id: Math.random().toString(36).substring(2, 9),
+                   text,
+                   status,
+                   logs: [{ status, timestamp: new Date().toISOString() }]
+                };
+             });
+             if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
+          }
+          
+          return {
+            nama: row['Nama Pekerjaan'] || row.nama || 'Tanpa Nama',
+            pic: row['PIC'] || row.pic || 'Unassigned',
+            status: row['Status'] || row.status || 'To Do',
+            prioritas: row['Prioritas'] || row.prioritas || 'Medium',
+            kategori: row['Kategori'] || row.kategori || 'Umum',
+            progress: p,
+            deskripsi: row['Deskripsi'] || row.deskripsi || '',
+            catatan: row['Catatan'] || row.catatan || '',
+            startDate: row['Tanggal Mulai'] || row.startDate || new Date().toISOString(),
+            endDate: row['Tenggat Waktu'] || row.endDate || new Date().toISOString(),
+            ...(subTasksJson ? { subTasksJson } : {}),
+          };
+        });
 
         await fetch('/api/tasks', {
           method: 'POST',
@@ -567,19 +789,32 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   };
 
   const handleExportExcel = () => {
-    const exportData = processedTasks.map(t => ({
-      'Nama Pekerjaan': t.nama,
-      'PIC Utama': t.pic,
-      'PIC Tambahan': getAdditionalPics(t).join(', '),
-      'Kategori': t.kategori || 'Umum',
-      'Prioritas': t.prioritas || 'Medium',
-      'Status': t.status,
-      'Progress (%)': t.progress || 0,
-      'Diedit (kali)': t.editCount || 0,
-      'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
-      'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
-      'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
-    }));
+    const exportData = processedTasks.map(t => {
+      let subPekerjaanStr = '';
+      if (t.subTasksJson) {
+         try {
+           const parsed: SubTask[] = JSON.parse(t.subTasksJson);
+           if (Array.isArray(parsed)) {
+             subPekerjaanStr = parsed.map(st => `[${st.status}] ${st.text}`).join('\n');
+           }
+         } catch(e) {}
+      }
+
+      return {
+        'Nama Pekerjaan': t.nama,
+        'PIC Utama': t.pic,
+        'PIC Tambahan': getAdditionalPics(t).join(', '),
+        'Kategori': t.kategori || 'Umum',
+        'Prioritas': t.prioritas || 'Medium',
+        'Status': t.status,
+        'Progress (%)': t.progress || 0,
+        'Sub Pekerjaan': subPekerjaanStr,
+        'Diedit (kali)': t.editCount || 0,
+        'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
+        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
+        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -719,6 +954,22 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </button>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            className="btn" 
+            onClick={handleDownloadTemplate}
+            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
+          >
+            <Download size={16} /> Unduh Template
+          </button>
+          
+          <button 
+            className="btn" 
+            onClick={() => setShowExcelInfo(!showExcelInfo)}
+            style={{ backgroundColor: '#6b7280', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(107, 114, 128, 0.2)' }}
+          >
+            <Info size={16} /> Info Format Excel
+          </button>
+          
           <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".xlsx,.csv" onChange={handleImportExcel} />
           <button 
             className="btn" 
@@ -754,6 +1005,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           </button>
         </div>
       </div>
+
+      {showExcelInfo && (
+        <div style={{ padding: '16px', backgroundColor: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px', fontSize: '13px', color: 'var(--text-primary)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+          <h4 style={{ fontWeight: 600, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#3b82f6', fontSize: '14px' }}>
+            <Info size={16} /> Panduan Pengisian Template Excel
+          </h4>
+          <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>Baris pertama (Header) dan baris kedua (Contoh Isian) memiliki penataan yang benar. Anda dapat menimpa isi pada baris kedua, dan melanjutkan ke baris berikutnya.</p>
+          <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
+            <li><strong>Kolom Dropdown:</strong> Kolom PIC, Prioritas, Status, dan Progress menggunakan dropdown interaktif. Pastikan mengisinya dari pilihan yang tersedia.</li>
+            <li><strong>Kolom Sub Pekerjaan:</strong> Jika satu pekerjaan utama memiliki beberapa sub-pekerjaan, rincikan di dalam satu kotak sel. Gunakan <code>Alt + Enter</code> untuk membuat baris baru.</li>
+          </ul>
+          <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #3b82f6', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
+            <strong>Contoh Penulisan Sub Pekerjaan yang Benar:</strong><br/><br/>
+            [Done] Menganalisis laporan keuangan<br/>
+            [In Progress] Membuat slide PowerPoint<br/>
+            [To Do] Melakukan presentasi
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="glass" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -831,6 +1101,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 <th style={{ padding: '14px 12px' }}>
                   Deskripsi
                 </th>
+                <th style={{ padding: '14px 12px' }}>
+                  Sub Pekerjaan
+                </th>
                 <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     PIC {renderSortIcon('pic')}
@@ -900,6 +1173,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       }}>
                         {task.deskripsi || '-'}
                       </div>
+                    </td>
+                    <td style={{ padding: '16px 12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {task.subTasksJson ? (() => {
+                         try {
+                           const st = JSON.parse(task.subTasksJson);
+                           if (!st || st.length === 0) return '-';
+                           const doneCount = st.filter((s: any) => s.status === 'Done').length;
+                           return `${doneCount}/${st.length} Selesai`;
+                         } catch (e) { return '-'; }
+                      })() : '-'}
                     </td>
                     <td style={{ padding: '16px 12px', fontWeight: '500' }}>
                       <div>{task.pic}</div>
@@ -1010,7 +1293,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Add / Edit Task Modal */}
       <AnimatePresence>
         {isModalOpen && editingTask && (
-          <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '650px' }}
@@ -1466,17 +1749,119 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     Deskripsi Pekerjaan
                   </label>
-                  <textarea 
-                    className="input" 
-                    rows={3} 
-                    placeholder="Penjelasan ringkas mengenai tugas ini..."
-                    value={editingTask.deskripsi || ''} 
-                    onChange={e => setEditingTask({ ...editingTask, deskripsi: e.target.value })} 
+                  <JoditEditor
+                    value={editingTask.deskripsi || ''}
+                    config={{
+                      readonly: false,
+                      placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, tabel, dll)...',
+                      height: 250,
+                      toolbarSticky: false,
+                      style: {
+                        background: 'var(--input-bg)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
+                      }
+                    }}
+                    onBlur={newContent => setEditingTask({ ...editingTask, deskripsi: newContent })}
+                    onChange={() => {}}
                   />
+                </div>
+
+                {/* Sub-Pekerjaan Section */}
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Sub Pekerjaan (Sub Deskripsi)
+                    </label>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => {
+                        const newSubTask: SubTask = {
+                          id: Date.now().toString(),
+                          text: '',
+                          status: 'To Do',
+                          logs: [{ status: 'Dibuat (To Do)', timestamp: new Date().toISOString() }]
+                        };
+                        setEditingTask({
+                          ...editingTask,
+                          subTasksList: [...(editingTask.subTasksList || []), newSubTask]
+                        });
+                      }}
+                    >
+                      <Plus size={14} /> Tambah Sub
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {editingTask.subTasksList?.map((subTask, idx) => (
+                      <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                          <input 
+                            className="input" 
+                            style={{ flex: 1 }}
+                            placeholder="Deskripsi Sub Pekerjaan..." 
+                            value={subTask.text} 
+                            onChange={e => {
+                              const updated = [...(editingTask.subTasksList || [])];
+                              updated[idx].text = e.target.value;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }} 
+                          />
+                          <select 
+                            className="input" 
+                            style={{ width: '130px', flexShrink: 0, 
+                              backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
+                                               subTask.status === 'In Progress' ? 'var(--warning)' : 
+                                               'var(--surface-color)',
+                              color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
+                            }}
+                            value={subTask.status}
+                            onChange={e => {
+                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Done';
+                              const updated = [...(editingTask.subTasksList || [])];
+                              updated[idx].status = newStatus;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          >
+                            <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
+                            <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
+                            <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
+                          </select>
+                          <button 
+                            type="button" 
+                            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px', alignSelf: 'center' }}
+                            onClick={() => {
+                              const updated = editingTask.subTasksList!.filter((_, i) => i !== idx);
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        
+                        {subTask.logs && subTask.logs.length > 0 && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
+                            <div style={{ fontWeight: 600, marginBottom: '2px' }}>Log Status:</div>
+                            {subTask.logs.map((log, lidx) => (
+                              <div key={lidx} style={{ display: 'flex', gap: '8px' }}>
+                                <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+                                <span>- {log.status}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {(!editingTask.subTasksList || editingTask.subTasksList.length === 0) && (
+                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px' }}>Belum ada sub pekerjaan.</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Multiple File Attachments Upload */}
@@ -1505,28 +1890,38 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     {editingTask.filesList && editingTask.filesList.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
                         {editingTask.filesList.map((f, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => setPreviewFile(f)}>
-                              <File size={15} />
-                              <span style={{ fontWeight: 500 }}>{f.name}</span>
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile(f)}>
+                                <File size={15} />
+                                <span style={{ fontWeight: 500 }}>{f.name}</span>
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                                {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                              </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <button 
-                                type="button" 
-                                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
-                                onClick={() => setPreviewFile(f)}
-                                title="Pratinjau File"
-                              >
-                                <Eye size={15} />
-                              </button>
-                              <button 
-                                type="button" 
-                                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
-                                onClick={() => handleRemoveFileFromEdit(idx)}
-                                title="Hapus Lampiran Ini"
-                              >
-                                <X size={15} />
-                              </button>
+                              {!f.isDeleted && (
+                                <>
+                                  <button 
+                                    type="button" 
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
+                                    onClick={() => setPreviewFile(f)}
+                                    title="Pratinjau File"
+                                  >
+                                    <Eye size={15} />
+                                  </button>
+                                  <button 
+                                    type="button" 
+                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
+                                    onClick={() => handleRemoveFileFromEdit(idx)}
+                                    title="Hapus Lampiran Ini"
+                                  >
+                                    <X size={15} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1550,7 +1945,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Task Detail Modal with Audit Logs & Activity Timeline */}
       <AnimatePresence>
         {detailTask && (
-          <div className="modal-overlay" onClick={() => setDetailTask(null)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '650px' }}
@@ -1640,11 +2035,57 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 {detailTask.deskripsi && (
                   <div>
                     <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Deskripsi</h4>
-                    <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px' }}>
-                      {detailTask.deskripsi}
-                    </p>
+                    <div 
+                      style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', overflowX: 'auto' }}
+                      dangerouslySetInnerHTML={{ __html: detailTask.deskripsi }}
+                    />
                   </div>
                 )}
+
+                {/* Sub-Tasks Display */}
+                {detailTask.subTasksJson && (() => {
+                  let subTasks: SubTask[] = [];
+                  try {
+                    subTasks = JSON.parse(detailTask.subTasksJson);
+                  } catch (e) {}
+                  
+                  if (subTasks.length === 0) return null;
+                  
+                  return (
+                    <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>Sub Pekerjaan</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {subTasks.map(subTask => (
+                          <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                              <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
+                              <span style={{ 
+                                padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
+                                backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
+                                                 subTask.status === 'In Progress' ? 'var(--warning)' : 
+                                                 'var(--surface-color)',
+                                color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
+                              }}>
+                                {subTask.status}
+                              </span>
+                            </div>
+                            {subTask.logs && subTask.logs.length > 0 && (
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
+                                <div style={{ fontWeight: 600, marginBottom: '2px' }}>Riwayat Status:</div>
+                                {subTask.logs.map((log, lidx) => (
+                                  <div key={lidx} style={{ display: 'flex', gap: '8px' }}>
+                                    <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+                                    <span>- {log.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Multiple Files Detail Display */}
                 {getTaskFiles(detailTask).length > 0 && (
@@ -1654,19 +2095,28 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {getTaskFiles(detailTask).map((f, idx) => (
-                        <button 
-                          key={idx}
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ justifyContent: 'space-between', fontSize: '13px', width: '100%' }}
-                          onClick={() => setPreviewFile(f)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Paperclip size={16} color="var(--accent-primary)" />
-                            <span>{f.name}</span>
+                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
+                              <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
+                              <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
+                            </div>
+                            {!f.isDeleted && (
+                              <button 
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 8px' }}
+                                onClick={() => setPreviewFile(f)}
+                              >
+                                <Eye size={14} color="var(--text-secondary)" />
+                              </button>
+                            )}
                           </div>
-                          <Eye size={14} color="var(--text-secondary)" />
-                        </button>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                            {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1694,7 +2144,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Interactive Copyable Error Details Modal */}
       <AnimatePresence>
         {errorMessage && (
-          <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setErrorMessage(null)}>
+          <div className="modal-overlay" style={{ zIndex: 1100 }}>
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}
@@ -1751,7 +2201,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* In-App File Preview Modal */}
       <AnimatePresence>
         {previewFile && (
-          <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}

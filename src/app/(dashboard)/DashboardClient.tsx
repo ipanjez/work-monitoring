@@ -45,6 +45,7 @@ type Task = {
   fileName?: string | null;
   startDate: string | Date;
   endDate: string | Date;
+  additionalPics?: string | null;
 };
 
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {

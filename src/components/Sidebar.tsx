@@ -17,8 +17,9 @@ export default function Sidebar() {
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar } = useTheme();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter } = useFilter();
   
-  const [allTasks, setAllTasks] = useState([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [deptName, setDeptName] = useState('Work Monitoring');
   const [stats, setStats] = useState({ pending: 0, inProgress: 0, done: 0 });
 
   useEffect(() => {
@@ -29,20 +30,30 @@ export default function Sidebar() {
         if (Array.isArray(data)) setAllTasks(data);
       })
       .catch(e => console.error(e));
+    };
 
+    const loadSettings = () => {
       fetch('/api/settings')
         .then(res => res.json())
         .then(data => {
           if (data.master_pics) {
             setMasterPics(data.master_pics);
           }
+          if (data.dept_name) {
+            setDeptName(data.dept_name);
+          }
         })
         .catch(e => console.error(e));
     };
 
     loadData();
+    loadSettings();
     window.addEventListener('tasksUpdated', loadData);
-    return () => window.removeEventListener('tasksUpdated', loadData);
+    window.addEventListener('deptNameChanged', loadSettings);
+    return () => {
+      window.removeEventListener('tasksUpdated', loadData);
+      window.removeEventListener('deptNameChanged', loadSettings);
+    };
   }, [pathname]);
 
   const picList = Array.from(new Set([
@@ -133,7 +144,7 @@ export default function Sidebar() {
             {!isSidebarCollapsed && (
               <div>
                 <span style={{ fontSize: '16px', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>DeptMonitor</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 400 }}>Work Monitoring</span>
+                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 400 }}>{deptName}</span>
               </div>
             )}
           </div>

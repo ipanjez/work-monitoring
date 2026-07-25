@@ -12,7 +12,7 @@ type FilterContextType = {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
-  const [globalTargetFilter, setTargetFilter] = useState('Hari Ini');
+  const [globalTargetFilter, setTargetFilter] = useState('Semua Waktu');
   const [globalPicFilter, setPicFilter] = useState('Semua PIC');
   const [isMounted, setIsMounted] = useState(false);
 

@@ -325,7 +325,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       {/* Task Detail Modal */}
       <AnimatePresence>
         {detailTask && (
-          <div className="modal-overlay" onClick={() => setDetailTask(null)}>
+          <div className="modal-overlay">
             <motion.div 
               className="modal-content"
               style={{ maxWidth: '650px' }}

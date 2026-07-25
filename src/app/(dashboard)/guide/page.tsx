@@ -90,6 +90,10 @@ export default function GuidePage() {
                 <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
                 <span style={{ color: 'var(--text-primary)' }}><strong>Lampiran & Riwayat:</strong> Unggah file terkait pekerjaan. Sistem juga mencatat riwayat pembaruan status dan komentar secara otomatis.</span>
               </li>
+              <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-primary)' }}><strong>Import/Export Excel:</strong> Unduh template Excel (beserta baris contoh format Sub-Pekerjaan), isi secara massal, dan impor kembali dengan satu klik.</span>
+              </li>
             </ul>
           </div>
         </div>
@@ -124,6 +128,35 @@ export default function GuidePage() {
               <div style={{ width: '40px', height: '140px', background: 'rgba(236, 72, 153, 0.6)', borderRadius: '6px 6px 0 0' }}></div>
               <div style={{ width: '40px', height: '90px', background: 'rgba(16, 185, 129, 0.6)', borderRadius: '6px 6px 0 0' }}></div>
             </div>
+          </div>
+        </div>
+        </div>
+
+        {/* Section 4: Keamanan & Pengaturan */}
+        <div className="glass" style={{ display: 'flex', flexWrap: 'wrap-reverse', overflow: 'hidden', borderRadius: '16px' }}>
+          <div style={{ flex: '1 1 300px', background: 'linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(239,68,68,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', borderRight: '1px solid var(--border-color)' }}>
+            <Shield size={100} color="rgba(239, 68, 68, 0.4)" />
+          </div>
+          <div style={{ flex: '1 1 400px', padding: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444' }}>
+                <Shield size={24} />
+              </div>
+              <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>4. Keamanan & Pengaturan</h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '20px' }}>
+              Fitur perlindungan sesi dan personalisasi dasbor sesuai struktur organisasi Anda.
+            </p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
+              <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-primary)' }}><strong>Auto-Logout Inaktivitas:</strong> Untuk alasan keamanan, sistem akan logout otomatis jika Anda tidak berinteraksi dengan mouse/keyboard selama 10 menit berturut-turut.</span>
+              </li>
+              <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span style={{ color: 'var(--text-primary)' }}><strong>Personalisasi Dinamis:</strong> Ubah nama departemen di halaman Pengaturan, dan Sidebar akan langsung ter-update secara real-time.</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
