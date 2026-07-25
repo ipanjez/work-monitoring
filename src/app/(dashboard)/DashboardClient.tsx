@@ -58,7 +58,7 @@ type Task = {
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter } = useFilter();
+  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -121,6 +121,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     } else if (globalTargetFilter === 'Bulan Ini') {
       startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+      startBoundary = new Date(globalCustomStartDate).getTime();
+      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
     }
 
     let matchDate = false;

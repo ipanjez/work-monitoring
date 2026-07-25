@@ -15,7 +15,16 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar } = useTheme();
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter } = useFilter();
+  const { 
+    globalTargetFilter, 
+    setGlobalTargetFilter, 
+    globalPicFilter, 
+    setGlobalPicFilter,
+    globalCustomStartDate,
+    setGlobalCustomStartDate,
+    globalCustomEndDate,
+    setGlobalCustomEndDate
+  } = useFilter();
   
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
@@ -213,7 +222,25 @@ export default function Sidebar() {
                 <option value="Minggu Ini">Target Minggu Ini</option>
                 <option value="Bulan Ini">Target Bulan Ini</option>
                 <option value="Semua Waktu">Semua Target Waktu</option>
+                <option value="Custom">Pilih Tanggal...</option>
               </select>
+              {globalTargetFilter === 'Custom' && (
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '-4px' }}>
+                  <input 
+                    type="date" 
+                    value={globalCustomStartDate}
+                    onChange={(e) => setGlobalCustomStartDate(e.target.value)}
+                    style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                  />
+                  <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                  <input 
+                    type="date" 
+                    value={globalCustomEndDate}
+                    onChange={(e) => setGlobalCustomEndDate(e.target.value)}
+                    style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+              )}
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>

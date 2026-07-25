@@ -26,7 +26,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter } = useFilter();
+  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -208,6 +208,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } else if (globalTargetFilter === 'Bulan Ini') {
       startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+      startBoundary = new Date(globalCustomStartDate).getTime();
+      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
     }
 
     let matchesTarget = false;
@@ -414,12 +417,23 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       setEditingTask(null);
 
       if (addActivityLog) {
+        let detailsText = '';
+        if (savedTask.historyLogsJson) {
+          try {
+            const logs = JSON.parse(savedTask.historyLogsJson);
+            if (logs.length > 0) {
+               const lastLog = logs[logs.length - 1];
+               if (lastLog.details) detailsText = ` (Perubahan: ${lastLog.details})`;
+            }
+          } catch(e) {}
+        }
+
         if (savedTask.status === 'Done') {
-          addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${savedTask.pic}`, 'success');
+          addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${savedTask.pic}.${detailsText}`, 'success');
         } else if (savedTask.prioritas === 'Urgent') {
-          addActivityLog('URGENT_TASK', 'Pekerjaan Urgent', `Pekerjaan "${savedTask.nama}" dengan prioritas Urgent diperbarui oleh ${savedTask.pic}`, 'warning');
+          addActivityLog('URGENT_TASK', 'Pekerjaan Urgent', `Pekerjaan "${savedTask.nama}" dengan prioritas Urgent diperbarui oleh ${savedTask.pic}.${detailsText}`, 'warning');
         } else {
-          addActivityLog('UPDATE_TASK', 'Pekerjaan Diperbarui', `Pekerjaan "${savedTask.nama}" diperbarui oleh ${savedTask.pic}`, 'info');
+          addActivityLog('UPDATE_TASK', 'Pekerjaan Diperbarui', `Pekerjaan "${savedTask.nama}" diperbarui oleh ${savedTask.pic}.${detailsText}`, 'info');
         }
       }
 
@@ -447,7 +461,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       setTasks(tasks.filter(t => t.id !== id));
       
       if (addActivityLog && taskToDelete) {
-        addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan "${taskToDelete.nama}" telah dihapus`, 'danger');
+        let subCount = 0;
+        if (taskToDelete.subTasksJson) {
+          try {
+            subCount = JSON.parse(taskToDelete.subTasksJson).length;
+          } catch(e) {}
+        }
+        addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan "${taskToDelete.nama}" (PIC: ${taskToDelete.pic}) beserta ${subCount} sub pekerjaannya telah dihapus.`, 'danger');
       }
 
       refreshData();
