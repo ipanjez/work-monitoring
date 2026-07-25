@@ -13,6 +13,7 @@ export async function GET() {
     const events: EventAttributes[] = tasks.map((task) => {
       const start = new Date(task.startDate);
       const end = new Date(task.endDate);
+      const updated = new Date(task.updatedAt || task.createdAt || Date.now());
       
       let extraPicsStr = '';
       if (task.additionalPics) {
@@ -29,6 +30,8 @@ export async function GET() {
         start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 8, 0],
         end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
         productId: 'DeptMonitor/CalendarFeed',
+        sequence: task.editCount || 0,
+        lastModified: [updated.getFullYear(), updated.getMonth() + 1, updated.getDate(), updated.getHours(), updated.getMinutes()],
       };
     });
 
