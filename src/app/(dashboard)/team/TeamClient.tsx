@@ -6,41 +6,9 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
-export type FileItem = {
-  url: string;
-  name: string;
-};
-
-export type LogItem = {
-  action: string;
-  timestamp: string;
-};
-
-type Task = {
-  id: number;
-  nama: string;
-  pic: string;
-  status: string;
-  prioritas?: string | null;
-  kategori?: string | null;
-  progress?: number | null;
-  deskripsi?: string | null;
-  catatan?: string | null;
-  fileUrl?: string | null;
-  fileName?: string | null;
-  filesJson?: string | null;
-  isAllDay?: boolean | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  repetisi?: string | null;
-  additionalPics?: string | null;
-  editCount?: number | null;
-  lastEditedAt?: string | Date | null;
-  historyLogsJson?: string | null;
-  createdAt?: string | Date | null;
-  startDate: string | Date;
-  endDate: string | Date;
-};
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import TaskAddEditModal from '@/components/TaskAddEditModal';
+import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
@@ -105,53 +73,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
   const picList = Object.keys(picStatsMap);
 
-  const getTaskFiles = (task: Task): FileItem[] => {
-    if (task.filesJson) {
-      try {
-        return JSON.parse(task.filesJson);
-      } catch (e) {}
-    }
-    if (task.fileUrl) {
-      return [{ url: task.fileUrl, name: task.fileName || 'File Lampiran' }];
-    }
-    return [];
-  };
-
-  const getAdditionalPics = (task: Task): string[] => {
-    if (task.additionalPics) {
-      try {
-        const parsed = JSON.parse(task.additionalPics);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
-    return [];
-  };
-
-  const getHistoryLogs = (task: Task): LogItem[] => {
-    if (task.historyLogsJson) {
-      try {
-        const parsed = JSON.parse(task.historyLogsJson);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
-    return [];
-  };
-
-  const getPriorityBadgeClass = (p?: string | null) => {
-    switch (p) {
-      case 'Urgent': return 'badge-urgent';
-      case 'High': return 'badge-high';
-      case 'Low': return 'badge-low';
-      default: return 'badge-medium';
-    }
-  };
-
-  const getGoogleCalendarUrl = (task: Task) => {
-    const title = encodeURIComponent(task.nama);
-    const details = encodeURIComponent(`PIC: ${task.pic}\nStatus: ${task.status}\nDeskripsi: ${task.deskripsi || '-'}`);
-    const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
-  };
 
   const handleSaveEdit = async () => {
     if (!detailTask) return;
@@ -322,124 +243,11 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      {/* Task Detail Modal */}
-      <AnimatePresence>
-        {detailTask && (
-          <div className="modal-overlay">
-            <motion.div 
-              className="modal-content"
-              style={{ maxWidth: '650px' }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                <div>
-                  <span className={`badge ${getPriorityBadgeClass(detailTask.prioritas)}`} style={{ marginBottom: '8px' }}>
-                    {detailTask.prioritas || 'Medium'} Priority
-                  </span>
-                  {!isEditing ? (
-                    <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{detailTask.nama}</h2>
-                  ) : (
-                    <input 
-                      type="text"
-                      className="input"
-                      value={editForm.nama || ''}
-                      onChange={(e) => setEditForm({...editForm, nama: e.target.value})}
-                      style={{ fontSize: '18px', fontWeight: 'bold', width: '100%', marginTop: '8px' }}
-                    />
-                  )}
-                </div>
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => { setDetailTask(null); setIsEditing(false); }}>
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC Utama</span>
-                    {!isEditing ? (
-                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{detailTask.pic}</span>
-                    ) : (
-                      <input className="input" value={editForm.pic || ''} onChange={e => setEditForm({...editForm, pic: e.target.value})} />
-                    )}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori</span>
-                    {!isEditing ? (
-                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{detailTask.kategori || 'Umum'}</span>
-                    ) : (
-                      <input className="input" value={editForm.kategori || ''} onChange={e => setEditForm({...editForm, kategori: e.target.value})} />
-                    )}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status</span>
-                    {!isEditing ? (
-                      <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>{detailTask.status} ({detailTask.progress || 0}%)</span>
-                    ) : (
-                      <select className="input" value={editForm.status || 'To Do'} onChange={e => setEditForm({...editForm, status: e.target.value})}>
-                        <option value="To Do">To Do</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Done">Done</option>
-                      </select>
-                    )}
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tenggat Waktu</span>
-                    {!isEditing ? (
-                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{format(new Date(detailTask.endDate), 'dd MMM yyyy')}</span>
-                    ) : (
-                      <input type="date" className="input" value={editForm.endDate ? new Date(editForm.endDate).toISOString().split('T')[0] : ''} onChange={e => setEditForm({...editForm, endDate: e.target.value})} />
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Deskripsi</h4>
-                  {!isEditing ? (
-                    detailTask.deskripsi ? (
-                      <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px' }}>
-                        {detailTask.deskripsi}
-                      </p>
-                    ) : <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Tidak ada deskripsi</span>
-                  ) : (
-                    <textarea 
-                      className="input" 
-                      rows={3} 
-                      value={editForm.deskripsi || ''} 
-                      onChange={e => setEditForm({...editForm, deskripsi: e.target.value})} 
-                    />
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '12px', justifyContent: 'flex-end' }}>
-                  {!isEditing ? (
-                    <>
-                      <a href={getGoogleCalendarUrl(detailTask)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-                        <CalendarDays size={16} /> Google Calendar
-                      </a>
-                      <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
-                        Edit di Sini
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn btn-secondary" onClick={() => { setIsEditing(false); setEditForm(detailTask); }}>
-                        Batal
-                      </button>
-                      <button className="btn btn-primary" onClick={handleSaveEdit} disabled={loading}>
-                        {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <TaskDetailModal
+        task={detailTask}
+        onClose={() => setDetailTask(null)}
+        setPreviewFile={setPreviewFile}
+      />
     </div>
   );
 }

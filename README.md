@@ -8,13 +8,14 @@ Proyek ini dilengkapi dengan antarmuka yang sangat estetik, manajemen data yang 
 
 ## ✨ Fitur Unggulan
 
-- 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif.
+- 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif. Kini dengan fitur unggah *multiple file attachments* yang dinamis.
 - 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
-- ☁️ **Sistem Database Sentral:** Menggunakan *Prisma ORM* dengan SQLite untuk penyimpanan data lokal yang solid, cepat, dan tersinkronisasi di berbagai perangkat dalam jaringan lokal Anda.
-- 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
-- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* yang secara otomatis mendeteksi status *Sub-Pekerjaan* di dalam *cell*), serta integrasi feed Google Calendar.
-- 🔒 **Keamanan Sesi Terpusat:** Dilengkapi fitur *Auto-Logout Inaktivitas Fisik* setelah 10 menit (mouse/keyboard tidak aktif) demi keamanan layar saat perangkat ditinggalkan.
-- ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan berubah secara *real-time* lewat halaman Pengaturan.
+- ☁️ **Sistem Database Sentral:** Menggunakan *Prisma ORM* dengan database pilihan untuk penyimpanan data lokal yang solid, cepat, dan tersinkronisasi di berbagai perangkat dalam jaringan lokal Anda.
+- 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
+- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), serta integrasi feed Google Calendar.
+- 🔒 **Keamanan Sesi Terpusat:** Dilengkapi fitur *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan, lengkap dengan penghitung waktu mundur pada *sidebar*.
+- ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan tersimpan otomatis tanpa perlu memuat ulang halaman (*real-time update*).
+- 🧪 **Data Dummy Tersedia:** Anda bisa menggunakan `dummy_data_import.csv` yang ada di root direktori untuk mencoba fitur *Import Excel* secara instan.
 
 ---
 

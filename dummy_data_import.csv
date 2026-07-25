@@ -1,0 +1,41 @@
+Nama Pekerjaan,PIC Utama,PIC Tambahan,Kategori,Prioritas,Status,Progress,Sub Pekerjaan,Deskripsi,Catatan,Tanggal Mulai,Tenggat Waktu
+Proyek Tugas 1,Budi Santoso,Budi Santoso,Operasional,Medium,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 1,Catatan tambahan,2026-06-29,2026-07-02
+Proyek Tugas 2,Andi Pratama,Budi Santoso,Operasional,Low,In Progress,84,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 2,Catatan tambahan,2026-07-17,2026-07-29
+Proyek Tugas 3,Siti Aminah,,Finance,Urgent,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 3,Catatan tambahan,2026-07-11,2026-07-24
+Proyek Tugas 4,Andi Pratama,,IT,High,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 4,Catatan tambahan,2026-07-19,2026-08-01
+Proyek Tugas 5,Andi Pratama,Andi Pratama,Finance,Low,In Progress,10,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 5,Catatan tambahan,2026-06-25,2026-07-05
+Proyek Tugas 6,Maya Putri,Maya Putri,Umum,Medium,In Progress,98,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 6,Catatan tambahan,2026-07-18,2026-07-19
+Proyek Tugas 7,Maya Putri,,Umum,High,Done,100,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 7,Catatan tambahan,2026-07-03,2026-07-05
+Proyek Tugas 8,Maya Putri,Maya Putri,IT,High,Done,100,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 8,Catatan tambahan,2026-07-23,2026-08-01
+Proyek Tugas 9,Eko Yulianto,,Logistik,High,In Progress,1,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 9,Catatan tambahan,2026-06-28,2026-07-11
+Proyek Tugas 10,Andi Pratama,,IT,Low,Done,100,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 10,Catatan tambahan,2026-07-08,2026-07-18
+Proyek Tugas 11,Budi Santoso,Eko Yulianto,Umum,Urgent,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 11,Catatan tambahan,2026-07-15,2026-07-29
+Proyek Tugas 12,Maya Putri,"Eko Yulianto, Maya Putri",Logistik,Low,Done,100,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 12,Catatan tambahan,2026-07-07,2026-07-20
+Proyek Tugas 13,Maya Putri,"Andi Pratama, Eko Yulianto",Logistik,Urgent,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 13,Catatan tambahan,2026-07-11,2026-07-16
+Proyek Tugas 14,Andi Pratama,,Umum,High,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 14,Catatan tambahan,2026-06-29,2026-07-06
+Proyek Tugas 15,Siti Aminah,Eko Yulianto,Umum,Medium,Done,100,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 15,Catatan tambahan,2026-07-23,2026-08-06
+Proyek Tugas 16,Siti Aminah,,Operasional,Low,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 16,Catatan tambahan,2026-06-26,2026-07-05
+Proyek Tugas 17,Siti Aminah,Andi Pratama,Finance,Medium,In Progress,20,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 17,Catatan tambahan,2026-07-01,2026-07-11
+Proyek Tugas 18,Budi Santoso,Andi Pratama,Umum,High,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 18,Catatan tambahan,2026-07-24,2026-08-02
+Proyek Tugas 19,Budi Santoso,Eko Yulianto,HR,High,To Do,0,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 19,Catatan tambahan,2026-07-07,2026-07-14
+Proyek Tugas 20,Maya Putri,,Operasional,Medium,In Progress,94,"[Done] Sub tugas 1
+[To Do] Sub tugas 2",Ini adalah deskripsi untuk Proyek Tugas 20,Catatan tambahan,2026-07-07,2026-07-09

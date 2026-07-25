@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-
+import toast from 'react-hot-toast';
 type Task = {
   id: number;
   nama: string;
@@ -162,6 +162,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
+      toast.success('Pengaturan umum berhasil disimpan!');
     })
     .catch(console.error);
   };

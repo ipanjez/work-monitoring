@@ -19,58 +19,9 @@ import dynamic from 'next/dynamic';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
-export type FileItem = {
-  url: string;
-  name: string;
-  uploadedAt?: string;
-  deletedAt?: string;
-  isDeleted?: boolean;
-};
-
-export type LogItem = {
-  action: string;
-  timestamp: string;
-};
-
-export type SubTaskLog = {
-  status: string;
-  timestamp: string;
-};
-
-export type SubTask = {
-  id: string;
-  text: string;
-  status: 'To Do' | 'In Progress' | 'Done';
-  logs: SubTaskLog[];
-};
-
-export type Task = {
-  id: number;
-  nama: string;
-  pic: string;
-  status: string;
-  prioritas: string;
-  kategori: string;
-  progress: number;
-  deskripsi?: string | null;
-  catatan?: string | null;
-  fileUrl?: string | null;
-  fileName?: string | null;
-  filesJson?: string | null;
-  subTasksJson?: string | null;
-  isAllDay?: boolean | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  repetisi?: string | null;
-  additionalPics?: string | null;
-  editCount?: number | null;
-  lastEditedAt?: string | Date | null;
-  historyLogsJson?: string | null;
-  createdAt?: string | Date | null;
-  updatedAt?: string | Date | null;
-  startDate: string | Date;
-  endDate: string | Date;
-};
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import TaskAddEditModal from '@/components/TaskAddEditModal';
+import TaskDetailModal from '@/components/TaskDetailModal';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
@@ -101,8 +52,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [editingTask, setEditingTask] = useState<Partial<Task> & { filesList?: FileItem[]; additionalPicsList?: string[]; isCustomCategory?: boolean; isCustomPic?: boolean; customRecurrenceSettings?: any; subTasksList?: SubTask[] } | null>(null);
-  const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   
   // Interactive Copyable Error Modal State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -155,38 +105,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     formPicOptions.push(editingTask.pic);
   }
 
-  // Helper to parse file list from Task
-  const getTaskFiles = (task: Task | Partial<Task>): FileItem[] => {
-    if (task.filesJson) {
-      try {
-        return JSON.parse(task.filesJson);
-      } catch (e) {}
-    }
-    if (task.fileUrl) {
-      return [{ url: task.fileUrl, name: task.fileName || 'File Lampiran' }];
-    }
-    return [];
-  };
-
-  const getAdditionalPics = (task: Task | Partial<Task>): string[] => {
-    if (task.additionalPics) {
-      try {
-        const parsed = JSON.parse(task.additionalPics);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
-    return [];
-  };
-
-  const getHistoryLogs = (task: Task | Partial<Task>): LogItem[] => {
-    if (task.historyLogsJson) {
-      try {
-        const parsed = JSON.parse(task.historyLogsJson);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
-    return [];
-  };
 
   // Sorting Helper
   const handleSort = (field: SortField) => {
@@ -334,155 +252,52 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     setIsModalOpen(true);
   };
 
-  const handleAddAnotherPic = () => {
-    if (!editingTask) return;
-    const currentList = editingTask.additionalPicsList || [];
-    setEditingTask({
-      ...editingTask,
-      additionalPicsList: [...currentList, ''],
-    });
-  };
 
-  const handleUpdateAdditionalPic = (index: number, val: string) => {
-    if (!editingTask || !editingTask.additionalPicsList) return;
-    const updated = [...editingTask.additionalPicsList];
-    updated[index] = val;
-    setEditingTask({
-      ...editingTask,
-      additionalPicsList: updated,
-    });
-  };
-
-  const handleRemoveAdditionalPic = (index: number) => {
-    if (!editingTask || !editingTask.additionalPicsList) return;
-    const updated = editingTask.additionalPicsList.filter((_, idx) => idx !== index);
-    setEditingTask({
-      ...editingTask,
-      additionalPicsList: updated,
-    });
-  };
-
-  // Upload Multiple Files Handler
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !editingTask) return;
-
-    setUploadingFile(true);
-    try {
-      const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('file', f));
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      const data = await res.json();
-      const newUploadedFiles: FileItem[] = data.files ? data.files.map((f: any) => ({ ...f, uploadedAt: new Date().toISOString() })) : [];
-      const currentList = editingTask.filesList || [];
-      const updatedList = [...currentList, ...newUploadedFiles];
-
-      setEditingTask({
-        ...editingTask,
-        filesList: updatedList,
-        fileUrl: updatedList[0]?.url || '',
-        fileName: updatedList[0]?.name || '',
-      });
-      toast.success(`File ${files.length > 1 ? 'lampiran' : 'lampiran'} berhasil diunggah!`);
-    } catch (err: any) {
-      console.error('File upload error:', err);
-      setErrorMessage(`Upload File Error:\n${err?.message || err}`);
-      toast.error(`Gagal mengunggah file: ${err?.message || err}`);
-    } finally {
-      setUploadingFile(false);
-    }
-  };
-
-  const handleRemoveFileFromEdit = (index: number) => {
-    if (!editingTask || !editingTask.filesList) return;
-    const updated = [...editingTask.filesList];
-    updated[index] = {
-      ...updated[index],
-      isDeleted: true,
-      deletedAt: new Date().toISOString()
-    };
-    setEditingTask({
-      ...editingTask,
-      filesList: updated,
-      fileUrl: updated.find(f => !f.isDeleted)?.url || '',
-      fileName: updated.find(f => !f.isDeleted)?.name || '',
-    });
-  };
-
-  const handleSaveModal = async () => {
-    if (!editingTask || !editingTask.nama || !editingTask.pic) {
-      const msg = 'Nama pekerjaan dan PIC wajib diisi.';
-      setErrorMessage(`Validation Error: ${msg}`);
-      toast.error(msg);
-      return;
-    }
-
+  const handleSaveModal = async (payloadData: any) => {
     setLoading(true);
     try {
-      const isNew = !editingTask.id;
-      const url = isNew ? '/api/tasks' : `/api/tasks/${editingTask.id}`;
+      const isNew = !payloadData.id;
+      const url = isNew ? '/api/tasks' : `/api/tasks/${payloadData.id}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      const filteredExtraPics = (editingTask.additionalPicsList || []).filter(Boolean);
+      const filteredExtraPics = payloadData.additionalPicsList ? payloadData.additionalPicsList.filter(Boolean) : [];
 
-      const filesListToSave = editingTask.filesList && editingTask.filesList.length > 0 
-        ? editingTask.filesList 
-        : (editingTask.fileUrl ? [{ url: editingTask.fileUrl, name: editingTask.fileName || 'File Lampiran' }] : []);
+      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0 
+        ? payloadData.filesList 
+        : (payloadData.fileUrl ? [{ url: payloadData.fileUrl, name: payloadData.fileName || 'File Lampiran' }] : []);
 
-      // Process subtask logs on save
-      let processedSubTasks = editingTask.subTasksList ? [...editingTask.subTasksList] : [];
+      let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
       if (!isNew) {
-        const originalTask = tasks.find(t => t.id === editingTask.id);
+        const originalTask = tasks.find(t => t.id === payloadData.id);
         const originalSubTasks = originalTask?.subTasksJson ? JSON.parse(originalTask.subTasksJson) : [];
         
-        processedSubTasks = processedSubTasks.map(st => {
+        processedSubTasks = processedSubTasks.map((st: any) => {
           const originalSt = originalSubTasks.find((o: any) => o.id === st.id);
           if (originalSt && originalSt.status !== st.status) {
-            return {
-              ...st,
-              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
-            };
+            return { ...st, logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }] };
           }
-          // If new subtask, log creation
           if (!originalSt) {
-            return {
-              ...st,
-              logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }]
-            };
+            return { ...st, logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }] };
           }
           return st;
         });
       } else {
-        // completely new task
-        processedSubTasks = processedSubTasks.map(st => {
-          return {
-            ...st,
-            logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }]
-          };
-        });
+        processedSubTasks = processedSubTasks.map((st: any) => ({ ...st, logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }] }));
       }
 
-      // Auto update parent status if all subtasks are Done
-      let parentStatusToSave = editingTask.status;
-      if (processedSubTasks.length > 0 && processedSubTasks.every(st => st.status === 'Done')) {
+      let parentStatusToSave = payloadData.status;
+      if (processedSubTasks.length > 0 && processedSubTasks.every((st: any) => st.status === 'Done')) {
         parentStatusToSave = 'Done';
       }
 
-      const payload = {
-        ...editingTask,
+      const finalPayload = {
+        ...payloadData,
         status: parentStatusToSave,
-        startDate: editingTask.startDate || new Date().toISOString().split('T')[0],
-        endDate: editingTask.endDate || new Date().toISOString().split('T')[0],
-        repetisi: editingTask.repetisi === 'Custom' ? `CUSTOM_RECURRENCE:${JSON.stringify(editingTask.customRecurrenceSettings)}` : editingTask.repetisi,
-        fileUrl: filesListToSave.find(f => !f.isDeleted)?.url || editingTask.fileUrl || null,
-        fileName: filesListToSave.find(f => !f.isDeleted)?.name || editingTask.fileName || null,
+        startDate: payloadData.startDate || new Date().toISOString().split('T')[0],
+        endDate: payloadData.endDate || new Date().toISOString().split('T')[0],
+        repetisi: payloadData.repetisi === 'Custom' ? `CUSTOM_RECURRENCE:${JSON.stringify(payloadData.customRecurrenceSettings)}` : payloadData.repetisi,
+        fileUrl: filesListToSave.find((f: any) => !f.isDeleted)?.url || payloadData.fileUrl || null,
+        fileName: filesListToSave.find((f: any) => !f.isDeleted)?.name || payloadData.fileName || null,
         filesJson: filesListToSave.length > 0 ? JSON.stringify(filesListToSave) : null,
         subTasksJson: processedSubTasks.length > 0 ? JSON.stringify(processedSubTasks) : null,
         additionalPics: filteredExtraPics.length > 0 ? JSON.stringify(filteredExtraPics) : null,
@@ -491,7 +306,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const saveRes = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
 
       if (!saveRes.ok) {
@@ -508,7 +323,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
       }
 
-      // Auto-add new PIC and Category to Master
       let updatedMasterPics = [...masterPics];
       let picChanged = false;
       const picsToCheck = [savedTask.pic, ...filteredExtraPics].filter(Boolean);
@@ -532,7 +346,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       setIsModalOpen(false);
       setEditingTask(null);
 
-      // Trigger Notifications
       if (addActivityLog) {
         if (savedTask.status === 'Done') {
           addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${savedTask.pic}`, 'success');
@@ -543,14 +356,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         }
       }
 
-      const res = await fetch('/api/tasks');
-      if (res.ok) {
-        const updated = await res.json();
-        if (Array.isArray(updated)) setTasks(updated);
-      }
       refreshData();
       
-      // Dispatch event to update Sidebar real-time
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('tasksUpdated'));
       }
@@ -864,33 +671,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
-  const handleExportICS = (task: Task) => {
-    const start = new Date(task.startDate);
-    const end = new Date(task.endDate);
-    const extraPics = getAdditionalPics(task);
-    const allPicsStr = [task.pic, ...extraPics].join(', ');
-
-    const event: EventAttributes = {
-      title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
-      description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi || '-'}`,
-      start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
-      end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
-    };
-
-    createEvent(event, (error, value) => {
-      if (error) {
-        console.error(error);
-        return;
-      }
-      const blob = new Blob([value], { type: 'text/calendar' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${task.nama.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
-      a.click();
-    });
-  };
-
   const handleExportAllICS = () => {
     if (processedTasks.length === 0) return;
 
@@ -922,23 +702,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     });
   };
 
-  const getGoogleCalendarUrl = (task: Task) => {
-    const extraPics = getAdditionalPics(task);
-    const allPicsStr = [task.pic, ...extraPics].join(', ');
-    const title = encodeURIComponent(task.nama);
-    const details = encodeURIComponent(`PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi || '-'}`);
-    const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
-  };
-
-  const getPriorityBadgeClass = (p?: string) => {
-    switch (p) {
-      case 'Urgent': return 'badge-urgent';
-      case 'High': return 'badge-high';
-      case 'Low': return 'badge-low';
-      default: return 'badge-medium';
-    }
-  };
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown size={14} style={{ opacity: 0.4 }} />;
@@ -1298,857 +1061,21 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </div>
       </div>
 
-      {/* Add / Edit Task Modal */}
-      <AnimatePresence>
-        {isModalOpen && editingTask && (
-          <div className="modal-overlay">
-            <motion.div 
-              className="modal-content"
-              style={{ maxWidth: '650px' }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                  {editingTask.id ? 'Edit Pekerjaan' : 'Tambah Pekerjaan Baru'}
-                </h2>
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => setIsModalOpen(false)}>
-                  <X size={18} />
-                </button>
-              </div>
+      <TaskAddEditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        taskToEdit={editingTask}
+        onSave={handleSaveModal}
+        formPicOptions={formPicOptions}
+        formCategoryOptions={formCategoryOptions}
+        setPreviewFile={setPreviewFile}
+      />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                    Nama Pekerjaan *
-                  </label>
-                  <input 
-                    className="input" 
-                    placeholder="Contoh: Audit Keuangan Kuartal II" 
-                    value={editingTask.nama || ''} 
-                    onChange={e => setEditingTask({ ...editingTask, nama: e.target.value })} 
-                  />
-                </div>
-
-                {/* Main PIC & Dynamic Multi-PIC Section */}
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      Penanggung Jawab (PIC Utama & Tambahan) *
-                    </label>
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      onClick={handleAddAnotherPic}
-                    >
-                      <UserPlus size={14} /> + Tambah PIC Lain
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>PIC Utama *</span>
-                      {!editingTask.isCustomPic ? (
-                        <select 
-                          className="input" 
-                          value={editingTask.pic || ''} 
-                          onChange={e => {
-                            if (e.target.value === '__custom__') {
-                              setEditingTask({ ...editingTask, pic: '', isCustomPic: true });
-                            } else {
-                              setEditingTask({ ...editingTask, pic: e.target.value });
-                            }
-                          }}
-                        >
-                          <option value="">-- Pilih PIC Utama --</option>
-                          {formPicOptions.map((p, idx) => (
-                            <option key={idx} value={p}>{p}</option>
-                          ))}
-                          <option value="__custom__">+ Ketik Nama PIC Baru...</option>
-                        </select>
-                      ) : (
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <input 
-                            className="input" 
-                            placeholder="Nama PIC Utama Baru..." 
-                            value={editingTask.pic || ''} 
-                            onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })} 
-                          />
-                          <button 
-                            type="button" 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px' }}
-                            onClick={() => setEditingTask({ ...editingTask, isCustomPic: false })}
-                            title="Kembali ke Dropdown PIC"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {editingTask.additionalPicsList && editingTask.additionalPicsList.map((extraPic, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {(!customAdditionalPics.includes(idx)) ? (
-                          <select
-                            className="input"
-                            value={extraPic}
-                            onChange={e => {
-                              if (e.target.value === '__custom__') {
-                                 setCustomAdditionalPics([...customAdditionalPics, idx]);
-                                 handleUpdateAdditionalPic(idx, '');
-                              } else {
-                                 handleUpdateAdditionalPic(idx, e.target.value);
-                              }
-                            }}
-                          >
-                            <option value="">-- Pilih PIC Tambahan --</option>
-                            {formPicOptions.map((p, i) => (
-                              <option key={i} value={p}>{p}</option>
-                            ))}
-                            <option value="__custom__">+ Ketik Nama PIC Baru...</option>
-                          </select>
-                        ) : (
-                          <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                            <input 
-                              className="input" 
-                              placeholder={`Nama PIC Tambahan ${idx + 1}...`} 
-                              value={extraPic} 
-                              onChange={e => handleUpdateAdditionalPic(idx, e.target.value)} 
-                            />
-                            <button 
-                              type="button" 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px' }}
-                              onClick={() => {
-                                 setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx));
-                                 handleUpdateAdditionalPic(idx, '');
-                              }}
-                              title="Kembali ke Dropdown PIC"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        )}
-                        <button 
-                          type="button" 
-                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
-                          onClick={() => {
-                            handleRemoveAdditionalPic(idx);
-                            setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx).map(i => i > idx ? i - 1 : i));
-                          }}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  {/* Explicit Dropdown Select for Category */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                      Kategori *
-                    </label>
-                    {!editingTask.isCustomCategory ? (
-                      <select 
-                        className="input" 
-                        value={editingTask.kategori || 'Umum'} 
-                        onChange={e => {
-                          if (e.target.value === '__custom__') {
-                            setEditingTask({ ...editingTask, kategori: '', isCustomCategory: true });
-                          } else {
-                            setEditingTask({ ...editingTask, kategori: e.target.value });
-                          }
-                        }}
-                      >
-                        {formCategoryOptions.map((cat, idx) => (
-                          <option key={idx} value={cat}>{cat}</option>
-                        ))}
-                        <option value="__custom__">+ Ketik Kategori Baru...</option>
-                      </select>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input 
-                          className="input" 
-                          placeholder="Nama Kategori Baru..." 
-                          value={editingTask.kategori || ''} 
-                          onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })} 
-                        />
-                        <button 
-                          type="button" 
-                          className="btn btn-secondary" 
-                          style={{ padding: '6px' }}
-                          onClick={() => setEditingTask({ ...editingTask, kategori: 'Umum', isCustomCategory: false })}
-                          title="Kembali ke Pilihan Dropdown"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                      Status
-                    </label>
-                    <select className="input" value={editingTask.status || 'To Do'} onChange={e => {
-                      const newStatus = e.target.value;
-                      if (newStatus === 'Done') {
-                        setEditingTask({ ...editingTask, status: newStatus, progress: 100 });
-                      } else if (newStatus === 'In Progress') {
-                        setEditingTask({ ...editingTask, status: newStatus, progress: 50 });
-                      } else if (newStatus === 'To Do') {
-                        setEditingTask({ ...editingTask, status: newStatus, progress: 0 });
-                      } else {
-                        setEditingTask({ ...editingTask, status: newStatus });
-                      }
-                    }}>
-                      <option value="To Do">To Do</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Done">Done</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                      Prioritas
-                    </label>
-                    <select className="input" value={editingTask.prioritas || 'Medium'} onChange={e => setEditingTask({ ...editingTask, prioritas: e.target.value })}>
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                      <option value="Urgent">Urgent</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Date & Time Settings */}
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Waktu & Jadwal Pekerjaan</span>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={editingTask.isAllDay ?? true}
-                        onChange={e => setEditingTask({ ...editingTask, isAllDay: e.target.checked })}
-                      />
-                      Seharian (All Day)
-                    </label>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Tanggal Mulai</label>
-                      <input 
-                        type="date" 
-                        className="input" 
-                        value={editingTask.startDate as string} 
-                        onChange={e => setEditingTask({ ...editingTask, startDate: e.target.value })} 
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Tenggat Waktu</label>
-                      <input 
-                        type="date" 
-                        className="input" 
-                        value={editingTask.endDate as string} 
-                        onChange={e => setEditingTask({ ...editingTask, endDate: e.target.value })} 
-                      />
-                    </div>
-                  </div>
-
-                  {!editingTask.isAllDay && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam Mulai</label>
-                        <input 
-                          type="time" 
-                          className="input" 
-                          value={editingTask.startTime || '08:00'} 
-                          onChange={e => setEditingTask({ ...editingTask, startTime: e.target.value })} 
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam Selesai</label>
-                        <input 
-                          type="time" 
-                          className="input" 
-                          value={editingTask.endTime || '17:00'} 
-                          onChange={e => setEditingTask({ ...editingTask, endTime: e.target.value })} 
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                      Pengulangan (Recurrence)
-                    </label>
-                    <select 
-                      className="input" 
-                      value={editingTask.repetisi || 'Tidak Berulang'} 
-                      onChange={e => setEditingTask({ ...editingTask, repetisi: e.target.value })}
-                    >
-                      <option value="Tidak Berulang">Tidak Berulang (Does not repeat)</option>
-                      <option value="Harian">Harian (Daily)</option>
-                      <option value="Mingguan">Mingguan (Weekly)</option>
-                      <option value="Bulanan">Bulanan (Monthly)</option>
-                      <option value="Tahunan">Tahunan (Annually)</option>
-                      <option value="Hari Kerja (Senin - Jumat)">Setiap Hari Kerja (Senin - Jumat)</option>
-                      <option value="Custom">Custom...</option>
-                    </select>
-
-                    {editingTask.repetisi === 'Custom' && editingTask.customRecurrenceSettings && (
-                      <div style={{ marginTop: '12px', padding: '16px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600 }}>Ulangi setiap</span>
-                          <input 
-                            type="number" 
-                            min="1" 
-                            className="input" 
-                            style={{ width: '70px', padding: '6px 10px' }}
-                            value={editingTask.customRecurrenceSettings.every}
-                            onChange={e => setEditingTask({ 
-                              ...editingTask, 
-                              customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, every: Math.max(1, Number(e.target.value)) }
-                            })}
-                          />
-                          <select 
-                            className="input" 
-                            style={{ width: '120px', padding: '6px 10px' }}
-                            value={editingTask.customRecurrenceSettings.unit}
-                            onChange={e => setEditingTask({ 
-                              ...editingTask, 
-                              customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, unit: e.target.value }
-                            })}
-                          >
-                            <option value="Hari">Hari</option>
-                            <option value="Minggu">Minggu</option>
-                            <option value="Bulan">Bulan</option>
-                            <option value="Tahun">Tahun</option>
-                          </select>
-                        </div>
-
-                        {editingTask.customRecurrenceSettings.unit === 'Minggu' && (
-                          <div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Ulangi pada:</div>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => {
-                                const isSelected = editingTask.customRecurrenceSettings.days.includes(idx.toString());
-                                return (
-                                  <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => {
-                                      const days = [...editingTask.customRecurrenceSettings.days];
-                                      if (isSelected) {
-                                        days.splice(days.indexOf(idx.toString()), 1);
-                                      } else {
-                                        days.push(idx.toString());
-                                      }
-                                      setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, days } });
-                                    }}
-                                    style={{
-                                      width: '32px', height: '32px', borderRadius: '50%', border: 'none',
-                                      background: isSelected ? 'var(--accent-primary)' : 'var(--border-color)',
-                                      color: isSelected ? 'white' : 'var(--text-primary)',
-                                      fontWeight: 600, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}
-                                  >
-                                    {day}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Berakhir pada:</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                              <input 
-                                type="radio" 
-                                name="endType" 
-                                checked={editingTask.customRecurrenceSettings.endType === 'never'}
-                                onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'never' } })}
-                              />
-                              Tidak pernah (Never)
-                            </label>
-                            
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                              <input 
-                                type="radio" 
-                                name="endType" 
-                                checked={editingTask.customRecurrenceSettings.endType === 'date'}
-                                onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'date' } })}
-                              />
-                              Pada tanggal
-                              <input 
-                                type="date" 
-                                className="input" 
-                                style={{ width: '130px', padding: '4px 8px', fontSize: '12px', marginLeft: '8px' }}
-                                value={editingTask.customRecurrenceSettings.endDate}
-                                disabled={editingTask.customRecurrenceSettings.endType !== 'date'}
-                                onChange={e => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endDate: e.target.value } })}
-                              />
-                            </label>
-
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                              <input 
-                                type="radio" 
-                                name="endType" 
-                                checked={editingTask.customRecurrenceSettings.endType === 'occurrences'}
-                                onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'occurrences' } })}
-                              />
-                              Setelah
-                              <input 
-                                type="number" 
-                                min="1" 
-                                className="input" 
-                                style={{ width: '60px', padding: '4px 8px', fontSize: '12px', marginLeft: '8px' }}
-                                value={editingTask.customRecurrenceSettings.endOccurrences}
-                                disabled={editingTask.customRecurrenceSettings.endType !== 'occurrences'}
-                                onChange={e => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endOccurrences: Math.max(1, Number(e.target.value)) } })}
-                              />
-                              kali
-                            </label>
-                          </div>
-                        </div>
-
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress Slider & Number Input */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      Progress Penyelesaian (%)
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        max="100" 
-                        className="input" 
-                        style={{ width: '70px', padding: '4px 8px', textAlign: 'center', fontWeight: 'bold' }}
-                        value={editingTask.progress ?? 0}
-                        onChange={e => {
-                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                          setEditingTask({ ...editingTask, progress: val });
-                        }}
-                      />
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>%</span>
-                    </div>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    style={{ width: '100%' }}
-                    value={editingTask.progress ?? 0} 
-                    onChange={e => setEditingTask({ ...editingTask, progress: Number(e.target.value) })} 
-                  />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    Deskripsi Pekerjaan
-                  </label>
-                  <JoditEditor
-                    value={editingTask.deskripsi || ''}
-                    config={{
-                      readonly: false,
-                      placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, tabel, dll)...',
-                      height: 250,
-                      toolbarSticky: false,
-                      theme: 'dark',
-                      style: {
-                        background: 'var(--input-bg)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '8px'
-                      }
-                    }}
-                    onBlur={newContent => setEditingTask({ ...editingTask, deskripsi: newContent })}
-                    onChange={() => {}}
-                  />
-                </div>
-
-                {/* Sub-Pekerjaan Section */}
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      Sub Pekerjaan (Sub Deskripsi)
-                    </label>
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      onClick={() => {
-                        const newSubTask: SubTask = {
-                          id: Date.now().toString(),
-                          text: '',
-                          status: 'To Do',
-                          logs: []
-                        };
-                        setEditingTask({
-                          ...editingTask,
-                          subTasksList: [...(editingTask.subTasksList || []), newSubTask]
-                        });
-                      }}
-                    >
-                      <Plus size={14} /> Tambah Sub
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {editingTask.subTasksList?.map((subTask, idx) => (
-                      <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                          <input 
-                            className="input" 
-                            style={{ flex: 1 }}
-                            placeholder="Deskripsi Sub Pekerjaan..." 
-                            value={subTask.text} 
-                            onChange={e => {
-                              const updated = [...(editingTask.subTasksList || [])];
-                              updated[idx].text = e.target.value;
-                              setEditingTask({ ...editingTask, subTasksList: updated });
-                            }} 
-                          />
-                          <select 
-                            className="input" 
-                            style={{ width: '130px', flexShrink: 0, 
-                              backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                               subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                               'var(--surface-color)',
-                              color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                            }}
-                            value={subTask.status}
-                            onChange={e => {
-                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Done';
-                              const updated = [...(editingTask.subTasksList || [])];
-                              updated[idx].status = newStatus;
-                              setEditingTask({ ...editingTask, subTasksList: updated });
-                            }}
-                          >
-                            <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
-                            <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
-                            <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
-                          </select>
-                          <button 
-                            type="button" 
-                            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px', alignSelf: 'center' }}
-                            onClick={() => {
-                              const updated = editingTask.subTasksList!.filter((_, i) => i !== idx);
-                              setEditingTask({ ...editingTask, subTasksList: updated });
-                            }}
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                        
-                        {subTask.logs && subTask.logs.length > 0 && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-                            <div style={{ fontWeight: 600, marginBottom: '2px' }}>Log Status:</div>
-                            {subTask.logs.map((log, lidx) => (
-                              <div key={lidx} style={{ display: 'flex', gap: '8px' }}>
-                                <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-                                <span>- {log.status}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {(!editingTask.subTasksList || editingTask.subTasksList.length === 0) && (
-                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px' }}>Belum ada sub pekerjaan.</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Multiple File Attachments Upload */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                    File Lampiran (Bisa Unggah Lebih dari 1 File)
-                  </label>
-                  <input 
-                    type="file" 
-                    ref={attachmentInputRef} 
-                    style={{ display: 'none' }} 
-                    multiple
-                    onChange={handleFileUpload} 
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary" 
-                      onClick={() => attachmentInputRef.current?.click()}
-                      disabled={uploadingFile}
-                      style={{ alignSelf: 'flex-start' }}
-                    >
-                      <Paperclip size={16} /> {uploadingFile ? 'Mengunggah...' : '+ Unggah File Lampiran (Bisa >1)'}
-                    </button>
-
-                    {editingTask.filesList && editingTask.filesList.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
-                        {editingTask.filesList.map((f, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile(f)}>
-                                <File size={15} />
-                                <span style={{ fontWeight: 500 }}>{f.name}</span>
-                              </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}
-                                {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {!f.isDeleted && (
-                                <>
-                                  <button 
-                                    type="button" 
-                                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
-                                    onClick={() => setPreviewFile(f)}
-                                    title="Pratinjau File"
-                                  >
-                                    <Eye size={15} />
-                                  </button>
-                                  <button 
-                                    type="button" 
-                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
-                                    onClick={() => handleRemoveFileFromEdit(idx)}
-                                    title="Hapus Lampiran Ini"
-                                  >
-                                    <X size={15} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                  <button className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Batal</button>
-                  <button className="btn btn-primary" onClick={handleSaveModal} disabled={loading || uploadingFile}>
-                    {loading ? 'Menyimpan...' : 'Simpan Pekerjaan'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Task Detail Modal with Audit Logs & Activity Timeline */}
-      <AnimatePresence>
-        {detailTask && (
-          <div className="modal-overlay">
-            <motion.div 
-              className="modal-content"
-              style={{ maxWidth: '650px' }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                <div>
-                  <span className={`badge ${getPriorityBadgeClass(detailTask.prioritas)}`} style={{ marginBottom: '8px' }}>
-                    {detailTask.prioritas || 'Medium'} Priority
-                  </span>
-                  <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{detailTask.nama}</h2>
-                </div>
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => setDetailTask(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC</span>
-                    <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
-                      {detailTask.pic} {getAdditionalPics(detailTask).length > 0 && `(+, ${getAdditionalPics(detailTask).join(', ')})`}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori</span>
-                    <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{detailTask.kategori || 'Umum'}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status</span>
-                    <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>{detailTask.status} ({detailTask.progress || 0}%)</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi</span>
-                    <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{detailTask.repetisi || 'Tidak Berulang'}</span>
-                  </div>
-                </div>
-
-                {/* Audit Logging Information Box */}
-                <div style={{ background: 'var(--input-bg)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <History size={16} color="var(--accent-primary)" /> Log Informasi & Riwayat Perubahan
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {detailTask.createdAt ? format(new Date(detailTask.createdAt), 'dd MMM yyyy HH:mm') : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Diedit Terakhir</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {detailTask.lastEditedAt ? format(new Date(detailTask.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Frekuensi Edit</span>
-                      <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
-                        {detailTask.editCount || 0} kali
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Activity History Timeline List */}
-                  {getHistoryLogs(detailTask).length > 0 && (
-                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                        Timeline Aktivitas:
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
-                        {getHistoryLogs(detailTask).map((log, idx) => (
-                          <div key={idx} style={{ fontSize: '11px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                            <span>• {log.action}</span>
-                            <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {detailTask.deskripsi && (
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Deskripsi</h4>
-                    <div 
-                      style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', overflowX: 'auto' }}
-                      dangerouslySetInnerHTML={{ __html: detailTask.deskripsi }}
-                    />
-                  </div>
-                )}
-
-                {/* Sub-Tasks Display */}
-                {detailTask.subTasksJson && (() => {
-                  let subTasks: SubTask[] = [];
-                  try {
-                    subTasks = JSON.parse(detailTask.subTasksJson);
-                  } catch (e) {}
-                  
-                  if (subTasks.length === 0) return null;
-                  
-                  return (
-                    <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>Sub Pekerjaan</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {subTasks.map(subTask => (
-                          <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                              <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
-                              <span style={{ 
-                                padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
-                                backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                                 subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                                 'var(--surface-color)',
-                                color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                              }}>
-                                {subTask.status}
-                              </span>
-                            </div>
-                            {subTask.logs && subTask.logs.length > 0 && (
-                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-                                <div style={{ fontWeight: 600, marginBottom: '2px' }}>Riwayat Status:</div>
-                                {subTask.logs.map((log, lidx) => (
-                                  <div key={lidx} style={{ display: 'flex', gap: '8px' }}>
-                                    <span style={{ minWidth: '110px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-                                    <span>- {log.status}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Multiple Files Detail Display */}
-                {getTaskFiles(detailTask).length > 0 && (
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      File Lampiran ({getTaskFiles(detailTask).length} File)
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {getTaskFiles(detailTask).map((f, idx) => (
-                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
-                              <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
-                              <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
-                            </div>
-                            {!f.isDeleted && (
-                              <button 
-                                type="button"
-                                className="btn btn-secondary"
-                                style={{ padding: '4px 8px' }}
-                                onClick={() => setPreviewFile(f)}
-                              >
-                                <Eye size={14} color="var(--text-secondary)" />
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                            {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}
-                            {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-                  <a 
-                    href={getGoogleCalendarUrl(detailTask)} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="btn btn-primary"
-                  >
-                    <ExternalLink size={16} /> Tambah ke Google Calendar
-                  </a>
-                  <button className="btn btn-secondary" onClick={() => handleExportICS(detailTask)}>
-                    <CalendarDays size={16} /> Download .ics
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <TaskDetailModal
+        task={detailTask}
+        onClose={() => setDetailTask(null)}
+        setPreviewFile={setPreviewFile}
+      />
 
       {/* Interactive Copyable Error Details Modal */}
       <AnimatePresence>
