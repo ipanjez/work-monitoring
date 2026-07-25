@@ -60,8 +60,10 @@ export async function POST(req: Request) {
             startDate: parseDate(task.startDate),
             endDate: parseDate(task.endDate),
             subTasksJson: task.subTasksJson || null,
-          }
-        }))
+              additionalPics: task.additionalPics || null,
+              historyLogsJson: initialLog,
+            }
+          }))
       );
       return NextResponse.json(created);
     }
