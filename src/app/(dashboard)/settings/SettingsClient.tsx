@@ -24,6 +24,7 @@ type Task = {
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('Work Monitoring');
+  const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Master Categories & PICs State
@@ -443,6 +444,20 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               placeholder="Contoh: Divisi TI & Sistem Informasi"
             />
           </div>
+            
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Ubah Password Global (Opsional)
+              </label>
+              <input 
+                type="password"
+                className="input" 
+                value={globalPassword}
+                onChange={e => setGlobalPassword(e.target.value)}
+                placeholder="Kosongkan jika tidak ingin mengubah sandi"
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>
+            </div>
 
           <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
             Simpan Pengaturan

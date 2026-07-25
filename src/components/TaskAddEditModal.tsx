@@ -596,38 +596,6 @@ export default function TaskAddEditModal({
                 </div>
               </div>
 
-              {/* Progress Slider & Number Input */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    Progress Penyelesaian (%)
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="100" 
-                      className="input" 
-                      style={{ width: '70px', padding: '4px 8px', textAlign: 'center', fontWeight: 'bold' }}
-                      value={editingTask.progress ?? 0}
-                      onChange={e => {
-                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                        setEditingTask({ ...editingTask, progress: val });
-                      }}
-                    />
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>%</span>
-                  </div>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  style={{ width: '100%' }}
-                  value={editingTask.progress ?? 0} 
-                  onChange={e => setEditingTask({ ...editingTask, progress: Number(e.target.value) })} 
-                />
-              </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   Deskripsi Pekerjaan

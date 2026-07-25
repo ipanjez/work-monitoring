@@ -784,20 +784,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button 
-            className="btn" 
-            onClick={handleDownloadTemplate}
-            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
-          >
-            <Download size={16} /> Unduh Template
-          </button>
-          
-          <button 
-            className="btn" 
-            onClick={() => setShowExcelInfo(!showExcelInfo)}
-            style={{ backgroundColor: '#6b7280', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(107, 114, 128, 0.2)' }}
-          >
-            <Info size={16} /> Info Format Excel
-          </button>
+              className="btn" 
+              onClick={handleDownloadTemplate}
+              style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
+            >
+              <Download size={16} /> Template Excel
+            </button>
           
           <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".xlsx,.csv" onChange={handleImportExcel} />
           <button 
@@ -835,25 +827,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </div>
       </div>
 
-      {showExcelInfo && (
-        <div style={{ padding: '16px', backgroundColor: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px', fontSize: '13px', color: 'var(--text-primary)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-          <h4 style={{ fontWeight: 600, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#3b82f6', fontSize: '14px' }}>
-            <Info size={16} /> Panduan Pengisian Template Excel
-          </h4>
-          <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>Baris pertama (Header) dan baris kedua (Contoh Isian) memiliki penataan yang benar. Anda dapat menimpa isi pada baris kedua, dan melanjutkan ke baris berikutnya.</p>
-          <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
-            <li><strong>Kolom Dropdown:</strong> Kolom PIC Utama, Prioritas, Status, dan Progress menggunakan dropdown interaktif. Pastikan mengisinya dari pilihan yang tersedia.</li>
-            <li><strong>Kolom PIC Tambahan:</strong> Jika ada lebih dari 1 PIC tambahan, cukup pisahkan dengan tanda koma (contoh: <code>Budi, Andi, Citra</code>).</li>
-            <li><strong>Kolom Sub Pekerjaan:</strong> Jika satu pekerjaan utama memiliki beberapa sub-pekerjaan, rincikan di dalam satu kotak sel. Gunakan <code>Alt + Enter</code> untuk membuat baris baru.</li>
-          </ul>
-          <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #3b82f6', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
-            <strong>Contoh Penulisan Sub Pekerjaan yang Benar:</strong><br/><br/>
-            [Done] Menganalisis laporan keuangan<br/>
-            [In Progress] Membuat slide PowerPoint<br/>
-            [To Do] Melakukan presentasi
-          </div>
-        </div>
-      )}
+      
 
       {/* Filter and Search Bar */}
       <div className="glass" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>

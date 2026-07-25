@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -72,6 +73,15 @@ export async function POST(request: Request) {
         where: { key: 'dept_name' },
         update: { value: body.dept_name },
         create: { key: 'dept_name', value: body.dept_name }
+      });
+    }
+
+    if (body.global_password !== undefined && body.global_password.trim() !== '') {
+      const hashedPassword = bcrypt.hashSync(body.global_password, 10);
+      await prisma.appSetting.upsert({
+        where: { key: 'global_password' },
+        update: { value: hashedPassword },
+        create: { key: 'global_password', value: hashedPassword }
       });
     }
 

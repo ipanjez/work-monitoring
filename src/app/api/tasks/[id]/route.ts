@@ -1,6 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+
+const calculateProgress = (status: string, subTasksJson: string | null | undefined): number => {
+  if (subTasksJson) {
+    try {
+      const subTasks = JSON.parse(subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        const doneCount = subTasks.filter(t => t.status === 'Done').length;
+        const inProgCount = subTasks.filter(t => t.status === 'In Progress').length;
+        return Math.round(((doneCount + (inProgCount * 0.5)) / subTasks.length) * 100);
+      }
+    } catch(e) {}
+  }
+  if (status === 'Done') return 100;
+  if (status === 'In Progress') return 50;
+  return 0;
+};
+
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -38,20 +55,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       timestamp: now.toISOString(),
     });
 
-    let finalProgress = progress !== undefined ? Number(progress) : undefined;
     
-    // Auto-update progress based on status changes if progress isn't explicitly set to a custom value during this update
-    if (status !== undefined) {
-      if (status === 'Done') {
-        finalProgress = 100;
-      } else if (status === 'To Do') {
-        finalProgress = 0;
-      } else if (status === 'In Progress') {
-        if (finalProgress === undefined || finalProgress === 0) {
-          finalProgress = 50;
-        }
-      }
-    }
+    const finalStatus = status !== undefined ? status : existingTask.status;
+    const currentSubTasksJson = subTasksJson !== undefined ? subTasksJson : existingTask.subTasksJson;
+    const finalProgress = calculateProgress(finalStatus, currentSubTasksJson);
 
     try {
       const task = await prisma.task.update({

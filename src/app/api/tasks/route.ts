@@ -13,6 +13,23 @@ export async function GET() {
   }
 }
 
+
+const calculateProgress = (status: string, subTasksJson: string | null | undefined): number => {
+  if (subTasksJson) {
+    try {
+      const subTasks = JSON.parse(subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        const doneCount = subTasks.filter(t => t.status === 'Done').length;
+        const inProgCount = subTasks.filter(t => t.status === 'In Progress').length;
+        return Math.round(((doneCount + (inProgCount * 0.5)) / subTasks.length) * 100);
+      }
+    } catch(e) {}
+  }
+  if (status === 'Done') return 100;
+  if (status === 'In Progress') return 50;
+  return 0;
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -35,7 +52,7 @@ export async function POST(req: Request) {
             status: task.status || 'To Do',
             prioritas: task.prioritas || 'Medium',
             kategori: task.kategori || 'Umum',
-            progress: Number(task.progress) || 0,
+            progress: calculateProgress(task.status || 'To Do', task.subTasksJson),
             deskripsi: task.deskripsi || null,
             catatan: task.catatan || null,
             fileUrl: task.fileUrl || null,
@@ -61,15 +78,7 @@ export async function POST(req: Request) {
     }
 
     const finalStatus = status || 'To Do';
-    let finalProgress = Number(progress) || 0;
-    
-    if (finalStatus === 'Done') {
-      finalProgress = 100;
-    } else if (finalStatus === 'In Progress' && finalProgress === 0) {
-      finalProgress = 50;
-    } else if (finalStatus === 'To Do') {
-      finalProgress = 0;
-    }
+      const finalProgress = calculateProgress(finalStatus, subTasksJson);
 
     try {
       const task = await prisma.task.create({

@@ -21,6 +21,7 @@
     "jodit": "^4.13.10",
     "jodit-react": "^5.3.21",
     "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.26.0",
     "mammoth": "^1.12.0",
     "next": "16.2.11",

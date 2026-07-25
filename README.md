@@ -14,8 +14,9 @@ Proyek ini dilengkapi dengan antarmuka yang sangat estetik, manajemen data yang 
 - 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
 - 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), serta integrasi feed Google Calendar.
 - 🔒 **Keamanan Sesi Terpusat:** Dilengkapi fitur *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan, lengkap dengan penghitung waktu mundur pada *sidebar*.
+- 🔑 **Kustomisasi Global Password:** Anda kini dapat mengubah kata sandi masuk (Global Password) secara langsung melalui menu Pengaturan tanpa harus mengubah file `.env`. Saat Anda mengatur sandi baru, sistem akan mendahulukannya dari konfigurasi default.
 - ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan tersimpan otomatis tanpa perlu memuat ulang halaman (*real-time update*).
-- 🧪 **Data Dummy Tersedia:** Anda bisa menggunakan `dummy_data_import.csv` yang ada di root direktori untuk mencoba fitur *Import Excel* secara instan.
+- 🧪 **Impor Excel Pintar & Otomatis:** Saat mengimpor Excel, apabila terdapat Nama PIC atau Kategori yang belum terdaftar di pengaturan, sistem akan **secara otomatis mendaftarkannya** ke dalam Master Data Pengaturan Anda. Template Excel beserta lembar panduannya dapat Anda unduh langsung dari dalam aplikasi.
 
 ---
 
