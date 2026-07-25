@@ -95,6 +95,28 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     setSelectedTasks(newSet);
   };
 
+  const handleBulkDone = async () => {
+    if (selectedTasks.size === 0) return;
+    if (!window.confirm(`Anda yakin ingin menandai ${selectedTasks.size} pekerjaan sebagai Selesai (Done)?`)) return;
+    
+    const ids = Array.from(selectedTasks).join(',');
+    try {
+      await fetch(`/api/tasks/bulk-status`, { 
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedTasks), status: 'Done' })
+      });
+      toast.success(`${selectedTasks.size} Pekerjaan berhasil ditandai selesai!`);
+      setSelectedTasks(new Set());
+      const res = await fetch('/api/tasks');
+      const updatedTasks = await res.json();
+      setTasks(updatedTasks);
+      refreshData();
+    } catch (e: any) {
+      toast.error('Gagal memperbarui status pekerjaan');
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedTasks.size === 0) return;
     if (!window.confirm(`Anda yakin ingin menghapus ${selectedTasks.size} pekerjaan yang dipilih?`)) return;
@@ -897,6 +919,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       {/* Main Table with Sortable Columns */}
       
+        
+        <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, backgroundColor: 'var(--surface-color)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'inline-block' }}>
+          Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{processedTasks.length}</strong> pekerjaan sesuai filter dari total <strong style={{ color: 'var(--text-primary)' }}>{tasks.length}</strong> data terdaftar.
+        </div>
+
         <AnimatePresence>
           {selectedTasks.size > 0 && (
             <motion.div 
@@ -918,6 +945,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   style={{ padding: '6px 12px', fontSize: '13px' }}
                 >
                   Batal
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={handleBulkDone}
+                  style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                >
+                  <CheckCircle size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Tandai Selesai
                 </button>
                 <button 
                   className="btn" 
@@ -994,6 +1029,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
                 return (
                   <tr key={task.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
+
+                      <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'top' }} onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTasks.has(task.id)}
+                          onChange={() => handleToggleSelect(task.id)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </td>
                     <td style={{ padding: '16px 12px', maxWidth: '240px' }}>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setDetailTask(task)}>
                         {task.nama}
