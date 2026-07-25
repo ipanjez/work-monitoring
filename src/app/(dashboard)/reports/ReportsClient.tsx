@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
-  TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter
+  TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter, Copy, FileText, FileSpreadsheet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, startOfDay } from 'date-fns';
@@ -11,6 +11,9 @@ import {
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -35,6 +38,8 @@ type Task = {
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
+  const reportsRef = useRef<HTMLDivElement>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   
   // Use global filters
   const { 
@@ -219,35 +224,129 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   };
 
   const handleExportFullReport = () => {
-    const reportData = filteredTasks.map((t, idx) => ({
-      'No': idx + 1,
-      'Nama Pekerjaan': t.nama,
-      'PIC Utama': t.pic,
-      'PIC Tambahan': (() => {
+    const reportData = filteredTasks.map((t, idx) => {
+      let subTasksStr = '';
+      // Cannot easily use t.subTasksJson since it's not in the Task type locally, wait, I can add it to the type above or cast.
+      // Let's assume t has it or we can cast as any.
+      const taskAny = t as any;
+      if (taskAny.subTasksJson) {
         try {
-          const arr = JSON.parse(t.additionalPics || '[]');
-          return Array.isArray(arr) ? arr.join(', ') : '';
-        } catch(e) { return ''; }
-      })(),
-      'Kategori': t.kategori || 'Umum',
-      'Prioritas': t.prioritas || 'Medium',
-      'Status': t.status,
-      'Progress': `${t.progress || 0}%`,
-      'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
-      'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
-    }));
+          const subTasks = JSON.parse(taskAny.subTasksJson);
+          if (Array.isArray(subTasks) && subTasks.length > 0) {
+            subTasksStr = subTasks.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
+          }
+        } catch(e) {}
+      }
+
+      return {
+        'No': idx + 1,
+        'Nama Pekerjaan': t.nama,
+        'PIC Utama': t.pic,
+        'PIC Tambahan': (() => {
+          try {
+            const arr = JSON.parse(t.additionalPics || '[]');
+            return Array.isArray(arr) ? arr.join(', ') : '';
+          } catch(e) { return ''; }
+        })(),
+        'Kategori': t.kategori || 'Umum',
+        'Prioritas': t.prioritas || 'Medium',
+        'Status': t.status,
+        'Progress': `${t.progress || 0}%`,
+        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
+        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
+        'Deskripsi': taskAny.deskripsi ? taskAny.deskripsi.replace(/<[^>]+>/g, '') : '-',
+        'Sub-Pekerjaan': subTasksStr || '-',
+        'Catatan': taskAny.catatan || '-'
+      };
+    });
 
     const ws = XLSX.utils.json_to_sheet(reportData);
     
     ws['!cols'] = [
       { wch: 5 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, 
-      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
+      { wch: 40 }, { wch: 40 }, { wch: 40 }
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Laporan Kinerja');
     XLSX.writeFile(wb, `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja (${filteredTasks.length} pekerjaan)`, 'success');
+    addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja Excel (${filteredTasks.length} pekerjaan)`, 'success');
+  };
+
+  const handleExportPDF = () => {
+    setIsExportingPdf(true);
+    addActivityLog?.('Export', 'Download PDF', `Mengunduh Laporan Kinerja PDF (${filteredTasks.length} pekerjaan)`, 'success');
+    try {
+      const doc = new jsPDF('landscape');
+      doc.setFontSize(16);
+      doc.text('Laporan Kinerja Departemen', 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
+      
+      const tableColumn = ['Pekerjaan', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat', 'PIC'];
+      const tableRows: any[] = [];
+
+      filteredTasks.forEach(t => {
+        const extraPicsStr = (() => {
+          try {
+            const arr = JSON.parse(t.additionalPics || '[]');
+            return Array.isArray(arr) && arr.length > 0 ? ` (+${arr.join(', ')})` : '';
+          } catch(e) { return ''; }
+        })();
+        const row = [
+          t.nama,
+          t.kategori || 'Umum',
+          t.prioritas || 'Medium',
+          t.status,
+          `${t.progress || 0}%`,
+          format(new Date(t.endDate), 'dd MMM yyyy'),
+          `${t.pic}${extraPicsStr}`
+        ];
+        tableRows.push(row);
+      });
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+
+      doc.save(`Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    } catch (error) {
+      console.error('PDF Export error:', error);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleCopyImage = async () => {
+    if (!reportsRef.current) return;
+    try {
+      addActivityLog?.('Export', 'Copy Image', 'Menyalin gambar laporan kinerja ke clipboard', 'info');
+      const canvas = await html2canvas(reportsRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc'
+      });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            // using window.alert if toast is not imported, or just let ActivityLog handle it
+          } catch (err) {
+            console.error('Clipboard write error:', err);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('html2canvas error:', error);
+    }
   };
 
   return (
@@ -256,6 +355,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
+      ref={reportsRef}
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
@@ -266,9 +366,17 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           </p>
         </div>
 
-        <button className="btn btn-primary" onClick={handleExportFullReport} style={{ whiteSpace: 'nowrap' }}>
-          <Download size={16} /> Export (.xlsx)
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleCopyImage}>
+            <Copy size={16} /> Copy Image
+          </button>
+          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleExportPDF} disabled={isExportingPdf}>
+            <FileText size={16} color="#ef4444" /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
+          </button>
+          <button className="btn btn-primary" onClick={handleExportFullReport} style={{ whiteSpace: 'nowrap' }}>
+            <FileSpreadsheet size={16} /> Export XLSX
+          </button>
+        </div>
       </div>
 
       {/* Global Filters Synchronized */}
