@@ -42,7 +42,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const now = new Date();
     const newCount = ((existingTask?.editCount || 0) + 1);
-    let currentLogs: Array<{ action: string; timestamp: string }> = [];
+    let currentLogs: Array<{ action: string; timestamp: string; details?: string }> = [];
 
     if (existingTask?.historyLogsJson) {
       try {
