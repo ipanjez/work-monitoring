@@ -63,6 +63,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   // Table specific states
   const [tableSearch, setTableSearch] = useState('');
