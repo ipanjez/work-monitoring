@@ -450,25 +450,22 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
             };
           }
-          // If new subtask, and user changed status from 'To Do' before saving
-          if (!originalSt && st.status !== 'To Do') {
+          // If new subtask, log creation
+          if (!originalSt) {
             return {
               ...st,
-              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
+              logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }]
             };
           }
           return st;
         });
       } else {
-        // If it's a completely new task, just add logs for subtasks that were created and immediately changed
+        // completely new task
         processedSubTasks = processedSubTasks.map(st => {
-          if (st.status !== 'To Do') {
-            return {
-              ...st,
-              logs: [...(st.logs || []), { status: `Diubah ke ${st.status}`, timestamp: new Date().toISOString() }]
-            };
-          }
-          return st;
+          return {
+            ...st,
+            logs: [{ status: `Dibuat (${st.status})`, timestamp: new Date().toISOString() }]
+          };
         });
       }
 
@@ -609,7 +606,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       // Tentukan Header
       worksheet.columns = [
         { header: 'Nama Pekerjaan', key: 'nama', width: 35 },
-        { header: 'PIC', key: 'pic', width: 25 },
+        { header: 'PIC Utama', key: 'pic', width: 25 },
+        { header: 'PIC Tambahan', key: 'picTambahan', width: 30 },
         { header: 'Kategori', key: 'kategori', width: 20 },
         { header: 'Prioritas', key: 'prioritas', width: 15 },
         { header: 'Status', key: 'status', width: 15 },
@@ -636,6 +634,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const exampleRow = worksheet.addRow({
         nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
         pic: uniquePics[0] || 'Unassigned',
+        picTambahan: 'PIC Lain 1, PIC Lain 2',
         kategori: 'Umum',
         prioritas: 'High',
         status: 'In Progress',
@@ -658,7 +657,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       // Tambahkan Data Validation untuk 1000 baris pertama
       for (let i = 2; i <= 1000; i++) {
-        // PIC (Ambil dari hidden sheet agar tidak kena limit 255 karakter)
+        // PIC Utama (Ambil dari hidden sheet agar tidak kena limit 255 karakter)
         worksheet.getCell(`B${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
@@ -666,21 +665,21 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         };
 
         // Prioritas
-        worksheet.getCell(`D${i}`).dataValidation = {
+        worksheet.getCell(`E${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"Low,Medium,High,Urgent"']
         };
 
         // Status
-        worksheet.getCell(`E${i}`).dataValidation = {
+        worksheet.getCell(`F${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"To Do,In Progress,Done"']
         };
 
         // Progress (Angka 0-100)
-        worksheet.getCell(`F${i}`).dataValidation = {
+        worksheet.getCell(`G${i}`).dataValidation = {
           type: 'whole',
           operator: 'between',
           allowBlank: true,
@@ -748,9 +747,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
              if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
           
+          const additionalPicsStr = row['PIC Tambahan'] || row.picTambahan || '';
+          let additionalPicsJson = null;
+          if (additionalPicsStr) {
+            const picsArr = additionalPicsStr.split(',').map((s: string) => s.trim()).filter(Boolean);
+            if (picsArr.length > 0) additionalPicsJson = JSON.stringify(picsArr);
+          }
+          
           return {
             nama: row['Nama Pekerjaan'] || row.nama || 'Tanpa Nama',
-            pic: row['PIC'] || row.pic || 'Unassigned',
+            pic: row['PIC Utama'] || row['PIC'] || row.pic || 'Unassigned',
             status: row['Status'] || row.status || 'To Do',
             prioritas: row['Prioritas'] || row.prioritas || 'Medium',
             kategori: row['Kategori'] || row.kategori || 'Umum',
@@ -760,6 +766,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             startDate: row['Tanggal Mulai'] || row.startDate || new Date().toISOString(),
             endDate: row['Tenggat Waktu'] || row.endDate || new Date().toISOString(),
             ...(subTasksJson ? { subTasksJson } : {}),
+            ...(additionalPicsJson ? { additionalPics: additionalPicsJson } : {}),
           };
         });
 
@@ -1013,7 +1020,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           </h4>
           <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>Baris pertama (Header) dan baris kedua (Contoh Isian) memiliki penataan yang benar. Anda dapat menimpa isi pada baris kedua, dan melanjutkan ke baris berikutnya.</p>
           <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
-            <li><strong>Kolom Dropdown:</strong> Kolom PIC, Prioritas, Status, dan Progress menggunakan dropdown interaktif. Pastikan mengisinya dari pilihan yang tersedia.</li>
+            <li><strong>Kolom Dropdown:</strong> Kolom PIC Utama, Prioritas, Status, dan Progress menggunakan dropdown interaktif. Pastikan mengisinya dari pilihan yang tersedia.</li>
+            <li><strong>Kolom PIC Tambahan:</strong> Jika ada lebih dari 1 PIC tambahan, cukup pisahkan dengan tanda koma (contoh: <code>Budi, Andi, Citra</code>).</li>
             <li><strong>Kolom Sub Pekerjaan:</strong> Jika satu pekerjaan utama memiliki beberapa sub-pekerjaan, rincikan di dalam satu kotak sel. Gunakan <code>Alt + Enter</code> untuk membuat baris baru.</li>
           </ul>
           <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '6px', borderLeft: '4px solid #3b82f6', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
@@ -1760,6 +1768,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, tabel, dll)...',
                       height: 250,
                       toolbarSticky: false,
+                      theme: 'dark',
                       style: {
                         background: 'var(--input-bg)',
                         color: 'var(--text-primary)',
@@ -1787,7 +1796,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                           id: Date.now().toString(),
                           text: '',
                           status: 'To Do',
-                          logs: [{ status: 'Dibuat (To Do)', timestamp: new Date().toISOString() }]
+                          logs: []
                         };
                         setEditingTask({
                           ...editingTask,
