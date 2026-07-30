@@ -6,14 +6,14 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const defaultCategories = ['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi'];
-
     const settings = await prisma.appSetting.findMany();
 
     // Default fallback
     const defaultData: Record<string, any> = {
-      master_categories: defaultCategories,
+      master_categories: [],
       master_pics: [],
+      master_statuses: [],
+      master_priorities: [],
       dept_name: 'Work Monitoring'
     };
 
@@ -32,14 +32,6 @@ export async function GET() {
       }
     });
 
-    // Auto-seed: if no master_categories in DB yet, save the defaults
-    const hasCatSetting = settings.find(s => s.key === 'master_categories');
-    if (!hasCatSetting) {
-      await prisma.appSetting.create({
-        data: { key: 'master_categories', value: JSON.stringify(defaultCategories) }
-      }).catch(() => {}); // ignore if race condition
-    }
-
     return NextResponse.json(defaultData);
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -51,12 +43,28 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // body expects { master_categories: [...], master_pics: [...] }
+    // body expects { master_categories: [...], master_pics: [...], master_statuses: [...], master_priorities: [...] }
     if (body.master_categories) {
       await prisma.appSetting.upsert({
         where: { key: 'master_categories' },
         update: { value: JSON.stringify(body.master_categories) },
         create: { key: 'master_categories', value: JSON.stringify(body.master_categories) }
+      });
+    }
+
+    if (body.master_statuses) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_statuses' },
+        update: { value: JSON.stringify(body.master_statuses) },
+        create: { key: 'master_statuses', value: JSON.stringify(body.master_statuses) }
+      });
+    }
+
+    if (body.master_priorities) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_priorities' },
+        update: { value: JSON.stringify(body.master_priorities) },
+        create: { key: 'master_priorities', value: JSON.stringify(body.master_priorities) }
       });
     }
 

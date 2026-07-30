@@ -27,15 +27,22 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Master Categories & PICs State
+  // Master State
   const [categories, setCategories] = useState<string[]>([]);
   const [pics, setPics] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [priorities, setPriorities] = useState<string[]>([]);
+
   const [newCatInput, setNewCatInput] = useState('');
   const [newPicInput, setNewPicInput] = useState('');
+  const [newStatusInput, setNewStatusInput] = useState('');
+  const [newPriorityInput, setNewPriorityInput] = useState('');
 
   // Drag State
   const [draggedCatIdx, setDraggedCatIdx] = useState<number | null>(null);
   const [draggedPicIdx, setDraggedPicIdx] = useState<number | null>(null);
+  const [draggedStatusIdx, setDraggedStatusIdx] = useState<number | null>(null);
+  const [draggedPriorityIdx, setDraggedPriorityIdx] = useState<number | null>(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -44,41 +51,41 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       .then(data => {
         if (data.master_categories) setCategories(data.master_categories);
         if (data.master_pics) setPics(data.master_pics);
+        if (data.master_statuses) setStatuses(data.master_statuses);
+        if (data.master_priorities) setPriorities(data.master_priorities);
         if (data.dept_name) setDeptName(data.dept_name);
       })
       .catch(e => console.error(e));
   }, []);
 
   // Common List Updaters
-  const updateList = (type: 'cat'|'pic', updater: (prev: string[]) => string[]) => {
-    if (type === 'cat') {
-      setCategories(prev => {
-        const next = updater(prev);
-        fetch('/api/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ master_categories: next })
-        });
-        return next;
+  type ListType = 'cat' | 'pic' | 'status' | 'priority';
+
+  const updateList = (type: ListType, updater: (prev: string[]) => string[]) => {
+    let key = '';
+    if (type === 'cat') key = 'master_categories';
+    if (type === 'pic') key = 'master_pics';
+    if (type === 'status') key = 'master_statuses';
+    if (type === 'priority') key = 'master_priorities';
+
+    const setFunc = type === 'cat' ? setCategories : type === 'pic' ? setPics : type === 'status' ? setStatuses : setPriorities;
+    
+    setFunc(prev => {
+      const next = updater(prev as any);
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: next })
       });
-    } else {
-      setPics(prev => {
-        const next = updater(prev);
-        fetch('/api/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ master_pics: next })
-        });
-        return next;
-      });
-    }
+      return next as any;
+    });
   };
 
-  const sortList = (type: 'cat'|'pic', dir: 'asc'|'desc') => {
+  const sortList = (type: ListType, dir: 'asc'|'desc') => {
     updateList(type, prev => [...prev].sort((a, b) => dir === 'asc' ? a.localeCompare(b) : b.localeCompare(a)));
   };
 
-  const transformList = (type: 'cat'|'pic', transform: 'upper'|'lower'|'proper') => {
+  const transformList = (type: ListType, transform: 'upper'|'lower'|'proper') => {
     updateList(type, prev => prev.map(s => {
       if (transform === 'upper') return s.toUpperCase();
       if (transform === 'lower') return s.toLowerCase();
@@ -86,68 +93,21 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }));
   };
 
-  const handleDragStart = (e: React.DragEvent, type: 'cat'|'pic', index: number) => {
-    if (type === 'cat') setDraggedCatIdx(index);
-    else setDraggedPicIdx(index);
+  const handleDragStart = (e: React.DragEvent, type: ListType, index: number) => {
+    setDraggedIdx({ type, index });
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent, type: ListType, dropIndex: number) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, type: 'cat'|'pic', dropIndex: number) => {
-    e.preventDefault();
-    const draggedIdx = type === 'cat' ? draggedCatIdx : draggedPicIdx;
-    if (draggedIdx === null || draggedIdx === dropIndex) return;
+    if (!draggedIdx || draggedIdx.type !== type || draggedIdx.index === dropIndex) return;
 
     updateList(type, prev => {
       const next = [...prev];
-      const [moved] = next.splice(draggedIdx, 1);
+      const [moved] = next.splice(draggedIdx.index, 1);
       next.splice(dropIndex, 0, moved);
       return next;
     });
-
-    if (type === 'cat') setDraggedCatIdx(null);
-    else setDraggedPicIdx(null);
-  };
-
-  const handleAddCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatInput.trim()) return;
-    if (categories.includes(newCatInput.trim())) return alert('Kategori ini sudah ada!');
-    
-    const updated = [...categories, newCatInput.trim()];
-    setCategories(updated);
-    localStorage.setItem('master_categories', JSON.stringify(updated));
-    setNewCatInput('');
-  };
-
-  const handleRemoveCategory = (catToRemove: string) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus kategori "${catToRemove}"?`)) return;
-    const updated = categories.filter(c => c !== catToRemove);
-    setCategories(updated);
-    localStorage.setItem('master_categories', JSON.stringify(updated));
-  };
-
-  const handleAddPic = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPicInput.trim()) return;
-    if (pics.includes(newPicInput.trim())) return alert('Nama PIC ini sudah ada!');
-
-    const updated = [...pics, newPicInput.trim()];
-    setPics(updated);
-    localStorage.setItem('master_pics', JSON.stringify(updated));
-    setNewPicInput('');
-  };
-
-  const handleRemovePic = (picToRemove: string) => {
-    if (!window.confirm(`Apakah Anda yakin ingin menghapus PIC "${picToRemove}"?`)) return;
-    const updated = pics.filter(p => p !== picToRemove);
-    setPics(updated);
-    localStorage.setItem('master_pics', JSON.stringify(updated));
-  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,6 +381,72 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               >
                 <X size={14} />
               </button>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="glass" style={{ padding: '24px' }}>
+        {renderListEditor(
+          "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
+          <Tag size={20} color="var(--accent-primary)" />
+        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {statuses.map((s, idx) => (
+            <span 
+              key={s} 
+              draggable
+              onDragStart={(e) => handleDragStart(e, 'status', idx)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, 'status', idx)}
+              onDragEnd={() => setDraggedIdx(null)}
+              style={{ 
+                display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
+                background: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
+                border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
+                color: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)', cursor: 'grab' 
+              }}
+            >
+              {s}
+              <button 
+                type="button" onClick={() => handleDelete('status', s)} 
+                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
+              ><X size={14} /></button>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="glass" style={{ padding: '24px' }}>
+        {renderListEditor(
+          "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
+          <Tag size={20} color="var(--accent-primary)" />
+        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {priorities.map((p, idx) => (
+            <span 
+              key={p} 
+              draggable
+              onDragStart={(e) => handleDragStart(e, 'priority', idx)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, 'priority', idx)}
+              onDragEnd={() => setDraggedIdx(null)}
+              style={{ 
+                display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
+                background: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
+                border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
+                color: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)', cursor: 'grab' 
+              }}
+            >
+              {p}
+              <button 
+                type="button" onClick={() => handleDelete('priority', p)} 
+                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
+              ><X size={14} /></button>
             </span>
           ))}
         </div>

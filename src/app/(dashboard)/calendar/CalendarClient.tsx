@@ -64,6 +64,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -71,6 +73,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       .then(data => {
         if (data.master_categories) setMasterCats(data.master_categories);
         if (data.master_pics) setMasterPics(data.master_pics);
+        if (data.master_statuses) setMasterStatuses(data.master_statuses);
+        if (data.master_priorities) setMasterPriorities(data.master_priorities);
       })
       .catch(e => console.error(e));
   }, []);
@@ -712,6 +716,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         onSave={handleSaveModal}
         formPicOptions={[...masterPics]}
         formCategoryOptions={[...masterCats, 'Umum']}
+        formStatusOptions={masterStatuses}
+        formPriorityOptions={masterPriorities}
         setPreviewFile={setPreviewFile}
       />
 

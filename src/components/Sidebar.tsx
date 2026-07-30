@@ -28,8 +28,9 @@ export default function Sidebar() {
   
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [deptName, setDeptName] = useState('Work Monitoring');
-  const [stats, setStats] = useState({ pending: 0, inProgress: 0, review: 0, done: 0 });
+  const [stats, setStats] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadData = () => {
@@ -47,6 +48,9 @@ export default function Sidebar() {
         .then(data => {
           if (data.master_pics) {
             setMasterPics(data.master_pics);
+          }
+          if (data.master_statuses) {
+            setMasterStatuses(data.master_statuses);
           }
           if (data.dept_name) {
             setDeptName(data.dept_name);
@@ -71,7 +75,8 @@ export default function Sidebar() {
   ]));
 
   useEffect(() => {
-    let p = 0, ip = 0, r = 0, d = 0;
+    let tempStats: Record<string, number> = {};
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -112,19 +117,16 @@ export default function Sidebar() {
       }
 
       if (inRange) {
-        if (t.status === 'Done') {
-          if (globalTargetFilter === 'Semua Waktu' || end >= startBoundary) d++; 
-        } else if (t.status === 'Review') {
-          r++;
-        } else if (t.status === 'In Progress') {
-          ip++;
+        if (globalTargetFilter !== 'Semua Waktu' && t.status === 'Done' && end < startBoundary) {
+          // done tasks before the filter window shouldn't be counted for today/this week
         } else {
-          p++; 
+          const s = t.status || 'To Do';
+          tempStats[s] = (tempStats[s] || 0) + 1;
         }
       }
     });
 
-    setStats({ pending: p, inProgress: ip, review: r, done: d });
+    setStats(tempStats);
   }, [allTasks, globalTargetFilter, globalPicFilter]);
 
   if (pathname === '/login') return null;
@@ -187,6 +189,7 @@ export default function Sidebar() {
               </Link>
             );
           })}
+          
           <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
             {!isSidebarCollapsed && <div style={{ padding: '0 12px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Bantuan</div>}
             <Link 
@@ -250,22 +253,16 @@ export default function Sidebar() {
               )}
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Pending / Lewat:</span>
-              <span style={{ fontWeight: 700, color: '#ef4444' }}>{stats.pending}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>In Progress:</span>
-              <span style={{ fontWeight: 700, color: '#f59e0b' }}>{stats.inProgress}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Review:</span>
-              <span style={{ fontWeight: 700, color: '#3b82f6' }}>{stats.review}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Selesai:</span>
-              <span style={{ fontWeight: 700, color: '#10b981' }}>{stats.done}</span>
-            </div>
+            {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
+              const defaultColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#6366f1'];
+              const color = defaultColors[idx % defaultColors.length];
+              return (
+                <div key={status} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>{status}:</span>
+                  <span style={{ fontWeight: 700, color: color }}>{stats[status] || 0}</span>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div style={{
@@ -279,18 +276,16 @@ export default function Sidebar() {
             borderRadius: '12px',
             border: '1px solid var(--border-color)'
           }}>
-            <div title={`Pending / Lewat: ${stats.pending}`} style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-              {stats.pending > 99 ? '99+' : stats.pending}
-            </div>
-            <div title={`In Progress: ${stats.inProgress}`} style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b', color: '#f59e0b', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-              {stats.inProgress > 99 ? '99+' : stats.inProgress}
-            </div>
-            <div title={`Review: ${stats.review}`} style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#3b82f6', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-              {stats.review > 99 ? '99+' : stats.review}
-            </div>
-            <div title={`Selesai: ${stats.done}`} style={{ background: 'rgba(16, 185, 137, 0.15)', border: '1px solid #10b981', color: '#10b981', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-              {stats.done > 99 ? '99+' : stats.done}
-            </div>
+            {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
+              const defaultColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#6366f1'];
+              const color = defaultColors[idx % defaultColors.length];
+              const val = stats[status] || 0;
+              return (
+                <div key={status} title={`${status}: ${val}`} style={{ background: `${color}20`, border: `1px solid ${color}`, color: color, width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+                  {val > 99 ? '99+' : val}
+                </div>
+              );
+            })}
           </div>
         )}
 

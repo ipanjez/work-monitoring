@@ -53,6 +53,8 @@ interface TaskAddEditModalProps {
   onSave: (payload: any) => Promise<void>;
   formPicOptions: string[];
   formCategoryOptions: string[];
+  formStatusOptions?: string[];
+  formPriorityOptions?: string[];
   setPreviewFile: (file: FileItem) => void;
 }
 
@@ -63,6 +65,8 @@ export default function TaskAddEditModal({
   onSave,
   formPicOptions,
   formCategoryOptions,
+  formStatusOptions = [],
+  formPriorityOptions = [],
   setPreviewFile
 }: TaskAddEditModalProps) {
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);
@@ -199,7 +203,7 @@ export default function TaskAddEditModal({
   return (
     <AnimatePresence>
       {isOpen && editingTask && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ zIndex: 1050 }}>
           <motion.div 
             className="modal-content"
             style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}
@@ -407,10 +411,9 @@ export default function TaskAddEditModal({
                       setEditingTask({ ...editingTask, status: newStatus });
                     }
                   }}>
-                    <option value="To Do">To Do</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Review">Review</option>
-                    <option value="Done">Done</option>
+                    {(formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -418,10 +421,9 @@ export default function TaskAddEditModal({
                     Prioritas
                   </label>
                   <select className="input" value={editingTask.prioritas || 'Medium'} onChange={e => setEditingTask({ ...editingTask, prioritas: e.target.value })}>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
+                    {(formPriorityOptions.length > 0 ? formPriorityOptions : ['Low', 'Medium', 'High', 'Urgent']).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
                   </select>
                 </div>
               </div>

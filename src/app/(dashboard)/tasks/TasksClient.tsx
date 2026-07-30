@@ -63,6 +63,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -71,6 +73,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       .then(data => {
         if (data.master_categories) setMasterCats(data.master_categories);
         if (data.master_pics) setMasterPics(data.master_pics);
+        if (data.master_statuses) setMasterStatuses(data.master_statuses);
+        if (data.master_priorities) setMasterPriorities(data.master_priorities);
       })
       .catch(e => console.error(e));
   }, []);
@@ -1225,8 +1229,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         onClose={() => setIsModalOpen(false)}
         taskToEdit={editingTask}
         onSave={handleSaveModal}
-        formPicOptions={formPicOptions}
-        formCategoryOptions={formCategoryOptions}
+        formPicOptions={masterPics}
+        formCategoryOptions={masterCats}
+        formStatusOptions={masterStatuses}
+        formPriorityOptions={masterPriorities}
         setPreviewFile={setPreviewFile}
       />
 
@@ -1235,8 +1241,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         onClose={() => setDetailTask(null)}
         setPreviewFile={setPreviewFile}
         onEdit={() => {
-          setEditingTask(detailTask);
-          setIsModalOpen(true);
+          handleOpenEditModal(detailTask!);
         }}
         onDelete={() => handleDelete(detailTask!.id)}
       />

@@ -15,11 +15,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Task>>({});
+  const [editForm, setEditForm] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   
   useEffect(() => {
     const loadMasterPics = () => {
@@ -28,6 +29,9 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         .then(data => {
           if (data.master_pics) {
             setMasterPics(data.master_pics);
+          }
+          if (data.master_statuses) {
+            setMasterStatuses(data.master_statuses);
           }
         })
         .catch(e => console.error(e));
@@ -38,10 +42,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   }, []);
 
   // Group tasks by PIC
-  const picStatsMap: Record<string, { total: number; done: number; review: number; inProgress: number; toDo: number; urgent: number; tasks: Task[] }> = {};
+  const picStatsMap: Record<string, { total: number; urgent: number; tasks: Task[]; statusCounts: Record<string, number> }> = {};
   
   masterPics.forEach(pic => {
-    picStatsMap[pic] = { total: 0, done: 0, review: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
+    picStatsMap[pic] = { total: 0, urgent: 0, tasks: [], statusCounts: {} };
   });
 
   localTasks.forEach(t => {
@@ -58,14 +62,13 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
     picNames.forEach(picName => {
       if (!picStatsMap[picName]) {
-        picStatsMap[picName] = { total: 0, done: 0, review: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
+        picStatsMap[picName] = { total: 0, urgent: 0, tasks: [], statusCounts: {} };
       }
       const stat = picStatsMap[picName];
       stat.total += 1;
-      if (t.status === 'Done') stat.done += 1;
-      else if (t.status === 'Review') stat.review += 1;
-      else if (t.status === 'In Progress') stat.inProgress += 1;
-      else stat.toDo += 1;
+      
+      const status = t.status || 'To Do';
+      stat.statusCounts[status] = (stat.statusCounts[status] || 0) + 1;
 
       if (t.prioritas === 'Urgent') stat.urgent += 1;
       stat.tasks.push(t);
@@ -145,7 +148,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         {picList.map((picName) => {
           const stat = picStatsMap[picName];
-          const rate = stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
+          const doneCount = stat.statusCounts['Done'] || 0;
+          const rate = stat.total > 0 ? Math.round((doneCount / stat.total) * 100) : 0;
           const isSelected = selectedPic === picName;
 
           return (
@@ -193,22 +197,16 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
-                <div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Done</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>{stat.done}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Review</span>
-                  <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{stat.review}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Proses</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--warning)' }}>{stat.inProgress}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>To Do</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>{stat.toDo}</span>
-                </div>
+                {(masterStatuses.length > 0 ? masterStatuses.slice(0, 4) : ['Done', 'Review', 'In Progress', 'To Do']).map((statusName, idx) => {
+                  const defaultColors = ['var(--success)', '#3b82f6', 'var(--warning)', 'var(--accent-primary)'];
+                  const color = defaultColors[idx % defaultColors.length];
+                  return (
+                    <div key={statusName}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={statusName}>{statusName}</span>
+                      <span style={{ fontWeight: 'bold', color: color }}>{stat.statusCounts[statusName] || 0}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -272,7 +270,35 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         onClose={() => setDetailTask(null)}
         setPreviewFile={setPreviewFile}
         onEdit={() => {
-          setEditForm(detailTask!);
+          let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
+          let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+          
+          if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+            try {
+              customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+              repetisiValue = 'Custom';
+            } catch (e) {}
+          }
+      
+          let parsedSubTasks: SubTask[] = [];
+          if (detailTask!.subTasksJson) {
+            try {
+              parsedSubTasks = JSON.parse(detailTask!.subTasksJson);
+            } catch (e) {}
+          }
+
+          setEditForm({
+            ...detailTask!,
+            repetisi: repetisiValue,
+            customRecurrenceSettings,
+            startDate: detailTask!.startDate ? new Date(detailTask!.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            endDate: detailTask!.endDate ? new Date(detailTask!.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            isCustomCategory: false,
+            isCustomPic: false,
+            filesList: getTaskFiles(detailTask!),
+            additionalPicsList: getAdditionalPics(detailTask!),
+            subTasksList: parsedSubTasks
+          });
           setIsEditing(true);
         }}
         onDelete={() => handleDeleteTask(detailTask!.id)}

@@ -4,22 +4,29 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
-import { Paperclip, MessageSquare } from 'lucide-react';
-
-const COLUMNS = ['To Do', 'In Progress', 'Review', 'Done'];
+import QuickCommentModal from '@/components/QuickCommentModal';
+import { Paperclip, MessageSquare, ArrowUpDown } from 'lucide-react';
+import { useFilter } from '@/context/FilterContext';
+import { getTaskComments } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const router = useRouter();
+  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [commentTask, setCommentTask] = useState<any | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
 
   const [formPicOptions, setFormPicOptions] = useState<string[]>([]);
   const [formCategoryOptions, setFormCategoryOptions] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
 
   useEffect(() => {
     fetch('/api/settings')
@@ -27,6 +34,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       .then(data => {
         if (data.master_pics) setFormPicOptions(data.master_pics);
         if (data.master_categories) setFormCategoryOptions(data.master_categories);
+        if (data.master_statuses) setMasterStatuses(data.master_statuses);
+        if (data.master_priorities) setMasterPriorities(data.master_priorities);
       })
       .catch(e => console.error(e));
   }, []);
@@ -41,48 +50,158 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent, column: string) => {
+  const handleDragOverColumn = (e: React.DragEvent, column: string) => {
     e.preventDefault();
     setDragOverColumn(column);
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    setDragOverColumn(null);
+  const handleDragOverCard = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    setDragOverCardId(id);
   };
 
-  const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    setDragOverColumn(null);
+    setDragOverCardId(null);
+  };
+
+  const handleDeleteTask = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini?')) return;
+    try {
+      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Gagal menghapus');
+      toast.success('Pekerjaan berhasil dihapus');
+      setIsDetailOpen(false);
+      setSelectedTask(null);
+      setTasks(prev => prev.filter(t => t.id !== id));
+      router.refresh();
+    } catch (e) {
+      toast.error('Gagal menghapus pekerjaan');
+    }
+  };
+
+  const saveReorder = async (updatedColumnTasks: any[]) => {
+    // Generate order indexes: 0, 1, 2...
+    const updates = updatedColumnTasks.map((t, idx) => ({ id: t.id, orderIndex: idx }));
+    try {
+      await fetch('/api/tasks/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates })
+      });
+      router.refresh();
+    } catch (e) {
+      console.error('Failed to save reorder', e);
+    }
+  };
+
+  const handleDropColumn = async (e: React.DragEvent, newStatus: string) => {
     e.preventDefault();
     setDragOverColumn(null);
+    setDragOverCardId(null);
+    
+    if (sortBy !== 'Manual') {
+      setSortBy('Manual');
+      toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
+    }
+
     const taskIdStr = e.dataTransfer.getData('text/plain');
     const taskId = parseInt(taskIdStr, 10);
 
     if (!taskId || isNaN(taskId)) return;
 
     const taskToUpdate = tasks.find((t: any) => t.id === taskId);
-    if (!taskToUpdate || taskToUpdate.status === newStatus) return;
+    if (!taskToUpdate) return;
 
-    // Optimistic update
     const previousTasks = [...tasks];
-    setTasks((prev) =>
-      prev.map((t: any) => (t.id === taskId ? { ...t, status: newStatus } : t))
-    );
+    let updatedTasks = [...tasks];
+    
+    updatedTasks = updatedTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+    setTasks(updatedTasks);
 
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!res.ok) throw new Error('Failed to update status');
-
-      toast.success(`Tugas dipindah ke ${newStatus}`);
-      router.refresh();
+      if (taskToUpdate.status !== newStatus) {
+        await fetch(`/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        toast.success(`Tugas dipindah ke ${newStatus}`);
+      }
+      
+      const colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      const taskInCol = colTasks.find(t => t.id === taskId);
+      const otherTasksInCol = colTasks.filter(t => t.id !== taskId);
+      const finalColTasks = [...otherTasksInCol, taskInCol]; // Appended to end
+      
+      setTasks(prev => prev.map(t => {
+        const idx = finalColTasks.findIndex(ft => ft.id === t.id);
+        return idx !== -1 ? { ...t, orderIndex: idx, status: t.id === taskId ? newStatus : t.status } : t;
+      }));
+      
+      saveReorder(finalColTasks);
     } catch (err) {
       console.error(err);
       toast.error('Gagal memperbarui status');
-      setTasks(previousTasks); // Revert on failure
+      setTasks(previousTasks); 
+    }
+    setDraggedTaskId(null);
+  };
+
+  const handleDropCard = async (e: React.DragEvent, newStatus: string, targetCardId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverColumn(null);
+    setDragOverCardId(null);
+    
+    if (sortBy !== 'Manual') {
+      setSortBy('Manual');
+      toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
+    }
+
+    const taskIdStr = e.dataTransfer.getData('text/plain');
+    const taskId = parseInt(taskIdStr, 10);
+
+    if (!taskId || isNaN(taskId) || taskId === targetCardId) return;
+
+    const taskToUpdate = tasks.find((t: any) => t.id === taskId);
+    if (!taskToUpdate) return;
+
+    const previousTasks = [...tasks];
+    let updatedTasks = [...tasks].map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+    
+    let colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    
+    const draggedTask = colTasks.find(t => t.id === taskId);
+    colTasks = colTasks.filter(t => t.id !== taskId);
+    
+    const targetIndex = colTasks.findIndex(t => t.id === targetCardId);
+    if (targetIndex !== -1) {
+      colTasks.splice(targetIndex, 0, draggedTask);
+    } else {
+      colTasks.push(draggedTask);
+    }
+
+    setTasks(prev => prev.map(t => {
+      const idx = colTasks.findIndex(ft => ft.id === t.id);
+      return idx !== -1 ? { ...t, orderIndex: idx, status: t.id === taskId ? newStatus : t.status } : t;
+    }));
+
+    try {
+      if (taskToUpdate.status !== newStatus) {
+        await fetch(`/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        toast.success(`Tugas dipindah ke ${newStatus}`);
+      }
+      saveReorder(colTasks);
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal memperbarui urutan');
+      setTasks(previousTasks); 
     }
     setDraggedTaskId(null);
   };
@@ -93,7 +212,46 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   const openTaskEdit = (task: any) => {
-    setSelectedTask(task);
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+    
+    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+      try {
+        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        repetisiValue = 'Custom';
+      } catch (e) {}
+    }
+
+    let parsedSubTasks: any[] = [];
+    if (task.subTasksJson) {
+      try { parsedSubTasks = JSON.parse(task.subTasksJson); } catch (e) {}
+    }
+
+    let parsedFiles: any[] = [];
+    if (task.filesJson) {
+        try { parsedFiles = JSON.parse(task.filesJson); } catch (e) {}
+    } else if (task.fileUrl) {
+        parsedFiles = [{ url: task.fileUrl, name: task.fileName || 'Attachment' }];
+    }
+
+    let parsedPics: string[] = [];
+    if (task.additionalPics) {
+        try { parsedPics = JSON.parse(task.additionalPics); } catch (e) {}
+    }
+
+    setSelectedTask({
+      ...task,
+      repetisi: repetisiValue,
+      customRecurrenceSettings,
+      startDate: task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      endDate: task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      isCustomCategory: false,
+      isCustomPic: false,
+      filesList: parsedFiles,
+      additionalPicsList: parsedPics,
+      subTasksList: parsedSubTasks
+    });
+
     setIsDetailOpen(false);
     setIsEditOpen(true);
   };
@@ -110,124 +268,235 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     }
   };
 
-  return (
-    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px', flex: 1, height: 'calc(100vh - 180px)', alignItems: 'stretch' }}>
-      {COLUMNS.map((col) => {
-        const colTasks = tasks.filter((t: any) => t.status === col);
-        const isDragOver = dragOverColumn === col;
+  const getPriorityWeight = (priority: string) => {
+    switch (priority) {
+      case 'Urgent': return 4;
+      case 'High': return 3;
+      case 'Medium': return 2;
+      case 'Low': return 1;
+      default: return 0;
+    }
+  };
 
-        return (
-          <div
-            key={col}
-            className="kanban-col"
-            onDragOver={(e) => handleDragOver(e, col)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, col)}
-            style={{
-              backgroundColor: isDragOver ? 'var(--background)' : 'var(--surface-color)',
-              border: isDragOver ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <ArrowUpDown size={14} color="var(--text-secondary)" />
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
+          <select 
+            value={sortBy} 
+            onChange={e => setSortBy(e.target.value as any)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'var(--text-primary)', 
+              fontSize: '13px',
+              fontWeight: 500,
+              outline: 'none',
+              cursor: 'pointer'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                {col}
-              </h3>
-              <span style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-                {colTasks.length}
-              </span>
-            </div>
+            <option value="Manual">Urutan Manual</option>
+            <option value="Deadline">Tenggat Waktu</option>
+            <option value="Prioritas">Prioritas</option>
+            <option value="Abjad">Abjad (Nama)</option>
+          </select>
+        </div>
+      </div>
 
-            {colTasks.map((task: any) => {
-              const subStats = getSubtaskStats(task.subTasksJson);
-              const isDragged = draggedTaskId === task.id;
+      <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px', flex: 1, height: 'calc(100vh - 230px)', alignItems: 'stretch' }}>
+        {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
+          let columnTasks = tasks.filter((t: any) => {
+            if (t.status !== col) return false;
+            
+            const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
+              t.additionalPics ? (() => {
+                try {
+                  const arr = JSON.parse(t.additionalPics);
+                  return Array.isArray(arr) && arr.includes(globalPicFilter);
+                } catch(e) { return false; }
+              })() : false
+            );
 
-              return (
-                <div
-                  key={task.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, task.id)}
-                  onClick={() => openTaskDetail(task)}
-                  style={{
-                    backgroundColor: 'var(--background)',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
-                    cursor: 'grab',
-                    opacity: isDragged ? 0.5 : 1,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    transition: 'transform 0.1s',
-                  }}
-                  onDragEnd={() => setDraggedTaskId(null)}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      fontSize: '10px', 
-                      padding: '2px 6px', 
-                      borderRadius: '4px', 
-                      fontWeight: 'bold',
-                      backgroundColor: task.prioritas === 'Urgent' ? 'rgba(239, 68, 68, 0.1)' : task.prioritas === 'High' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 137, 0.1)',
-                      color: task.prioritas === 'Urgent' ? 'var(--danger)' : task.prioritas === 'High' ? 'var(--warning)' : 'var(--success)'
-                    }}>
-                      {task.prioritas || 'Medium'}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                    </span>
-                  </div>
+            const taskEnd = new Date(t.endDate).getTime();
+            const taskStart = new Date(t.startDate).getTime();
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            let startBoundary = today.getTime();
+            let endBoundary = today.getTime() + 86400000 - 1;
 
-                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
-                    {task.nama}
-                  </h4>
+            if (globalTargetFilter === 'Minggu Ini') {
+              const day = today.getDay();
+              const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+              const monday = new Date(new Date(today).setDate(diff));
+              startBoundary = monday.getTime();
+              endBoundary = startBoundary + (7 * 86400000) - 1;
+            } else if (globalTargetFilter === 'Bulan Ini') {
+              startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+              endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+            } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+              startBoundary = new Date(globalCustomStartDate).getTime();
+              endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
+            }
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                      {task.fileUrl && <Paperclip size={14} />}
-                      {subStats && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: subStats.done === subStats.total ? 'var(--success)' : 'inherit' }}>
-                          <ListTodoIcon /> {subStats.done}/{subStats.total}
-                        </div>
-                      )}
-                      {task.catatan && <MessageSquare size={14} />}
-                    </div>
-                    <div 
-                      title={task.pic}
-                      style={{ 
-                        width: '24px', 
-                        height: '24px', 
-                        borderRadius: '50%', 
-                        backgroundColor: 'var(--accent-primary)', 
-                        color: 'white', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        fontSize: '10px', 
-                        fontWeight: 'bold' 
-                      }}
-                    >
-                      {task.pic.substring(0, 2).toUpperCase()}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            let matchDate = false;
+            if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+              matchDate = true;
+            } else {
+              if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+                  matchDate = true;
+              }
+            }
+            
+            return matchPic && matchDate;
+          });
 
-            {colTasks.length === 0 && (
-              <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                Tarik tugas ke sini
+          // Sort tasks
+          columnTasks = columnTasks.sort((a, b) => {
+            if (sortBy === 'Manual') {
+              return (a.orderIndex || 0) - (b.orderIndex || 0);
+            } else if (sortBy === 'Deadline') {
+              return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+            } else if (sortBy === 'Prioritas') {
+              return getPriorityWeight(b.prioritas || '') - getPriorityWeight(a.prioritas || '');
+            } else if (sortBy === 'Abjad') {
+              return a.nama.localeCompare(b.nama);
+            }
+            return 0;
+          });
+
+          const isDragOverCol = dragOverColumn === col;
+
+          return (
+            <div
+              key={col}
+              className="kanban-col glass"
+              onDragOver={(e) => handleDragOverColumn(e, col)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDropColumn(e, col)}
+              style={{
+                backgroundColor: isDragOverCol ? 'var(--background)' : 'var(--surface-color)',
+                border: isDragOverCol ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                  {col}
+                </h3>
+                <span style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+                  {columnTasks.length}
+                </span>
               </div>
-            )}
-          </div>
-        );
-      })}
+
+              {columnTasks.map((task: any) => {
+                const subStats = getSubtaskStats(task.subTasksJson);
+                const isDragged = draggedTaskId === task.id;
+                const isDragOverThisCard = dragOverCardId === task.id;
+
+                return (
+                  <div
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDragOver={(e) => handleDragOverCard(e, task.id)}
+                    onDrop={(e) => handleDropCard(e, col, task.id)}
+                    onClick={() => openTaskDetail(task)}
+                    style={{
+                      backgroundColor: 'var(--background)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                      cursor: 'grab',
+                      opacity: isDragged ? 0.5 : 1,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      transition: 'transform 0.1s',
+                      marginTop: isDragOverThisCard ? '20px' : '0px'
+                    }}
+                    onDragEnd={() => setDraggedTaskId(null)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontWeight: 'bold',
+                        backgroundColor: task.prioritas === 'Urgent' ? 'rgba(239, 68, 68, 0.1)' : task.prioritas === 'High' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 137, 0.1)',
+                        color: task.prioritas === 'Urgent' ? 'var(--danger)' : task.prioritas === 'High' ? 'var(--warning)' : 'var(--success)'
+                      }}>
+                        {task.prioritas || 'Medium'}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                      </span>
+                    </div>
+
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
+                      {task.nama}
+                    </h4>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                        {task.fileUrl && <Paperclip size={14} />}
+                        {subStats && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: subStats.done === subStats.total ? 'var(--success)' : 'inherit' }}>
+                            <ListTodoIcon /> {subStats.done}/{subStats.total}
+                          </div>
+                        )}
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCommentTask(task);
+                          }}
+                          className="hover-bg-surface"
+                        >
+                          <MessageSquare size={14} />
+                          <span style={{ fontSize: '11px', fontWeight: 600 }}>{getTaskComments(task).length || ''}</span>
+                        </div>
+                      </div>
+                      <div 
+                        title={task.pic}
+                        style={{ 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          backgroundColor: 'var(--accent-primary)', 
+                          color: 'white', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '10px', 
+                          fontWeight: 'bold' 
+                        }}
+                      >
+                        {task.pic.substring(0, 2).toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {columnTasks.length === 0 && (
+                <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  Tarik tugas ke sini
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {isDetailOpen && selectedTask && (
         <TaskDetailModal
           task={selectedTask}
           onClose={() => setIsDetailOpen(false)}
           onEdit={() => openTaskEdit(selectedTask)}
+          onDelete={() => handleDeleteTask(selectedTask.id)}
           setPreviewFile={(file: any) => window.open(file.url, '_blank')}
         />
       )}
@@ -249,7 +518,16 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           }}
           formPicOptions={formPicOptions}
           formCategoryOptions={formCategoryOptions}
+          formStatusOptions={masterStatuses}
+          formPriorityOptions={masterPriorities}
           setPreviewFile={(file: any) => window.open(file.url, '_blank')}
+        />
+      )}
+
+      {commentTask && (
+        <QuickCommentModal 
+          task={commentTask}
+          onClose={() => setCommentTask(null)}
         />
       )}
     </div>

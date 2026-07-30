@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, FileItem, SubTask, getPriorityBadgeClass, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, CommentItem, getPriorityBadgeClass, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS } from '@/utils/taskUtils';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -43,6 +45,56 @@ interface TaskDetailModalProps {
 }
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
+  const router = useRouter();
+  const [localComments, setLocalComments] = useState<CommentItem[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentAuthor, setCommentAuthor] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    if (task) {
+      setLocalComments(getTaskComments(task));
+      const savedAuthor = localStorage.getItem('commentAuthor');
+      if (savedAuthor) setCommentAuthor(savedAuthor);
+    }
+  }, [task]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !commentAuthor.trim()) {
+      toast.error('Nama dan komentar tidak boleh kosong');
+      return;
+    }
+    
+    localStorage.setItem('commentAuthor', commentAuthor.trim());
+
+    const comment: CommentItem = {
+      id: Date.now().toString(),
+      author: commentAuthor.trim(),
+      text: newComment.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedComments = [...localComments, comment];
+    setLocalComments(updatedComments);
+    setNewComment('');
+    setIsSubmittingComment(true);
+
+    try {
+      const res = await fetch(`/api/tasks/${task!.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
+      });
+      if (!res.ok) throw new Error('Gagal menyimpan komentar');
+      router.refresh();
+    } catch(e) {
+      toast.error('Gagal menyimpan komentar');
+      setLocalComments(localComments); // revert
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
   if (!task) return null;
 
   return (
@@ -233,6 +285,58 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                 </div>
               </div>
             )}
+
+            {/* Comments Section */}
+            <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <MessageSquare size={16} color="var(--accent-primary)" /> Komentar
+              </h4>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '200px', overflowY: 'auto' }}>
+                {localComments.length === 0 ? (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', padding: '12px 0' }}>Belum ada komentar.</div>
+                ) : (
+                  localComments.map(comment => (
+                    <div key={comment.id} style={{ background: 'var(--bg-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{comment.text}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  className="input" 
+                  placeholder="Nama Anda" 
+                  value={commentAuthor}
+                  onChange={e => setCommentAuthor(e.target.value)}
+                  style={{ fontSize: '13px', padding: '8px 12px' }}
+                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <textarea 
+                    className="input" 
+                    placeholder="Tulis komentar..." 
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    rows={2}
+                    style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '8px 12px' }}
+                  />
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleAddComment}
+                    disabled={isSubmittingComment || !newComment.trim() || !commentAuthor.trim()}
+                    style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
               {onEdit && (

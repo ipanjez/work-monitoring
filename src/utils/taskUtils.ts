@@ -28,19 +28,28 @@ export type SubTask = {
   logs: SubTaskLog[];
 };
 
-export type Task = {
+export interface CommentItem {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface Task {
   id: number;
   nama: string;
   pic: string;
   status: string;
-  prioritas: string;
-  kategori: string;
-  progress: number;
+  prioritas?: string | null;
+  kategori?: string | null;
+  progress?: number | null;
+  orderIndex?: number;
   deskripsi?: string | null;
   catatan?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
   filesJson?: string | null;
+  commentsJson?: string | null;
   subTasksJson?: string | null;
   isAllDay?: boolean | null;
   startTime?: string | null;
@@ -74,6 +83,17 @@ export const getAdditionalPics = (task: Task | Partial<Task>): string[] => {
       const parsed = JSON.parse(task.additionalPics);
       if (Array.isArray(parsed)) return parsed;
     } catch (e) {}
+  }
+  return [];
+};
+
+export const getTaskComments = (task: Task | Partial<Task>): CommentItem[] => {
+  if (task.commentsJson) {
+    try {
+      return JSON.parse(task.commentsJson);
+    } catch (e) {
+      return [];
+    }
   }
   return [];
 };

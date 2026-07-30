@@ -19,11 +19,13 @@ model Task {
   prioritas String   @default("Medium") // Low, Medium, High, Urgent
   kategori  String   @default("Umum")
   progress  Int      @default(0)
+  orderIndex Int     @default(0)
   deskripsi String?
   catatan   String?
   fileUrl   String?
   fileName  String?
   filesJson      String?
+  commentsJson   String?
   subTasksJson   String?
   isAllDay       Boolean  @default(true)
   startTime      String?

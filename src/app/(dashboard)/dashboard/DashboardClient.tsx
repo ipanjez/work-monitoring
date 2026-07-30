@@ -72,6 +72,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
   useEffect(() => {
     const loadMasterData = () => {
@@ -83,6 +85,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           }
           if (data.master_categories) {
             setMasterCategories(data.master_categories);
+          }
+          if (data.master_statuses) {
+            setMasterStatuses(data.master_statuses);
+          }
+          if (data.master_priorities) {
+            setMasterPriorities(data.master_priorities);
           }
         })
         .catch(e => console.error(e));
@@ -141,24 +149,28 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   });
 
   const total = filteredTasks.length;
-  const completed = filteredTasks.filter(t => t.status === 'Done').length;
-  const inProgress = filteredTasks.filter(t => t.status === 'In Progress').length;
-  const todo = filteredTasks.filter(t => t.status === 'To Do').length;
+
+  const statusCounts = filteredTasks.reduce((acc, t) => {
+    const s = t.status || 'To Do';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const avgProgress = total > 0 
-    ? Math.round(filteredTasks.reduce((acc, t) => acc + (t.progress || (t.status === 'Done' ? 100 : t.status === 'In Progress' ? 50 : 0)), 0) / total)
+    ? Math.round(filteredTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / total)
     : 0;
 
   const textColor = theme === 'dark' ? '#f8fafc' : '#0f172a';
   const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 
   // Status Doughnut Data
+  const defaultColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#6366f1'];
   const statusData = {
-    labels: ['Selesai', 'Proses', 'Belum Dimulai'],
+    labels: masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts),
     datasets: [
       {
-        data: [completed, inProgress, todo],
-        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6'],
+        data: (masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map(s => statusCounts[s] || 0),
+        backgroundColor: (masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((_, i) => defaultColors[i % defaultColors.length]),
         borderColor: theme === 'dark' ? '#1e293b' : '#ffffff',
         borderWidth: 2,
       },
@@ -221,17 +233,14 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     return acc;
   }, {} as Record<string, number>);
 
+  const priorityColors = ['#ef4444', '#f97316', '#3b82f6', '#64748b', '#a855f7', '#10b981'];
+  
   const priorityData = {
-    labels: ['Urgent', 'High', 'Medium', 'Low'],
+    labels: masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts),
     datasets: [
       {
-        data: [
-          priorityCounts['Urgent'] || 0,
-          priorityCounts['High'] || 0,
-          priorityCounts['Medium'] || 0,
-          priorityCounts['Low'] || 0,
-        ],
-        backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#64748b'],
+        data: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map(p => priorityCounts[p] || 0),
+        backgroundColor: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map((_, i) => priorityColors[i % priorityColors.length]),
         borderWidth: 0,
       },
     ],
@@ -681,29 +690,15 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{total}</p>
           </div>
 
-          <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Selesai</span>
-              <CheckCircle size={20} color="var(--success)" />
+          {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((statusName, idx) => (
+            <div key={statusName} className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
+                <CheckCircle size={20} color={defaultColors[idx % defaultColors.length]} />
+              </div>
+              <p style={{ fontSize: '32px', fontWeight: 'bold', color: defaultColors[idx % defaultColors.length] }}>{statusCounts[statusName] || 0}</p>
             </div>
-            <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--success)' }}>{completed}</p>
-          </div>
-
-          <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Dalam Proses</span>
-              <Clock size={20} color="var(--warning)" />
-            </div>
-            <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--warning)' }}>{inProgress}</p>
-          </div>
-
-          <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Belum Dimulai</span>
-              <AlertTriangle size={20} color="var(--text-secondary)" />
-            </div>
-            <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{todo}</p>
-          </div>
+          ))}
 
           <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
