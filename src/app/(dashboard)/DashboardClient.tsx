@@ -165,33 +165,52 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     ],
   };
 
-  // PIC Bar Data
-  const picCounts = filteredTasks.reduce((acc, task) => {
-    acc[task.pic] = (acc[task.pic] || 0) + 1;
+  // PIC Bar Data (Stacked: PIC Utama vs PIC Tambahan)
+  const picUtamaCounts: Record<string, number> = {};
+  const picTambahanCounts: Record<string, number> = {};
+  const allChartPics = new Set<string>();
+
+  filteredTasks.forEach(task => {
+    const utama = task.pic;
+    if (utama && utama.trim() !== '') {
+      const trimmedUtama = utama.trim();
+      picUtamaCounts[trimmedUtama] = (picUtamaCounts[trimmedUtama] || 0) + 1;
+      allChartPics.add(trimmedUtama);
+    }
+    
     if (task.additionalPics) {
       try {
         const additional = JSON.parse(task.additionalPics);
         if (Array.isArray(additional)) {
           additional.forEach(apic => {
             if (apic && typeof apic === 'string' && apic.trim() !== '') {
-              acc[apic.trim()] = (acc[apic.trim()] || 0) + 1;
+              const trimmed = apic.trim();
+              picTambahanCounts[trimmed] = (picTambahanCounts[trimmed] || 0) + 1;
+              allChartPics.add(trimmed);
             }
           });
         }
       } catch (e) {}
     }
-    return acc;
-  }, {} as Record<string, number>);
+  });
+
+  const picLabels = Array.from(allChartPics);
 
   const picData = {
-    labels: Object.keys(picCounts),
+    labels: picLabels,
     datasets: [
       {
-        label: 'Jumlah Pekerjaan',
-        data: Object.values(picCounts),
-        backgroundColor: '#3b82f6',
-        borderRadius: 6,
+        label: 'PIC Utama',
+        data: picLabels.map(l => picUtamaCounts[l] || 0),
+        backgroundColor: '#3b82f6', // blue
+        borderRadius: 4,
       },
+      {
+        label: 'PIC Tambahan',
+        data: picLabels.map(l => picTambahanCounts[l] || 0),
+        backgroundColor: '#93c5fd', // light blue
+        borderRadius: 4,
+      }
     ],
   };
 
@@ -294,11 +313,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const picOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: { legend: { display: true, position: 'top' as const, labels: { color: textColor, boxWidth: 12 } } },
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
-      y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { ticks: { color: textColor }, grid: { display: false } }
+      y: { stacked: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
+      x: { stacked: true, ticks: { color: textColor }, grid: { display: false } }
     },
     onHover: (event: any, elements: any[]) => {
       if (event.native && event.native.target) {
@@ -699,31 +718,28 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
 
         {/* Selected PIC Detail Widget if PIC selected */}
         {globalPicFilter !== 'Semua PIC' && (
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', marginBottom: '32px', borderLeft: '4px solid var(--accent-primary)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <User size={24} color="var(--accent-primary)" />
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Analisis Beban Kerja PIC: {globalPicFilter}</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Ringkasan seluruh tugas yang ditugaskan kepada {globalPicFilter}</p>
-              </div>
+          <div className="glass" style={{ padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <User size={18} color="var(--accent-primary)" />
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Analisis PIC: {globalPicFilter}</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-              <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Tugas</span>
-                <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{picTasks.length}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Total:</span>
+                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{picTasks.length}</span>
               </div>
-              <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Selesai</span>
-                <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>{picDone}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Selesai:</span>
+                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--success)' }}>{picDone}</span>
               </div>
-              <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Dalam Proses</span>
-                <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--warning)' }}>{picInProgress}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Proses:</span>
+                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--warning)' }}>{picInProgress}</span>
               </div>
-              <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Belum Dimulai</span>
-                <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{picTodo}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Belum:</span>
+                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{picTodo}</span>
               </div>
             </div>
           </div>
