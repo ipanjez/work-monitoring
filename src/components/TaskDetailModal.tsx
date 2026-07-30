@@ -80,24 +80,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     }
   };
 
-  const handleDeleteLog = async (logIndex: number) => {
-    if (!confirm('Hapus riwayat aktivitas ini?')) return;
-    const updatedLogs = [...localHistoryLogs];
-    updatedLogs.splice(logIndex, 1);
-    setLocalHistoryLogs(updatedLogs);
-    try {
-      await fetch(`/api/tasks/${task!.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ historyLogs: JSON.stringify(updatedLogs) })
-      });
-      router.refresh();
-      toast.success('Aktivitas dihapus');
-    } catch {
-      toast.error('Gagal menghapus aktivitas');
-      setLocalHistoryLogs(localHistoryLogs); // revert
-    }
-  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !commentAuthor.trim()) {
@@ -251,14 +233,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                           <span style={{ fontWeight: 600 }}>• {log.action}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
-                            <button 
-                              type="button" 
-                              onClick={() => handleDeleteLog(idx)}
-                              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}
-                              title="Hapus Aktivitas"
-                            >
-                              <Trash2 size={12} />
-                            </button>
                           </div>
                         </div>
                         {(log as any).details && (
