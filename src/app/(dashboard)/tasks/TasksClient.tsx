@@ -1,5 +1,5 @@
 'use client';
-
+import { useMaster } from '@/context/MasterContext';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -26,6 +26,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
+  const { masterColors } = useMaster();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -1172,18 +1173,18 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       )}
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '')} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '').style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors).style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                         {task.kategori || 'Umum'}
                       </span>
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium')}>
+                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
                     <td style={{ padding: '16px 12px', minWidth: '150px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12px' }}>
-                        <span {...getDynamicBadgeStyle('status', task.status, '')} style={{ ...getDynamicBadgeStyle('status', task.status, '').style, fontWeight: '600' }}>
+                        <span {...getDynamicBadgeStyle('status', task.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', task.status, '', masterColors).style, fontWeight: '600' }}>
                           {task.status}
                         </span>
                         <span style={{ color: 'var(--text-secondary)' }}>{prog}%</span>

@@ -1,4 +1,5 @@
 'use client';
+import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -10,6 +11,7 @@ import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
+  const { masterColors } = useMaster();
   const router = useRouter();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
@@ -500,7 +502,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   >
                       {/* Card Content Top */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium')}>
+                        <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
                           {task.prioritas || 'Medium'}
                         </span>
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>

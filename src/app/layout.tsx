@@ -3,6 +3,7 @@ import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { FilterProvider } from "@/context/FilterContext";
+import { MasterProvider } from "@/context/MasterContext";
 import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -23,9 +24,10 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <ThemeProvider>
-          <FilterProvider>
-            <NotificationProvider>
-              {children}
+          <MasterProvider>
+            <FilterProvider>
+              <NotificationProvider>
+                {children}
               <Toaster 
                 position="top-right" 
                 toastOptions={{
@@ -49,8 +51,9 @@ export default function RootLayout({
                   },
                 }} 
               />
-            </NotificationProvider>
-          </FilterProvider>
+              </NotificationProvider>
+            </FilterProvider>
+          </MasterProvider>
         </ThemeProvider>
       </body>
     </html>

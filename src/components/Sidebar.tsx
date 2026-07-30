@@ -9,9 +9,12 @@ import { LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare,
 import styles from './Sidebar.module.css';
 import { useTheme } from '@/context/ThemeContext';
 import { useFilter } from '@/context/FilterContext';
+import { useMaster } from '@/context/MasterContext';
 import IdleTimer from './IdleTimer';
 
 export default function Sidebar() {
+  const { masterColors } = useMaster();
+  const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useTheme();
@@ -257,8 +260,7 @@ export default function Sidebar() {
             </div>
             
             {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
-              const defaultColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#6366f1'];
-              const color = defaultColors[idx % defaultColors.length];
+              const color = masterColors[`status_${status}`] || '#3b82f6';
               return (
                 <div key={status} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>{status}:</span>
@@ -280,8 +282,7 @@ export default function Sidebar() {
             border: '1px solid var(--border-color)'
           }}>
             {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
-              const defaultColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#6366f1'];
-              const color = defaultColors[idx % defaultColors.length];
+              const color = masterColors[`status_${status}`] || '#3b82f6';
               const val = stats[status] || 0;
               return (
                 <div key={status} title={`${status}: ${val}`} style={{ background: `${color}20`, border: `1px solid ${color}`, color: color, width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>

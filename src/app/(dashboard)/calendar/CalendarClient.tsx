@@ -1,5 +1,5 @@
 'use client';
-
+import { useMaster } from '@/context/MasterContext';
 import { copyToClipboard } from '@/utils/clipboard';
 
 import { useState, useRef, useEffect } from 'react';
@@ -34,6 +34,7 @@ import TaskAddEditModal from '@/components/TaskAddEditModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
+  const { masterColors } = useMaster();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
@@ -144,7 +145,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const eventStyleGetter = (event: any) => {
     const task = event.resource as Task;
-    const dynamicStyle = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', '');
+    const dynamicStyle = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', '', masterColors);
     const backgroundColor = dynamicStyle.style?.backgroundColor || '#3b82f6';
     const textColor = dynamicStyle.style?.color || 'white';
 
@@ -380,7 +381,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           
           {[...masterPriorities, ...masterStatuses].map(filterValue => {
             const isStatus = masterStatuses.includes(filterValue);
-            const dynamicStyle = getDynamicBadgeStyle(isStatus ? 'status' : 'priority', filterValue, '');
+            const dynamicStyle = getDynamicBadgeStyle(isStatus ? 'status' : 'priority', filterValue, '', masterColors);
             const color = dynamicStyle.style?.color || 'var(--accent-primary)';
             const bgColor = dynamicStyle.style?.backgroundColor || 'var(--surface-color)';
             

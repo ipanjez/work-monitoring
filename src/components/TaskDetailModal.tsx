@@ -1,5 +1,5 @@
 'use client';
-
+import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
@@ -45,6 +45,7 @@ interface TaskDetailModalProps {
 }
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
+  const { masterColors } = useMaster();
   const router = useRouter();
   const [localComments, setLocalComments] = useState<CommentItem[]>([]);
   const [localHistoryLogs, setLocalHistoryLogs] = useState<LogItem[]>([]);
@@ -160,7 +161,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
             <div>
-              <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge')} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge').style, marginBottom: '8px' }}>
+              <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge', masterColors).style, marginBottom: '8px' }}>
                 {task.prioritas || 'Medium'}
               </span>
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
@@ -183,7 +184,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
                 <p style={{ marginTop: '4px' }}>
-                  <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '')} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '').style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                  <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
                     {task.kategori || 'Umum'}
                   </span>
                 </p>
@@ -191,7 +192,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status:</span>
                 <p style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span {...getDynamicBadgeStyle('status', task.status, '')} style={{ ...getDynamicBadgeStyle('status', task.status, '').style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                  <span {...getDynamicBadgeStyle('status', task.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', task.status, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
                     {task.status}
                   </span>
                   <span style={{ fontWeight: '600', color: 'var(--text-secondary)', fontSize: '12px' }}>({task.progress || 0}%)</span>

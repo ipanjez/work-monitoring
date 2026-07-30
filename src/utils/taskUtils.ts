@@ -129,10 +129,10 @@ export const getDynamicIconName = (type: string, value: string): string => {
   return '';
 };
 
-export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '') => {
-  const color = getDynamicColor(type, value);
+export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '', passedMasterColors?: Record<string, string>) => {
+  let color = passedMasterColors ? passedMasterColors[`${type}_${value}`] : getDynamicColor(type, value);
   if (color) {
-    return { style: { backgroundColor: color, color: '#fff' }, className: 'badge' }; // Basic styling, might need contrast logic later
+    return { style: { backgroundColor: color, color: '#fff' }, className: 'badge' };
   }
   return { className: defaultClass || 'badge badge-medium', style: {} };
 };
