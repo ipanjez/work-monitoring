@@ -38,10 +38,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   }, []);
 
   // Group tasks by PIC
-  const picStatsMap: Record<string, { total: number; done: number; inProgress: number; toDo: number; urgent: number; tasks: Task[] }> = {};
+  const picStatsMap: Record<string, { total: number; done: number; review: number; inProgress: number; toDo: number; urgent: number; tasks: Task[] }> = {};
   
   masterPics.forEach(pic => {
-    picStatsMap[pic] = { total: 0, done: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
+    picStatsMap[pic] = { total: 0, done: 0, review: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
   });
 
   localTasks.forEach(t => {
@@ -58,11 +58,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
     picNames.forEach(picName => {
       if (!picStatsMap[picName]) {
-        picStatsMap[picName] = { total: 0, done: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
+        picStatsMap[picName] = { total: 0, done: 0, review: 0, inProgress: 0, toDo: 0, urgent: 0, tasks: [] };
       }
       const stat = picStatsMap[picName];
       stat.total += 1;
       if (t.status === 'Done') stat.done += 1;
+      else if (t.status === 'Review') stat.review += 1;
       else if (t.status === 'In Progress') stat.inProgress += 1;
       else stat.toDo += 1;
 
@@ -191,10 +192,14 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Done</span>
                   <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>{stat.done}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Review</span>
+                  <span style={{ fontWeight: 'bold', color: '#3b82f6' }}>{stat.review}</span>
                 </div>
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Proses</span>

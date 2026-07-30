@@ -397,6 +397,8 @@ export default function TaskAddEditModal({
                     const newStatus = e.target.value;
                     if (newStatus === 'Done') {
                       setEditingTask({ ...editingTask, status: newStatus, progress: 100 });
+                    } else if (newStatus === 'Review') {
+                      setEditingTask({ ...editingTask, status: newStatus, progress: 90 });
                     } else if (newStatus === 'In Progress') {
                       setEditingTask({ ...editingTask, status: newStatus, progress: 50 });
                     } else if (newStatus === 'To Do') {
@@ -407,6 +409,7 @@ export default function TaskAddEditModal({
                   }}>
                     <option value="To Do">To Do</option>
                     <option value="In Progress">In Progress</option>
+                    <option value="Review">Review</option>
                     <option value="Done">Done</option>
                   </select>
                 </div>
@@ -702,7 +705,7 @@ export default function TaskAddEditModal({
                             }}
                             value={subTask.status}
                             onChange={e => {
-                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Done';
+                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Review' | 'Done';
                               const updated = [...(editingTask.subTasksList || [])];
                               updated[idx].status = newStatus;
                               setEditingTask({ ...editingTask, subTasksList: updated });
@@ -710,6 +713,7 @@ export default function TaskAddEditModal({
                           >
                             <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
                             <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
+                            <option value="Review" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Review</option>
                             <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
                           </select>
                         </div>

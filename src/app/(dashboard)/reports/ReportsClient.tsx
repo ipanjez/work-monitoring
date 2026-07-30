@@ -125,6 +125,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   const totalTasks = filteredTasks.length;
   const completedTasks = filteredTasks.filter(t => t.status === 'Done').length;
+  const reviewTasks = filteredTasks.filter(t => t.status === 'Review').length;
   const inProgressTasks = filteredTasks.filter(t => t.status === 'In Progress').length;
   const toDoTasks = filteredTasks.filter(t => t.status === 'To Do').length;
 
@@ -149,10 +150,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   // 1. Status Pekerjaan (Doughnut)
   const statusData = {
-    labels: ['Done', 'In Progress', 'To Do'],
+    labels: ['Done', 'Review', 'In Progress', 'To Do'],
     datasets: [{
-      data: [completedTasks, inProgressTasks, toDoTasks],
-      backgroundColor: ['#10b981', '#f59e0b', '#94a3b8'],
+      data: [completedTasks, reviewTasks, inProgressTasks, toDoTasks],
+      backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#94a3b8'],
       borderWidth: 0,
     }]
   };
@@ -173,11 +174,12 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   };
 
   // 3. Beban Kerja PIC (Bar)
-  const picStats: Record<string, { done: number, inProgress: number, todo: number }> = {};
+  const picStats: Record<string, { done: number, review: number, inProgress: number, todo: number }> = {};
   filteredTasks.forEach(t => {
     const processPic = (p: string) => {
-      if (!picStats[p]) picStats[p] = { done: 0, inProgress: 0, todo: 0 };
+      if (!picStats[p]) picStats[p] = { done: 0, review: 0, inProgress: 0, todo: 0 };
       if (t.status === 'Done') picStats[p].done++;
+      else if (t.status === 'Review') picStats[p].review++;
       else if (t.status === 'In Progress') picStats[p].inProgress++;
       else picStats[p].todo++;
     };
@@ -191,14 +193,15 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   });
 
   const sortedPics = Object.keys(picStats).sort((a, b) => 
-    (picStats[b].done + picStats[b].inProgress + picStats[b].todo) - 
-    (picStats[a].done + picStats[a].inProgress + picStats[a].todo)
+    (picStats[b].done + picStats[b].review + picStats[b].inProgress + picStats[b].todo) - 
+    (picStats[a].done + picStats[a].review + picStats[a].inProgress + picStats[a].todo)
   ).slice(0, 10); // Top 10
 
   const picWorkloadData = {
     labels: sortedPics,
     datasets: [
       { label: 'Done', data: sortedPics.map(p => picStats[p].done), backgroundColor: '#10b981' },
+      { label: 'Review', data: sortedPics.map(p => picStats[p].review), backgroundColor: '#3b82f6' },
       { label: 'In Progress', data: sortedPics.map(p => picStats[p].inProgress), backgroundColor: '#f59e0b' },
       { label: 'To Do', data: sortedPics.map(p => picStats[p].todo), backgroundColor: '#94a3b8' }
     ]

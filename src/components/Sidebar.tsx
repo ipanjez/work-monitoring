@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare, 
-  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen 
+  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useTheme } from '@/context/ThemeContext';
@@ -29,7 +29,7 @@ export default function Sidebar() {
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [deptName, setDeptName] = useState('Work Monitoring');
-  const [stats, setStats] = useState({ pending: 0, inProgress: 0, done: 0 });
+  const [stats, setStats] = useState({ pending: 0, inProgress: 0, review: 0, done: 0 });
 
   useEffect(() => {
     const loadData = () => {
@@ -71,7 +71,7 @@ export default function Sidebar() {
   ]));
 
   useEffect(() => {
-    let p = 0, ip = 0, d = 0;
+    let p = 0, ip = 0, r = 0, d = 0;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -114,6 +114,8 @@ export default function Sidebar() {
       if (inRange) {
         if (t.status === 'Done') {
           if (globalTargetFilter === 'Semua Waktu' || end >= startBoundary) d++; 
+        } else if (t.status === 'Review') {
+          r++;
         } else if (t.status === 'In Progress') {
           ip++;
         } else {
@@ -122,7 +124,7 @@ export default function Sidebar() {
       }
     });
 
-    setStats({ pending: p, inProgress: ip, done: d });
+    setStats({ pending: p, inProgress: ip, review: r, done: d });
   }, [allTasks, globalTargetFilter, globalPicFilter]);
 
   if (pathname === '/login') return null;
@@ -134,7 +136,8 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/', label: 'Monitoring Board', icon: Kanban },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
     { href: '/calendar', label: 'Kalender', icon: Calendar },
     { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
@@ -250,6 +253,10 @@ export default function Sidebar() {
               <span style={{ color: 'var(--text-secondary)' }}>In Progress:</span>
               <span style={{ fontWeight: 700, color: '#f59e0b' }}>{stats.inProgress}</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Review:</span>
+              <span style={{ fontWeight: 700, color: '#3b82f6' }}>{stats.review}</span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Selesai:</span>
               <span style={{ fontWeight: 700, color: '#10b981' }}>{stats.done}</span>
@@ -272,6 +279,9 @@ export default function Sidebar() {
             </div>
             <div title={`In Progress: ${stats.inProgress}`} style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b', color: '#f59e0b', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
               {stats.inProgress > 99 ? '99+' : stats.inProgress}
+            </div>
+            <div title={`Review: ${stats.review}`} style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#3b82f6', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+              {stats.review > 99 ? '99+' : stats.review}
             </div>
             <div title={`Selesai: ${stats.done}`} style={{ background: 'rgba(16, 185, 137, 0.15)', border: '1px solid #10b981', color: '#10b981', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
               {stats.done > 99 ? '99+' : stats.done}

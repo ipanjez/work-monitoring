@@ -181,8 +181,9 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                           <span style={{ 
                             padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
                             backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
+                                             subTask.status === 'Review' ? '#3b82f6' : 
                                              subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                             'var(--surface-color)',
+                                             'transparent',
                             color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
                           }}>
                             {subTask.status}

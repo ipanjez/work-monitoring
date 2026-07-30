@@ -24,7 +24,7 @@ export type SubTaskLog = {
 export type SubTask = {
   id: string;
   text: string;
-  status: 'To Do' | 'In Progress' | 'Done';
+  status: 'To Do' | 'In Progress' | 'Review' | 'Done';
   logs: SubTaskLog[];
 };
 

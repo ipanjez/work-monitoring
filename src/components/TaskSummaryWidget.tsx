@@ -70,6 +70,7 @@ export default function TaskSummaryWidget() {
   });
 
   const done = filteredTasks.filter(t => t.status === 'Done').length;
+  const review = filteredTasks.filter(t => t.status === 'Review').length;
   const inProgress = filteredTasks.filter(t => t.status === 'In Progress').length;
   const todo = filteredTasks.filter(t => t.status === 'To Do').length;
 
@@ -105,11 +106,16 @@ export default function TaskSummaryWidget() {
             <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Status Pekerjaan
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '4px' }}>
               <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px' }}>
                 <CheckCircle size={16} color="#10b981" style={{ margin: '0 auto 4px' }} />
                 <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#10b981' }}>{done}</div>
                 <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Done</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px' }}>
+                <CheckCircle size={16} color="#3b82f6" style={{ margin: '0 auto 4px' }} />
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b82f6' }}>{review}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Review</div>
               </div>
               <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px' }}>
                 <Clock size={16} color="#f59e0b" style={{ margin: '0 auto 4px' }} />
