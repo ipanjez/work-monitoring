@@ -1,55 +1,71 @@
 const fs = require('fs');
 let content = fs.readFileSync('src/app/(dashboard)/BoardClient.tsx', 'utf8');
 
-if (!content.includes('ChevronUp')) {
-  content = content.replace(/Minimize2,\s*Maximize2\s*\}\s*from\s*'lucide-react';/, "ChevronUp, ChevronDown } from 'lucide-react';");
-}
+const regex = /<span \{\.\.\.getDynamicBadgeStyle\('priority', task\.prioritas \|\| 'Medium', 'badge badge-medium', masterColors\)\}>\s*\{task\.prioritas \|\| 'Medium'\}\s*<\/span>/;
 
-content = content.replace(/const\s+\[collapsedColumns,\s*setCollapsedColumns\]\s*=\s*useState<string\[\]>\(\[\]\);\n?/g, '');
-content = content.replace(/const\s+toggleCollapse\s*=\s*\([^)]+\)\s*=>\s*\{[^}]+\};\n?/g, '');
-content = content.replace(/const\s+isCollapsed\s*=\s*collapsedColumns\.includes\(col\);\n?/g, '');
-content = content.replace(/!\s*isCollapsed\s*\?\s*handleDragOverColumn\(e,\s*col\)\s*:\s*undefined/g, 'handleDragOverColumn(e, col)');
-content = content.replace(/!\s*isCollapsed\s*\?\s*handleDragLeave\s*:\s*undefined/g, 'handleDragLeave');
-content = content.replace(/!\s*isCollapsed\s*\?\s*handleDropColumn\(e,\s*col\)\s*:\s*undefined/g, 'handleDropColumn(e, col)');
-content = content.replace(/flexDirection:\s*isCollapsed\s*\?\s*'column'\s*:\s*'row'/g, "flexDirection: 'row'");
-content = content.replace(/writingMode:\s*isCollapsed\s*\?\s*'vertical-rl'\s*:\s*'horizontal-tb'/g, "writingMode: 'horizontal-tb'");
-content = content.replace(/transform:\s*isCollapsed\s*\?\s*'rotate\(180deg\)'\s*:\s*'none'/g, "transform: 'none'");
-content = content.replace(/margin:\s*isCollapsed\s*\?\s*'8px 0'\s*:\s*'0'/g, "margin: '0'");
-content = content.replace(/!\s*isCollapsed\s*&&\s*columnTasks\.map/g, 'columnTasks.map');
+const replacement = `<div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                {sortBy === 'Manual' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
+                    <ChevronUp 
+                      size={14} 
+                      color="var(--text-secondary)" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveUp(col, task.id);
+                      }} 
+                    />
+                    <ChevronDown 
+                      size={14} 
+                      color="var(--text-secondary)" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveDown(col, task.id);
+                      }} 
+                    />
+                  </div>
+                )}
+                <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
+                  {task.prioritas || 'Medium'}
+                </span>
+              </div>`;
 
-content = content.replace(/<button[^>]+onClick=\{\(\)\s*=>\s*toggleCollapse\(col\)\}[^>]*>[\s\S]*?<\/button>/g, '');
+content = content.replace(regex, replacement);
 
-const handleMove = `
-  const handleMoveTask = (task: any, direction: 'up' | 'down', currentColumnTasks: any[]) => {
-    if (sortBy !== 'Manual') {
-      toast.error('Pengurutan manual hanya bisa dilakukan jika filter Urutkan diset ke Manual');
-      return;
-    }
-    const currentIndex = currentColumnTasks.findIndex(t => t.id === task.id);
-    if (direction === 'up' && currentIndex > 0) {
-      const newTasks = [...currentColumnTasks];
-      const temp = newTasks[currentIndex - 1];
-      newTasks[currentIndex - 1] = newTasks[currentIndex];
-      newTasks[currentIndex] = temp;
-      newTasks.forEach((t, i) => t.orderIndex = i);
-      setTasks(prev => prev.map(p => newTasks.find(n => n.id === p.id) || p));
-      saveReorder(newTasks);
-    } else if (direction === 'down' && currentIndex < currentColumnTasks.length - 1) {
-      const newTasks = [...currentColumnTasks];
-      const temp = newTasks[currentIndex + 1];
-      newTasks[currentIndex + 1] = newTasks[currentIndex];
-      newTasks[currentIndex] = temp;
-      newTasks.forEach((t, i) => t.orderIndex = i);
-      setTasks(prev => prev.map(p => newTasks.find(n => n.id === p.id) || p));
-      saveReorder(newTasks);
+// We need to implement handleMoveUp and handleMoveDown
+const funcRegex = /const handleDropCard = async \(e: React\.DragEvent, newStatus: string, draggedId: number\) => \{/;
+const funcReplacement = `const handleMoveUp = async (status: string, taskId: number) => {
+    let colTasks = tasks.filter(t => t.status === status).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const idx = colTasks.findIndex(t => t.id === taskId);
+    if (idx > 0) {
+      const temp = colTasks[idx];
+      colTasks[idx] = colTasks[idx - 1];
+      colTasks[idx - 1] = temp;
+      const updated = colTasks.map((t, i) => ({ ...t, orderIndex: i }));
+      const newTasks = tasks.map(t => updated.find(u => u.id === t.id) || t);
+      setTasks(newTasks);
+      await saveReorder(updated);
     }
   };
 
-  return (
-`;
-content = content.replace(/\s*return\s*\(\s*<div\s+className="h-full"/, handleMove + '\n    <div className="h-full"');
+  const handleMoveDown = async (status: string, taskId: number) => {
+    let colTasks = tasks.filter(t => t.status === status).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const idx = colTasks.findIndex(t => t.id === taskId);
+    if (idx !== -1 && idx < colTasks.length - 1) {
+      const temp = colTasks[idx];
+      colTasks[idx] = colTasks[idx + 1];
+      colTasks[idx + 1] = temp;
+      const updated = colTasks.map((t, i) => ({ ...t, orderIndex: i }));
+      const newTasks = tasks.map(t => updated.find(u => u.id === t.id) || t);
+      setTasks(newTasks);
+      await saveReorder(updated);
+    }
+  };
 
-content = content.replace(/(<div[^>]*className="kanban-card[^>]*>)/g, `$1\n<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px', position: 'relative', zIndex: 10 }}><div style={{ display: 'flex', gap: '4px' }}><button onClick={(e) => { e.stopPropagation(); handleMoveTask(task, 'up', columnTasks); }} style={{ background: 'var(--background)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', padding: '2px', display: sortBy === 'Manual' ? 'block' : 'none' }} title="Geser ke Atas"><ChevronUp size={14} color="var(--text-secondary)" /></button><button onClick={(e) => { e.stopPropagation(); handleMoveTask(task, 'down', columnTasks); }} style={{ background: 'var(--background)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', padding: '2px', display: sortBy === 'Manual' ? 'block' : 'none' }} title="Geser ke Bawah"><ChevronDown size={14} color="var(--text-secondary)" /></button></div></div>\n`);
+  const handleDropCard = async (e: React.DragEvent, newStatus: string, draggedId: number) => {`;
+
+content = content.replace(funcRegex, funcReplacement);
 
 fs.writeFileSync('src/app/(dashboard)/BoardClient.tsx', content);
-console.log('Script done');
+console.log('Added up/down arrows and logic');

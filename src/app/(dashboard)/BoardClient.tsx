@@ -154,6 +154,34 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setDraggedTaskId(null);
   };
 
+  const handleMoveUp = async (status: string, taskId: number) => {
+    let colTasks = tasks.filter(t => t.status === status).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const idx = colTasks.findIndex(t => t.id === taskId);
+    if (idx > 0) {
+      const temp = colTasks[idx];
+      colTasks[idx] = colTasks[idx - 1];
+      colTasks[idx - 1] = temp;
+      const updated = colTasks.map((t, i) => ({ ...t, orderIndex: i }));
+      const newTasks = tasks.map(t => updated.find(u => u.id === t.id) || t);
+      setTasks(newTasks);
+      saveReorder(updated);
+    }
+  };
+
+  const handleMoveDown = async (status: string, taskId: number) => {
+    let colTasks = tasks.filter(t => t.status === status).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const idx = colTasks.findIndex(t => t.id === taskId);
+    if (idx !== -1 && idx < colTasks.length - 1) {
+      const temp = colTasks[idx];
+      colTasks[idx] = colTasks[idx + 1];
+      colTasks[idx + 1] = temp;
+      const updated = colTasks.map((t, i) => ({ ...t, orderIndex: i }));
+      const newTasks = tasks.map(t => updated.find(u => u.id === t.id) || t);
+      setTasks(newTasks);
+      saveReorder(updated);
+    }
+  };
+
   const handleDropCard = async (e: React.DragEvent, newStatus: string, targetCardId: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -488,9 +516,33 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   >
                       {/* Card Content Top */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
-                          {task.prioritas || 'Medium'}
-                        </span>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                {sortBy === 'Manual' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
+                    <ChevronUp 
+                      size={14} 
+                      color="var(--text-secondary)" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveUp(col, task.id);
+                      }} 
+                    />
+                    <ChevronDown 
+                      size={14} 
+                      color="var(--text-secondary)" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveDown(col, task.id);
+                      }} 
+                    />
+                  </div>
+                )}
+                <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
+                  {task.prioritas || 'Medium'}
+                </span>
+              </div>
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                           {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
                         </span>
