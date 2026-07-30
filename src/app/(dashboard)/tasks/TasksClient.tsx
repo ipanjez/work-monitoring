@@ -21,6 +21,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
+import BulkEditModal from '@/components/BulkEditModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
@@ -52,6 +53,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   
@@ -1267,7 +1269,23 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </div>
       </div>
 
-      <TaskAddEditModal
+      
+        <BulkEditModal
+          isOpen={!!bulkEditField}
+          onClose={() => setBulkEditField(null)}
+          selectedTaskIds={Array.from(selectedTasks)}
+          field={bulkEditField}
+          masterStatuses={masterStatuses}
+          masterCats={masterCats}
+          masterPics={masterPics}
+          masterStatusProgress={masterStatusProgress}
+          onSuccess={() => {
+            setSelectedTasks(new Set());
+            fetch('/api/tasks').then(r => r.json()).then(setTasks);
+            refreshData();
+          }}
+        />
+        <TaskAddEditModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         taskToEdit={editingTask}
