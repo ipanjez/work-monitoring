@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
-import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, Minimize2, Maximize2 } from 'lucide-react';
+import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
@@ -31,12 +31,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
-  const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
-
-  const toggleCollapse = (column: string) => {
-    setCollapsedColumns(prev => prev.includes(column) ? prev.filter(c => c !== column) : [...prev, column]);
-  };
-
+  
+  
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
@@ -417,20 +413,19 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           });
 
           const isDragOverCol = dragOverColumn === col;
-          const isCollapsed = collapsedColumns.includes(col);
-
+          
           return (
             <div
               key={col}
               className="kanban-col glass"
-              onDragOver={(e) => !isCollapsed ? handleDragOverColumn(e, col) : undefined}
-              onDragLeave={!isCollapsed ? handleDragLeave : undefined}
-              onDrop={(e) => !isCollapsed ? handleDropColumn(e, col) : undefined}
+              onDragOver={(e) => handleDragOverColumn(e, col)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDropColumn(e, col)}
               style={{
                 backgroundColor: isDragOverCol ? 'var(--background)' : 'var(--surface-color)',
                 border: isDragOverCol ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                width: isCollapsed ? '60px' : '320px',
-                minWidth: isCollapsed ? '60px' : '320px',
+                width: '320px',
+                minWidth: '320px',
                 transition: 'width 0.2s, min-width 0.2s',
                 overflow: 'hidden',
                 position: 'relative'
@@ -438,20 +433,20 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             >
               <div style={{ 
                 display: 'flex', 
-                flexDirection: isCollapsed ? 'column' : 'row',
+                flexDirection: 'row',
                 justifyContent: 'space-between', 
                 alignItems: 'center', 
                 marginBottom: '8px',
                 gap: '8px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isCollapsed ? 'column' : 'row' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row' }}>
                   <h3 style={{ 
                     fontSize: '15px', 
                     fontWeight: 'bold', 
                     color: 'var(--text-primary)',
-                    writingMode: isCollapsed ? 'vertical-rl' : 'horizontal-tb',
-                    transform: isCollapsed ? 'rotate(180deg)' : 'none',
-                    margin: isCollapsed ? '8px 0' : '0'
+                    writingMode: 'horizontal-tb',
+                    transform: 'none',
+                    margin: '0'
                   }}>
                     {col}
                   </h3>
@@ -459,19 +454,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     {columnTasks.length}
                   </span>
                 </div>
-                <button 
-                  onClick={() => toggleCollapse(col)}
-                  style={{ 
-                    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
-                    padding: '4px', borderRadius: '4px'
-                  }}
-                  title={isCollapsed ? "Expand" : "Collapse"}
-                >
-                  {isCollapsed ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
-                </button>
+                
               </div>
 
-              {!isCollapsed && columnTasks.map((task: any) => {
+              {columnTasks.map((task: any) => {
                 const subStats = getSubtaskStats(task.subTasksJson);
                 const isDragged = draggedTaskId === task.id;
                 const isDragOverThisCard = dragOverCardId === task.id;
@@ -575,7 +561,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                 );
               })}
 
-              {columnTasks.length === 0 && !isCollapsed && (
+              {columnTasks.length === 0 && (
                 <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
                   Tarik tugas ke sini
                 </div>
