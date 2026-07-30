@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
   ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy 
+  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
@@ -19,7 +19,7 @@ import dynamic from 'next/dynamic';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
@@ -1085,9 +1085,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                             <Repeat size={12} /> {task.repetisi}
                           </div>
                         )}
-                        {(task.editCount || 0) > 0 && (
+                        {getTaskComments(task).length > 0 && (
+                          <span style={{ fontSize: '10px', background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '1px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <MessageSquare size={10} /> {getTaskComments(task).length}
+                          </span>
+                        )}
+                        {getHistoryLogs(task).length > 0 && (
                           <span style={{ fontSize: '10px', background: 'rgba(37,99,235,0.15)', color: 'var(--accent-primary)', padding: '1px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <History size={10} /> Diedit {task.editCount}x
+                            <History size={10} /> {getHistoryLogs(task).length}
                           </span>
                         )}
                       </div>
@@ -1127,21 +1132,18 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       )}
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                      <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '')} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '').style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                         {task.kategori || 'Umum'}
                       </span>
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span className={`badge ${getPriorityBadgeClass(task.prioritas)}`}>
+                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium')}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
                     <td style={{ padding: '16px 12px', minWidth: '150px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12px' }}>
-                        <span style={{ 
-                          fontWeight: '600',
-                          color: task.status === 'Done' ? 'var(--success)' : task.status === 'In Progress' ? 'var(--warning)' : 'var(--accent-primary)'
-                        }}>
+                        <span {...getDynamicBadgeStyle('status', task.status, '')} style={{ ...getDynamicBadgeStyle('status', task.status, '').style, fontWeight: '600' }}>
                           {task.status}
                         </span>
                         <span style={{ color: 'var(--text-secondary)' }}>{prog}%</span>

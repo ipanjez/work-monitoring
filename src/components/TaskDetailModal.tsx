@@ -5,9 +5,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, FileItem, SubTask, CommentItem, getPriorityBadgeClass, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS } from '@/utils/taskUtils';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -47,6 +47,7 @@ interface TaskDetailModalProps {
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
   const router = useRouter();
   const [localComments, setLocalComments] = useState<CommentItem[]>([]);
+  const [localHistoryLogs, setLocalHistoryLogs] = useState<LogItem[]>([]);
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -54,10 +55,48 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   useEffect(() => {
     if (task) {
       setLocalComments(getTaskComments(task));
+      setLocalHistoryLogs(getHistoryLogs(task));
       const savedAuthor = localStorage.getItem('commentAuthor');
       if (savedAuthor) setCommentAuthor(savedAuthor);
     }
   }, [task]);
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Hapus komentar ini?')) return;
+    const updatedComments = localComments.filter(c => c.id !== commentId);
+    setLocalComments(updatedComments);
+    try {
+      await fetch(`/api/tasks/${task!.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
+      });
+      router.refresh();
+      toast.success('Komentar dihapus');
+    } catch {
+      toast.error('Gagal menghapus komentar');
+      setLocalComments(localComments); // revert
+    }
+  };
+
+  const handleDeleteLog = async (logIndex: number) => {
+    if (!confirm('Hapus riwayat aktivitas ini?')) return;
+    const updatedLogs = [...localHistoryLogs];
+    updatedLogs.splice(logIndex, 1);
+    setLocalHistoryLogs(updatedLogs);
+    try {
+      await fetch(`/api/tasks/${task!.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyLogs: JSON.stringify(updatedLogs) })
+      });
+      router.refresh();
+      toast.success('Aktivitas dihapus');
+    } catch {
+      toast.error('Gagal menghapus aktivitas');
+      setLocalHistoryLogs(localHistoryLogs); // revert
+    }
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !commentAuthor.trim()) {
@@ -110,8 +149,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
             <div>
-              <span className={`badge ${getPriorityBadgeClass(task.prioritas)}`} style={{ marginBottom: '8px' }}>
-                {task.prioritas || 'Medium'} Priority
+              <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge')} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge').style, marginBottom: '8px' }}>
+                {task.prioritas || 'Medium'}
               </span>
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
             </div>
@@ -132,11 +171,20 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{task.kategori || 'Umum'}</p>
+                <p style={{ marginTop: '4px' }}>
+                  <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '')} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '').style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                    {task.kategori || 'Umum'}
+                  </span>
+                </p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status:</span>
-                <p style={{ fontWeight: '600', color: 'var(--accent-primary)', marginTop: '4px' }}>{task.status} ({task.progress || 0}%)</p>
+                <p style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span {...getDynamicBadgeStyle('status', task.status, '')} style={{ ...getDynamicBadgeStyle('status', task.status, '').style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                    {task.status}
+                  </span>
+                  <span style={{ fontWeight: '600', color: 'var(--text-secondary)', fontSize: '12px' }}>({task.progress || 0}%)</span>
+                </p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi:</span>
@@ -179,17 +227,27 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               </div>
 
               {/* Activity History Timeline List */}
-              {getHistoryLogs(task).length > 0 && (
+              {localHistoryLogs.length > 0 && (
                 <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                     Timeline Aktivitas:
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '120px', overflowY: 'auto' }}>
-                    {getHistoryLogs(task).map((log, idx) => (
+                    {localHistoryLogs.map((log, idx) => (
                       <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px', color: 'var(--text-secondary)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <span style={{ fontWeight: 600 }}>• {log.action}</span>
-                          <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => handleDeleteLog(idx)}
+                              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}
+                              title="Hapus Aktivitas"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </div>
                         {(log as any).details && (
                           <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '10px' }}>
@@ -300,7 +358,17 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                     <div key={comment.id} style={{ background: 'var(--bg-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
-                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
+                          <button 
+                            type="button" 
+                            onClick={() => handleDeleteComment(comment.id)}
+                            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}
+                            title="Hapus Komentar"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
                       <div style={{ fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{comment.text}</div>
                     </div>

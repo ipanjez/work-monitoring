@@ -29,7 +29,7 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
@@ -104,10 +104,9 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                           (task.kategori && task.kategori.toLowerCase().includes(searchQuery.toLowerCase()));
     
     let matchesFilter = true;
-    if (activeFilter === 'Urgent') matchesFilter = task.prioritas === 'Urgent';
-    else if (activeFilter === 'High') matchesFilter = task.prioritas === 'High';
-    else if (activeFilter === 'In Progress') matchesFilter = task.status === 'In Progress';
-    else if (activeFilter === 'Done') matchesFilter = task.status === 'Done';
+    if (activeFilter !== 'All') {
+      matchesFilter = task.prioritas === activeFilter || task.status === activeFilter;
+    }
 
     return matchesSearch && matchesFilter;
   });
@@ -141,18 +140,16 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const eventStyleGetter = (event: any) => {
     const task = event.resource as Task;
-    let backgroundColor = '#3b82f6';
-    if (task.prioritas === 'Urgent') backgroundColor = '#ef4444';
-    else if (task.prioritas === 'High') backgroundColor = '#f97316';
-    else if (task.status === 'Done') backgroundColor = '#10b981';
-    else if (task.status === 'In Progress') backgroundColor = '#f59e0b';
+    const dynamicStyle = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', '');
+    const backgroundColor = dynamicStyle.style?.backgroundColor || '#3b82f6';
+    const textColor = dynamicStyle.style?.color || 'white';
 
     return {
       style: {
         backgroundColor,
         borderRadius: '6px',
         opacity: 0.9,
-        color: 'white',
+        color: textColor,
         border: '0px',
         display: 'block',
         fontSize: '12px',
@@ -358,7 +355,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           />
         </div>
 
-        {/* Interactive Legend Filter Pill Buttons */}
+          {/* Interactive Legend Filter Pill Buttons */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button 
             type="button" 
@@ -377,85 +374,36 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
             Semua ({tasks.length})
           </button>
           
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={() => setActiveFilter(activeFilter === 'Urgent' ? 'All' : 'Urgent')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '12px', 
-              borderRadius: '20px', 
-              background: activeFilter === 'Urgent' ? '#ef4444' : 'var(--surface-color)', 
-              color: activeFilter === 'Urgent' ? 'white' : '#ef4444',
-              border: '1px solid #ef4444',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} /> Urgent
-          </button>
-
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={() => setActiveFilter(activeFilter === 'High' ? 'All' : 'High')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '12px', 
-              borderRadius: '20px', 
-              background: activeFilter === 'High' ? '#f97316' : 'var(--surface-color)', 
-              color: activeFilter === 'High' ? 'white' : '#f97316',
-              border: '1px solid #f97316',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#f97316' }} /> High
-          </button>
-
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={() => setActiveFilter(activeFilter === 'In Progress' ? 'All' : 'In Progress')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '12px', 
-              borderRadius: '20px', 
-              background: activeFilter === 'In Progress' ? '#f59e0b' : 'var(--surface-color)', 
-              color: activeFilter === 'In Progress' ? 'white' : '#f59e0b',
-              border: '1px solid #f59e0b',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }} /> In Progress
-          </button>
-
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={() => setActiveFilter(activeFilter === 'Done' ? 'All' : 'Done')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '12px', 
-              borderRadius: '20px', 
-              background: activeFilter === 'Done' ? '#10b981' : 'var(--surface-color)', 
-              color: activeFilter === 'Done' ? 'white' : '#10b981',
-              border: '1px solid #10b981',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} /> Done
-          </button>
+          {[...masterPriorities, ...masterStatuses].map(filterValue => {
+            const isStatus = masterStatuses.includes(filterValue);
+            const dynamicStyle = getDynamicBadgeStyle(isStatus ? 'status' : 'priority', filterValue, '');
+            const color = dynamicStyle.style?.color || 'var(--accent-primary)';
+            const bgColor = dynamicStyle.style?.backgroundColor || 'var(--surface-color)';
+            
+            return (
+              <button 
+                key={filterValue}
+                type="button" 
+                className="btn" 
+                onClick={() => setActiveFilter(activeFilter === filterValue ? 'All' : filterValue)}
+                style={{ 
+                  padding: '6px 12px', 
+                  fontSize: '12px', 
+                  borderRadius: '20px', 
+                  background: activeFilter === filterValue ? color : 'var(--surface-color)', 
+                  color: activeFilter === filterValue ? 'white' : color,
+                  border: `1px solid ${color}`,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: activeFilter === filterValue ? 'white' : color }} /> 
+                {filterValue}
+              </button>
+            );
+          })}
         </div>
 
         {/* Action Buttons */}

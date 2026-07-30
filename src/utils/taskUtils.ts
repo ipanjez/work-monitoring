@@ -108,7 +108,38 @@ export const getHistoryLogs = (task: Task | Partial<Task>): LogItem[] => {
   return [];
 };
 
+export const getDynamicColor = (type: string, value: string): string => {
+  if (typeof window !== 'undefined') {
+    try {
+      const colors = JSON.parse(localStorage.getItem('master_colors') || '{}');
+      return colors[`${type}_${value}`] || '';
+    } catch { }
+  }
+  return '';
+};
+
+export const getDynamicIconName = (type: string, value: string): string => {
+  if (typeof window !== 'undefined') {
+    try {
+      const icons = JSON.parse(localStorage.getItem('master_icons') || '{}');
+      return icons[`${type}_${value}`] || '';
+    } catch { }
+  }
+  return '';
+};
+
+export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '') => {
+  const color = getDynamicColor(type, value);
+  if (color) {
+    return { style: { backgroundColor: color, color: '#fff' }, className: 'badge' }; // Basic styling, might need contrast logic later
+  }
+  return { className: defaultClass || 'badge badge-medium', style: {} };
+};
+
 export const getPriorityBadgeClass = (p?: string | null) => {
+  if (!p) return 'badge-medium';
+  const color = getDynamicColor('priority', p);
+  if (color) return 'badge-dynamic'; // We'll handle this in UI where we apply inline style
   switch (p) {
     case 'Urgent': return 'badge-urgent';
     case 'High': return 'badge-high';

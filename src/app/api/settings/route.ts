@@ -14,6 +14,8 @@ export async function GET() {
       master_pics: [],
       master_statuses: [],
       master_priorities: [],
+      master_colors: {},
+      master_icons: {},
       dept_name: 'Work Monitoring'
     };
 
@@ -23,7 +25,9 @@ export async function GET() {
       } else {
         try {
           const parsed = JSON.parse(setting.value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
+            if (parsed.length > 0) defaultData[setting.key] = parsed;
+          } else if (parsed && typeof parsed === 'object') {
             defaultData[setting.key] = parsed;
           }
         } catch (e) {
@@ -73,6 +77,22 @@ export async function POST(request: Request) {
         where: { key: 'master_pics' },
         update: { value: JSON.stringify(body.master_pics) },
         create: { key: 'master_pics', value: JSON.stringify(body.master_pics) }
+      });
+    }
+
+    if (body.master_colors) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_colors' },
+        update: { value: JSON.stringify(body.master_colors) },
+        create: { key: 'master_colors', value: JSON.stringify(body.master_colors) }
+      });
+    }
+
+    if (body.master_icons) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_icons' },
+        update: { value: JSON.stringify(body.master_icons) },
+        create: { key: 'master_icons', value: JSON.stringify(body.master_icons) }
       });
     }
 

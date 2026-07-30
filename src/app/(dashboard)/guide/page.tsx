@@ -66,7 +66,7 @@ export default function GuidePage() {
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Fitur Komentar (Baru):</strong> Setiap pekerjaan kini dilengkapi dengan kolom komentar di bagian detailnya. Anda dapat berdiskusi dan melihat riwayat (log) perubahan tugas.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Fitur Komentar (Baru):</strong> Setiap pekerjaan kini dilengkapi dengan kolom komentar di bagian detailnya. Anda dapat berdiskusi, menghapus komentar, dan melihat riwayat (log) perubahan tugas secara mendetail.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
@@ -75,8 +75,8 @@ export default function GuidePage() {
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <Upload size={18} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span style={{ color: 'var(--text-primary)' }}><strong>Import/Export Excel:</strong> <br/>
-              - <strong>Export:</strong> Klik ikon Excel untuk mengunduh seluruh pekerjaan ke format `.xlsx`. <br/>
-              - <strong>Import (Template):</strong> Unduh template kosong terlebih dahulu, isi data pekerjaan beserta Sub-Pekerjaannya, lalu unggah kembali untuk membuat banyak tugas sekaligus.</span>
+              - <strong>Export:</strong> Klik ikon Excel di pojok kanan atas tabel untuk mengunduh seluruh pekerjaan yang sedang ditampilkan ke format `.xlsx`. <br/>
+              - <strong>Import (Template):</strong> Untuk memasukkan banyak data sekaligus, klik ikon Upload, lalu unduh (Download) template kosong terlebih dahulu. Isi data pekerjaan beserta Sub-Pekerjaannya di Excel sesuai format template, simpan, lalu unggah (Import) kembali file tersebut.</span>
             </li>
           </ul>
         </>
@@ -100,15 +100,15 @@ export default function GuidePage() {
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Urutkan Kartu Manual (Drag per Card):</strong> Di dalam satu kolom, Anda bisa mengurutkan prioritas pekerjaan dengan menarik kartu ke atas atau ke bawah.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Urutkan Kartu Manual (Drag per Card):</strong> Di dalam satu kolom, Anda bisa mengurutkan prioritas pekerjaan dengan menarik (drag) kartu ke atas atau ke bawah secara manual.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Dinamis:</strong> Board ini juga terhubung dengan Sidebar Filter, sehingga Anda bisa menampilkan Kanban khusus untuk PIC tertentu.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Collapse / Expand Kolom:</strong> Anda dapat melipat (collapse) kolom status yang tidak ingin dilihat agar tampilan board menjadi lebih luas dan fokus.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Kolom Dinamis:</strong> Jumlah dan nama kolom Kanban (To Do, Review, dsb) akan menyesuaikan dengan Master Status yang ada di menu Pengaturan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Dinamis:</strong> Board ini dilengkapi dengan fitur pencarian dan Filter (berdasarkan kategori atau urutan Abjad/Tenggat Waktu) sehingga Anda bisa menampilkan Kanban khusus yang relevan.</span>
             </li>
           </ul>
         </>
@@ -128,17 +128,22 @@ export default function GuidePage() {
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Tampilan Kalender:</strong> Klik salah satu acara (event) di kalender untuk melihat detail pekerjaan, mengedit, atau menambah komentar.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Tampilan Kalender:</strong> Klik salah satu acara (event) di kalender untuk melihat detail pekerjaan, mengedit (ikon pensil), atau menghapus (ikon tempat sampah).</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Drag and Drop (Baru):</strong> Anda dapat menggeser event di dalam kalender ke hari lain, atau memanjangkan durasinya (resize) secara langsung untuk mengubah Tanggal Mulai dan Tenggat Waktu dengan cepat.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <FileSpreadsheet size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span style={{ color: 'var(--text-primary)' }}><strong>Apa itu Sinkronisasi (.ics)?</strong> <br/>
-              Format `.ics` (iCalendar) adalah standar format file untuk menyimpan data acara kalender. Hampir semua aplikasi kalender populer (Google Calendar, Apple Calendar, Microsoft Outlook) mendukung format ini.</span>
+              Format `.ics` (iCalendar) adalah standar format file global untuk menyimpan data acara kalender. Hampir semua aplikasi kalender (Google Calendar, Apple Calendar, Microsoft Outlook) mendukung format ini.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Cara Menggunakan .ics:</strong> <br/>
-              Klik tombol berlogo Kalender (Download .ics) pada detail tugas. File `task.ics` akan terunduh. Buka file tersebut, maka aplikasi Kalender di HP atau Laptop Anda akan otomatis terbuka untuk menyimpan pengingat pekerjaan tersebut.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Cara Menggunakan .ics & Google Calendar:</strong> <br/>
+              - <strong>Local Calendar:</strong> Klik tombol berlogo Kalender (Download .ics) pada tabel daftar tugas atau detail tugas. File `task.ics` akan terunduh. Buka file tersebut, maka aplikasi Kalender di HP/Laptop akan otomatis terbuka.<br/>
+              - <strong>Google Calendar:</strong> Klik ikon kotak dengan panah keluar (External Link) berwarna biru untuk langsung membuat acara di Google Calendar web browser Anda.</span>
             </li>
           </ul>
         </>
@@ -190,7 +195,11 @@ export default function GuidePage() {
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Auto-Logout:</strong> Demi keamanan, jika Anda membiarkan layar tanpa aktivitas selama beberapa menit (sesuai aturan), sistem akan mengeluarkan Anda (logout) secara otomatis.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Kustomisasi Warna dan Ikon (Baru):</strong> Atur warna kustom (baik tampilan terang maupun gelap) serta pilih ikon yang merepresentasikan setiap Nilai Master (Kategori, Status, Prioritas). Tampilan ini akan langsung diterapkan di Kanban, Tabel, dan Kalender!</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Sesi Otomatis & Perpanjangan:</strong> Demi keamanan, jika Anda membiarkan layar tanpa aktivitas selama 10 menit, sistem akan mengeluarkan Anda (logout) secara otomatis. Namun, kini Anda bisa menambahkan perpanjangan sesi yang bersifat akumulatif secara bebas.</span>
             </li>
           </ul>
         </>

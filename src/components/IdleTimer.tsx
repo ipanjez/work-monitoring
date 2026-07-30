@@ -68,8 +68,8 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
   }, [pathname, router]);
 
   const extendSession = (minutes: number) => {
-    setTimeLeft(minutes * 60);
-    toast.success(`Sesi diperpanjang menjadi ${minutes} menit`);
+    setTimeLeft(prev => prev + (minutes * 60));
+    toast.success(`Sesi diperpanjang +${minutes} menit`);
   };
 
   if (pathname === '/login') return null;

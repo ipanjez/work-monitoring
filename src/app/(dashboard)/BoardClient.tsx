@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
-import { Paperclip, MessageSquare, ArrowUpDown } from 'lucide-react';
+import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, Minimize2, Maximize2 } from 'lucide-react';
 import { useFilter } from '@/context/FilterContext';
-import { getTaskComments } from '@/utils/taskUtils';
+import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const router = useRouter();
@@ -27,6 +27,13 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
+
+  const toggleCollapse = (column: string) => {
+    setCollapsedColumns(prev => prev.includes(column) ? prev.filter(c => c !== column) : [...prev, column]);
+  };
 
   useEffect(() => {
     fetch('/api/settings')
@@ -280,7 +287,41 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <Search size={14} color="var(--text-secondary)" />
+          <input
+            type="text"
+            placeholder="Cari Tugas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-primary)', width: '120px' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <Filter size={14} color="var(--text-secondary)" />
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Kategori:</span>
+          <select 
+            value={filterCategory} 
+            onChange={e => setFilterCategory(e.target.value)}
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'var(--text-primary)', 
+              fontSize: '13px',
+              fontWeight: 500,
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="All" style={{ background: 'var(--background)' }}>Semua Kategori</option>
+            {['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi', ...formCategoryOptions]
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .map(c => <option key={c} value={c} style={{ background: 'var(--background)' }}>{c}</option>)}
+          </select>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <ArrowUpDown size={14} color="var(--text-secondary)" />
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
@@ -297,10 +338,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               cursor: 'pointer'
             }}
           >
-            <option value="Manual">Urutan Manual</option>
-            <option value="Deadline">Tenggat Waktu</option>
-            <option value="Prioritas">Prioritas</option>
-            <option value="Abjad">Abjad (Nama)</option>
+            <option value="Manual" style={{ background: 'var(--background)' }}>Urutan Manual</option>
+            <option value="Deadline" style={{ background: 'var(--background)' }}>Tenggat Waktu</option>
+            <option value="Prioritas" style={{ background: 'var(--background)' }}>Prioritas</option>
+            <option value="Abjad" style={{ background: 'var(--background)' }}>Abjad (Nama)</option>
           </select>
         </div>
       </div>
@@ -310,6 +351,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           let columnTasks = tasks.filter((t: any) => {
             if (t.status !== col) return false;
             
+            const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
+
             const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
               t.additionalPics ? (() => {
                 try {
@@ -350,7 +397,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               }
             }
             
-            return matchPic && matchDate;
+            return matchSearch && matchCategory && matchPic && matchDate;
           });
 
           // Sort tasks
@@ -368,29 +415,61 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           });
 
           const isDragOverCol = dragOverColumn === col;
+          const isCollapsed = collapsedColumns.includes(col);
 
           return (
             <div
               key={col}
               className="kanban-col glass"
-              onDragOver={(e) => handleDragOverColumn(e, col)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDropColumn(e, col)}
+              onDragOver={(e) => !isCollapsed ? handleDragOverColumn(e, col) : undefined}
+              onDragLeave={!isCollapsed ? handleDragLeave : undefined}
+              onDrop={(e) => !isCollapsed ? handleDropColumn(e, col) : undefined}
               style={{
                 backgroundColor: isDragOverCol ? 'var(--background)' : 'var(--surface-color)',
                 border: isDragOverCol ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                width: isCollapsed ? '60px' : '320px',
+                minWidth: isCollapsed ? '60px' : '320px',
+                transition: 'width 0.2s, min-width 0.2s',
+                overflow: 'hidden',
+                position: 'relative'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                  {col}
-                </h3>
-                <span style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-                  {columnTasks.length}
-                </span>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: isCollapsed ? 'column' : 'row',
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '8px',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: isCollapsed ? 'column' : 'row' }}>
+                  <h3 style={{ 
+                    fontSize: '15px', 
+                    fontWeight: 'bold', 
+                    color: 'var(--text-primary)',
+                    writingMode: isCollapsed ? 'vertical-rl' : 'horizontal-tb',
+                    transform: isCollapsed ? 'rotate(180deg)' : 'none',
+                    margin: isCollapsed ? '8px 0' : '0'
+                  }}>
+                    {col}
+                  </h3>
+                  <span style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+                    {columnTasks.length}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => toggleCollapse(col)}
+                  style={{ 
+                    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
+                    padding: '4px', borderRadius: '4px'
+                  }}
+                  title={isCollapsed ? "Expand" : "Collapse"}
+                >
+                  {isCollapsed ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+                </button>
               </div>
 
-              {columnTasks.map((task: any) => {
+              {!isCollapsed && columnTasks.map((task: any) => {
                 const subStats = getSubtaskStats(task.subTasksJson);
                 const isDragged = draggedTaskId === task.id;
                 const isDragOverThisCard = dragOverCardId === task.id;
@@ -419,46 +498,59 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     }}
                     onDragEnd={() => setDraggedTaskId(null)}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <span style={{ 
-                        fontSize: '10px', 
-                        padding: '2px 6px', 
-                        borderRadius: '4px', 
-                        fontWeight: 'bold',
-                        backgroundColor: task.prioritas === 'Urgent' ? 'rgba(239, 68, 68, 0.1)' : task.prioritas === 'High' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 137, 0.1)',
-                        color: task.prioritas === 'Urgent' ? 'var(--danger)' : task.prioritas === 'High' ? 'var(--warning)' : 'var(--success)'
-                      }}>
-                        {task.prioritas || 'Medium'}
-                      </span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                      </span>
-                    </div>
-
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
-                      {task.nama}
-                    </h4>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                        {task.fileUrl && <Paperclip size={14} />}
-                        {subStats && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: subStats.done === subStats.total ? 'var(--success)' : 'inherit' }}>
-                            <ListTodoIcon /> {subStats.done}/{subStats.total}
-                          </div>
-                        )}
-                        <div 
-                          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCommentTask(task);
-                          }}
-                          className="hover-bg-surface"
-                        >
-                          <MessageSquare size={14} />
-                          <span style={{ fontSize: '11px', fontWeight: 600 }}>{getTaskComments(task).length || ''}</span>
-                        </div>
+                      {/* Card Content Top */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium')}>
+                          {task.prioritas || 'Medium'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                        </span>
                       </div>
+
+                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
+                        {task.nama}
+                      </h4>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                          
+                          {/* Subtasks Count */}
+                          {subStats && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: subStats.done === subStats.total ? 'var(--success)' : 'inherit' }} title="Sub-Tugas">
+                              <CheckSquare size={14} /> {subStats.done}/{subStats.total}
+                            </div>
+                          )}
+
+                          {/* Files Count */}
+                          {getTaskFiles(task).length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }} title={`${getTaskFiles(task).length} File Lampiran`}>
+                              <Paperclip size={14} /> {getTaskFiles(task).length}
+                            </div>
+                          )}
+
+                          {/* Comments Count */}
+                          <div 
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCommentTask(task);
+                            }}
+                            className="hover-bg-surface"
+                            title={`${getTaskComments(task).length} Komentar`}
+                          >
+                            <MessageSquare size={14} />
+                            <span style={{ fontSize: '11px', fontWeight: 600 }}>{getTaskComments(task).length || ''}</span>
+                          </div>
+
+                          {/* Activity Timeline Count */}
+                          {getHistoryLogs(task).length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }} title={`${getHistoryLogs(task).length} Riwayat Aktivitas`}>
+                              <History size={14} /> {getHistoryLogs(task).length}
+                            </div>
+                          )}
+
+                        </div>
                       <div 
                         title={task.pic}
                         style={{ 
@@ -481,7 +573,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                 );
               })}
 
-              {columnTasks.length === 0 && (
+              {columnTasks.length === 0 && !isCollapsed && (
                 <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
                   Tarik tugas ke sini
                 </div>

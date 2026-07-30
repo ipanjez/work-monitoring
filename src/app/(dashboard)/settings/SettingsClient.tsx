@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useNotifications } from '@/context/NotificationContext';
 import toast from 'react-hot-toast';
 type Task = {
   id: number;
@@ -32,6 +33,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [pics, setPics] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
+  
+  const [masterColors, setMasterColors] = useState<Record<string, string>>({});
+  const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
 
   const [newCatInput, setNewCatInput] = useState('');
   const [newPicInput, setNewPicInput] = useState('');
@@ -50,6 +54,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_pics) setPics(data.master_pics);
         if (data.master_statuses) setStatuses(data.master_statuses);
         if (data.master_priorities) setPriorities(data.master_priorities);
+        if (data.master_colors) setMasterColors(data.master_colors);
+        if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.dept_name) setDeptName(data.dept_name);
       })
       .catch(e => console.error(e));
@@ -138,15 +144,27 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
+  const { addActivityLog } = useNotifications();
+
   const handleAdd = (e: React.FormEvent, type: ListType, val: string, setVal: any, list: string[]) => {
     e.preventDefault();
     if (!val.trim() || list.includes(val.trim())) return;
     updateList(type, prev => [...prev, val.trim()]);
+    if (addActivityLog) addActivityLog('ADD_MASTER', `Tambah Master ${type}`, `Menambahkan item "${val.trim()}" ke master ${type}`, 'info');
     setVal('');
   };
 
   const handleDelete = (type: ListType, val: string) => {
-    if (confirm(`Hapus ${val}?`)) updateList(type, prev => prev.filter(x => x !== val));
+    if (confirm(`Hapus ${val}?`)) {
+      updateList(type, prev => prev.filter(x => x !== val));
+      if (addActivityLog) addActivityLog('DELETE_MASTER', `Hapus Master ${type}`, `Menghapus item "${val}" dari master ${type}`, 'danger');
+    }
+  };
+
+  const handleColorChange = (type: ListType, val: string, color: string) => {
+    const newColors = { ...masterColors, [`${type}_${val}`]: color };
+    setMasterColors(newColors);
+    if (addActivityLog) addActivityLog('EDIT_MASTER', `Ubah Warna ${type}`, `Warna item "${val}" diubah`, 'info');
   };
 
   const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode) => (
@@ -161,9 +179,37 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort A-Z</button>
         <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort Z-A</button>
-        <button type="button" onClick={() => transformList(type, 'upper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>KAPITAL</button>
-        <button type="button" onClick={() => transformList(type, 'lower')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>kecil</button>
-        <button type="button" onClick={() => transformList(type, 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Proper Case</button>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        {list.map((s, idx) => (
+          <span 
+            key={s} 
+            draggable
+            onDragStart={(e) => handleDragStart(e, type, idx)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, type, idx)}
+            onDragEnd={() => setDraggedIdx(null)}
+            style={{ 
+              display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
+              background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'), 
+              border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
+              color: masterColors[`${type}_${s}`] ? 'white' : (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)'), cursor: 'grab' 
+            }}
+          >
+            {s}
+            <input 
+              type="color" 
+              value={masterColors[`${type}_${s}`] || '#ffffff'} 
+              onChange={(e) => handleColorChange(type, s, e.target.value)}
+              style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
+              title="Ubah Warna"
+            />
+            <button 
+              type="button" onClick={() => handleDelete(type, s)} 
+              style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
+            ><X size={14} /></button>
+          </span>
+        ))}
       </div>
     </>
   );
@@ -172,16 +218,29 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     e.preventDefault();
     localStorage.setItem('master_categories', JSON.stringify(categories));
     localStorage.setItem('master_pics', JSON.stringify(pics));
+    localStorage.setItem('master_statuses', JSON.stringify(statuses));
+    localStorage.setItem('master_priorities', JSON.stringify(priorities));
+    localStorage.setItem('master_colors', JSON.stringify(masterColors));
+    localStorage.setItem('master_icons', JSON.stringify(masterIcons));
     
     fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dept_name: deptName })
+      body: JSON.stringify({ 
+        dept_name: deptName, 
+        master_categories: categories,
+        master_pics: pics,
+        master_statuses: statuses,
+        master_priorities: priorities,
+        master_colors: masterColors,
+        master_icons: masterIcons
+      })
     })
     .then(() => {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
+      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
       toast.success('Pengaturan umum berhasil disimpan!');
     })
     .catch(console.error);
@@ -315,134 +374,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Dropdown Master Categories Manager */}
       <div className="glass" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Tag size={20} color="var(--accent-primary)" /> Master Dropdown Kategori Pekerjaan
-        </h3>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+        {renderListEditor(
+          "Master Dropdown Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
+          <Tag size={20} color="var(--accent-primary)" />
+        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
           Kelola pilihan opsi kategori yang muncul otomatis (*auto-suggest*) saat menambah atau mengedit pekerjaan.
         </p>
-
-        <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-          <input 
-            className="input" 
-            placeholder="Tambah nama kategori baru (contoh: Logistik, QA)..." 
-            value={newCatInput} 
-            onChange={e => setNewCatInput(e.target.value)} 
-          />
-          <button type="submit" className="btn btn-primary" style={{ flexShrink: 0 }}>
-            <Plus size={16} /> Tambah
-          </button>
-        </form>
-
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => sortList('cat', 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort A-Z</button>
-          <button type="button" onClick={() => sortList('cat', 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort Z-A</button>
-          <button type="button" onClick={() => transformList('cat', 'upper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>KAPITAL</button>
-          <button type="button" onClick={() => transformList('cat', 'lower')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>kecil</button>
-          <button type="button" onClick={() => transformList('cat', 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Proper Case</button>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {categories.map((cat, idx) => (
-            <span 
-              key={cat} 
-              draggable
-              onDragStart={(e) => handleDragStart(e, 'cat', idx)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, 'cat', idx)}
-              onDragEnd={() => setDraggedIdx(null)}
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 12px', 
-                borderRadius: '20px', 
-                background: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
-                border: '1px solid var(--border-color)', 
-                fontSize: '13px',
-                fontWeight: 500,
-                color: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)',
-                cursor: 'grab' 
-              }}
-            >
-              {cat}
-              <button 
-                type="button" 
-                onClick={() => handleRemoveCategory(cat)} 
-                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
-                title="Hapus Kategori Ini"
-              >
-                <X size={14} />
-              </button>
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* Dropdown Master PIC Manager */}
       <div className="glass" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Users size={20} color="var(--accent-primary)" /> Master Dropdown PIC / Personil
-        </h3>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+        {renderListEditor(
+          "Master Dropdown PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
+          <Users size={20} color="var(--accent-primary)" />
+        )}
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
           Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan.
         </p>
-
-        <form onSubmit={handleAddPic} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-          <input 
-            className="input" 
-            placeholder="Tambah nama PIC baru (contoh: Budi Santoso)..." 
-            value={newPicInput} 
-            onChange={e => setNewPicInput(e.target.value)} 
-          />
-          <button type="submit" className="btn btn-primary" style={{ flexShrink: 0 }}>
-            <Plus size={16} /> Tambah
-          </button>
-        </form>
-
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => sortList('pic', 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort A-Z</button>
-          <button type="button" onClick={() => sortList('pic', 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort Z-A</button>
-          <button type="button" onClick={() => transformList('pic', 'upper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>KAPITAL</button>
-          <button type="button" onClick={() => transformList('pic', 'lower')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>kecil</button>
-          <button type="button" onClick={() => transformList('pic', 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Proper Case</button>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {pics.map((p, idx) => (
-            <span 
-              key={p} 
-              draggable
-              onDragStart={(e) => handleDragStart(e, 'pic', idx)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, 'pic', idx)}
-              onDragEnd={() => setDraggedIdx(null)}
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 12px', 
-                borderRadius: '20px', 
-                background: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
-                border: '1px solid var(--border-color)', 
-                fontSize: '13px',
-                fontWeight: 500,
-                color: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)',
-                cursor: 'grab' 
-              }}
-            >
-              {p}
-              <button 
-                type="button" 
-                onClick={() => handleRemovePic(p)} 
-                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
-                title="Hapus PIC Ini"
-              >
-                <X size={14} />
-              </button>
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="glass" style={{ padding: '24px' }}>
@@ -450,32 +399,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
           <Tag size={20} color="var(--accent-primary)" />
         )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {statuses.map((s, idx) => (
-            <span 
-              key={s} 
-              draggable
-              onDragStart={(e) => handleDragStart(e, 'status', idx)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, 'status', idx)}
-              onDragEnd={() => setDraggedIdx(null)}
-              style={{ 
-                display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
-                background: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
-                border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
-                color: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)', cursor: 'grab' 
-              }}
-            >
-              {s}
-              <button 
-                type="button" onClick={() => handleDelete('status', s)} 
-                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'status' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
-              ><X size={14} /></button>
-            </span>
-          ))}
-        </div>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
       </div>
 
       <div className="glass" style={{ padding: '24px' }}>
@@ -483,32 +407,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
           <Tag size={20} color="var(--accent-primary)" />
         )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {priorities.map((p, idx) => (
-            <span 
-              key={p} 
-              draggable
-              onDragStart={(e) => handleDragStart(e, 'priority', idx)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, 'priority', idx)}
-              onDragEnd={() => setDraggedIdx(null)}
-              style={{ 
-                display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
-                background: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
-                border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
-                color: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)', cursor: 'grab' 
-              }}
-            >
-              {p}
-              <button 
-                type="button" onClick={() => handleDelete('priority', p)} 
-                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'priority' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
-              ><X size={14} /></button>
-            </span>
-          ))}
-        </div>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
       </div>
 
       {/* General Settings */}
