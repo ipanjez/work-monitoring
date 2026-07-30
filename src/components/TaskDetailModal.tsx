@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, getPriorityBadgeClass, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, handleExportICS } from '@/utils/taskUtils';
 
@@ -38,9 +38,10 @@ interface TaskDetailModalProps {
   task: Task | null;
   onClose: () => void;
   setPreviewFile: (file: FileItem) => void;
+  onEdit?: () => void;
 }
 
-export default function TaskDetailModal({ task, onClose, setPreviewFile }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit }: TaskDetailModalProps) {
   if (!task) return null;
 
   return (
@@ -61,9 +62,16 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile }: TaskD
               </span>
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
             </div>
-            <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose}>
-              <X size={18} />
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {onEdit && (
+                <button className="btn btn-primary" style={{ padding: '6px' }} onClick={onEdit} title="Edit Pekerjaan">
+                  <Edit size={18} />
+                </button>
+              )}
+              <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>

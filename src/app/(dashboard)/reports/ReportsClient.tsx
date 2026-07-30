@@ -366,17 +366,6 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleCopyImage}>
-            <Copy size={16} /> Copy Image
-          </button>
-          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleExportPDF} disabled={isExportingPdf}>
-            <FileText size={16} color="#ef4444" /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
-          </button>
-          <button className="btn btn-primary" onClick={handleExportFullReport} style={{ whiteSpace: 'nowrap' }}>
-            <FileSpreadsheet size={16} /> Export XLSX
-          </button>
-        </div>
       </div>
 
       {/* Global Filters Synchronized */}
@@ -418,6 +407,18 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
             <option value="Semua Kategori">Semua Kategori</option>
             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleCopyImage}>
+            <Copy size={16} /> Copy Image
+          </button>
+          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleExportPDF} disabled={isExportingPdf}>
+            <FileText size={16} color="#ef4444" /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
+          </button>
+          <button className="btn btn-primary" onClick={handleExportFullReport} style={{ whiteSpace: 'nowrap' }}>
+            <FileSpreadsheet size={16} /> Export XLSX
+          </button>
         </div>
       </div>
 
