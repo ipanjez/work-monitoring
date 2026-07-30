@@ -1234,6 +1234,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         task={detailTask}
         onClose={() => setDetailTask(null)}
         setPreviewFile={setPreviewFile}
+        onEdit={() => {
+          setEditingTask(detailTask);
+          setIsModalOpen(true);
+        }}
+        onDelete={() => handleDelete(detailTask!.id)}
       />
 
       {/* Interactive Copyable Error Details Modal */}

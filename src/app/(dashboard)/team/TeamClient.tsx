@@ -111,6 +111,25 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     }
   };
 
+  const handleDeleteTask = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini? Tindakan ini tidak dapat dibatalkan.')) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Gagal menghapus pekerjaan');
+      
+      setLocalTasks(prev => prev.filter(t => t.id !== id));
+      if (detailTask && detailTask.id === id) setDetailTask(null);
+      
+      import('react-hot-toast').then(({ default: toast }) => toast.success('Pekerjaan berhasil dihapus'));
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+    } catch (error: any) {
+      import('react-hot-toast').then(({ default: toast }) => toast.error(error.message || 'Terjadi kesalahan'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
@@ -246,6 +265,21 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       <TaskDetailModal
         task={detailTask}
         onClose={() => setDetailTask(null)}
+        setPreviewFile={setPreviewFile}
+        onEdit={() => {
+          setEditForm(detailTask!);
+          setIsEditing(true);
+        }}
+        onDelete={() => handleDeleteTask(detailTask!.id)}
+      />
+
+      <TaskAddEditModal
+        isOpen={isEditing}
+        onClose={() => setIsEditing(false)}
+        taskToEdit={editForm as Task}
+        onSave={handleSaveEdit}
+        formPicOptions={[...masterPics]}
+        formCategoryOptions={[]} 
         setPreviewFile={setPreviewFile}
       />
     </div>

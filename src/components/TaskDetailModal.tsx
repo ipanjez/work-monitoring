@@ -39,9 +39,10 @@ interface TaskDetailModalProps {
   onClose: () => void;
   setPreviewFile: (file: FileItem) => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
   if (!task) return null;
 
   return (
@@ -63,11 +64,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit 
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {onEdit && (
-                <button className="btn btn-primary" style={{ padding: '6px' }} onClick={onEdit} title="Edit Pekerjaan">
-                  <Edit size={18} />
-                </button>
-              )}
               <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
                 <X size={18} />
               </button>
@@ -238,6 +234,16 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit 
             )}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
+              {onEdit && (
+                <button className="btn btn-secondary" onClick={onEdit}>
+                  <Edit size={16} /> Edit Pekerjaan Ini
+                </button>
+              )}
+              {onDelete && (
+                <button className="btn btn-danger" onClick={onDelete}>
+                  <X size={16} /> Hapus Pekerjaan
+                </button>
+              )}
               <a 
                 href={getGoogleCalendarUrl(task)} 
                 target="_blank" 
