@@ -55,6 +55,9 @@ export default function Sidebar() {
           if (data.dept_name) {
             setDeptName(data.dept_name);
           }
+          if (data.master_colors) {
+            localStorage.setItem('master_colors', JSON.stringify(data.master_colors));
+          }
         })
         .catch(e => console.error(e));
     };

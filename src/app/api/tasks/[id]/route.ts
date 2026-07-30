@@ -26,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       nama, pic, status, prioritas, kategori, progress, 
       deskripsi, catatan, fileUrl, fileName, filesJson, 
       isAllDay, startTime, endTime, repetisi, additionalPics, 
-      startDate, endDate, subTasksJson 
+      startDate, endDate, subTasksJson, commentsJson, historyLogsJson 
     } = body;
 
     const parseDate = (d: any) => {
@@ -65,13 +65,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       if (subTasksJson !== undefined && subTasksJson !== existingTask.subTasksJson) changes.push(`Sub Pekerjaan`);
     }
 
-    currentLogs.push({
-      action: `Diedit ke-${newCount} kali`,
-      details: changes.length > 0 ? `${changes.join(', ')}` : '',
-      timestamp: now.toISOString(),
-    });
-
-    
+    if (historyLogsJson !== undefined) {
+      // If the client explicitly provided new history logs (e.g. for deletion), use them
+      try {
+        currentLogs = JSON.parse(historyLogsJson);
+      } catch (e) {}
+    } else if (changes.length > 0 || Object.keys(body).length > 2) {
+      // Only push an edit log if there are changes (not when just adding a comment)
+      currentLogs.push({
+        action: `Diedit ke-${newCount} kali`,
+        details: changes.length > 0 ? `${changes.join(', ')}` : 'Memperbarui data',
+        timestamp: now.toISOString(),
+      });
+    }
     const finalStatus = status !== undefined ? status : existingTask.status;
     const currentSubTasksJson = subTasksJson !== undefined ? subTasksJson : existingTask.subTasksJson;
     const finalProgress = calculateProgress(finalStatus, currentSubTasksJson);
@@ -99,9 +105,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           ...(startDate && { startDate: parseDate(startDate) }),
           ...(endDate && { endDate: parseDate(endDate) }),
           ...(subTasksJson !== undefined && { subTasksJson }),
-          editCount: newCount,
-          lastEditedAt: now,
+          editCount: historyLogsJson !== undefined || commentsJson !== undefined ? existingTask.editCount : newCount,
+          lastEditedAt: historyLogsJson !== undefined || commentsJson !== undefined ? existingTask.lastEditedAt : now,
           historyLogsJson: JSON.stringify(currentLogs),
+          ...(commentsJson !== undefined && { commentsJson }),
         },
       });
 

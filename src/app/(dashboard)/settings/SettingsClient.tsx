@@ -166,7 +166,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const handleColorChange = (type: ListType, val: string, color: string) => {
     const newColors = { ...masterColors, [`${type}_${val}`]: color };
     setMasterColors(newColors);
-    if (addActivityLog) addActivityLog('EDIT_MASTER', `Ubah Warna ${type}`, `Warna item "${val}" diubah`, 'info');
   };
 
   const handleProgressChange = (val: string, progress: number) => {

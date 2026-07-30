@@ -113,8 +113,16 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       createdAt: new Date().toISOString()
     };
 
+    const newLog: LogItem = {
+      action: `Menambahkan komentar`,
+      details: `"${newComment.trim()}"`,
+      timestamp: new Date().toISOString()
+    };
+    const updatedLogs = [...localHistoryLogs, newLog];
     const updatedComments = [...localComments, comment];
+    
     setLocalComments(updatedComments);
+    setLocalHistoryLogs(updatedLogs);
     setNewComment('');
     setIsSubmittingComment(true);
 
@@ -122,7 +130,10 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const res = await fetch(`/api/tasks/${task!.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
+        body: JSON.stringify({ 
+          commentsJson: JSON.stringify(updatedComments),
+          historyLogsJson: JSON.stringify(updatedLogs)
+        })
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
       router.refresh();

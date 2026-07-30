@@ -13,6 +13,7 @@ export type LogItem = {
   action: string;
   timestamp: string;
   status?: string;
+  details?: string;
 };
 
 export type SubTaskLog = {
