@@ -36,6 +36,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   
   const [masterColors, setMasterColors] = useState<Record<string, string>>({});
   const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
+  const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
 
   const [newCatInput, setNewCatInput] = useState('');
   const [newPicInput, setNewPicInput] = useState('');
@@ -56,6 +57,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_priorities) setPriorities(data.master_priorities);
         if (data.master_colors) setMasterColors(data.master_colors);
         if (data.master_icons) setMasterIcons(data.master_icons);
+        if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.dept_name) setDeptName(data.dept_name);
       })
       .catch(e => console.error(e));
@@ -167,6 +169,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     if (addActivityLog) addActivityLog('EDIT_MASTER', `Ubah Warna ${type}`, `Warna item "${val}" diubah`, 'info');
   };
 
+  const handleProgressChange = (val: string, progress: number) => {
+    const newProgress = { ...masterStatusProgress, [val]: progress };
+    setMasterStatusProgress(newProgress);
+  };
+
   const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode) => (
     <>
       <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -197,6 +204,22 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             }}
           >
             {s}
+            {type === 'status' && (
+              <input 
+                type="number"
+                min="0"
+                max="100"
+                placeholder="%"
+                value={masterStatusProgress[s] ?? ''}
+                onChange={(e) => handleProgressChange(s, parseInt(e.target.value) || 0)}
+                style={{
+                  width: '40px', padding: '2px 4px', fontSize: '12px', borderRadius: '4px',
+                  border: '1px solid var(--border-color)', background: 'var(--surface-color)',
+                  color: 'var(--text-primary)', marginLeft: '4px'
+                }}
+                title="Persentase Progress Otomatis (0-100)"
+              />
+            )}
             <input 
               type="color" 
               value={masterColors[`${type}_${s}`] || '#ffffff'} 
@@ -222,6 +245,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_priorities', JSON.stringify(priorities));
     localStorage.setItem('master_colors', JSON.stringify(masterColors));
     localStorage.setItem('master_icons', JSON.stringify(masterIcons));
+    localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
     
     fetch('/api/settings', {
       method: 'POST',
@@ -233,7 +257,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_statuses: statuses,
         master_priorities: priorities,
         master_colors: masterColors,
-        master_icons: masterIcons
+        master_icons: masterIcons,
+        master_status_progress: masterStatusProgress
       })
     })
     .then(() => {

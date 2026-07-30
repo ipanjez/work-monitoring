@@ -65,6 +65,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         if (data.master_pics) setMasterPics(data.master_pics);
         if (data.master_statuses) setMasterStatuses(data.master_statuses);
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
+        if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
       })
       .catch(e => console.error(e));
   }, []);
@@ -566,14 +568,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         worksheet.getCell(`E${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: ['"Low,Medium,High,Urgent"']
+          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
         };
 
         // Status
         worksheet.getCell(`F${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: ['"To Do,In Progress,Done"']
+          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do','In Progress','Done']).join(',')}"`]
         };
 
         // Progress (Angka 0-100)
@@ -637,7 +639,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 const match = line.match(/^\[(.*?)\]\s+(.*)/);
                 let status = 'To Do';
                 let text = line.trim();
-                if (match && ['To Do', 'In Progress', 'Done'].includes(match[1])) {
+                const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
+                if (match && validStatuses.includes(match[1])) {
                    status = match[1];
                    text = match[2].trim();
                 } else if (match) {
@@ -828,22 +831,55 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </button>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button 
-              className="btn" 
-              onClick={handleDownloadTemplate}
-              style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
-            >
-              <Download size={16} /> Template Excel
-            </button>
-          
-          <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".xlsx,.csv" onChange={handleImportExcel} />
-          <button 
-            className="btn" 
-            onClick={() => fileInputRef.current?.click()}
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-          >
-            <Upload size={16} /> Import Excel
-          </button>
+            {/* Excel Actions */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ position: 'relative' }}>
+                <button 
+                  className="btn" 
+                  onClick={() => setShowExcelInfo(!showExcelInfo)}
+                  title="Informasi Template Excel"
+                  style={{ padding: '10px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Info size={16} />
+                </button>
+                {showExcelInfo && (
+                  <div style={{ 
+                    position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100, 
+                    background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', 
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', 
+                    width: '300px', fontSize: '13px', color: 'var(--text-primary)'
+                  }}>
+                    <h4 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileText size={16} color="var(--accent-primary)" /> Panduan Excel
+                    </h4>
+                    <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Gunakan template ini untuk menambahkan banyak pekerjaan sekaligus.
+                    </p>
+                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
+                      <li>Kolom <b>Kategori, Prioritas, Status</b> dan <b>PIC</b> sudah terhubung (dropdown) dengan pengaturan dinamis (Master Data) Anda.</li>
+                      <li>Kolom <b>Sub Pekerjaan</b> dapat diisi banyak baris di 1 sel dengan format <code>[Status] Nama</code> (gunakan Alt+Enter).</li>
+                      <li>Jangan mengubah header pada template agar impor berhasil.</li>
+                    </ul>
+                    <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => setShowExcelInfo(false)}>Tutup</button>
+                  </div>
+                )}
+              </div>
+              <button 
+                className="btn" 
+                onClick={handleDownloadTemplate}
+                style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)', whiteSpace: 'nowrap' }}
+              >
+                <Download size={16} /> <span className="hide-mobile">Template Excel</span>
+              </button>
+              <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
+              <button 
+                className="btn" 
+                onClick={() => fileInputRef.current?.click()}
+                style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)', whiteSpace: 'nowrap' }}
+              >
+                <Upload size={16} /> <span className="hide-mobile">Import Excel</span>
+              </button>
+            </div>
           
           <button 
             className="btn" 
@@ -1060,7 +1096,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             </thead>
             <tbody>
               {processedTasks.map(task => {
-                const prog = task.progress || (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0);
+                const prog = task.progress || (masterStatusProgress[task.status] ?? (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0));
                 const taskFiles = getTaskFiles(task);
                 const extraPics = getAdditionalPics(task);
 

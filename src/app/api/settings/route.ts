@@ -16,6 +16,7 @@ export async function GET() {
       master_priorities: [],
       master_colors: {},
       master_icons: {},
+      master_status_progress: {},
       dept_name: 'Work Monitoring'
     };
 
@@ -93,6 +94,14 @@ export async function POST(request: Request) {
         where: { key: 'master_icons' },
         update: { value: JSON.stringify(body.master_icons) },
         create: { key: 'master_icons', value: JSON.stringify(body.master_icons) }
+      });
+    }
+
+    if (body.master_status_progress) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_status_progress' },
+        update: { value: JSON.stringify(body.master_status_progress) },
+        create: { key: 'master_status_progress', value: JSON.stringify(body.master_status_progress) }
       });
     }
 
