@@ -10,7 +10,7 @@
   flex-direction: column;
   justify-content: space-between;
   z-index: 100;
-  transition: width 0.3s ease, padding 0.3s ease;
+  transition: transform 0.3s ease, width 0.3s ease, padding 0.3s ease;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -126,4 +126,52 @@
 .logoutBtn:hover {
   background: rgba(239, 68, 68, 0.2);
   color: var(--danger);
+}
+
+.mobileOverlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px !important;
+    padding: 20px 16px !important;
+  }
+  
+  .sidebarMobileOpen {
+    transform: translateX(0);
+  }
+
+  .mobileOverlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .mobileOverlayOpen {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  [data-sidebar="collapsed"] .navText {
+    display: block;
+  }
+  
+  [data-sidebar="collapsed"] .navItem {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  
+  .toggleBtn {
+    display: none; /* hide toggle button on mobile */
+  }
 }

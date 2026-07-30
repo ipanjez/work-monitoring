@@ -14,7 +14,7 @@ import IdleTimer from './IdleTimer';
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar } = useTheme();
+  const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useTheme();
   const { 
     globalTargetFilter, 
     setGlobalTargetFilter, 
@@ -146,7 +146,12 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className={`glass ${styles.sidebar}`}>
+    <>
+      <div 
+        className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOverlayOpen : ''}`} 
+        onClick={() => setMobileMenuOpen(false)}
+      />
+      <div className={`glass ${styles.sidebar} ${isMobileMenuOpen ? styles.sidebarMobileOpen : ''}`}>
       <div>
         <div className={styles.logoContainer}>
           <div className={styles.logo}>
@@ -319,5 +324,6 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
+    </>
   );
 }

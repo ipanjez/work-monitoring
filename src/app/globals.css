@@ -118,6 +118,54 @@ button {
   }
 }
 
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  padding: 0 16px;
+  align-items: center;
+  z-index: 90;
+  border-radius: 0 0 16px 16px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.kanban-col {
+  flex: 0 0 320px;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+  }
+  .kanban-col {
+    flex: 0 0 280px;
+  }
+}
+
 /* Glassmorphism utilities */
 .glass {
   background: var(--glass-bg);

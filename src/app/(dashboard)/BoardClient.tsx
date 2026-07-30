@@ -111,7 +111,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px', flex: 1, minHeight: '600px', alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px', flex: 1, height: 'calc(100vh - 180px)', alignItems: 'stretch' }}>
       {COLUMNS.map((col) => {
         const colTasks = tasks.filter((t: any) => t.status === col);
         const isDragOver = dragOverColumn === col;
@@ -119,21 +119,13 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         return (
           <div
             key={col}
+            className="kanban-col"
             onDragOver={(e) => handleDragOver(e, col)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col)}
             style={{
-              flex: '0 0 320px',
               backgroundColor: isDragOver ? 'var(--background)' : 'var(--surface-color)',
-              borderRadius: '8px',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
               border: isDragOver ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-              transition: 'all 0.2s ease',
-              maxHeight: '100%',
-              overflowY: 'auto'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

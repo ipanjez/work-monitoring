@@ -17,6 +17,9 @@ interface ThemeContextType {
   setAccentColor: (color: AccentColor) => void;
   density: Density;
   setDensity: (density: Density) => void;
+  isMobileMenuOpen: boolean;
+  toggleMobileMenu: () => void;
+  setMobileMenuOpen: (isOpen: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [accentColor, setAccentColorState] = useState<AccentColor>('blue');
   const [density, setDensityState] = useState<Density>('comfortable');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -90,6 +94,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
+  const setMobileMenuOpen = (isOpen: boolean) => setIsMobileMenuOpen(isOpen);
+
   const toggleFocusMode = () => {
     setIsFocusMode(prev => {
       const next = !prev;
@@ -121,7 +128,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       isSidebarCollapsed, toggleSidebar,
       isFocusMode, toggleFocusMode,
       accentColor, setAccentColor,
-      density, setDensity 
+      density, setDensity,
+      isMobileMenuOpen,
+      toggleMobileMenu,
+      setMobileMenuOpen
     }}>
       {children}
     </ThemeContext.Provider>
