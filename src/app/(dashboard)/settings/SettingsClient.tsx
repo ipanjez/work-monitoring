@@ -39,10 +39,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [newPriorityInput, setNewPriorityInput] = useState('');
 
   // Drag State
-  const [draggedCatIdx, setDraggedCatIdx] = useState<number | null>(null);
-  const [draggedPicIdx, setDraggedPicIdx] = useState<number | null>(null);
-  const [draggedStatusIdx, setDraggedStatusIdx] = useState<number | null>(null);
-  const [draggedPriorityIdx, setDraggedPriorityIdx] = useState<number | null>(null);
+  const [draggedIdx, setDraggedIdx] = useState<{ type: string, index: number } | null>(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -97,6 +94,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     setDraggedIdx({ type, index });
     e.dataTransfer.effectAllowed = 'move';
   };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
 
   const handleDrop = (e: React.DragEvent, type: ListType, dropIndex: number) => {
     e.preventDefault();
@@ -108,6 +108,65 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       next.splice(dropIndex, 0, moved);
       return next;
     });
+  };
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatInput.trim()) return;
+    if (categories.includes(newCatInput.trim())) return;
+    updateList('cat', prev => [...prev, newCatInput.trim()]);
+    setNewCatInput('');
+  };
+
+  const handleRemoveCategory = (cat: string) => {
+    if (confirm(`Hapus kategori ${cat}?`)) {
+      updateList('cat', prev => prev.filter(c => c !== cat));
+    }
+  };
+
+  const handleAddPic = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPicInput.trim()) return;
+    if (pics.includes(newPicInput.trim())) return;
+    updateList('pic', prev => [...prev, newPicInput.trim()]);
+    setNewPicInput('');
+  };
+
+  const handleRemovePic = (p: string) => {
+    if (confirm(`Hapus PIC ${p}?`)) {
+      updateList('pic', prev => prev.filter(c => c !== p));
+    }
+  };
+
+  const handleAdd = (e: React.FormEvent, type: ListType, val: string, setVal: any, list: string[]) => {
+    e.preventDefault();
+    if (!val.trim() || list.includes(val.trim())) return;
+    updateList(type, prev => [...prev, val.trim()]);
+    setVal('');
+  };
+
+  const handleDelete = (type: ListType, val: string) => {
+    if (confirm(`Hapus ${val}?`)) updateList(type, prev => prev.filter(x => x !== val));
+  };
+
+  const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode) => (
+    <>
+      <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {icon} {title}
+      </h3>
+      <form onSubmit={(e) => handleAdd(e, type, val, setVal, list)} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+        <input className="input" placeholder="Tambah baru..." value={val} onChange={e => setVal(e.target.value)} />
+        <button type="submit" className="btn btn-primary" style={{ flexShrink: 0 }}><Plus size={16} /> Tambah</button>
+      </form>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort A-Z</button>
+        <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort Z-A</button>
+        <button type="button" onClick={() => transformList(type, 'upper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>KAPITAL</button>
+        <button type="button" onClick={() => transformList(type, 'lower')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>kecil</button>
+        <button type="button" onClick={() => transformList(type, 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Proper Case</button>
+      </div>
+    </>
+  );
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,18 +350,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               onDragStart={(e) => handleDragStart(e, 'cat', idx)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, 'cat', idx)}
-              onDragEnd={() => setDraggedCatIdx(null)}
+              onDragEnd={() => setDraggedIdx(null)}
               style={{ 
                 display: 'inline-flex', 
                 alignItems: 'center', 
                 gap: '6px', 
                 padding: '6px 12px', 
                 borderRadius: '20px', 
-                background: draggedCatIdx === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
+                background: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
                 border: '1px solid var(--border-color)', 
                 fontSize: '13px',
                 fontWeight: 500,
-                color: draggedCatIdx === idx ? 'white' : 'var(--text-primary)',
+                color: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)',
                 cursor: 'grab' 
               }}
             >
@@ -310,7 +369,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <button 
                 type="button" 
                 onClick={() => handleRemoveCategory(cat)} 
-                style={{ background: 'none', border: 'none', color: draggedCatIdx === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
+                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'cat' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
                 title="Hapus Kategori Ini"
               >
                 <X size={14} />
@@ -357,18 +416,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               onDragStart={(e) => handleDragStart(e, 'pic', idx)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, 'pic', idx)}
-              onDragEnd={() => setDraggedPicIdx(null)}
+              onDragEnd={() => setDraggedIdx(null)}
               style={{ 
                 display: 'inline-flex', 
                 alignItems: 'center', 
                 gap: '6px', 
                 padding: '6px 12px', 
                 borderRadius: '20px', 
-                background: draggedPicIdx === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
+                background: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)', 
                 border: '1px solid var(--border-color)', 
                 fontSize: '13px',
                 fontWeight: 500,
-                color: draggedPicIdx === idx ? 'white' : 'var(--text-primary)',
+                color: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'white' : 'var(--text-primary)',
                 cursor: 'grab' 
               }}
             >
@@ -376,7 +435,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <button 
                 type="button" 
                 onClick={() => handleRemovePic(p)} 
-                style={{ background: 'none', border: 'none', color: draggedPicIdx === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
+                style={{ background: 'none', border: 'none', color: draggedIdx?.type === 'pic' && draggedIdx.index === idx ? 'white' : 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0' }}
                 title="Hapus PIC Ini"
               >
                 <X size={14} />

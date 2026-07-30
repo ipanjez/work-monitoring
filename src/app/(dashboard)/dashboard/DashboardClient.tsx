@@ -416,7 +416,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       // Summary Metrics
       doc.setFontSize(11);
       doc.setTextColor(0);
-      doc.text(`Total Pekerjaan: ${total}   |   Selesai: ${completed}   |   Dalam Proses: ${inProgress}   |   Belum Dimulai: ${todo}   |   Rata-rata Progress: ${avgProgress}%`, 14, 30);
+      const statusText = Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join('   |   ');
+      doc.text(`Total Pekerjaan: ${total}   |   ${statusText}   |   Rata-rata Progress: ${avgProgress}%`, 14, 30);
 
       // Detail Table
       const tableColumn = ["Pekerjaan", "PIC", "Kategori", "Prioritas", "Status", "Progress", "Tenggat Waktu", "Deskripsi"];
@@ -494,9 +495,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
 
     const summaryData = [
       { 'Metrik': 'Total Pekerjaan', 'Nilai': total },
-      { 'Metrik': 'Selesai', 'Nilai': completed },
-      { 'Metrik': 'Sedang Proses', 'Nilai': inProgress },
-      { 'Metrik': 'Belum Dimulai', 'Nilai': todo },
+      ...Object.entries(statusCounts).map(([s, c]) => ({ 'Metrik': `Status: ${s}`, 'Nilai': c })),
       { 'Metrik': 'Rata-rata Progress', 'Nilai': `${avgProgress}%` }
     ];
 

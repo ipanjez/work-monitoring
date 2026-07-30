@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, LayoutDashboard, ListTodo, FileText, CheckCircle2, 
-  Users, Shield, CalendarDays, Trello, Download, Upload, 
+  Users, Shield, CalendarDays, Kanban, Download, Upload, 
   ChevronDown, Settings, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 
@@ -84,7 +84,7 @@ export default function GuidePage() {
     },
     {
       id: 'board',
-      icon: <Trello size={24} />,
+      icon: <Kanban size={24} />,
       color: '#f59e0b',
       bg: 'rgba(245, 158, 11, 0.1)',
       title: '3. Monitoring Board (Kanban)',
