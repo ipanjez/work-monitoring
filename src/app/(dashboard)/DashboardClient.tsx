@@ -277,6 +277,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     maintainAspectRatio: false,
     plugins: { legend: { position: 'bottom' as const, labels: { color: textColor } } },
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
@@ -295,11 +300,17 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
       x: { ticks: { color: textColor }, grid: { display: false } }
     },
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedPIC = picData.labels[index];
-        router.push(`/tasks?pic=${encodeURIComponent(selectedPIC)}`);
+        setGlobalPicFilter(selectedPIC);
+        router.push(`/tasks`);
       }
     }
   };
@@ -309,6 +320,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     maintainAspectRatio: false,
     plugins: { legend: { position: 'bottom' as const, labels: { color: textColor } } },
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
@@ -326,6 +342,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     scales: {
       y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
       x: { ticks: { color: textColor }, grid: { display: false } }
+    },
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
     },
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {

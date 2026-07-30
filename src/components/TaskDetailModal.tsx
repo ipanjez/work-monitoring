@@ -77,22 +77,30 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC</span>
-                <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC:</span>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>
                   {task.pic} {getAdditionalPics(task).length > 0 && `(+, ${getAdditionalPics(task).join(', ')})`}
-                </span>
+                </p>
               </div>
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori</span>
-                <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{task.kategori || 'Umum'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{task.kategori || 'Umum'}</p>
               </div>
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status</span>
-                <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>{task.status} ({task.progress || 0}%)</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status:</span>
+                <p style={{ fontWeight: '600', color: 'var(--accent-primary)', marginTop: '4px' }}>{task.status} ({task.progress || 0}%)</p>
               </div>
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi</span>
-                <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{task.repetisi || 'Tidak Berulang'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi:</span>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{task.repetisi || 'Tidak Berulang'}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tanggal Mulai:</span>
+                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.startDate), 'dd MMM yyyy')}</p>
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tenggat Waktu:</span>
+                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.endDate), 'dd MMM yyyy')}</p>
               </div>
             </div>
 
