@@ -395,16 +395,16 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   padding: '6px 12px', 
                   fontSize: '12px', 
                   borderRadius: '20px', 
-                  background: activeFilter === filterValue ? color : 'var(--surface-color)', 
-                  color: activeFilter === filterValue ? 'white' : color,
-                  border: `1px solid ${color}`,
+                  background: activeFilter === filterValue ? bgColor : 'var(--surface-color)',
+                  color: activeFilter === filterValue ? color : bgColor,
+                  border: `1px solid ${bgColor}`,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
               >
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: activeFilter === filterValue ? 'white' : color }} /> 
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: activeFilter === filterValue ? color : bgColor }} /> 
                 {filterValue}
               </button>
             );

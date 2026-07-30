@@ -1026,14 +1026,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 >
                   Batal
                 </button>
-                <button 
-                  className="btn" 
-                  onClick={handleBulkDone}
-                  style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}
-                >
-                  <CheckCircle size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Tandai Selesai
-                </button>
+                <button className="btn btn-secondary" onClick={() => setBulkEditField('status')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Status</button>
+                <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
+                <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
+                <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
                 <button 
                   className="btn" 
                   onClick={handleBulkDelete}
@@ -1270,7 +1266,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </div>
 
       
-        <BulkEditModal
+                <BulkEditModal
           isOpen={!!bulkEditField}
           onClose={() => setBulkEditField(null)}
           selectedTaskIds={Array.from(selectedTasks)}
@@ -1286,13 +1282,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           }}
         />
         <TaskAddEditModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        taskToEdit={editingTask}
-        onSave={handleSaveModal}
-        formPicOptions={masterPics}
-        formCategoryOptions={masterCats}
-        formStatusOptions={masterStatuses}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          taskToEdit={editingTask}
+          onSave={handleSaveModal}
+          formCategoryOptions={formCategoryOptions}
+          formPicOptions={formPicOptions}
+          formStatusOptions={masterStatuses}
         formPriorityOptions={masterPriorities}
         setPreviewFile={setPreviewFile}
       />

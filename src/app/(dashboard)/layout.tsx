@@ -1,7 +1,7 @@
 'use client';
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from '@/components/NotificationBell';
-import TaskSummaryWidget from '@/components/TaskSummaryWidget';
+
 import FocusModeToggle from '@/components/FocusModeToggle';
 import { Menu } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
@@ -29,7 +29,7 @@ export default function DashboardLayout({
         {children}
       </main>
       <NotificationBell />
-      <TaskSummaryWidget />
+
       <FocusModeToggle />
     </>
   );
