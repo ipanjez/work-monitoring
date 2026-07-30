@@ -1123,7 +1123,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       )}
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                      <span style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
                         {task.kategori || 'Umum'}
                       </span>
                     </td>
