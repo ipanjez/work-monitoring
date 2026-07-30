@@ -121,6 +121,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         })
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
+      toast.success('Komentar berhasil ditambahkan');
+      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
     } catch(e) {
       toast.error('Gagal menyimpan komentar');

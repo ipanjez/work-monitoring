@@ -84,8 +84,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       .catch(e => console.error(e));
   }, []);
 
-  const defaultCategoryList = ['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi'];
-  const allCategoryOptions = Array.from(new Set([...defaultCategoryList, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c)), ...masterCats]));
+  const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
 
   const allPicsSet = new Set<string>(masterPics);
   tasks.forEach(t => {

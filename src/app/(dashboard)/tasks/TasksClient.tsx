@@ -148,8 +148,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
-  const defaultCategoryList = ['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi'];
-  const allCategoryOptions = Array.from(new Set([...defaultCategoryList, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c)), ...masterCats]));
+  const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
   const categoriesFilter = ['All', ...allCategoryOptions];
   
   // Extract all unique PICs (for filter dropdown)
@@ -167,7 +166,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const pics = ['All', ...existingPics];
 
   // Strictly for Add/Edit Form Dropdowns (Sync with Settings)
-  let formCategoryOptions = masterCats.length > 0 ? [...masterCats] : [...defaultCategoryList];
+  let formCategoryOptions = masterCats.length > 0 ? [...masterCats] : [];
   if (editingTask?.kategori && !formCategoryOptions.includes(editingTask.kategori)) {
     formCategoryOptions.push(editingTask.kategori);
   }
@@ -420,7 +419,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         localStorage.setItem('master_pics', JSON.stringify(updatedMasterPics));
       }
 
-      if (savedTask.kategori && !masterCats.includes(savedTask.kategori) && !defaultCategoryList.includes(savedTask.kategori)) {
+      if (savedTask.kategori && !masterCats.includes(savedTask.kategori)) {
         const updatedCats = [...masterCats, savedTask.kategori];
         setMasterCats(updatedCats);
         localStorage.setItem('master_categories', JSON.stringify(updatedCats));

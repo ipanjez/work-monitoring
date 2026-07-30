@@ -342,7 +342,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             }}
           >
             <option value="All" style={{ background: 'var(--background)' }}>Semua Kategori</option>
-            {['Umum', 'IT', 'HR', 'Finance', 'Logistik', 'Operasional', 'Marketing', 'Produksi', ...formCategoryOptions]
+            {formCategoryOptions
               .filter((v, i, a) => a.indexOf(v) === i)
               .map(c => <option key={c} value={c} style={{ background: 'var(--background)' }}>{c}</option>)}
           </select>

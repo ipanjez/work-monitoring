@@ -122,7 +122,7 @@ export default function BulkEditModal({
               {field === 'kategori' && (
                 <select className="form-control" value={value} onChange={e => setValue(e.target.value)} required>
                   <option value="">-- Pilih Kategori --</option>
-                  {(masterCats.length > 0 ? masterCats : ['Umum', 'IT', 'HR']).map(c => (
+                  {masterCats.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
