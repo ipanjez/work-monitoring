@@ -81,6 +81,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       .catch(e => console.error(e));
   }, []);
 
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
   const refreshData = () => router.refresh();
 
   const handleToggleSelectAll = () => {

@@ -23,6 +23,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   
   useEffect(() => {
+    setLocalTasks(initialTasks);
+  }, [initialTasks]);
+
+  useEffect(() => {
     const loadMasterPics = () => {
       fetch('/api/settings')
         .then(res => res.json())

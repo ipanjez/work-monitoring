@@ -68,6 +68,10 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
   useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
