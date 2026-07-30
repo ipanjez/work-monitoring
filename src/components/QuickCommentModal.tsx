@@ -6,6 +6,7 @@ import { X, Send, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { useNotifications } from '@/context/NotificationContext';
 import { Task, CommentItem, getTaskComments } from '@/utils/taskUtils';
 
 interface QuickCommentModalProps {
@@ -15,6 +16,7 @@ interface QuickCommentModalProps {
 
 export default function QuickCommentModal({ task, onClose }: QuickCommentModalProps) {
   const router = useRouter();
+  const { addActivityLog } = useNotifications();
   const [localComments, setLocalComments] = useState<CommentItem[]>([]);
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
@@ -56,6 +58,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
       toast.success('Komentar berhasil dikirim');
+      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
     } catch(e) {
       toast.error('Gagal menyimpan komentar');

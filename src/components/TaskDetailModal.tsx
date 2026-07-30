@@ -3,6 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
+import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2 } from 'lucide-react';
@@ -47,6 +48,7 @@ interface TaskDetailModalProps {
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
   const { masterColors } = useMaster();
   const router = useRouter();
+  const { addActivityLog } = useNotifications();
   const [localComments, setLocalComments] = useState<CommentItem[]>([]);
   const [localHistoryLogs, setLocalHistoryLogs] = useState<LogItem[]>([]);
   const [newComment, setNewComment] = useState('');

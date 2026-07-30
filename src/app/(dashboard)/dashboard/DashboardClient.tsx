@@ -21,6 +21,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
+import { getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -74,6 +75,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [masterColors, setMasterColors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadMasterData = () => {
@@ -170,7 +172,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     datasets: [
       {
         data: (masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map(s => statusCounts[s] || 0),
-        backgroundColor: (masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((_, i) => defaultColors[i % defaultColors.length]),
+        backgroundColor: (masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((s, i) => masterColors['status_' + s] || defaultColors[i % defaultColors.length]),
         borderColor: theme === 'dark' ? '#1e293b' : '#ffffff',
         borderWidth: 2,
       },
@@ -240,7 +242,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     datasets: [
       {
         data: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map(p => priorityCounts[p] || 0),
-        backgroundColor: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map((_, i) => priorityColors[i % priorityColors.length]),
+        backgroundColor: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map((p, i) => masterColors['priority_' + p] || priorityColors[i % priorityColors.length]),
         borderWidth: 0,
       },
     ],
@@ -259,7 +261,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       {
         label: 'Jumlah Pekerjaan',
         data: Object.values(categoryCounts),
-        backgroundColor: '#8b5cf6', // Purple
+        backgroundColor: Object.keys(categoryCounts).map(c => masterColors['category_' + c] || '#8b5cf6'),
         borderRadius: 6,
       },
     ],
@@ -907,7 +909,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                       </td>
                       <td style={{ padding: '16px', verticalAlign: 'top' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <span className={`badge ${t.status === 'Done' ? 'badge-success' : t.status === 'In Progress' ? 'badge-warning' : 'badge-todo'}`} style={{ alignSelf: 'flex-start' }}>
+                          <span {...getDynamicBadgeStyle('status', t.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', t.status, '', masterColors).style, alignSelf: 'flex-start' }}>
                             {t.status}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100px' }}>
