@@ -3,6 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
@@ -17,6 +18,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
+  const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -629,7 +631,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onClose={() => setIsDetailOpen(false)}
           onEdit={() => openTaskEdit(selectedTask)}
           onDelete={() => handleDeleteTask(selectedTask.id)}
-          setPreviewFile={(file: any) => window.open(file.url, '_blank')}
+          setPreviewFile={setPreviewFile}
         />
       )}
 
@@ -652,7 +654,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           formCategoryOptions={formCategoryOptions}
           formStatusOptions={masterStatuses}
           formPriorityOptions={masterPriorities}
-          setPreviewFile={(file: any) => window.open(file.url, '_blank')}
+          setPreviewFile={setPreviewFile}
         />
       )}
 
@@ -678,6 +680,6 @@ function ListTodoIcon() {
       <path d="M8 14h.01" />
       <path d="M8 19h.01" />
       <path d="M8 9h.01" />
-    </svg>
+      </svg>
   );
 }

@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
+import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
@@ -317,6 +318,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         formCategoryOptions={[]} 
         setPreviewFile={setPreviewFile}
       />
+      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );
 }

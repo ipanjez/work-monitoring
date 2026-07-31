@@ -25,6 +25,7 @@ import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
 import { getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
+import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
@@ -324,14 +325,29 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       }
     });
   } else if (globalTargetFilter === 'Hari Ini') {
-    timelineLabels = ['Hari Ini'];
-    deadlineCounts = [0];
-    timelineDateRanges = [{ start: new Date(today), end: new Date(today.getTime() + 86400000 - 1) }];
+    timelineLabels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+    deadlineCounts = Array(24).fill(0);
+    
+    for (let i = 0; i < 24; i++) {
+      const hStart = new Date(today);
+      hStart.setHours(i, 0, 0, 0);
+      const hEnd = new Date(today);
+      hEnd.setHours(i, 59, 59, 999);
+      timelineDateRanges.push({ start: hStart, end: hEnd });
+    }
     
     filteredTasks.forEach(t => {
       const d = new Date(t.endDate);
       if (d.toDateString() === today.toDateString()) {
-        deadlineCounts[0]++;
+        let hour = 23; // default to end of day
+        if ((t as any).endTime) {
+          const parts = ((t as any).endTime as string).split(':');
+          const parsedH = parseInt(parts[0], 10);
+          if (!isNaN(parsedH) && parsedH >= 0 && parsedH < 24) {
+            hour = parsedH;
+          }
+        }
+        deadlineCounts[hour]++;
       }
     });
   } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
@@ -912,7 +928,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           </div>
 
           <div className="glass" style={{ padding: '24px', minHeight: '340px', gridColumn: '1 / -1' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu (Tahun Ini)</h3>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Line data={timelineData} options={timelineOptions} />
             </div>
@@ -1089,23 +1105,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           setPreviewFile={setPreviewFile}
         />
       )}
-      {previewFile && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setPreviewFile(null)} />
-          <div className="modal-content" style={{ position: 'relative', width: '100%', maxWidth: '900px', height: '85vh', background: 'var(--surface-color)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={18} color="var(--accent-primary)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Preview: {previewFile.name}</h3>
-              </div>
-              <button className="btn-icon" onClick={() => setPreviewFile(null)}><X size={20} /></button>
-            </div>
-            <div style={{ flex: 1, overflow: 'auto', background: theme === 'dark' ? '#0f172a' : '#f8fafc' }}>
-              <FileViewer url={previewFile.url} name={previewFile.name} />
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </motion.div>
   );
 }

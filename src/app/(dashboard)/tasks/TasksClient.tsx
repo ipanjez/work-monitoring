@@ -22,6 +22,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import BulkEditModal from '@/components/BulkEditModal';
+import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
@@ -1359,46 +1360,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         )}
       </AnimatePresence>
 
-      {/* In-App File Preview Modal */}
-      <AnimatePresence>
-        {previewFile && (
-          <div className="modal-overlay">
-            <motion.div 
-              className="modal-content"
-              style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Paperclip size={20} color="var(--accent-primary)" />
-                  <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '500px' }}>
-                    {previewFile.name}
-                  </h3>
-                </div>
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => setPreviewFile(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div style={{ flex: 1, overflow: 'auto', background: 'var(--surface-color)', borderRadius: '12px', padding: '0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <FileViewer url={previewFile.url} name={previewFile.name} />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <a href={previewFile.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-                  <ExternalLink size={16} /> Buka di Tab Baru
-                </a>
-                <a href={previewFile.url} download={previewFile.name} className="btn btn-primary">
-                  <Download size={16} /> Unduh File
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      
+      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );
 }
