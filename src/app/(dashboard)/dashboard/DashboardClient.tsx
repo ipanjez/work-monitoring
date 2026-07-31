@@ -487,7 +487,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
       y: { stacked: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { stacked: true, ticks: { color: textColor }, grid: { display: false } }
+      x: { stacked: true, ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } }
     },
     onHover: (event: any, elements: any[]) => {
       if (event.native && event.native.target) {
@@ -530,7 +530,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
       y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { ticks: { color: textColor }, grid: { display: false } }
+      x: { ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } }
     },
     onHover: (event: any, elements: any[]) => {
       if (event.native && event.native.target) {
