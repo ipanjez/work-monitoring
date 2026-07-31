@@ -10,19 +10,30 @@ export default function TaskSummaryWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [masterColors, setMasterColors] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
         const res = await fetch('/api/tasks');
         if (res.ok) {
           const data = await res.json();
           setTasks(data);
         }
+        const setRes = await fetch('/api/settings');
+        if (setRes.ok) {
+          const setData = await setRes.json();
+          if (setData.master_statuses) setMasterStatuses(setData.master_statuses);
+          if (setData.master_priorities) setMasterPriorities(setData.master_priorities);
+          if (setData.master_colors) setMasterColors(setData.master_colors);
+        }
       } catch (e) {}
     };
-    fetchTasks();
+    fetchData();
 
-    const handleUpdate = () => fetchTasks();
+    const handleUpdate = () => fetchData();
     window.addEventListener('tasksUpdated', handleUpdate);
     return () => window.removeEventListener('tasksUpdated', handleUpdate);
   }, []);
@@ -69,15 +80,17 @@ export default function TaskSummaryWidget() {
     return matchPic && matchDate;
   });
 
-  const done = filteredTasks.filter(t => t.status === 'Done').length;
-  const review = filteredTasks.filter(t => t.status === 'Review').length;
-  const inProgress = filteredTasks.filter(t => t.status === 'In Progress').length;
-  const todo = filteredTasks.filter(t => t.status === 'To Do').length;
+  const statusCounts = filteredTasks.reduce((acc, t) => {
+    const s = t.status || 'To Do';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const urgent = filteredTasks.filter(t => t.prioritas === 'Urgent').length;
-  const high = filteredTasks.filter(t => t.prioritas === 'High').length;
-  const medium = filteredTasks.filter(t => t.prioritas === 'Medium').length;
-  const low = filteredTasks.filter(t => t.prioritas === 'Low').length;
+  const priorityCounts = filteredTasks.reduce((acc, t) => {
+    const p = t.prioritas || 'Medium';
+    acc[p] = (acc[p] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <div 
@@ -106,27 +119,17 @@ export default function TaskSummaryWidget() {
             <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Status Pekerjaan
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '4px' }}>
-              <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px' }}>
-                <CheckCircle size={16} color="#10b981" style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#10b981' }}>{done}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Done</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px' }}>
-                <CheckCircle size={16} color="#3b82f6" style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b82f6' }}>{review}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Review</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px' }}>
-                <Clock size={16} color="#f59e0b" style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b' }}>{inProgress}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Proses</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px' }}>
-                <AlertCircle size={16} color="#3b82f6" style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#3b82f6' }}>{todo}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>To Do</div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))', gap: '4px' }}>
+              {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map(s => {
+                const color = masterColors['status_' + s] || '#3b82f6';
+                return (
+                  <div key={s} style={{ textAlign: 'center', padding: '8px', background: `${color}15`, borderRadius: '8px' }}>
+                    <CheckCircle size={16} color={color} style={{ margin: '0 auto 4px' }} />
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: color }}>{statusCounts[s] || 0}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{s}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -135,22 +138,17 @@ export default function TaskSummaryWidget() {
               Prioritas
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444' }}><AlertTriangle size={14} /> Urgent</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{urgent}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f97316' }}><ArrowUp size={14} /> High</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{high}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#3b82f6' }}><Minus size={14} /> Medium</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{medium}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}><ArrowDown size={14} /> Low</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{low}</span>
-              </div>
+              {(masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map(p => {
+                const color = masterColors['priority_' + p] || '#64748b';
+                return (
+                  <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: color }}>
+                      <AlertTriangle size={14} /> {p}
+                    </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{priorityCounts[p] || 0}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

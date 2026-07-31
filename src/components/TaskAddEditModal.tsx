@@ -73,8 +73,24 @@ export default function TaskAddEditModal({
   const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
   
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const cached = localStorage.getItem('master_status_progress');
+        if (cached) setMasterProgressMap(JSON.parse(cached));
+      } catch(e) {}
+      fetch('/api/settings').then(r => r.json()).then(data => {
+        if (data.master_status_progress) {
+          setMasterProgressMap(data.master_status_progress);
+          localStorage.setItem('master_status_progress', JSON.stringify(data.master_status_progress));
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && taskToEdit) {
@@ -186,8 +202,9 @@ export default function TaskAddEditModal({
       const subTasksJson = JSON.stringify(editingTask.subTasksList || []);
       const customRecurrenceSettingsStr = editingTask.customRecurrenceSettings ? JSON.stringify(editingTask.customRecurrenceSettings) : null;
 
+      const { historyLogsJson, commentsJson, ...restEditingTask } = editingTask;
       const payload = {
-        ...editingTask,
+        ...restEditingTask,
         filesJson,
         additionalPics: additionalPicsJson,
         subTasksJson,
@@ -397,19 +414,13 @@ export default function TaskAddEditModal({
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Status
                   </label>
-                  <select className="input" value={editingTask.status || 'To Do'} onChange={e => {
+                  <select className="input" value={editingTask.status || (formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do')} onChange={e => {
                     const newStatus = e.target.value;
-                    if (newStatus === 'Done') {
-                      setEditingTask({ ...editingTask, status: newStatus, progress: 100 });
-                    } else if (newStatus === 'Review') {
-                      setEditingTask({ ...editingTask, status: newStatus, progress: 90 });
-                    } else if (newStatus === 'In Progress') {
-                      setEditingTask({ ...editingTask, status: newStatus, progress: 50 });
-                    } else if (newStatus === 'To Do') {
-                      setEditingTask({ ...editingTask, status: newStatus, progress: 0 });
-                    } else {
-                      setEditingTask({ ...editingTask, status: newStatus });
+                    let newProgress = editingTask.progress;
+                    if (masterProgressMap[newStatus] !== undefined) {
+                      newProgress = masterProgressMap[newStatus];
                     }
+                    setEditingTask({ ...editingTask, status: newStatus, progress: newProgress });
                   }}>
                     {(formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']).map(opt => (
                       <option key={opt} value={opt}>{opt}</option>
@@ -669,7 +680,7 @@ export default function TaskAddEditModal({
                       const newSubTask: SubTask = {
                         id: Date.now().toString(),
                         text: '',
-                        status: 'To Do',
+                        status: formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do',
                         logs: []
                       };
                       setEditingTask({
@@ -699,24 +710,29 @@ export default function TaskAddEditModal({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <select 
                             className="input" 
-                            style={{ width: '140px', flexShrink: 0, 
-                              backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                               subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                               'var(--surface-color)',
-                              color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                            }}
+                            style={{ width: '140px', flexShrink: 0 }}
                             value={subTask.status}
                             onChange={e => {
-                              const newStatus = e.target.value as 'To Do' | 'In Progress' | 'Review' | 'Done';
+                              const newStatus = e.target.value;
                               const updated = [...(editingTask.subTasksList || [])];
                               updated[idx].status = newStatus;
-                              setEditingTask({ ...editingTask, subTasksList: updated });
+                              
+                              const allSame = updated.every(st => st.status === newStatus);
+                              if (allSame) {
+                                let newProgress = editingTask.progress;
+                                if (masterProgressMap[newStatus] !== undefined) {
+                                  newProgress = masterProgressMap[newStatus];
+                                }
+                                
+                                setEditingTask({ ...editingTask, subTasksList: updated, status: newStatus, progress: newProgress });
+                              } else {
+                                setEditingTask({ ...editingTask, subTasksList: updated });
+                              }
                             }}
                           >
-                            <option value="To Do" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>To Do</option>
-                            <option value="In Progress" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>In Progress</option>
-                            <option value="Review" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Review</option>
-                            <option value="Done" style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>Done</option>
+                            {(formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']).map(opt => (
+                              <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>
+                            ))}
                           </select>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

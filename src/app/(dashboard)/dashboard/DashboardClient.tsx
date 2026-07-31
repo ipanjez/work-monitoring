@@ -23,6 +23,7 @@ import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
 import { getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
+import TaskDetailModal from '@/components/TaskDetailModal';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { motion } from 'framer-motion';
@@ -71,6 +72,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
   
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -93,6 +97,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           }
           if (data.master_priorities) {
             setMasterPriorities(data.master_priorities);
+          }
+          if (data.master_colors) {
+            setMasterColors(data.master_colors);
           }
         })
         .catch(e => console.error(e));
@@ -268,17 +275,133 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   };
 
   // Timeline/Deadline Distribution (Line Chart)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const deadlineCounts = Array(12).fill(0);
-  filteredTasks.forEach(t => {
-    const d = new Date(t.endDate);
-    if (d.getFullYear() === new Date().getFullYear()) {
-      deadlineCounts[d.getMonth()]++;
+  let timelineLabels: string[] = [];
+  let deadlineCounts: number[] = [];
+  let timelineDateRanges: {start: Date, end: Date}[] = [];
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (globalTargetFilter === 'Minggu Ini') {
+    timelineLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    deadlineCounts = Array(7).fill(0);
+    const day = today.getDay();
+    const diffToMonday = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(new Date(today).setDate(diffToMonday));
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      timelineDateRanges.push({ start: new Date(d), end: new Date(d.setHours(23, 59, 59, 999)) });
     }
-  });
+    
+    filteredTasks.forEach(t => {
+      const d = new Date(t.endDate);
+      const diffTime = d.getTime() - monday.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays < 7) {
+        deadlineCounts[diffDays]++;
+      }
+    });
+  } else if (globalTargetFilter === 'Bulan Ini') {
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    timelineLabels = Array.from({length: daysInMonth}, (_, i) => String(i + 1));
+    deadlineCounts = Array(daysInMonth).fill(0);
+    
+    for (let i = 0; i < daysInMonth; i++) {
+      const dStart = new Date(now.getFullYear(), now.getMonth(), i + 1);
+      const dEnd = new Date(now.getFullYear(), now.getMonth(), i + 1, 23, 59, 59, 999);
+      timelineDateRanges.push({ start: dStart, end: dEnd });
+    }
+    
+    filteredTasks.forEach(t => {
+      const d = new Date(t.endDate);
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+        deadlineCounts[d.getDate() - 1]++;
+      }
+    });
+  } else if (globalTargetFilter === 'Hari Ini') {
+    timelineLabels = ['Hari Ini'];
+    deadlineCounts = [0];
+    timelineDateRanges = [{ start: new Date(today), end: new Date(today.getTime() + 86400000 - 1) }];
+    
+    filteredTasks.forEach(t => {
+      const d = new Date(t.endDate);
+      if (d.toDateString() === today.toDateString()) {
+        deadlineCounts[0]++;
+      }
+    });
+  } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+    const start = new Date(globalCustomStartDate);
+    const end = new Date(globalCustomEndDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 31) {
+      for (let i = 0; i <= diffDays; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        timelineLabels.push(format(d, 'dd MMM'));
+        deadlineCounts.push(0);
+        timelineDateRanges.push({ start: new Date(d), end: new Date(new Date(d).setHours(23, 59, 59, 999)) });
+      }
+      filteredTasks.forEach(t => {
+        const d = new Date(t.endDate);
+        if (d >= start && d <= new Date(new Date(end).setHours(23, 59, 59, 999))) {
+          const idx = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          if (idx >= 0 && idx < deadlineCounts.length) {
+            deadlineCounts[idx]++;
+          }
+        }
+      });
+    } else {
+      let curr = new Date(start.getFullYear(), start.getMonth(), 1);
+      const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+      const monthMap = new Map<string, number>();
+      
+      while (curr <= endMonth) {
+        const label = format(curr, 'MMM yyyy');
+        timelineLabels.push(label);
+        monthMap.set(label, timelineLabels.length - 1);
+        deadlineCounts.push(0);
+        
+        const mStart = new Date(curr);
+        const mEnd = new Date(curr.getFullYear(), curr.getMonth() + 1, 0, 23, 59, 59, 999);
+        timelineDateRanges.push({ start: mStart, end: mEnd });
+        
+        curr.setMonth(curr.getMonth() + 1);
+      }
+      
+      filteredTasks.forEach(t => {
+        const d = new Date(t.endDate);
+        if (d >= start && d <= new Date(new Date(end).setHours(23, 59, 59, 999))) {
+          const label = format(d, 'MMM yyyy');
+          const idx = monthMap.get(label);
+          if (idx !== undefined) deadlineCounts[idx]++;
+        }
+      });
+    }
+  } else {
+    // Semua Waktu
+    timelineLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    deadlineCounts = Array(12).fill(0);
+    
+    for (let i = 0; i < 12; i++) {
+      const mStart = new Date(now.getFullYear(), i, 1);
+      const mEnd = new Date(now.getFullYear(), i + 1, 0, 23, 59, 59, 999);
+      timelineDateRanges.push({ start: mStart, end: mEnd });
+    }
+    
+    filteredTasks.forEach(t => {
+      const d = new Date(t.endDate);
+      if (d.getFullYear() === now.getFullYear()) {
+        deadlineCounts[d.getMonth()]++;
+      }
+    });
+  }
 
   const timelineData = {
-    labels: months,
+    labels: timelineLabels,
     datasets: [
       {
         label: 'Tenggat Waktu Pekerjaan',
@@ -298,6 +421,24 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     scales: {
       y: { ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
       x: { ticks: { color: textColor }, grid: { display: false } }
+    },
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const range = timelineDateRanges[index];
+        if (range) {
+          setGlobalTargetFilter('Custom');
+          setGlobalCustomStartDate(format(range.start, 'yyyy-MM-dd'));
+          setGlobalCustomEndDate(format(range.end, 'yyyy-MM-dd'));
+          router.push('/tasks');
+        }
+      }
+    }
     }
   };
 
@@ -396,9 +537,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       } catch(e) { return false; }
     })() : false
   )) : [];
-  const picDone = picTasks.filter(t => t.status === 'Done').length;
-  const picInProgress = picTasks.filter(t => t.status === 'In Progress').length;
-  const picTodo = picTasks.filter(t => t.status === 'To Do').length;
+  
+  const picStatusCounts = picTasks.reduce((acc, t) => {
+    const s = t.status || 'To Do';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
     const handleExportPDF = () => {
     try {
@@ -695,9 +839,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             <div key={statusName} className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
-                <CheckCircle size={20} color={defaultColors[idx % defaultColors.length]} />
+                <CheckCircle size={20} color={masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length]} />
               </div>
-              <p style={{ fontSize: '32px', fontWeight: 'bold', color: defaultColors[idx % defaultColors.length] }}>{statusCounts[statusName] || 0}</p>
+              <p style={{ fontSize: '32px', fontWeight: 'bold', color: masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length] }}>{statusCounts[statusName] || 0}</p>
             </div>
           ))}
 
@@ -725,18 +869,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Total:</span>
                 <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{picTasks.length}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Selesai:</span>
-                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--success)' }}>{picDone}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Proses:</span>
-                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--warning)' }}>{picInProgress}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Belum:</span>
-                <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{picTodo}</span>
-              </div>
+              {(masterStatuses.length > 0 ? masterStatuses : Object.keys(picStatusCounts)).map(statusName => (
+                <div key={statusName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{statusName}:</span>
+                  <span style={{ fontSize: '15px', fontWeight: 'bold', color: masterColors['status_' + statusName] || 'var(--text-primary)' }}>{picStatusCounts[statusName] || 0}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -824,7 +962,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Calendar size={20} color="var(--accent-primary)" />
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Detail Pekerjaan Aktif</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Detail Pekerjaan Aktif ({dynamicTableTasks.length})</h3>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <Search size={16} color="var(--text-secondary)" />
@@ -871,7 +1009,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
                   const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
                   return (
-                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => router.push('/tasks')}>
+                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => {
+                      setSelectedTaskForDetail(t);
+                      setDetailModalOpen(true);
+                    }}>
                       <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
                         {t.nama}
                         {t.fileUrl && (
@@ -939,6 +1080,14 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           </div>
         </div>
       </div>
+      
+      {selectedTaskForDetail && (
+        <TaskDetailModal 
+          isOpen={detailModalOpen}
+          onClose={() => setDetailModalOpen(false)}
+          task={selectedTaskForDetail as any}
+        />
+      )}
     </motion.div>
   );
 }
