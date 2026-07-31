@@ -2,7 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,6 +48,7 @@ interface TaskDetailModalProps {
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
   const { masterColors } = useMaster();
   const router = useRouter();
+  const pathname = usePathname();
   const { addActivityLog } = useNotifications();
   const [localComments, setLocalComments] = useState<CommentItem[]>([]);
   const [localHistoryLogs, setLocalHistoryLogs] = useState<LogItem[]>([]);
@@ -424,16 +425,18 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <button className="btn btn-secondary" onClick={() => handleExportICS(task)}>
                 <CalendarDays size={16} /> Download .ics
               </button>
-              <button 
-                className="btn" 
-                style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
-                onClick={() => {
-                  onClose();
-                  router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
-                }}
-              >
-                <Eye size={15} /> Pergi ke Kalender
-              </button>
+              {pathname !== '/calendar' && (
+                <button 
+                  className="btn" 
+                  style={{ background: 'var(--primary-color)', color: '#ffffff', opacity: 0.9, fontWeight: 500 }}
+                  onClick={() => {
+                    onClose();
+                    router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
+                  }}
+                >
+                  <Eye size={15} /> Pergi ke Kalender
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
