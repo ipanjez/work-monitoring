@@ -264,7 +264,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
-      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
+      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan Aplikasi', 'Pengaturan (departemen, kategori, status, prioritas, dll) berhasil disimpan dan diperbarui di seluruh aplikasi', 'success');
       toast.success('Pengaturan umum berhasil disimpan!');
     })
     .catch(console.error);

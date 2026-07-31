@@ -161,9 +161,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           try {
             await prisma.activityLog.create({
               data: {
-                action: `Pembaruan Pekerjaan: ${task.nama}`,
-                title: `Status pekerjaan diubah menjadi ${status}`,
-                message: `Status pekerjaan diubah dari ${existingTask.status} menjadi ${status}`,
+                action: 'UPDATE_TASK_STATUS',
+                title: `Status pekerjaan "${existingTask.nama}" diubah menjadi ${status}`,
+                message: `Status pekerjaan "${existingTask.nama}" diubah dari ${existingTask.status} menjadi ${status}`,
                 type: 'info'
               }
             });
