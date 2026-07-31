@@ -1281,12 +1281,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             refreshData();
           }}
         />
-        <TaskAddEditModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          taskToEdit={editingTask}
-          onSave={handleSaveModal}
-          formCategoryOptions={formCategoryOptions}
+        <TaskAddEditModal={formCategoryOptions}
+            setPreviewFile={setPreviewFile}
           formPicOptions={formPicOptions}
           formStatusOptions={masterStatuses}
         formPriorityOptions={masterPriorities}
