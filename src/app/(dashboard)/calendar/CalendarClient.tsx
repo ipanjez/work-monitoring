@@ -76,6 +76,13 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   }, [initialTasks]);
 
   useEffect(() => {
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl !== null) {
+      setSearchQuery(searchFromUrl);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
@@ -455,217 +462,13 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       </div>
 
       {/* Task Pop-up Detail Modal */}
-      <AnimatePresence>
-        {selectedTask && (
-          <div className="modal-overlay">
-            <motion.div 
-              className="modal-content"
-              style={{ maxWidth: '650px' }}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                  <span className={`badge ${getPriorityBadgeClass(selectedTask.prioritas)}`} style={{ marginBottom: '8px' }}>
-                    {selectedTask.prioritas || 'Medium'} Priority
-                  </span>
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{selectedTask.nama}</h3>
-                </div>
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => setSelectedTask(null)}>
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>PIC:</span>
-                    <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      <span {...getDynamicBadgeStyle('pic', selectedTask.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', selectedTask.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                        {selectedTask.pic}
-                      </span>
-                      {getAdditionalPics(selectedTask).length > 0 && getAdditionalPics(selectedTask).map((p, i) => (
-                        <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                          {p}
-                        </span>
-                      ))}
-                    </p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kategori:</span>
-                    <p style={{ marginTop: '4px' }}>
-                      <span {...getDynamicBadgeStyle('cat', selectedTask.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', selectedTask.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                        {selectedTask.kategori || 'Umum'}
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Status:</span>
-                    <p style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>{selectedTask.status} ({selectedTask.progress || 0}%)</p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Repetisi:</span>
-                    <p style={{ fontWeight: '600' }}>{formatRecurrenceText(selectedTask.repetisi)}</p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tanggal Mulai:</span>
-                    <p>{format(new Date(selectedTask.startDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.startTime ? `, ${selectedTask.startTime}` : ''}</p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tenggat Waktu:</span>
-                    <p>{format(new Date(selectedTask.endDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.endTime ? `, ${selectedTask.endTime}` : ''}</p>
-                  </div>
-                </div>
-
-                {/* Audit Logging Information Box */}
-                <div style={{ background: 'var(--input-bg)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <History size={15} color="var(--accent-primary)" /> Log Informasi & Riwayat Edit
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '11px' }}>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
-                      <span style={{ fontWeight: 600 }}>
-                        {selectedTask.createdAt ? format(new Date(selectedTask.createdAt), 'dd MMM yyyy HH:mm') : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Terakhir Diedit</span>
-                      <span style={{ fontWeight: 600 }}>
-                        {selectedTask.lastEditedAt ? format(new Date(selectedTask.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Frekuensi Edit</span>
-                      <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
-                        {selectedTask.editCount || 0} kali
-                      </span>
-                    </div>
-                  </div>
-
-                  {getHistoryLogs(selectedTask).length > 0 && (
-                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                        Timeline Aktivitas:
-                      </span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '100px', overflowY: 'auto' }}>
-                        {getHistoryLogs(selectedTask).map((log, idx) => (
-                          <div key={idx} style={{ fontSize: '11px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                            <span>• {log.action}</span>
-                            <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {selectedTask.deskripsi && (
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', background: 'var(--input-bg)', padding: '10px', borderRadius: '8px' }}>
-                    {selectedTask.deskripsi}
-                  </p>
-                )}
-
-                {/* Sub-Tasks Display */}
-                {selectedTask.subTasksJson && (() => {
-                  let subTasks: SubTask[] = [];
-                  try {
-                    subTasks = JSON.parse(selectedTask.subTasksJson);
-                  } catch (e) {}
-                  
-                  if (subTasks.length === 0) return null;
-                  
-                  return (
-                    <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', marginTop: '4px' }}>
-                      <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Sub Pekerjaan</h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {subTasks.map(subTask => (
-                          <div key={subTask.id} style={{ padding: '8px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                              <span style={{ fontWeight: 500, fontSize: '13px' }}>{subTask.text}</span>
-                              <span style={{ 
-                                padding: '3px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: 600,
-                                backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                                 subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                                 'var(--surface-color)',
-                                color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                              }}>
-                                {subTask.status}
-                              </span>
-                            </div>
-                            {subTask.logs && subTask.logs.length > 0 && (
-                              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', paddingLeft: '2px' }}>
-                                {subTask.logs.map((log, lidx) => (
-                                  <div key={lidx} style={{ display: 'flex', gap: '6px' }}>
-                                    <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
-                                    <span>- {log.status}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Multiple Files Detail Display */}
-                {getTaskFiles(selectedTask).length > 0 && (
-                  <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      File Lampiran ({getTaskFiles(selectedTask).length} File)
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {getTaskFiles(selectedTask).map((f, idx) => (
-                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
-                              <Paperclip size={14} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
-                              <span style={{ fontSize: '12px', color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
-                            </div>
-                            {!f.isDeleted && (
-                              <button 
-                                type="button"
-                                className="btn btn-secondary"
-                                style={{ padding: '2px 6px' }}
-                                onClick={() => setPreviewFile(f)}
-                              >
-                                <Eye size={12} color="var(--text-secondary)" />
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                            {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd/MM/yyyy HH:mm')}</span>}
-                            {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '4px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd/MM/yyyy HH:mm')}</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                  <button className="btn btn-secondary" onClick={() => handleOpenEditModal(selectedTask)}>
-                    <Pencil size={15} /> Edit Pekerjaan Ini
-                  </button>
-                  <button className="btn btn-danger" onClick={() => handleDeleteTask(selectedTask.id)}>
-                    <Trash2 size={15} /> Hapus Pekerjaan
-                  </button>
-                  <a href={getGoogleCalendarUrl(selectedTask)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    <ExternalLink size={15} /> Google Calendar
-                  </a>
-                  <button className="btn btn-secondary" onClick={() => handleExportICS(selectedTask)}>
-                    <CalendarDays size={15} /> .ics
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <TaskDetailModal
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        setPreviewFile={setPreviewFile}
+        onEdit={() => handleOpenEditModal(selectedTask!)}
+        onDelete={() => handleDeleteTask(selectedTask!.id)}
+      />
 
       <TaskAddEditModal
         isOpen={isEditModalOpen}
