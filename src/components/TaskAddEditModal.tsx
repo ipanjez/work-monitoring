@@ -107,6 +107,7 @@ export default function TaskAddEditModal({
         } catch (e) {
           cloned.customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [], endType: 'never', endDate: '', endOccurrences: 1 };
         }
+        cloned.repetisi = 'Custom';
       } else if (!cloned.customRecurrenceSettings) {
         cloned.customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [], endType: 'never', endDate: '', endOccurrences: 1 };
       }
