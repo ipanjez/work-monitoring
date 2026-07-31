@@ -548,7 +548,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                 </span>
               </div>
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}{!task.isAllDay && task.endTime ? ,  : ''}
+                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}
                         </span>
                       </div>
 

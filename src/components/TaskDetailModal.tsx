@@ -190,11 +190,11 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tanggal Mulai:</span>
-                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.startDate), 'dd MMM yyyy')}{!task.isAllDay && task.startTime ? ,  : ''}</p>
+                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.startDate), 'dd MMM yyyy')}{!task.isAllDay && task.startTime ? `, ${task.startTime}` : ''}</p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tenggat Waktu:</span>
-                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.endDate), 'dd MMM yyyy')}{!task.isAllDay && task.endTime ? ,  : ''}</p>
+                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.endDate), 'dd MMM yyyy')}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}</p>
               </div>
             </div>
 

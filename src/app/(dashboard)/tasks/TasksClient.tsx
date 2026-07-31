@@ -519,8 +519,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         { header: 'Prioritas', key: 'prioritas', width: 15 },
         { header: 'Status', key: 'status', width: 15 },
         { header: 'Progress', key: 'progress', width: 12 },
+        { header: 'Sepanjang Hari', key: 'isAllDay', width: 16 },
+        { header: 'Jam Mulai', key: 'startTime', width: 12 },
+        { header: 'Jam Selesai', key: 'endTime', width: 12 },
         { header: 'Tanggal Mulai', key: 'startDate', width: 15 },
         { header: 'Tenggat Waktu', key: 'endDate', width: 15 },
+        { header: 'Repetisi', key: 'repetisi', width: 18 },
         { header: 'Deskripsi', key: 'deskripsi', width: 40 },
         { header: 'Catatan', key: 'catatan', width: 40 },
         { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 50 },
@@ -534,8 +538,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         fgColor: { argb: 'FF10B981' }
       };
 
-      // Auto wrap untuk kolom K (Sub Pekerjaan)
-      worksheet.getColumn('K').alignment = { wrapText: true, vertical: 'top' };
+      // Auto wrap untuk kolom Sub Pekerjaan
+      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
@@ -546,8 +550,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         prioritas: 'High',
         status: 'In Progress',
         progress: 50,
+        isAllDay: 'Tidak',
+        startTime: '08:00',
+        endTime: '17:00',
         startDate: format(new Date(), 'yyyy-MM-dd'),
         endDate: format(new Date(), 'yyyy-MM-dd'),
+        repetisi: 'Tidak Berulang',
         deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
         catatan: 'Contoh catatan',
         subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
@@ -595,7 +603,104 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           prompt: 'Masukkan angka antara 0 hingga 100',
           formulae: [0, 100]
         };
+
+        // Sepanjang Hari (Ya/Tidak)
+        worksheet.getCell(`H${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Ya,Tidak"']
+        };
+
+        // Repetisi
+        worksheet.getCell(`M${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
+        };
       }
+
+      // === Sheet Panduan ===
+      const guideSheet = workbook.addWorksheet('Panduan');
+      guideSheet.columns = [
+        { header: '', key: 'kolom', width: 25 },
+        { header: '', key: 'penjelasan', width: 60 },
+        { header: '', key: 'contoh', width: 35 },
+        { header: '', key: 'wajib', width: 12 },
+      ];
+
+      // Title
+      guideSheet.mergeCells('A1:D1');
+      const titleCell = guideSheet.getCell('A1');
+      titleCell.value = 'PANDUAN PENGISIAN TEMPLATE IMPORT PEKERJAAN';
+      titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      guideSheet.getRow(1).height = 30;
+
+      // Table Header
+      const headerRow = guideSheet.getRow(3);
+      headerRow.values = ['Nama Kolom', 'Penjelasan', 'Contoh Isian', 'Wajib?'];
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+
+      const guideData = [
+        ['Nama Pekerjaan', 'Nama atau judul pekerjaan yang akan dilakukan', 'Membuat Laporan Bulanan', 'Ya'],
+        ['PIC Utama', 'Penanggung jawab utama pekerjaan (pilih dari dropdown)', 'Ahmad Fajar', 'Ya'],
+        ['PIC Tambahan', 'Penanggung jawab tambahan, pisahkan dengan koma', 'Budi, Sari', 'Tidak'],
+        ['Kategori', 'Kategori/jenis pekerjaan sesuai master pengaturan', 'Umum', 'Tidak'],
+        ['Prioritas', 'Tingkat prioritas pekerjaan (pilih dari dropdown)', 'High', 'Tidak'],
+        ['Status', 'Status progres pekerjaan saat ini (pilih dari dropdown)', 'In Progress', 'Tidak'],
+        ['Progress', 'Persentase penyelesaian pekerjaan (angka 0-100)', '50', 'Tidak'],
+        ['Sepanjang Hari', 'Apakah pekerjaan berlangsung seharian? Ya = tanpa jam, Tidak = pakai jam', 'Tidak', 'Tidak'],
+        ['Jam Mulai', 'Jam mulai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '08:00', 'Tidak'],
+        ['Jam Selesai', 'Jam selesai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '17:00', 'Tidak'],
+        ['Tanggal Mulai', 'Tanggal dimulainya pekerjaan dalam format YYYY-MM-DD', '2026-08-01', 'Tidak'],
+        ['Tenggat Waktu', 'Batas waktu penyelesaian pekerjaan dalam format YYYY-MM-DD', '2026-08-15', 'Tidak'],
+        ['Repetisi', 'Pengulangan pekerjaan (pilih dari dropdown)', 'Tidak Berulang', 'Tidak'],
+        ['Deskripsi', 'Penjelasan detail mengenai pekerjaan. Gunakan Alt+Enter untuk baris baru', 'Membuat laporan keuangan Q3', 'Tidak'],
+        ['Catatan', 'Catatan tambahan terkait pekerjaan', 'Perlu koordinasi dengan tim finance', 'Tidak'],
+        ['Sub Pekerjaan', 'Daftar sub-tugas dengan format [Status] Nama. Pisahkan dengan Enter (Alt+Enter di Excel)', '[Done] Kumpulkan data\n[To Do] Analisis', 'Tidak'],
+      ];
+      guideData.forEach((row, idx) => {
+        const r = guideSheet.getRow(4 + idx);
+        r.values = row;
+        r.getCell(1).font = { bold: true };
+        if (idx % 2 === 0) {
+          r.eachCell(c => {
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+          });
+        }
+      });
+
+      // Tips section
+      const tipsStartRow = 4 + guideData.length + 2;
+      guideSheet.mergeCells(`A${tipsStartRow}:D${tipsStartRow}`);
+      const tipsTitle = guideSheet.getCell(`A${tipsStartRow}`);
+      tipsTitle.value = 'TIPS PENTING';
+      tipsTitle.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      tipsTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
+
+      const tips = [
+        '1. Baris contoh (baris ke-2 di sheet Template) boleh ditimpa atau dihapus.',
+        '2. Kolom dengan dropdown (PIC, Prioritas, Status, dll) sudah disediakan pilihan otomatis.',
+        '3. Format tanggal wajib menggunakan YYYY-MM-DD (contoh: 2026-08-01).',
+        '4. Format jam menggunakan HH:mm 24 jam (contoh: 08:00, 13:30, 17:00).',
+        '5. Jika Sepanjang Hari = "Ya", kolom Jam Mulai dan Jam Selesai akan diabaikan.',
+        '6. Untuk Sub Pekerjaan, gunakan format: [Status] Nama Sub Pekerjaan.',
+        '7. Status yang valid untuk Sub Pekerjaan sesuai dengan Master Status yang sudah diatur.',
+        '8. PIC Tambahan dipisahkan dengan tanda koma (,).',
+        '9. Gunakan Alt+Enter untuk membuat baris baru di dalam satu sel Excel.',
+      ];
+      tips.forEach((tip, idx) => {
+        const r = guideSheet.getRow(tipsStartRow + 1 + idx);
+        guideSheet.mergeCells(`A${tipsStartRow + 1 + idx}:D${tipsStartRow + 1 + idx}`);
+        r.getCell(1).value = tip;
+        r.getCell(1).font = { size: 11 };
+      });
+
+      // Set all columns alignment
+      guideSheet.getColumn(2).alignment = { wrapText: true, vertical: 'top' };
+      guideSheet.getColumn(3).alignment = { wrapText: true, vertical: 'top' };
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -670,6 +775,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             if (picsArr.length > 0) additionalPicsJson = JSON.stringify(picsArr);
           }
           
+          const isAllDayStr = (row['sepanjang hari'] || row['isallday'] || 'Ya').toString().toLowerCase();
+          const isAllDay = isAllDayStr === 'ya' || isAllDayStr === 'true' || isAllDayStr === '1' || isAllDayStr === 'yes';
+
           return {
             nama: row['nama pekerjaan'] || row['nama'] || 'Tanpa Nama',
             pic: row['pic utama'] || row['pic'] || 'Unassigned',
@@ -677,6 +785,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             prioritas: row['prioritas'] || 'Medium',
             kategori: row['kategori'] || 'Umum',
             progress: p,
+            isAllDay,
+            startTime: row['jam mulai'] || row['starttime'] || null,
+            endTime: row['jam selesai'] || row['endtime'] || null,
+            repetisi: row['repetisi'] || 'Tidak Berulang',
             deskripsi: row['deskripsi'] || '',
             catatan: row['catatan'] || '',
             startDate: row['tanggal mulai'] || row['startdate'] || new Date().toISOString(),
@@ -736,11 +848,17 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         'Prioritas': t.prioritas || 'Medium',
         'Status': t.status,
         'Progress (%)': t.progress || 0,
+        'Sepanjang Hari': t.isAllDay ? 'Ya' : 'Tidak',
+        'Jam Mulai': t.startTime || '',
+        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
+        'Jam Selesai': t.endTime || '',
+        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
+        'Repetisi': t.repetisi || 'Tidak Berulang',
         'Sub Pekerjaan': subPekerjaanStr,
         'Diedit (kali)': t.editCount || 0,
         'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
-        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
-        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
+        'Deskripsi': t.deskripsi || '',
+        'Catatan': t.catatan || ''
       };
     });
 
@@ -1281,13 +1399,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             refreshData();
           }}
         />
-        <TaskAddEditModal={formCategoryOptions}
-            setPreviewFile={setPreviewFile}
+        <TaskAddEditModal
+          formCategoryOptions={formCategoryOptions}
           formPicOptions={formPicOptions}
           formStatusOptions={masterStatuses}
-        formPriorityOptions={masterPriorities}
-        setPreviewFile={setPreviewFile}
-      />
+          formPriorityOptions={masterPriorities}
+          setPreviewFile={setPreviewFile}
+        />
 
       <TaskDetailModal
         task={detailTask}

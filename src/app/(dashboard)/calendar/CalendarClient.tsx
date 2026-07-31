@@ -506,11 +506,11 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tanggal Mulai:</span>
-                    <p>{format(new Date(selectedTask.startDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.startTime ? ,  : ''}</p>
+                    <p>{format(new Date(selectedTask.startDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.startTime ? `, ${selectedTask.startTime}` : ''}</p>
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tenggat Waktu:</span>
-                    <p>{format(new Date(selectedTask.endDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.endTime ? ,  : ''}</p>
+                    <p>{format(new Date(selectedTask.endDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.endTime ? `, ${selectedTask.endTime}` : ''}</p>
                   </div>
                 </div>
 
