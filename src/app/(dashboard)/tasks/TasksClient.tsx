@@ -1400,6 +1400,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           }}
         />
         <TaskAddEditModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          taskToEdit={editingTask}
+          onSave={handleSaveModal}
           formCategoryOptions={formCategoryOptions}
           formPicOptions={formPicOptions}
           formStatusOptions={masterStatuses}
