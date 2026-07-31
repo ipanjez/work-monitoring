@@ -220,8 +220,11 @@ export const formatRecurrenceText = (repetisi: string | null | undefined): strin
   if (!repetisi.startsWith('CUSTOM_RECURRENCE:')) return repetisi;
 
   try {
-    const jsonStr = repetisi.replace('CUSTOM_RECURRENCE:', '');
-    const settings = JSON.parse(jsonStr);
+    let jsonStr = repetisi.replace('CUSTOM_RECURRENCE:', '');
+    let settings = JSON.parse(jsonStr);
+    while (typeof settings === 'string') {
+      settings = JSON.parse(settings);
+    }
     
     let base = `Setiap ${settings.every} ${settings.unit}`;
     

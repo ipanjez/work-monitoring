@@ -19,7 +19,7 @@ import dynamic from 'next/dynamic';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
@@ -862,11 +862,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
         'Jam Selesai': t.endTime || '',
         'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
-        'Repetisi': t.repetisi || 'Tidak Berulang',
+        'Repetisi': formatRecurrenceText(t.repetisi),
         'Sub Pekerjaan': subPekerjaanStr,
         'Diedit (kali)': t.editCount || 0,
         'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
-        'Deskripsi': t.deskripsi || '',
+        'Deskripsi': t.deskripsi ? t.deskripsi.replace(/<[^>]*>?/gm, '') : '',
         'Catatan': t.catatan || ''
       };
     });
@@ -923,7 +923,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       return {
         title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
-        description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi || '-'}`,
+        description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}`,
         start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
         end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
       };
@@ -1248,7 +1248,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
                         {task.repetisi && task.repetisi !== 'Tidak Berulang' && (
                           <div style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <Repeat size={12} /> {task.repetisi}
+                            <Repeat size={12} /> {formatRecurrenceText(task.repetisi)}
                           </div>
                         )}
                         {getTaskComments(task).length > 0 && (
@@ -1276,7 +1276,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         textOverflow: 'ellipsis',
                         whiteSpace: 'pre-wrap'
                       }}>
-                        {task.deskripsi || '-'}
+                        {task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}
                       </div>
                     </td>
                     <td style={{ padding: '16px 12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
