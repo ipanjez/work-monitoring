@@ -171,8 +171,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       filesList: getTaskFiles(task),
       additionalPicsList: getAdditionalPics(task),
       isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : true,
-      startTime: task.startTime || '08:00',
-      endTime: task.endTime || '17:00',
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
       repetisi: task.repetisi || 'Tidak Berulang',
       startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
       endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
@@ -197,8 +197,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       filesList: [],
       additionalPicsList: [],
       isAllDay: true,
-      startTime: '08:00',
-      endTime: '17:00',
+      startTime: '',
+      endTime: '',
       repetisi: 'Tidak Berulang',
       startDate: startStr,
       endDate: endStr,
@@ -506,11 +506,11 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tanggal Mulai:</span>
-                    <p>{format(new Date(selectedTask.startDate), 'dd MMM yyyy')}</p>
+                    <p>{format(new Date(selectedTask.startDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.startTime ? ,  : ''}</p>
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tenggat Waktu:</span>
-                    <p>{format(new Date(selectedTask.endDate), 'dd MMM yyyy')}</p>
+                    <p>{format(new Date(selectedTask.endDate), 'dd MMM yyyy')}{!selectedTask.isAllDay && selectedTask.endTime ? ,  : ''}</p>
                   </div>
                 </div>
 

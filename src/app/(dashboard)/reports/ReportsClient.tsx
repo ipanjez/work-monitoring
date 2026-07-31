@@ -255,8 +255,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         'Prioritas': t.prioritas || 'Medium',
         'Status': t.status,
         'Progress': `${t.progress || 0}%`,
-        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
-        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
+        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd') + (!t.isAllDay && t.startTime ?   : ''),
+        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd') + (!t.isAllDay && t.endTime ?   : ''),
         'Deskripsi': taskAny.deskripsi ? taskAny.deskripsi.replace(/<[^>]+>/g, '') : '-',
         'Sub-Pekerjaan': subTasksStr || '-',
         'Catatan': taskAny.catatan || '-'

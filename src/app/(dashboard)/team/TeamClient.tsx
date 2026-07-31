@@ -256,7 +256,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                       </span>
                     </td>
                     <td style={{ padding: '12px' }}>{t.status} ({t.progress || 0}%)</td>
-                    <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}</td>
+                    <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? ,  : ''}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
                         Detail Pekerjaan

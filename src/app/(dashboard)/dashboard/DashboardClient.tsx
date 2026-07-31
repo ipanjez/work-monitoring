@@ -595,7 +595,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           t.prioritas || 'Medium',
           t.status,
           `${t.progress || 0}%`,
-          format(new Date(t.endDate), 'dd MMM yyyy'),
+          format(new Date(t.endDate), 'dd MMM yyyy') + (!t.isAllDay && t.endTime ? ,  : ''),
           t.deskripsi || '-'
         ];
         tableRows.push(row);
@@ -672,8 +672,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       'Progress (%)': t.progress,
       'Deskripsi': t.deskripsi || '',
       'Lampiran File': t.fileName || '',
-      'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy'),
-      'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy')
+      'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!t.isAllDay && t.startTime ? ,  : ''),
+      'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!t.isAllDay && t.endTime ? ,  : '')
     }));
 
     const wb = XLSX.utils.book_new();

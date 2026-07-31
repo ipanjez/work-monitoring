@@ -481,7 +481,7 @@ export default function TaskAddEditModal({
                       <input 
                         type="time" 
                         className="input" 
-                        value={editingTask.startTime || '08:00'} 
+                        value={editingTask.startTime || ''} 
                         onChange={e => setEditingTask({ ...editingTask, startTime: e.target.value })} 
                       />
                     </div>
@@ -490,7 +490,7 @@ export default function TaskAddEditModal({
                       <input 
                         type="time" 
                         className="input" 
-                        value={editingTask.endTime || '17:00'} 
+                        value={editingTask.endTime || ''} 
                         onChange={e => setEditingTask({ ...editingTask, endTime: e.target.value })} 
                       />
                     </div>
