@@ -507,6 +507,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
       const uniquePics = existingPics.length > 0 ? existingPics : ['Unassigned'];
       configSheet.getColumn('A').values = uniquePics;
+      const uniqueCats = formCategoryOptions.length > 0 ? formCategoryOptions : ['Umum'];
+      configSheet.getColumn('B').values = uniqueCats;
       
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
 
@@ -546,7 +548,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
         pic: uniquePics[0] || 'Unassigned',
         picTambahan: 'PIC Lain 1, PIC Lain 2',
-        kategori: 'Umum',
+        kategori: uniqueCats[0] || 'Umum',
         prioritas: 'High',
         status: 'In Progress',
         progress: 50,
@@ -577,6 +579,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           type: 'list',
           allowBlank: true,
           formulae: [`Config!$A$1:$A$${uniquePics.length}`]
+        };
+
+        // Kategori
+        worksheet.getCell(`D${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$B$1:$B$${uniqueCats.length}`]
         };
 
         // Prioritas
