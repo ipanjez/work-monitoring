@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
   ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare 
+  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
@@ -21,6 +21,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
+import SmartAddModal from '@/components/SmartAddModal';
 import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -54,6 +55,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -951,9 +954,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       {/* Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <button className="btn btn-primary" onClick={handleOpenAddModal}>
-          <Plus size={18} /> Tambah Pekerjaan Baru
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-primary" onClick={handleOpenAddModal}>
+            <Plus size={18} /> Tambah Pekerjaan Baru
+          </button>
+          <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff' }} onClick={() => setIsSmartModalOpen(true)}>
+            <Zap size={18} /> Tambah Cepat (Smart Add)
+          </button>
+        </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {/* Excel Actions */}
@@ -1413,6 +1421,30 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           formStatusOptions={masterStatuses}
           formPriorityOptions={masterPriorities}
           setPreviewFile={setPreviewFile}
+        />
+
+        <SmartAddModal 
+          isOpen={isSmartModalOpen}
+          onClose={() => setIsSmartModalOpen(false)}
+          onSaveBulk={async (tasks) => {
+            setIsSmartModalOpen(false);
+            setLoading(true);
+            try {
+              const res = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tasks)
+              });
+              if (!res.ok) throw new Error('Gagal menyimpan pekerjaan masal');
+              toast.success(`${tasks.length} Pekerjaan berhasil ditambahkan`);
+              refreshData();
+            } catch (err: any) {
+              setErrorMessage(err.message || 'Error saat menambahkan secara masal');
+              toast.error('Gagal menambah pekerjaan secara masal');
+            } finally {
+              setLoading(false);
+            }
+          }}
         />
 
       <TaskDetailModal
