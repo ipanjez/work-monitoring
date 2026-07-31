@@ -882,7 +882,7 @@ export default function TaskAddEditModal({
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                 <div>
-                  {taskToEdit && taskToEdit.id && (
+                  {editingTask && editingTask.id !== undefined && (
                     <button 
                       className="btn" 
                       style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
