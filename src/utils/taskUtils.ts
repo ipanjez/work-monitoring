@@ -247,3 +247,43 @@ export const formatRecurrenceText = (repetisi: string | null | undefined): strin
     return 'Custom (Format Tidak Dikenali)';
   }
 };
+
+export const formatDescription = (htmlOrText: string): string => {
+  if (!htmlOrText) return '';
+  
+  let content = htmlOrText;
+  if (!/<[a-z][\s\S]*>/i.test(content)) {
+    content = content.replace(/\n/g, '<br />');
+  }
+
+  // Safe HTML parsing to replace URLs in text nodes only
+  if (typeof window !== 'undefined' && window.DOMParser) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+      
+      const nodesToReplace: Text[] = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.parentNode && node.parentNode.nodeName === 'A') continue;
+        nodesToReplace.push(node as Text);
+      }
+      
+      const urlRegex = /(https?:\/\/[^\s<]+)/g;
+      for (const n of nodesToReplace) {
+        if (n.nodeValue && urlRegex.test(n.nodeValue)) {
+          const span = document.createElement('span');
+          span.innerHTML = n.nodeValue.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
+          n.parentNode?.replaceChild(span, n);
+        }
+      }
+      return doc.body.innerHTML;
+    } catch (e) {
+      console.error("Error parsing description HTML", e);
+    }
+  }
+
+  // Fallback for SSR or if DOMParser fails (basic regex that might double-linkify but prevents crashing)
+  return content.replace(/(^|[^="'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">$2</a>');
+};
