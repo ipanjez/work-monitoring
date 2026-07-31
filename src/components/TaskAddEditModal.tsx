@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Task, FileItem, SubTask } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 
@@ -55,7 +56,7 @@ interface TaskAddEditModalProps {
   formCategoryOptions: string[];
   formStatusOptions?: string[];
   formPriorityOptions?: string[];
-  setPreviewFile: (file: FileItem) => void;
+  setPreviewFile?: (file: FileItem) => void;
 }
 
 export default function TaskAddEditModal({
@@ -63,12 +64,13 @@ export default function TaskAddEditModal({
   onClose,
   taskToEdit,
   onSave,
-  formPicOptions,
-  formCategoryOptions,
+  formPicOptions = [],
+  formCategoryOptions = [],
   formStatusOptions = [],
   formPriorityOptions = [],
   setPreviewFile
 }: TaskAddEditModalProps) {
+  const router = useRouter();
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);
   const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -840,7 +842,7 @@ export default function TaskAddEditModal({
                       {editingTask.filesList.map((f, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile(f)}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile?.(f)}>
                               <File size={15} />
                               <span style={{ fontWeight: 500 }}>{f.name}</span>
                             </div>
@@ -855,7 +857,7 @@ export default function TaskAddEditModal({
                                 <button 
                                   type="button" 
                                   style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
-                                  onClick={() => setPreviewFile(f)}
+                                  onClick={() => setPreviewFile?.(f)}
                                   title="Pratinjau File"
                                 >
                                   <Eye size={15} />
@@ -878,11 +880,27 @@ export default function TaskAddEditModal({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                <button className="btn btn-secondary" onClick={onClose}>Batal</button>
-                <button className="btn btn-primary" onClick={handleSave} disabled={loading || uploadingFile}>
-                  {loading ? 'Menyimpan...' : 'Simpan Pekerjaan'}
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <div>
+                  {taskToEdit && taskToEdit.id && (
+                    <button 
+                      className="btn" 
+                      style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
+                      onClick={() => {
+                        onClose();
+                        router.push(`/calendar?search=${encodeURIComponent(editingTask?.nama || '')}`);
+                      }}
+                    >
+                      <Eye size={15} style={{ marginRight: '6px' }} /> Pergi ke Kalender
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="btn btn-secondary" onClick={onClose}>Batal</button>
+                  <button className="btn btn-primary" onClick={handleSave} disabled={loading || uploadingFile}>
+                    {loading ? 'Menyimpan...' : 'Simpan Pekerjaan'}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -3,7 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { copyToClipboard } from '@/utils/clipboard';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -30,6 +30,7 @@ const localizer = dateFnsLocalizer({
 });
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
+import { expandTasksForCalendar } from '@/utils/recurrenceUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -52,7 +53,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [date, setDate] = useState<Date>(new Date());
 
   // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
   // Interactive Copyable Error Modal State
@@ -116,7 +118,14 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     return matchesSearch && matchesFilter;
   });
 
-  const events = filteredTasks.map(task => {
+  // Expand recurring tasks
+  const currentYear = new Date().getFullYear();
+  const rangeStart = new Date(currentYear - 1, 0, 1);
+  const rangeEnd = new Date(currentYear + 2, 11, 31);
+  const expandedTasks = expandTasksForCalendar(filteredTasks, rangeStart, rangeEnd);
+
+  // Map to Calendar Events
+  const events = expandedTasks.map(task => {
     let startDateObj = new Date(task.startDate);
     let endDateObj = new Date(task.endDate);
 
@@ -209,40 +218,24 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   };
 
 
-  const handleSaveModal = async () => {
-    if (!editingTask || !editingTask.nama || !editingTask.pic) {
-      const msg = 'Nama pekerjaan dan PIC wajib diisi.';
-      setErrorMessage(`Validation Error: ${msg}`);
-      toast.error(msg);
-      return;
-    }
-
+  const handleSaveModal = async (payloadData: any) => {
     setLoading(true);
     try {
-      const isNew = !editingTask.id;
-      const url = isNew ? '/api/tasks' : `/api/tasks/${editingTask.id}`;
+      const isNew = !payloadData.id;
+      const realId = isNew ? null : Math.floor(Number(payloadData.id));
+      
+      const url = isNew ? '/api/tasks' : `/api/tasks/${realId}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      const filteredExtraPics = (editingTask.additionalPicsList || []).filter(Boolean);
-
-      const filesListToSave = editingTask.filesList && editingTask.filesList.length > 0 
-        ? editingTask.filesList 
-        : (editingTask.fileUrl ? [{ url: editingTask.fileUrl, name: editingTask.fileName || 'File Lampiran' }] : []);
-
-      const payload = {
-        ...editingTask,
-        startDate: editingTask.startDate || new Date().toISOString().split('T')[0],
-        endDate: editingTask.endDate || new Date().toISOString().split('T')[0],
-        fileUrl: filesListToSave[0]?.url || editingTask.fileUrl || null,
-        fileName: filesListToSave[0]?.name || editingTask.fileName || null,
-        filesJson: filesListToSave.length > 0 ? JSON.stringify(filesListToSave) : null,
-        additionalPics: filteredExtraPics.length > 0 ? JSON.stringify(filteredExtraPics) : null,
-      };
+      const payloadToSave = { ...payloadData };
+      if (!isNew) {
+        payloadToSave.id = realId;
+      }
 
       const saveRes = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadToSave),
       });
 
       if (!saveRes.ok) {
@@ -280,9 +273,10 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const handleDeleteTask = async (id: number) => {
     if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini dari kalender?')) return;
+    const realId = Math.floor(id);
     try {
-      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      setTasks(prev => prev.filter(t => t.id !== id));
+      await fetch(`/api/tasks/${realId}`, { method: 'DELETE' });
+      setTasks(prev => prev.filter(t => t.id !== realId));
       setSelectedTask(null);
       router.refresh();
       toast.success('Pekerjaan berhasil dihapus dari kalender.');
