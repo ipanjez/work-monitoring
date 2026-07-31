@@ -424,6 +424,16 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <button className="btn btn-secondary" onClick={() => handleExportICS(task)}>
                 <CalendarDays size={16} /> Download .ics
               </button>
+              <button 
+                className="btn" 
+                style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
+                onClick={() => {
+                  onClose();
+                  router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
+                }}
+              >
+                <Eye size={15} /> Pergi ke Kalender
+              </button>
             </div>
           </div>
         </motion.div>
