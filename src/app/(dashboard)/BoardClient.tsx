@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
-import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
@@ -19,7 +18,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
-  const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
