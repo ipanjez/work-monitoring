@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -186,7 +186,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi:</span>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{task.repetisi || 'Tidak Berulang'}</p>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{formatRecurrenceText(task.repetisi)}</p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tanggal Mulai:</span>

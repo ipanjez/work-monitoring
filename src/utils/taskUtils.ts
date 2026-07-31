@@ -168,7 +168,7 @@ export const getGoogleCalendarUrl = (task: Task) => {
   const fileStr = task.fileUrl ? `\n\nLampiran:\n${task.fileUrl}` : '';
 
   const details = encodeURIComponent(
-    `PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`
+    `PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`
   );
   
   const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
@@ -196,7 +196,7 @@ export const handleExportICS = (task: Task) => {
 
   const event: EventAttributes = {
     title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
-    description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`,
+    description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`,
     start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
     end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
   };
@@ -213,4 +213,34 @@ export const handleExportICS = (task: Task) => {
     a.download = `${task.nama.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
     a.click();
   });
+};
+
+export const formatRecurrenceText = (repetisi: string | null | undefined): string => {
+  if (!repetisi) return 'Tidak Berulang';
+  if (!repetisi.startsWith('CUSTOM_RECURRENCE:')) return repetisi;
+
+  try {
+    const jsonStr = repetisi.replace('CUSTOM_RECURRENCE:', '');
+    const settings = JSON.parse(jsonStr);
+    
+    let base = `Setiap ${settings.every} ${settings.unit}`;
+    
+    if (settings.unit === 'Minggu' && settings.days && settings.days.length > 0) {
+      base += ` pada hari ${settings.days.join(', ')}`;
+    }
+    
+    if (settings.endType === 'date' && settings.endDate) {
+      try {
+        base += ` (Berakhir pada ${format(new Date(settings.endDate), 'dd MMM yyyy')})`;
+      } catch (e) {
+        base += ` (Berakhir pada ${settings.endDate})`;
+      }
+    } else if (settings.endType === 'occurrences' && settings.endOccurrences) {
+      base += ` (Berakhir setelah ${settings.endOccurrences} kali)`;
+    }
+    
+    return base;
+  } catch (e) {
+    return 'Custom (Format Tidak Dikenali)';
+  }
 };
