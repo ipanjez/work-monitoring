@@ -1426,6 +1426,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         <SmartAddModal 
           isOpen={isSmartModalOpen}
           onClose={() => setIsSmartModalOpen(false)}
+          picOptions={formPicOptions}
           onSaveBulk={async (tasks) => {
             setIsSmartModalOpen(false);
             setLoading(true);

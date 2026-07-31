@@ -59,9 +59,12 @@ export async function POST(req: Request) {
             fileName: task.fileName || null,
             startDate: parseDate(task.startDate),
             endDate: parseDate(task.endDate),
+            isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+            startTime: task.startTime || '08:00',
+            endTime: task.endTime || '17:00',
             subTasksJson: task.subTasksJson || null,
-              additionalPics: task.additionalPics || null,
-              historyLogsJson: initialLog,
+            additionalPics: task.additionalPics || null,
+            historyLogsJson: initialLog,
             }
           }))
       );

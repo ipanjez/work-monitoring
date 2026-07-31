@@ -7,10 +7,11 @@ import { format } from 'date-fns';
 interface SmartAddModalProps {
   isOpen: boolean;
   onClose: () => void;
+  picOptions?: string[];
   onSaveBulk: (tasks: ParsedTask[]) => void;
 }
 
-export default function SmartAddModal({ isOpen, onClose, onSaveBulk }: SmartAddModalProps) {
+export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSaveBulk }: SmartAddModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [rawText, setRawText] = useState('');
   const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
@@ -125,7 +126,20 @@ export default function SmartAddModal({ isOpen, onClose, onSaveBulk }: SmartAddM
                         />
                       </div>
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>PIC</label>
+                          <select 
+                            className="input" 
+                            value={task.pic} 
+                            onChange={(e) => updateTask(idx, 'pic', e.target.value)} 
+                            style={{ padding: '6px 10px' }}
+                          >
+                            <option value="">-- Pilih PIC --</option>
+                            {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
                         <div>
                           <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tanggal</label>
                           <input 

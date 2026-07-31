@@ -6,6 +6,7 @@ const INDONESIAN_MONTHS: Record<string, string> = {
 
 export interface ParsedTask {
   nama: string;
+  pic: string;
   startDate: Date;
   endDate: Date;
   startTime: string;
@@ -72,6 +73,7 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
       const name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
       currentTask = {
         nama: name,
+        pic: '',
         startDate: globalDate,
         endDate: globalDate,
         startTime: '08:00', // Default
