@@ -163,14 +163,21 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC:</span>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {task.pic} {getAdditionalPics(task).length > 0 && `(+, ${getAdditionalPics(task).join(', ')})`}
+                <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                    {task.pic}
+                  </span>
+                  {getAdditionalPics(task).length > 0 && getAdditionalPics(task).map((p, i) => (
+                    <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                      {p}
+                    </span>
+                  ))}
                 </p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
                 <p style={{ marginTop: '4px' }}>
-                  <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                  <span {...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
                     {task.kategori || 'Umum'}
                   </span>
                 </p>
@@ -278,14 +285,13 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                           <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
-                          <span style={{ 
-                            padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600,
-                            backgroundColor: subTask.status === 'Done' ? 'var(--success)' : 
-                                             subTask.status === 'Review' ? '#3b82f6' : 
-                                             subTask.status === 'In Progress' ? 'var(--warning)' : 
-                                             'transparent',
-                            color: subTask.status === 'To Do' ? 'var(--text-primary)' : '#fff'
-                          }}>
+                          <span 
+                            {...getDynamicBadgeStyle('status', subTask.status, '', masterColors)}
+                            style={{ 
+                              ...getDynamicBadgeStyle('status', subTask.status, '', masterColors).style, 
+                              padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 
+                            }}
+                          >
                             {subTask.status}
                           </span>
                         </div>

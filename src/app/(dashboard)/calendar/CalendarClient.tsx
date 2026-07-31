@@ -29,7 +29,7 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -488,13 +488,24 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>PIC:</span>
-                    <p style={{ fontWeight: '600' }}>
-                      {selectedTask.pic} {getAdditionalPics(selectedTask).length > 0 && `(+, ${getAdditionalPics(selectedTask).join(', ')})`}
+                    <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      <span {...getDynamicBadgeStyle('pic', selectedTask.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', selectedTask.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        {selectedTask.pic}
+                      </span>
+                      {getAdditionalPics(selectedTask).length > 0 && getAdditionalPics(selectedTask).map((p, i) => (
+                        <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                          {p}
+                        </span>
+                      ))}
                     </p>
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kategori:</span>
-                    <p style={{ fontWeight: '600' }}>{selectedTask.kategori || 'Umum'}</p>
+                    <p style={{ marginTop: '4px' }}>
+                      <span {...getDynamicBadgeStyle('cat', selectedTask.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', selectedTask.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        {selectedTask.kategori || 'Umum'}
+                      </span>
+                    </p>
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Status:</span>
@@ -502,7 +513,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Repetisi:</span>
-                    <p style={{ fontWeight: '600' }}>{selectedTask.repetisi || 'Tidak Berulang'}</p>
+                    <p style={{ fontWeight: '600' }}>{formatRecurrenceText(selectedTask.repetisi)}</p>
                   </div>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tanggal Mulai:</span>

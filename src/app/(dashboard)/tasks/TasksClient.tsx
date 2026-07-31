@@ -1290,15 +1290,19 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       })() : '-'}
                     </td>
                     <td style={{ padding: '16px 12px', fontWeight: '500' }}>
-                      <div>{task.pic}</div>
-                      {extraPics.length > 0 && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          +{extraPics.join(', ')}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                        <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                          {task.pic}
+                        </span>
+                        {extraPics.length > 0 && extraPics.map((p, i) => (
+                          <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                            {p}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td style={{ padding: '16px 12px' }}>
-                      <span {...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors).style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <span {...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors).style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                         {task.kategori || 'Umum'}
                       </span>
                     </td>

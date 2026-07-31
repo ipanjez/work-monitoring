@@ -6,12 +6,14 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { useMaster } from '@/context/MasterContext';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
+  const { masterColors } = useMaster();
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -174,7 +176,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   width: '48px', 
                   height: '48px', 
                   borderRadius: '50%', 
-                  background: 'var(--accent-primary)', 
+                  background: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.backgroundColor || 'var(--accent-primary)', 
                   color: 'white', 
                   display: 'flex', 
                   alignItems: 'center', 

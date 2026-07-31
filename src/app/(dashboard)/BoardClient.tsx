@@ -599,7 +599,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           width: '24px', 
                           height: '24px', 
                           borderRadius: '50%', 
-                          backgroundColor: 'var(--accent-primary)', 
+                          backgroundColor: getDynamicBadgeStyle('pic', task.pic, '', masterColors).style?.backgroundColor || 'var(--accent-primary)', 
                           color: 'white', 
                           display: 'flex', 
                           alignItems: 'center', 
