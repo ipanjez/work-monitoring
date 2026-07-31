@@ -595,7 +595,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           t.prioritas || 'Medium',
           t.status,
           `${t.progress || 0}%`,
-          format(new Date(t.endDate), 'dd MMM yyyy') + (!t.isAllDay && t.endTime ? ,  : ''),
+          format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : ''),
           t.deskripsi || '-'
         ];
         tableRows.push(row);
@@ -671,9 +671,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       'Status': t.status,
       'Progress (%)': t.progress,
       'Deskripsi': t.deskripsi || '',
-      'Lampiran File': t.fileName || '',
-      'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!t.isAllDay && t.startTime ? ,  : ''),
-      'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!t.isAllDay && t.endTime ? ,  : '')
+      'Lampiran File': (t as any).fileName || '',
+      'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).startTime ? `, ${(t as any).startTime}` : ''),
+      'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : '')
     }));
 
     const wb = XLSX.utils.book_new();
