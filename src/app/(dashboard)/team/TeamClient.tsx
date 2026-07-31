@@ -278,14 +278,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         setPreviewFile={setPreviewFile}
         onEdit={() => {
           let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
-          let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
-          
-          if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
-            try {
-              customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
-              repetisiValue = 'Custom';
-            } catch (e) {}
-          }
       
           let parsedSubTasks: SubTask[] = [];
           if (detailTask!.subTasksJson) {
@@ -297,7 +289,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           setEditForm({
             ...detailTask!,
             repetisi: repetisiValue,
-            customRecurrenceSettings,
             startDate: detailTask!.startDate ? new Date(detailTask!.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             endDate: detailTask!.endDate ? new Date(detailTask!.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             isCustomCategory: false,

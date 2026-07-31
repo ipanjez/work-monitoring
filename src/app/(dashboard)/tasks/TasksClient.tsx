@@ -293,14 +293,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const handleOpenEditModal = (task: Task) => {
     let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
-    
-    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
-      try {
-        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
-        repetisiValue = 'Custom';
-      } catch (e) {}
-    }
 
     let parsedSubTasks: SubTask[] = [];
     if (task.subTasksJson) {
@@ -318,7 +310,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       startTime: task.startTime || '',
       endTime: task.endTime || '',
       repetisi: repetisiValue,
-      customRecurrenceSettings,
       startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
       endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
       isCustomCategory: false,
