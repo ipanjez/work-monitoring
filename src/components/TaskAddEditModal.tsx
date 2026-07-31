@@ -94,7 +94,24 @@ export default function TaskAddEditModal({
 
   useEffect(() => {
     if (isOpen && taskToEdit) {
-      setEditingTask(JSON.parse(JSON.stringify(taskToEdit)));
+      const cloned = JSON.parse(JSON.stringify(taskToEdit));
+      
+      if (cloned.repetisi && cloned.repetisi.startsWith('CUSTOM_RECURRENCE:')) {
+        try {
+          let jsonStr = cloned.repetisi.replace('CUSTOM_RECURRENCE:', '');
+          let settings = JSON.parse(jsonStr);
+          while (typeof settings === 'string') {
+            settings = JSON.parse(settings);
+          }
+          cloned.customRecurrenceSettings = settings;
+        } catch (e) {
+          cloned.customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [], endType: 'never', endDate: '', endOccurrences: 1 };
+        }
+      } else if (!cloned.customRecurrenceSettings) {
+        cloned.customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [], endType: 'never', endDate: '', endOccurrences: 1 };
+      }
+
+      setEditingTask(cloned);
     } else {
       setEditingTask(null);
     }
