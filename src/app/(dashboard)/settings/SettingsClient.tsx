@@ -46,6 +46,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Drag State
   const [draggedIdx, setDraggedIdx] = useState<{ type: string, index: number } | null>(null);
 
+  // Original State for tracking changes
+  const [originalSettings, setOriginalSettings] = useState<any>(null);
+
   // Fetch initial data
   useEffect(() => {
     fetch('/api/settings')
@@ -59,6 +62,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.dept_name) setDeptName(data.dept_name);
+        setOriginalSettings(data);
       })
       .catch(e => console.error(e));
   }, []);
@@ -264,7 +268,37 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
-      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan Aplikasi', 'Pengaturan (departemen, kategori, status, prioritas, dll) berhasil disimpan dan diperbarui di seluruh aplikasi', 'success');
+
+      const changedItems: string[] = [];
+      if (originalSettings) {
+        if (deptName !== originalSettings.dept_name) changedItems.push('Nama Departemen');
+        if (JSON.stringify(categories) !== JSON.stringify(originalSettings.master_categories)) changedItems.push('Kategori Pekerjaan');
+        if (JSON.stringify(pics) !== JSON.stringify(originalSettings.master_pics)) changedItems.push('PIC / Personil');
+        if (JSON.stringify(statuses) !== JSON.stringify(originalSettings.master_statuses)) changedItems.push('Status Pekerjaan');
+        if (JSON.stringify(priorities) !== JSON.stringify(originalSettings.master_priorities)) changedItems.push('Prioritas Pekerjaan');
+        if (JSON.stringify(masterColors) !== JSON.stringify(originalSettings.master_colors)) changedItems.push('Warna Kustom');
+        if (JSON.stringify(masterIcons) !== JSON.stringify(originalSettings.master_icons)) changedItems.push('Ikon Kustom');
+        if (JSON.stringify(masterStatusProgress) !== JSON.stringify(originalSettings.master_status_progress)) changedItems.push('Progress Status');
+      }
+
+      if (changedItems.length > 0) {
+        if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan Aplikasi', `Pengaturan yang diperbarui: ${changedItems.join(', ')}`, 'success');
+      } else {
+        if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan Aplikasi', 'Pengaturan berhasil disimpan (tidak ada perubahan besar)', 'success');
+      }
+      
+      // Update original settings to new values
+      setOriginalSettings({
+        dept_name: deptName, 
+        master_categories: categories,
+        master_pics: pics,
+        master_statuses: statuses,
+        master_priorities: priorities,
+        master_colors: masterColors,
+        master_icons: masterIcons,
+        master_status_progress: masterStatusProgress
+      });
+
       toast.success('Pengaturan umum berhasil disimpan!');
     })
     .catch(console.error);

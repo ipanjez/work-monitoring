@@ -62,7 +62,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       const formatDt = (d: any) => d ? new Date(d).toISOString().split('T')[0] : '';
       if (startDate !== undefined && formatDt(startDate) !== formatDt(existingTask.startDate)) changes.push(`Tgl Mulai`);
       if (endDate !== undefined && formatDt(endDate) !== formatDt(existingTask.endDate)) changes.push(`Tgl Selesai`);
+      if (startTime !== undefined && startTime !== existingTask.startTime) changes.push(`Jam Mulai`);
+      if (endTime !== undefined && endTime !== existingTask.endTime) changes.push(`Jam Selesai`);
+      if (isAllDay !== undefined && isAllDay !== existingTask.isAllDay) changes.push(`Sepanjang Hari`);
       if (subTasksJson !== undefined && subTasksJson !== existingTask.subTasksJson) changes.push(`Sub Pekerjaan`);
+      if (repetisi !== undefined && repetisi !== existingTask.repetisi) changes.push(`Pengulangan`);
+      if (catatan !== undefined && catatan !== existingTask.catatan) changes.push(`Catatan`);
+      if (additionalPics !== undefined && additionalPics !== existingTask.additionalPics) changes.push(`PIC Tambahan`);
+      if (fileUrl !== undefined && fileUrl !== existingTask.fileUrl) changes.push(`Lampiran`);
+      if (filesJson !== undefined && filesJson !== existingTask.filesJson) changes.push(`Lampiran Multiple`);
     }
 
     if (historyLogsJson !== undefined) {
@@ -117,8 +125,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           await prisma.activityLog.create({
             data: {
               action: `Pembaruan Pekerjaan: ${task.nama}`,
-              title: `Status pekerjaan diubah menjadi ${status}`,
-              message: `Status pekerjaan diubah dari ${existingTask.status} menjadi ${status}`,
+              title: `Status pekerjaan "${task.nama}" diubah menjadi ${status}`,
+              message: `Status pekerjaan "${task.nama}" diubah dari ${existingTask.status} menjadi ${status}`,
               type: 'info'
             }
           });
