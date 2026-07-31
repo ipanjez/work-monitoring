@@ -2,6 +2,7 @@
 import toast from 'react-hot-toast';
 
 import { useState, useEffect, useRef } from 'react';
+
 import html2canvas from 'html2canvas';
 import {
   Chart as ChartJS,
@@ -16,7 +17,8 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut, Pie, Line } from 'react-chartjs-2';
-import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown , Copy} from 'lucide-react';
+import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown, Copy, X } from 'lucide-react';
+
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -24,6 +26,7 @@ import { format, startOfDay } from 'date-fns';
 import { getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { motion } from 'framer-motion';
@@ -73,7 +76,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
   
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<any | null>(null);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -438,7 +441,6 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           router.push('/tasks');
         }
       }
-    }
     }
   };
 
@@ -1011,7 +1013,6 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                   return (
                     <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => {
                       setSelectedTaskForDetail(t);
-                      setDetailModalOpen(true);
                     }}>
                       <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
                         {t.nama}
@@ -1083,10 +1084,27 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       
       {selectedTaskForDetail && (
         <TaskDetailModal 
-          isOpen={detailModalOpen}
-          onClose={() => setDetailModalOpen(false)}
           task={selectedTaskForDetail as any}
+          onClose={() => setSelectedTaskForDetail(null)}
+          setPreviewFile={setPreviewFile}
         />
+      )}
+      {previewFile && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setPreviewFile(null)} />
+          <div className="modal-content" style={{ position: 'relative', width: '100%', maxWidth: '900px', height: '85vh', background: 'var(--surface-color)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={18} color="var(--accent-primary)" />
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Preview: {previewFile.name}</h3>
+              </div>
+              <button className="btn-icon" onClick={() => setPreviewFile(null)}><X size={20} /></button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', background: theme === 'dark' ? '#0f172a' : '#f8fafc' }}>
+              <FileViewer url={previewFile.url} name={previewFile.name} />
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );

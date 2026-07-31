@@ -28,6 +28,26 @@ export async function PUT(req: Request) {
       }
     });
 
+    try {
+      const taskRecords = await prisma.task.findMany({
+        where: { id: { in: ids } },
+        select: { nama: true }
+      });
+      const logPromises = taskRecords.map(task => 
+        prisma.activityLog.create({
+          data: {
+            action: `Pembaruan Status Pekerjaan: ${task.nama}`,
+            title: `Status diubah menjadi ${status}`,
+            message: `Status pekerjaan diperbarui secara massal menjadi ${status}.`,
+            type: 'info'
+          }
+        })
+      );
+      await Promise.all(logPromises);
+    } catch(e) {
+      console.error('Failed to create activity logs for bulk update', e);
+    }
+
     return NextResponse.json({ success: true, count: updatedTasks.count });
   } catch (error: any) {
     console.error('Error updating bulk status:', error);

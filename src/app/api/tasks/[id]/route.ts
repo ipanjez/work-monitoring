@@ -112,6 +112,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         },
       });
 
+      if (existingTask && status !== undefined && status !== existingTask.status) {
+        try {
+          await prisma.activityLog.create({
+            data: {
+              action: `Pembaruan Pekerjaan: ${task.nama}`,
+              title: `Status pekerjaan diubah menjadi ${status}`,
+              message: `Status pekerjaan diubah dari ${existingTask.status} menjadi ${status}`,
+              type: 'info'
+            }
+          });
+        } catch(e) { console.error('Failed to log activity', e); }
+      } else if (existingTask && changes.length > 0) {
+        try {
+          await prisma.activityLog.create({
+            data: {
+              action: `Pembaruan Pekerjaan: ${task.nama}`,
+              title: `Pekerjaan diperbarui`,
+              message: `Perubahan: ${changes.join(', ')}`,
+              type: 'info'
+            }
+          });
+        } catch(e) { console.error('Failed to log activity', e); }
+      }
+
       return NextResponse.json(task);
     } catch (updateErr: any) {
       console.error('Primary task update failed, trying fallback 1:', updateErr);
@@ -132,6 +156,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             ...(endDate && { endDate: parseDate(endDate) }),
           },
         });
+
+        if (existingTask && status !== undefined && status !== existingTask.status) {
+          try {
+            await prisma.activityLog.create({
+              data: {
+                action: `Pembaruan Pekerjaan: ${task.nama}`,
+                title: `Status pekerjaan diubah menjadi ${status}`,
+                message: `Status pekerjaan diubah dari ${existingTask.status} menjadi ${status}`,
+                type: 'info'
+              }
+            });
+          } catch(e) {}
+        } else if (existingTask && changes.length > 0) {
+          try {
+            await prisma.activityLog.create({
+              data: {
+                action: `Pembaruan Pekerjaan: ${task.nama}`,
+                title: `Pekerjaan diperbarui`,
+                message: `Perubahan: ${changes.join(', ')}`,
+                type: 'info'
+              }
+            });
+          } catch(e) {}
+        }
 
         return NextResponse.json(task);
       } catch (fallbackErr: any) {
