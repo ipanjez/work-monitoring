@@ -23,10 +23,11 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
-import { getDynamicBadgeStyle } from '@/utils/taskUtils';
+import { getDynamicBadgeStyle, getTaskFiles, getAdditionalPics, SubTask } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -78,6 +79,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
   const [previewFile, setPreviewFile] = useState<any | null>(null);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -112,6 +117,104 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     window.addEventListener('tasksUpdated', loadMasterData);
     return () => window.removeEventListener('tasksUpdated', loadMasterData);
   }, []);
+
+  const handleOpenEditModal = (task: any) => {
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        parsedSubTasks = JSON.parse(task.subTasksJson);
+      } catch (e) {}
+    }
+    
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    if (task.isRepetitive && !task.repetisi) repetisiValue = 'Harian';
+
+    setEditingTask({
+      ...task,
+      filesList: getTaskFiles(task),
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      repetisi: repetisiValue,
+      startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
+      endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
+      isCustomCategory: false,
+      isCustomPic: false,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveModal = async (payloadData: any) => {
+    setIsSaving(true);
+    try {
+      const url = `/api/tasks/${payloadData.id}`;
+      const method = 'PUT';
+
+      const filteredExtraPics = payloadData.additionalPicsList ? payloadData.additionalPicsList.filter(Boolean) : [];
+      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0 
+        ? payloadData.filesList 
+        : (payloadData.fileUrl ? [{ url: payloadData.fileUrl, name: payloadData.fileName || 'File Lampiran' }] : []);
+
+      let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
+      
+      // Auto-update task progress if subtasks exist
+      let taskProgress = payloadData.progress || 0;
+      if (processedSubTasks.length > 0) {
+        const completed = processedSubTasks.filter((st: any) => st.status === 'Done').length;
+        taskProgress = Math.round((completed / processedSubTasks.length) * 100);
+      } else {
+        if (payloadData.status === 'Done') taskProgress = 100;
+        else if (payloadData.status === 'To Do') taskProgress = 0;
+      }
+
+      let historyLogs = [];
+      const originalTask = tasks.find(t => t.id === payloadData.id);
+      if (originalTask) {
+        if (originalTask.historyLogsJson) {
+           try { historyLogs = JSON.parse(originalTask.historyLogsJson); } catch(e){}
+        }
+        historyLogs.push({
+           action: 'Pekerjaan diubah melalui Edit Modal dari Dashboard',
+           details: 'Data pekerjaan diperbarui',
+           timestamp: new Date().toISOString()
+        });
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payloadData,
+          progress: taskProgress,
+          filesJson: JSON.stringify(filesListToSave),
+          additionalPics: JSON.stringify(filteredExtraPics),
+          subTasksJson: JSON.stringify(processedSubTasks),
+          historyLogsJson: JSON.stringify(historyLogs)
+        })
+      });
+
+      if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
+      
+      toast.success('Pekerjaan berhasil diperbarui!');
+      if (addActivityLog) {
+         addActivityLog('EDIT_TASK', 'Pekerjaan Diubah', `Pekerjaan "${payloadData.nama}" telah diubah dari Dashboard`, 'info');
+      }
+      
+      setIsEditModalOpen(false);
+      
+      // Trigger update
+      router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat menyimpan');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const categories = Array.from(new Set(['All', ...tasks.map(t => t.kategori || 'Umum'), ...masterCategories]));
   const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics]));
@@ -1103,8 +1206,24 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           task={selectedTaskForDetail as any}
           onClose={() => setSelectedTaskForDetail(null)}
           setPreviewFile={setPreviewFile}
+          onEdit={() => {
+            setSelectedTaskForDetail(null);
+            handleOpenEditModal(selectedTaskForDetail);
+          }}
         />
       )}
+      
+      <TaskAddEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        taskToEdit={editingTask}
+        onSave={handleSaveModal}
+        formCategoryOptions={masterCategories}
+        formPicOptions={masterPics}
+        formStatusOptions={masterStatuses}
+        formPriorityOptions={masterPriorities}
+        setPreviewFile={setPreviewFile}
+      />
       
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </motion.div>
