@@ -218,6 +218,14 @@ export default function GuidePage() {
       progressText: 'Langkah {{current}} dari {{total}}',
       steps: [
         { 
+          element: '#menu-monitoring', 
+          popover: { 
+            title: 'Monitoring Board', 
+            description: 'Selamat datang! Ini adalah tampilan utama pemantauan per-departemen yang memungkinkan Anda melihat seluruh status aktivitas.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
           element: '#menu-dashboard', 
           popover: { 
             title: 'Dashboard Executive', 

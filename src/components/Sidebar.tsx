@@ -185,7 +185,7 @@ export default function Sidebar() {
             const isActive = pathname === item.href;
             return (
               <Link 
-                id={`menu-${item.href.split('/').pop()}`}
+                id={`menu-${item.href === '/' ? 'monitoring' : item.href.split('/').pop()}`}
                 key={item.href} 
                 href={item.href} 
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
