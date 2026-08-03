@@ -316,7 +316,7 @@ export default function GlobalAddButton() {
       <TaskAddEditModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        taskToEdit={null}
+        taskToEdit={taskToEdit}
         onSave={handleSaveModal}
         formCategoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
         formPicOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
