@@ -281,17 +281,21 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   };
 
   // 6. Distribusi Pekerjaan per Kategori (Doughnut)
-  const categoryCounts = masterCats.map((cat: string) => {
-    return filteredTasks.filter((t: Task) => (t.kategori || 'Umum') === cat).length;
+  const catDistribution: Record<string, number> = {};
+  filteredTasks.forEach(t => {
+    const cat = (t.kategori || 'Umum').trim();
+    catDistribution[cat] = (catDistribution[cat] || 0) + 1;
   });
-  
+  const catDistLabels = Object.keys(catDistribution);
+
   const categoryData = {
-    labels: masterCats,
+    labels: catDistLabels,
     datasets: [{
-      data: categoryCounts,
-      backgroundColor: masterCats.map((cat: string, i: number) => {
+      data: catDistLabels.map(cat => catDistribution[cat]),
+      backgroundColor: catDistLabels.map((cat: string, i: number) => {
          const colors = ['#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#eab308'];
-         return masterColors[`cat_${cat}`] || colors[i % colors.length];
+         const matchCat = masterCats.find(mc => mc.trim() === cat) || cat;
+         return masterColors[`cat_${matchCat}`] || colors[i % colors.length];
       }),
       borderWidth: 0,
     }]
