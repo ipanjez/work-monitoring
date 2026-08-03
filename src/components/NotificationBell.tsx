@@ -9,6 +9,7 @@ import { id } from 'date-fns/locale';
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +63,31 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+          
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+            <button
+              onClick={() => setFilter('all')}
+              style={{
+                flex: 1, padding: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px',
+                fontWeight: filter === 'all' ? 600 : 400,
+                color: filter === 'all' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                borderBottom: filter === 'all' ? '2px solid var(--accent-primary)' : '2px solid transparent'
+              }}
+            >
+              Semua
+            </button>
+            <button
+              onClick={() => setFilter('unread')}
+              style={{
+                flex: 1, padding: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px',
+                fontWeight: filter === 'unread' ? 600 : 400,
+                color: filter === 'unread' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                borderBottom: filter === 'unread' ? '2px solid var(--accent-primary)' : '2px solid transparent'
+              }}
+            >
+              Belum Dibaca
+            </button>
+          </div>
 
           <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
             {notifications.length === 0 ? (
@@ -70,7 +96,12 @@ export default function NotificationBell() {
                 <p style={{ fontSize: '13px' }}>Belum ada notifikasi pembaruan.</p>
               </div>
             ) : (
-              notifications.map(notif => (
+              (filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications).length === 0 ? (
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <p style={{ fontSize: '13px' }}>Tidak ada notifikasi yang belum dibaca.</p>
+                </div>
+              ) : (
+                (filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications).map(notif => (
                 <div 
                   key={notif.id}
                   style={{
