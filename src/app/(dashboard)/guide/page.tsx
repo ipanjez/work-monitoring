@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, LayoutDashboard, ListTodo, FileText, CheckCircle2, 
   Users, Shield, CalendarDays, Kanban, Download, Upload, 
-  ChevronDown, Settings, AlertCircle, FileSpreadsheet
+  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle
 } from 'lucide-react';
+import 'driver.js/dist/driver.css';
 
 export default function GuidePage() {
   const [activeAccordion, setActiveAccordion] = useState<string | null>('dashboard');
@@ -207,6 +208,98 @@ export default function GuidePage() {
     }
   ];
 
+  const startTutorial = async () => {
+    const { driver } = await import('driver.js');
+    const driverObj = driver({
+      showProgress: true,
+      nextBtnText: 'Selanjutnya',
+      prevBtnText: 'Sebelumnya',
+      doneBtnText: 'Selesai',
+      progressText: 'Langkah {{current}} dari {{total}}',
+      steps: [
+        { 
+          element: '#menu-dashboard', 
+          popover: { 
+            title: 'Dashboard Executive', 
+            description: 'Lihat ringkasan dan metrik kinerja seluruh tugas Anda secara visual dan real-time di sini.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-tasks', 
+          popover: { 
+            title: 'Daftar Pekerjaan', 
+            description: 'Kelola seluruh daftar pekerjaan Anda dalam bentuk tabel interaktif. Anda bisa menambah, mengedit massal, dan mengunduh data di sini.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-kanban', 
+          popover: { 
+            title: 'Papan Kanban', 
+            description: 'Visualisasikan alur kerja (workflow) tim Anda. Pindahkan pekerjaan antar status semudah drag and drop!', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-calendar', 
+          popover: { 
+            title: 'Kalender & Jadwal', 
+            description: 'Pantau tenggat waktu, waktu mulai, serta hari libur nasional secara langsung dalam format kalender bulanan/mingguan.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-teams', 
+          popover: { 
+            title: 'Manajemen Tim & PIC', 
+            description: 'Pantau beban kerja dan performa setiap penanggung jawab (PIC) secara komprehensif.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-reports', 
+          popover: { 
+            title: 'Analisis & Laporan', 
+            description: 'Akses berbagai grafik tingkat lanjut dan ekspor keseluruhan kinerja aplikasi sebagai laporan resmi.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#menu-settings', 
+          popover: { 
+            title: 'Master Pengaturan', 
+            description: 'Sesuaikan kategori, kustomisasi palet warna, dan tentukan alur status pekerjaan yang sesuai dengan gaya perusahaan Anda.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#filter-pic', 
+          popover: { 
+            title: 'Filter Global PIC', 
+            description: 'Pilih PIC di sini untuk memfilter seluruh data aplikasi (Dashboard, Tabel, Kanban, Grafik) HANYA untuk PIC tersebut.', 
+            side: "right", align: 'start' 
+          }
+        },
+        { 
+          element: '#filter-target', 
+          popover: { 
+            title: 'Filter Rentang Waktu', 
+            description: 'Tentukan rentang tanggal secara global (misal: "Bulan Ini" atau kustom) untuk membatasi ruang lingkup laporan kerja Anda.', 
+            side: "right", align: 'start' 
+          }
+        },
+        {
+          popover: {
+            title: '🎉 Tutorial Selesai!',
+            description: 'Anda sudah siap menggunakan aplikasi ini secara maksimal. Jika Anda butuh bantuan, menu Panduan ini akan selalu tersedia.',
+          }
+        }
+      ]
+    });
+    driverObj.drive();
+  };
+
   return (
     <motion.div 
       style={{ padding: '32px 0', maxWidth: '1000px', margin: '0 auto' }}
@@ -219,9 +312,17 @@ export default function GuidePage() {
           <BookOpen size={32} />
         </div>
         <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>Panduan Aplikasi Lengkap</h1>
-        <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+        <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', marginBottom: '24px' }}>
           Selamat datang di buku panduan interaktif. Klik pada setiap bagian di bawah ini untuk mempelajari fungsionalitas dan fitur terbaik dari aplikasi ini.
         </p>
+        <button 
+          onClick={startTutorial}
+          className="btn btn-primary"
+          style={{ padding: '12px 24px', fontSize: '15px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
+        >
+          <PlayCircle size={20} />
+          🚀 Mulai Tutorial Interaktif
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

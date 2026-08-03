@@ -185,6 +185,7 @@ export default function Sidebar() {
             const isActive = pathname === item.href;
             return (
               <Link 
+                id={`menu-${item.href.split('/').pop()}`}
                 key={item.href} 
                 href={item.href} 
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
@@ -199,6 +200,7 @@ export default function Sidebar() {
           <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
             {!isSidebarCollapsed && <div style={{ padding: '0 12px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Bantuan</div>}
             <Link 
+              id="menu-guide"
               href="/guide" 
               className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
               title={isSidebarCollapsed ? "Panduan" : undefined}
@@ -222,6 +224,7 @@ export default function Sidebar() {
           }}>
             <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <select 
+                id="filter-pic"
                 value={globalPicFilter}
                 onChange={(e) => setGlobalPicFilter(e.target.value)}
                 style={{ width: '100%', padding: '4px 6px', fontSize: '11px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
@@ -231,6 +234,7 @@ export default function Sidebar() {
               </select>
 
               <select 
+                id="filter-target"
                 value={globalTargetFilter}
                 onChange={(e) => setGlobalTargetFilter(e.target.value)}
                 style={{ width: '100%', padding: '4px 6px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: 'var(--accent-primary)', color: 'white', border: 'none', outline: 'none' }}
