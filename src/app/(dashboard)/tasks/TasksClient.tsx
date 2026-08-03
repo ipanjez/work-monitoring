@@ -57,7 +57,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | null>(null);
+  const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | 'jadwal' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   
@@ -1186,6 +1186,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
                 <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
                 <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
+                <button className="btn btn-secondary" onClick={() => setBulkEditField('jadwal')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Jadwal & Waktu</button>
                 <button 
                   className="btn" 
                   onClick={handleBulkDelete}
