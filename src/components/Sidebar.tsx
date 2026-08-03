@@ -117,18 +117,14 @@ export default function Sidebar() {
       if (globalTargetFilter === 'Semua Waktu') {
         inRange = true;
       } else {
-        if (start <= endBoundary) {
+        if (end >= startBoundary && end <= endBoundary) {
           inRange = true;
         }
       }
 
       if (inRange) {
-        if (globalTargetFilter !== 'Semua Waktu' && t.status === 'Done' && end < startBoundary) {
-          // done tasks before the filter window shouldn't be counted for today/this week
-        } else {
-          const s = t.status || 'To Do';
-          tempStats[s] = (tempStats[s] || 0) + 1;
-        }
+        const s = t.status || 'To Do';
+        tempStats[s] = (tempStats[s] || 0) + 1;
       }
     });
 

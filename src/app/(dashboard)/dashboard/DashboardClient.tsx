@@ -241,7 +241,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchDate = true;
     } else {
-      if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
          matchDate = true;
       }
     }
@@ -542,7 +542,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           setGlobalTargetFilter('Custom');
           setGlobalCustomStartDate(format(range.start, 'yyyy-MM-dd'));
           setGlobalCustomEndDate(format(range.end, 'yyyy-MM-dd'));
-          router.push('/tasks?deadlineOnly=true');
+          router.push('/tasks');
         }
       }
     }

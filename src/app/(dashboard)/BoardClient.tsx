@@ -414,14 +414,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
               matchDate = true;
             } else {
-              if (searchParams.get('deadlineOnly') === 'true') {
-                if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
-                  matchDate = true;
-                }
-              } else {
-                if (taskStart <= endBoundary && taskEnd >= startBoundary) {
-                    matchDate = true;
-                }
+              if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
+                matchDate = true;
               }
             }
             

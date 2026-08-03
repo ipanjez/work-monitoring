@@ -233,14 +233,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchesTarget = true;
     } else {
-      if (searchParams.get('deadlineOnly') === 'true') {
-        if (end >= startBoundary && end <= endBoundary) {
-          matchesTarget = true;
-        }
-      } else {
-        if (start <= endBoundary && end >= startBoundary) {
-           matchesTarget = true;
-        }
+      if (end >= startBoundary && end <= endBoundary) {
+         matchesTarget = true;
       }
     }
 
