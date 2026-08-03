@@ -150,9 +150,6 @@ export default function GlobalAddButton() {
         });
 
         const formattedData = data.map((row: any, idx: number) => {
-          let p = Number(row['progress (%)'] || row['progress'] || 0);
-          if (isNaN(p)) p = 0;
-          
           let subTasksJson = null;
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
@@ -194,7 +191,6 @@ export default function GlobalAddButton() {
             status: row['status'] || 'To Do',
             prioritas: row['prioritas'] || 'Medium',
             kategori: row['kategori'] || 'Umum',
-            progress: p,
             isAllDay,
             startTime: normalizeTime(row['jam mulai'] || row['starttime']),
             endTime: normalizeTime(row['jam selesai'] || row['endtime']),
@@ -271,7 +267,6 @@ export default function GlobalAddButton() {
         { header: 'Kategori', key: 'kategori', width: 20 },
         { header: 'Prioritas', key: 'prioritas', width: 15 },
         { header: 'Status', key: 'status', width: 15 },
-        { header: 'Progress', key: 'progress', width: 12 },
         { header: 'Sepanjang Hari', key: 'isAllDay', width: 16 },
         { header: 'Jam Mulai', key: 'startTime', width: 12 },
         { header: 'Jam Selesai', key: 'endTime', width: 12 },
@@ -292,7 +287,7 @@ export default function GlobalAddButton() {
       };
 
       // Auto wrap untuk kolom Sub Pekerjaan
-      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
+      worksheet.getColumn('O').alignment = { wrapText: true, vertical: 'top' };
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
@@ -302,7 +297,6 @@ export default function GlobalAddButton() {
         kategori: uniqueCats[0] || 'Umum',
         prioritas: 'High',
         status: 'In Progress',
-        progress: 50,
         isAllDay: 'Tidak',
         startTime: '08:00',
         endTime: '17:00',
@@ -359,26 +353,15 @@ export default function GlobalAddButton() {
           formulae: [`"${(latestStatuses.length > 0 ? latestStatuses : ['To Do','In Progress','Done']).join(',')}"`]
         };
 
-        // Progress (Angka 0-100)
-        worksheet.getCell(`G${i}`).dataValidation = {
-          type: 'whole',
-          operator: 'between',
-          allowBlank: true,
-          showInputMessage: true,
-          promptTitle: 'Progress',
-          prompt: 'Masukkan angka antara 0 hingga 100',
-          formulae: [0, 100]
-        };
-
         // Sepanjang Hari (Ya/Tidak)
-        worksheet.getCell(`H${i}`).dataValidation = {
+        worksheet.getCell(`G${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"Ya,Tidak"']
         };
 
         // Repetisi
-        worksheet.getCell(`M${i}`).dataValidation = {
+        worksheet.getCell(`L${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
@@ -416,7 +399,6 @@ export default function GlobalAddButton() {
         ['Kategori', 'Kategori/jenis pekerjaan sesuai master pengaturan', 'Umum', 'Tidak'],
         ['Prioritas', 'Tingkat prioritas pekerjaan (pilih dari dropdown)', 'High', 'Tidak'],
         ['Status', 'Status progres pekerjaan saat ini (pilih dari dropdown)', 'In Progress', 'Tidak'],
-        ['Progress', 'Persentase penyelesaian pekerjaan (angka 0-100)', '50', 'Tidak'],
         ['Sepanjang Hari', 'Apakah pekerjaan berlangsung seharian? Ya = tanpa jam, Tidak = pakai jam', 'Tidak', 'Tidak'],
         ['Jam Mulai', 'Jam mulai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '08:00', 'Tidak'],
         ['Jam Selesai', 'Jam selesai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '17:00', 'Tidak'],
