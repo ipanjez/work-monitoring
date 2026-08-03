@@ -253,6 +253,50 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }]
   };
 
+  // 5. Kepatuhan Tenggat Waktu (Doughnut)
+  let overdueCount = 0;
+  let dueTodayCount = 0;
+  let upcomingCount = 0;
+  let doneCountForDeadline = 0;
+
+  const todayStart = startOfDay(new Date()).getTime();
+  filteredTasks.forEach(t => {
+    if (t.status === 'Done') {
+      doneCountForDeadline++;
+      return;
+    }
+    const end = startOfDay(new Date(t.endDate)).getTime();
+    if (end < todayStart) overdueCount++;
+    else if (end === todayStart) dueTodayCount++;
+    else upcomingCount++;
+  });
+
+  const deadlineData = {
+    labels: ['Terlewat (Overdue)', 'Hari Ini', 'Akan Datang', 'Selesai'],
+    datasets: [{
+      data: [overdueCount, dueTodayCount, upcomingCount, doneCountForDeadline],
+      backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+      borderWidth: 0,
+    }]
+  };
+
+  // 6. Distribusi Pekerjaan per Kategori (Doughnut)
+  const categoryCounts = masterCategories.map((cat: string) => {
+    return filteredTasks.filter((t: Task) => (t.kategori || 'Umum') === cat).length;
+  });
+  
+  const categoryData = {
+    labels: masterCategories,
+    datasets: [{
+      data: categoryCounts,
+      backgroundColor: masterCategories.map((cat: string, i: number) => {
+         const colors = ['#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#eab308'];
+         return masterColors[`cat_${cat}`] || colors[i % colors.length];
+      }),
+      borderWidth: 0,
+    }]
+  };
+
   const handleExportFullReport = () => {
     const reportData = filteredTasks.map((t: Task, idx: number) => {
       let subTasksStr = '';
@@ -537,6 +581,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           </div>
         </div>
 
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Kepatuhan Tenggat Waktu</h3>
+          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+            <Doughnut data={deadlineData} options={chartOptions} />
+          </div>
+        </div>
+
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Distribusi Pekerjaan per Kategori</h3>
+          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+            <Doughnut data={categoryData} options={chartOptions} />
+          </div>
+        </div>
       </div>
     </motion.div>
   );
