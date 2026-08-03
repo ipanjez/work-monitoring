@@ -17,6 +17,7 @@ import html2canvas from 'html2canvas';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useMaster } from '@/context/MasterContext';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -38,6 +39,7 @@ type Task = {
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
+  const { masterColors } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   
@@ -153,7 +155,12 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     labels: ['Done', 'Review', 'In Progress', 'To Do'],
     datasets: [{
       data: [completedTasks, reviewTasks, inProgressTasks, toDoTasks],
-      backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#94a3b8'],
+      backgroundColor: [
+        masterColors['status_Done'] || '#10b981', 
+        masterColors['status_Review'] || '#3b82f6', 
+        masterColors['status_In Progress'] || '#f59e0b', 
+        masterColors['status_To Do'] || '#94a3b8'
+      ],
       borderWidth: 0,
     }]
   };
@@ -168,7 +175,12 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     labels: ['Urgent', 'High', 'Medium', 'Low'],
     datasets: [{
       data: [urgentCount, highCount, mediumCount, lowCount],
-      backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
+      backgroundColor: [
+        masterColors['prioritas_Urgent'] || '#ef4444', 
+        masterColors['prioritas_High'] || '#f97316', 
+        masterColors['prioritas_Medium'] || '#3b82f6', 
+        masterColors['prioritas_Low'] || '#10b981'
+      ],
       borderWidth: 0,
     }]
   };
@@ -200,10 +212,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const picWorkloadData = {
     labels: sortedPics,
     datasets: [
-      { label: 'Done', data: sortedPics.map(p => picStats[p].done), backgroundColor: '#10b981' },
-      { label: 'Review', data: sortedPics.map(p => picStats[p].review), backgroundColor: '#3b82f6' },
-      { label: 'In Progress', data: sortedPics.map(p => picStats[p].inProgress), backgroundColor: '#f59e0b' },
-      { label: 'To Do', data: sortedPics.map(p => picStats[p].todo), backgroundColor: '#94a3b8' }
+      { label: 'Done', data: sortedPics.map(p => picStats[p].done), backgroundColor: masterColors['status_Done'] || '#10b981' },
+      { label: 'Review', data: sortedPics.map(p => picStats[p].review), backgroundColor: masterColors['status_Review'] || '#3b82f6' },
+      { label: 'In Progress', data: sortedPics.map(p => picStats[p].inProgress), backgroundColor: masterColors['status_In Progress'] || '#f59e0b' },
+      { label: 'To Do', data: sortedPics.map(p => picStats[p].todo), backgroundColor: masterColors['status_To Do'] || '#94a3b8' }
     ]
   };
 
@@ -221,7 +233,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     datasets: [{
       label: 'Rata-rata Progress (%)',
       data: Object.keys(catProgress).map(c => Math.round(catProgress[c].totalProgress / catProgress[c].count)),
-      backgroundColor: '#3b82f6',
+      backgroundColor: Object.keys(catProgress).map(c => masterColors[`kategori_${c}`] || '#3b82f6'),
       borderRadius: 4
     }]
   };
