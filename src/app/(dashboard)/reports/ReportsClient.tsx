@@ -172,7 +172,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     labels: masterStatuses,
     datasets: [{
       data: statusCounts,
-      backgroundColor: masterStatuses.map(status => getDynamicColor(status, 'status', masterColors, theme)),
+      backgroundColor: masterStatuses.map(status => masterColors[`status_${status}`] || getDynamicColor('status', status)),
       borderWidth: 0,
     }]
   };
@@ -186,7 +186,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     labels: masterPriorities,
     datasets: [{
       data: priorityCounts,
-      backgroundColor: masterPriorities.map(prio => getDynamicColor(prio, 'prioritas', masterColors, theme)),
+      backgroundColor: masterPriorities.map(prio => masterColors[`prioritas_${prio}`] || getDynamicColor('priority', prio)),
       borderWidth: 0,
     }]
   };
@@ -227,7 +227,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     datasets: masterStatuses.map(status => ({
       label: status,
       data: sortedPics.map(p => picStats[p][status] || 0),
-      backgroundColor: getDynamicColor(status, 'status', masterColors, theme)
+      backgroundColor: masterColors[`status_${status}`] || getDynamicColor('status', status)
     }))
   };
 
