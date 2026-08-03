@@ -144,6 +144,9 @@ export default function GlobalAddButton() {
              normalized[k.trim().toLowerCase()] = r[k];
           }
           return normalized;
+        }).filter((r: any) => {
+          const nama = r['nama pekerjaan'] || r['nama'] || '';
+          return !nama.includes('Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)');
         });
 
         const formattedData = data.map((row: any, idx: number) => {
