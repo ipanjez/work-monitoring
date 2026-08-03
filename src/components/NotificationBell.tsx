@@ -10,7 +10,13 @@ export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all_actions');
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const uniqueActions = Array.from(new Set(notifications.map(n => n.title).filter(Boolean))) as string[];
+
+  const finalFiltered = (filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications)
+    .filter(n => actionFilter === 'all_actions' || n.title === actionFilter);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,6 +95,25 @@ export default function NotificationBell() {
             </button>
           </div>
 
+          {uniqueActions.length > 0 && (
+            <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+              <select 
+                value={actionFilter} 
+                onChange={(e) => setActionFilter(e.target.value)}
+                style={{ 
+                  width: '100%', padding: '6px 8px', borderRadius: '6px', 
+                  border: '1px solid var(--border-color)', background: 'var(--bg-color)',
+                  color: 'var(--text-primary)', fontSize: '12px'
+                }}
+              >
+                <option value="all_actions">Semua Jenis Aktivitas</option>
+                {uniqueActions.map(act => (
+                  <option key={act} value={act}>{act}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
             {notifications.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -96,12 +121,12 @@ export default function NotificationBell() {
                 <p style={{ fontSize: '13px' }}>Belum ada notifikasi pembaruan.</p>
               </div>
             ) : (
-              (filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications).length === 0 ? (
+              finalFiltered.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  <p style={{ fontSize: '13px' }}>Tidak ada notifikasi yang belum dibaca.</p>
+                  <p style={{ fontSize: '13px' }}>Tidak ada notifikasi yang sesuai dengan filter.</p>
                 </div>
               ) : (
-                (filter === 'unread' ? notifications.filter(n => !n.isRead) : notifications).map(notif => (
+                finalFiltered.map(notif => (
                 <div 
                   key={notif.id}
                   style={{
