@@ -53,24 +53,88 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const changes: string[] = [];
     if (existingTask) {
       if (status !== undefined && status !== existingTask.status) changes.push(`Status (${existingTask.status} ➔ ${status})`);
-      if (prioritas !== undefined && prioritas !== existingTask.prioritas) changes.push(`Prioritas (${existingTask.prioritas} ➔ ${prioritas})`);
+      if (prioritas !== undefined && prioritas !== existingTask.prioritas) changes.push(`Prioritas (${existingTask.prioritas || '-'} ➔ ${prioritas})`);
       if (kategori !== undefined && kategori !== existingTask.kategori) changes.push(`Kategori (${existingTask.kategori || 'Umum'} ➔ ${kategori})`);
       if (pic !== undefined && pic !== existingTask.pic) changes.push(`PIC (${existingTask.pic} ➔ ${pic})`);
-      if (nama !== undefined && nama !== existingTask.nama) changes.push(`Nama Pekerjaan`);
-      if (deskripsi !== undefined && deskripsi !== existingTask.deskripsi) changes.push(`Deskripsi`);
+      if (nama !== undefined && nama !== existingTask.nama) changes.push(`Nama Pekerjaan ("${existingTask.nama}" ➔ "${nama}")`);
+      if (deskripsi !== undefined && deskripsi !== existingTask.deskripsi) changes.push(`Deskripsi diperbarui`);
       
       const formatDt = (d: any) => d ? new Date(d).toISOString().split('T')[0] : '';
-      if (startDate !== undefined && formatDt(startDate) !== formatDt(existingTask.startDate)) changes.push(`Tgl Mulai`);
-      if (endDate !== undefined && formatDt(endDate) !== formatDt(existingTask.endDate)) changes.push(`Tgl Selesai`);
-      if (startTime !== undefined && startTime !== existingTask.startTime) changes.push(`Jam Mulai`);
-      if (endTime !== undefined && endTime !== existingTask.endTime) changes.push(`Jam Selesai`);
-      if (isAllDay !== undefined && isAllDay !== existingTask.isAllDay) changes.push(`Sepanjang Hari`);
-      if (subTasksJson !== undefined && subTasksJson !== existingTask.subTasksJson) changes.push(`Sub Pekerjaan`);
-      if (repetisi !== undefined && repetisi !== existingTask.repetisi) changes.push(`Pengulangan`);
-      if (catatan !== undefined && catatan !== existingTask.catatan) changes.push(`Catatan`);
-      if (additionalPics !== undefined && additionalPics !== existingTask.additionalPics) changes.push(`PIC Tambahan`);
-      if (fileUrl !== undefined && fileUrl !== existingTask.fileUrl) changes.push(`Lampiran`);
-      if (filesJson !== undefined && filesJson !== existingTask.filesJson) changes.push(`Lampiran Multiple`);
+      if (startDate !== undefined && formatDt(startDate) !== formatDt(existingTask.startDate)) changes.push(`Tgl Mulai (${formatDt(existingTask.startDate) || '-'} ➔ ${formatDt(startDate) || '-'})`);
+      if (endDate !== undefined && formatDt(endDate) !== formatDt(existingTask.endDate)) changes.push(`Tgl Selesai (${formatDt(existingTask.endDate) || '-'} ➔ ${formatDt(endDate) || '-'})`);
+      if (startTime !== undefined && startTime !== existingTask.startTime) changes.push(`Jam Mulai (${existingTask.startTime || '-'} ➔ ${startTime || '-'})`);
+      if (endTime !== undefined && endTime !== existingTask.endTime) changes.push(`Jam Selesai (${existingTask.endTime || '-'} ➔ ${endTime || '-'})`);
+      if (isAllDay !== undefined && isAllDay !== existingTask.isAllDay) changes.push(`Sepanjang Hari (${existingTask.isAllDay ? 'Ya' : 'Tidak'} ➔ ${isAllDay ? 'Ya' : 'Tidak'})`);
+      
+      // Sub Pekerjaan detail
+      if (subTasksJson !== undefined && subTasksJson !== existingTask.subTasksJson) {
+        try {
+          const oldSubs = existingTask.subTasksJson ? JSON.parse(existingTask.subTasksJson) : [];
+          const newSubs = subTasksJson ? JSON.parse(subTasksJson) : [];
+          const oldIds = new Set(oldSubs.map((s: any) => s.id));
+          const newIds = new Set(newSubs.map((s: any) => s.id));
+          const added = newSubs.filter((s: any) => !oldIds.has(s.id)).map((s: any) => s.text);
+          const removed = oldSubs.filter((s: any) => !newIds.has(s.id)).map((s: any) => s.text);
+          const statusChanged = newSubs.filter((s: any) => {
+            const old = oldSubs.find((o: any) => o.id === s.id);
+            return old && old.status !== s.status;
+          }).map((s: any) => {
+            const old = oldSubs.find((o: any) => o.id === s.id);
+            return `"${s.text}" (${old.status} ➔ ${s.status})`;
+          });
+          const subDetails: string[] = [];
+          if (added.length > 0) subDetails.push(`Ditambahkan: ${added.map((n: string) => `"${n}"`).join(', ')}`);
+          if (removed.length > 0) subDetails.push(`Dihapus: ${removed.map((n: string) => `"${n}"`).join(', ')}`);
+          if (statusChanged.length > 0) subDetails.push(`Status diubah: ${statusChanged.join(', ')}`);
+          changes.push(`Sub Pekerjaan${subDetails.length > 0 ? ' — ' + subDetails.join('; ') : ' diperbarui'}`);
+        } catch (e) {
+          changes.push(`Sub Pekerjaan diperbarui`);
+        }
+      }
+      
+      if (repetisi !== undefined && repetisi !== existingTask.repetisi) changes.push(`Pengulangan (${existingTask.repetisi || 'Tidak Berulang'} ➔ ${repetisi})`);
+      if (catatan !== undefined && catatan !== existingTask.catatan) changes.push(`Catatan diperbarui`);
+      
+      // PIC Tambahan detail
+      if (additionalPics !== undefined && additionalPics !== existingTask.additionalPics) {
+        try {
+          const oldPics: string[] = existingTask.additionalPics ? JSON.parse(existingTask.additionalPics) : [];
+          const newPics: string[] = additionalPics ? JSON.parse(additionalPics) : [];
+          const addedPics = newPics.filter(p => !oldPics.includes(p));
+          const removedPics = oldPics.filter(p => !newPics.includes(p));
+          const picDetails: string[] = [];
+          if (addedPics.length > 0) picDetails.push(`Ditambahkan: ${addedPics.join(', ')}`);
+          if (removedPics.length > 0) picDetails.push(`Dihapus: ${removedPics.join(', ')}`);
+          changes.push(`PIC Tambahan${picDetails.length > 0 ? ' — ' + picDetails.join('; ') : ' diperbarui'}`);
+        } catch (e) {
+          changes.push(`PIC Tambahan diperbarui`);
+        }
+      }
+      
+      if (fileUrl !== undefined && fileUrl !== existingTask.fileUrl) changes.push(`Lampiran diperbarui`);
+      
+      // Lampiran Multiple detail — compare file lists
+      if (filesJson !== undefined && filesJson !== existingTask.filesJson) {
+        try {
+          const oldFiles = existingTask.filesJson ? JSON.parse(existingTask.filesJson) : [];
+          const newFiles = filesJson ? JSON.parse(filesJson) : [];
+          // Active (non-deleted) files
+          const oldActive = oldFiles.filter((f: any) => !f.isDeleted).map((f: any) => f.name);
+          const newActive = newFiles.filter((f: any) => !f.isDeleted).map((f: any) => f.name);
+          // Newly deleted files (isDeleted in new but not in old, or not isDeleted in old)
+          const newlyDeleted = newFiles.filter((f: any) => f.isDeleted && !oldFiles.find((o: any) => o.url === f.url && o.isDeleted)).map((f: any) => f.name);
+          // Newly added files (in new but URL not in old at all)
+          const oldUrls = new Set(oldFiles.map((f: any) => f.url));
+          const newlyAdded = newFiles.filter((f: any) => !f.isDeleted && !oldUrls.has(f.url)).map((f: any) => f.name);
+          
+          const fileDetails: string[] = [];
+          if (newlyAdded.length > 0) fileDetails.push(`Ditambahkan: ${newlyAdded.map((n: string) => `"${n}"`).join(', ')}`);
+          if (newlyDeleted.length > 0) fileDetails.push(`Dihapus: ${newlyDeleted.map((n: string) => `"${n}"`).join(', ')}`);
+          changes.push(`Lampiran${fileDetails.length > 0 ? ' — ' + fileDetails.join('; ') : ' diperbarui'}`);
+        } catch (e) {
+          changes.push(`Lampiran diperbarui`);
+        }
+      }
     }
 
     if (historyLogsJson !== undefined) {
