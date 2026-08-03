@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
   ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap
+  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -29,13 +30,15 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'USER';
   const { masterColors } = useMaster();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  
+
   // Search & Filter State
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +63,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
-  
+
   // Interactive Copyable Error Modal State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showExcelInfo, setShowExcelInfo] = useState(false);
@@ -74,6 +77,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
+  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -115,10 +119,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const handleBulkDone = async () => {
     if (selectedTasks.size === 0) return;
     if (!window.confirm(`Anda yakin ingin menandai ${selectedTasks.size} pekerjaan sebagai Selesai (Done)?`)) return;
-    
+
     const ids = Array.from(selectedTasks).join(',');
     try {
-      await fetch(`/api/tasks/bulk-status`, { 
+      await fetch(`/api/tasks/bulk-status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: Array.from(selectedTasks), status: 'Done' })
@@ -137,7 +141,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const handleBulkDelete = async () => {
     if (selectedTasks.size === 0) return;
     if (!window.confirm(`Anda yakin ingin menghapus ${selectedTasks.size} pekerjaan yang dipilih?`)) return;
-    
+
     const ids = Array.from(selectedTasks).join(',');
     try {
       await fetch(`/api/tasks?ids=${ids}`, { method: 'DELETE' });
@@ -154,7 +158,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
   const categoriesFilter = ['All', ...allCategoryOptions];
-  
+
   // Extract all unique PICs (for filter dropdown)
   const allPicsSet = new Set<string>(masterPics);
   tasks.forEach(t => {
@@ -163,7 +167,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       try {
         const arr = JSON.parse(t.additionalPics);
         if (Array.isArray(arr)) arr.forEach((p: string) => p && allPicsSet.add(p));
-      } catch (e) {}
+      } catch (e) { }
     }
   });
   const existingPics = Array.from(allPicsSet);
@@ -197,10 +201,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // Filter & Sort Tasks
   const processedTasks = tasks.filter(t => {
     const extraPics = getAdditionalPics(t).join(' ');
-    const matchesSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          extraPics.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      extraPics.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
     const matchesPriority = filterPriority === 'All' || (t.prioritas || 'Medium') === filterPriority;
     const matchesCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
@@ -211,7 +215,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     const end = new Date(t.endDate).getTime();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     let startBoundary = today.getTime();
     let endBoundary = today.getTime() + 86400000 - 1;
 
@@ -234,7 +238,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       matchesTarget = true;
     } else {
       if (start <= endBoundary && end >= startBoundary) {
-         matchesTarget = true;
+        matchesTarget = true;
       }
     }
 
@@ -296,12 +300,20 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const handleOpenEditModal = (task: Task) => {
     let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+
+    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+      try {
+        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        repetisiValue = 'Custom';
+      } catch (e) { }
+    }
 
     let parsedSubTasks: SubTask[] = [];
     if (task.subTasksJson) {
       try {
         parsedSubTasks = JSON.parse(task.subTasksJson);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     setEditingTask({
@@ -331,15 +343,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       const filteredExtraPics = payloadData.additionalPicsList ? payloadData.additionalPicsList.filter(Boolean) : [];
 
-      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0 
-        ? payloadData.filesList 
+      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0
+        ? payloadData.filesList
         : (payloadData.fileUrl ? [{ url: payloadData.fileUrl, name: payloadData.fileName || 'File Lampiran' }] : []);
 
       let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
       if (!isNew) {
         const originalTask = tasks.find(t => t.id === payloadData.id);
         const originalSubTasks = originalTask?.subTasksJson ? JSON.parse(originalTask.subTasksJson) : [];
-        
+
         processedSubTasks = processedSubTasks.map((st: any) => {
           const originalSt = originalSubTasks.find((o: any) => o.id === st.id);
           let logsToAppend = [];
@@ -350,7 +362,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           } else {
             logsToAppend.push({ status: `${st.text} (${st.status})`, timestamp: new Date().toISOString() });
           }
-          
+
           const newLogs = [...(st.logs || []), ...logsToAppend];
           const { pendingLogDesc, ...cleanSt } = st;
           return { ...cleanSt, logs: newLogs };
@@ -429,10 +441,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           try {
             const logs = JSON.parse(savedTask.historyLogsJson);
             if (logs.length > 0) {
-               const lastLog = logs[logs.length - 1];
-               if (lastLog.details) detailsText = ` (Perubahan: ${lastLog.details})`;
+              const lastLog = logs[logs.length - 1];
+              if (lastLog.details) detailsText = ` (Perubahan: ${lastLog.details})`;
             }
-          } catch(e) {}
+          } catch (e) { }
         }
 
         if (savedTask.status === 'Done') {
@@ -445,11 +457,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       }
 
       refreshData();
-      
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('tasksUpdated'));
       }
-      
+
       toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
     } catch (error: any) {
       console.error('Save task error:', error);
@@ -466,19 +478,19 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const taskToDelete = tasks.find(t => t.id === id);
       await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
       setTasks(tasks.filter(t => t.id !== id));
-      
+
       if (addActivityLog && taskToDelete) {
         let subCount = 0;
         if (taskToDelete.subTasksJson) {
           try {
             subCount = JSON.parse(taskToDelete.subTasksJson).length;
-          } catch(e) {}
+          } catch (e) { }
         }
         addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan "${taskToDelete.nama}" (PIC: ${taskToDelete.pic}) beserta ${subCount} sub pekerjaannya telah dihapus.`, 'danger');
       }
 
       refreshData();
-      
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('tasksUpdated'));
       }
@@ -496,14 +508,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const ExcelJS = (await import('exceljs')).default;
 
       const workbook = new ExcelJS.Workbook();
-      
+
       // Buat sheet konfigurasi tersembunyi untuk referensi dropdown panjang
       const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
       const uniquePics = existingPics.length > 0 ? existingPics : ['Unassigned'];
       configSheet.getColumn('A').values = uniquePics;
       const uniqueCats = formCategoryOptions.length > 0 ? formCategoryOptions : ['Umum'];
       configSheet.getColumn('B').values = uniqueCats;
-      
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
 
       // Tentukan Header
@@ -586,14 +597,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         worksheet.getCell(`E${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
+          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low', 'Medium', 'High', 'Urgent']).join(',')}"`]
         };
 
         // Status
         worksheet.getCell(`F${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do','In Progress','Done']).join(',')}"`]
+          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done']).join(',')}"`]
         };
 
         // Progress (Angka 0-100)
@@ -737,7 +748,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         const data = rawData.map((r: any) => {
           const normalized: any = {};
           for (const k in r) {
-             normalized[k.trim().toLowerCase()] = r[k];
+            normalized[k.trim().toLowerCase()] = r[k];
           }
           return normalized;
         });
@@ -745,39 +756,38 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         const formattedData = data.map((row: any) => {
           let p = Number(row['progress (%)'] || row['progress'] || 0);
           if (isNaN(p)) p = 0;
-          
+
           let subTasksJson = null;
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
-             const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
-             const subTasks = lines.map(line => {
-                const match = line.match(/^\[(.*?)\]\s+(.*)/);
-                let status = 'To Do';
-                let text = line.trim();
-                const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
-                if (match && validStatuses.includes(match[1])) {
-                   status = match[1];
-                   text = match[2].trim();
-                } else if (match) {
-                   text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
-                }
-                return {
-                   id: Math.random().toString(36).substring(2, 9),
-                   text,
-                   status,
-                   logs: [{ status, timestamp: new Date().toISOString() }]
-                };
-             });
-             if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
+            const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
+            const subTasks = lines.map(line => {
+              const match = line.match(/^\[(.*?)\]\s+(.*)/);
+              let status = 'To Do';
+              let text = line.trim();
+              const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
+              if (match && validStatuses.includes(match[1])) {
+                status = match[1];
+                text = match[2].trim();
+              } else if (match) {
+                text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
+              }
+              return {
+                id: Math.random().toString(36).substring(2, 9),
+                text,
+                status,
+                logs: [{ status, timestamp: new Date().toISOString() }]
+              };
+            });
+            if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
-          
+
           const additionalPicsStr = row['pic tambahan'] || row['pictambahan'] || '';
           let additionalPicsJson = null;
           if (additionalPicsStr) {
             const picsArr = additionalPicsStr.split(',').map((s: string) => s.trim()).filter(Boolean);
             if (picsArr.length > 0) additionalPicsJson = JSON.stringify(picsArr);
           }
-          
           const isAllDayStr = (row['sepanjang hari'] || row['isallday'] || 'Ya').toString().toLowerCase();
           const isAllDay = isAllDayStr === 'ya' || isAllDayStr === 'true' || isAllDayStr === '1' || isAllDayStr === 'yes';
 
@@ -816,7 +826,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         const updatedTasks = await res.json();
         setTasks(updatedTasks);
         refreshData();
-        
+
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('tasksUpdated'));
         }
@@ -835,12 +845,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     const exportData = processedTasks.map(t => {
       let subPekerjaanStr = '';
       if (t.subTasksJson) {
-         try {
-           const parsed: SubTask[] = JSON.parse(t.subTasksJson);
-           if (Array.isArray(parsed)) {
-             subPekerjaanStr = parsed.map(st => `[${st.status}] ${st.text}`).join('\n');
-           }
-         } catch(e) {}
+        try {
+          const parsed: SubTask[] = JSON.parse(t.subTasksJson);
+          if (Array.isArray(parsed)) {
+            subPekerjaanStr = parsed.map(st => `[${st.status}] ${st.text}`).join('\n');
+          }
+        } catch (e) { }
       }
 
       return {
@@ -954,21 +964,26 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       {/* Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-primary" onClick={handleOpenAddModal}>
-            <Plus size={18} /> Tambah Pekerjaan Baru
-          </button>
-          <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff' }} onClick={() => setIsSmartModalOpen(true)}>
-            <Zap size={18} /> Tambah Cepat (Smart Add)
-          </button>
-        </div>
+        {userRole !== 'SPV' ? (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-primary" onClick={handleOpenAddModal}>
+              <Plus size={18} /> Tambah Pekerjaan Baru
+            </button>
+            <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff' }} onClick={() => setIsSmartModalOpen(true)}>
+              <Zap size={18} /> Tambah Cepat (Smart Add)
+            </button>
+          </div>
+        ) : (
+          <div />
+        )}
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {/* Excel Actions */}
+          {/* Excel Actions */}
+          {userRole !== 'SPV' && (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
-                <button 
-                  className="btn" 
+                <button
+                  className="btn"
                   onClick={() => setShowExcelInfo(!showExcelInfo)}
                   title="Informasi Template Excel"
                   style={{ padding: '10px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -976,10 +991,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   <Info size={16} />
                 </button>
                 {showExcelInfo && (
-                  <div style={{ 
-                    position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100, 
-                    background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', 
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', 
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100,
+                    background: 'var(--surface-color)', padding: '16px', borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
                     width: '300px', fontSize: '13px', color: 'var(--text-primary)'
                   }}>
                     <h4 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -997,42 +1012,43 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   </div>
                 )}
               </div>
-              <button 
-                className="btn" 
+              <button
+                className="btn"
                 onClick={handleDownloadTemplate}
                 style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)', whiteSpace: 'nowrap' }}
               >
                 <Download size={16} /> <span className="hide-mobile">Template Excel</span>
               </button>
               <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
-              <button 
-                className="btn" 
+              <button
+                className="btn"
                 onClick={() => fileInputRef.current?.click()}
                 style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)', whiteSpace: 'nowrap' }}
               >
                 <Upload size={16} /> <span className="hide-mobile">Import Excel</span>
               </button>
             </div>
-          
-          <button 
-            className="btn" 
+          )}
+
+          <button
+            className="btn"
             onClick={handleExportExcel}
             style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
           >
             <Download size={16} /> Export Excel
           </button>
 
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             onClick={handleExportPDF}
             style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.2)' }}
           >
             <FileText size={16} /> Export PDF
           </button>
 
-          <button 
-            className="btn btn-secondary" 
-            onClick={handleExportAllICS} 
+          <button
+            className="btn btn-secondary"
+            onClick={handleExportAllICS}
             title="Download .ics untuk semua pekerjaan"
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600 }}
           >
@@ -1041,7 +1057,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </div>
       </div>
 
-      
+
 
       {/* Filter and Search Bar */}
       <div className="glass" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1096,15 +1112,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             </select>
             {globalTargetFilter === 'Custom' && (
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={globalCustomStartDate}
                   onChange={(e) => setGlobalCustomStartDate(e.target.value)}
                   style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
                 />
                 <span style={{ color: 'var(--text-secondary)' }}>-</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={globalCustomEndDate}
                   onChange={(e) => setGlobalCustomEndDate(e.target.value)}
                   style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
@@ -1124,103 +1140,105 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </div>
 
       {/* Main Table with Sortable Columns */}
-      
-        
-        <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, backgroundColor: 'var(--surface-color)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'inline-block' }}>
-          Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{processedTasks.length}</strong> pekerjaan sesuai filter dari total <strong style={{ color: 'var(--text-primary)' }}>{tasks.length}</strong> data terdaftar.
-        </div>
 
-        <AnimatePresence>
-          {selectedTasks.size > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              style={{ background: 'var(--surface-color)', border: '1px solid var(--accent-primary)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={18} color="var(--accent-primary)" />
-                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
-                  {selectedTasks.size} Pekerjaan Terpilih
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => setSelectedTasks(new Set())}
-                  style={{ padding: '6px 12px', fontSize: '13px' }}
-                >
-                  Batal
-                </button>
-                <button className="btn btn-secondary" onClick={() => setBulkEditField('status')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Status</button>
-                <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
-                <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
-                <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
-                <button 
-                  className="btn" 
-                  onClick={handleBulkDelete}
-                  style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                >
-                  <Trash2 size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Hapus Terpilih
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        <div id="task-table-container" className="glass" style={{ padding: '24px', overflow: 'hidden' }}>
+      <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, backgroundColor: 'var(--surface-color)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'inline-block' }}>
+        Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{processedTasks.length}</strong> pekerjaan sesuai filter dari total <strong style={{ color: 'var(--text-primary)' }}>{tasks.length}</strong> data terdaftar.
+      </div>
+
+      <AnimatePresence>
+        {selectedTasks.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{ background: 'var(--surface-color)', border: '1px solid var(--accent-primary)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle size={18} color="var(--accent-primary)" />
+              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
+                {selectedTasks.size} Pekerjaan Terpilih
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setSelectedTasks(new Set())}
+                style={{ padding: '6px 12px', fontSize: '13px' }}
+              >
+                Batal
+              </button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('status')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Status</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
+              <button
+                className="btn"
+                onClick={handleBulkDelete}
+                style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+              >
+                <Trash2 size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Hapus Terpilih
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div id="task-table-container" className="glass" style={{ padding: '16px', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '13px' }}>
-
-                  <th style={{ padding: '14px 12px', width: '40px', textAlign: 'center' }}>
-                    <input 
-                      type="checkbox" 
+                {userRole !== 'SPV' && (
+                  <th style={{ padding: '12px 10px', width: '50px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
                       checked={processedTasks.length > 0 && selectedTasks.size === processedTasks.length}
                       onChange={handleToggleSelectAll}
                       style={{ cursor: 'pointer' }}
                     />
                   </th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
+                )}
+                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Pekerjaan {renderSortIcon('nama')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px' }}>
+                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
                   Deskripsi
                 </th>
-                <th style={{ padding: '14px 12px' }}>
+                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
                   Sub Pekerjaan
                 </th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
+                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     PIC {renderSortIcon('pic')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('kategori')}>
+                <th className="hide-mobile" style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('kategori')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Kategori {renderSortIcon('kategori')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('prioritas')}>
+                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('prioritas')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Prioritas {renderSortIcon('prioritas')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
+                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px' }}>Lampiran</th>
-                <th style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
+                <th className="hide-mobile" style={{ padding: '12px 10px' }}>Lampiran</th>
+                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px', textAlign: 'right' }}>Aksi</th>
+                <th className="hide-tablet" style={{ padding: '12px 10px' }}>Lokasi</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', width: '60px' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -1230,17 +1248,18 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 const extraPics = getAdditionalPics(task);
 
                 return (
-                  <tr key={task.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-
-                      <td style={{ padding: '16px 12px', textAlign: 'center', verticalAlign: 'top' }} onClick={e => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
+                  <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
+                    {userRole !== 'SPV' && (
+                      <td style={{ padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
                           checked={selectedTasks.has(task.id)}
                           onChange={() => handleToggleSelect(task.id)}
                           style={{ cursor: 'pointer' }}
                         />
                       </td>
-                    <td style={{ padding: '16px 12px', maxWidth: '240px' }}>
+                    )}
+                    <td style={{ padding: '12px 10px' }}>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setDetailTask(task)}>
                         {task.nama}
                       </div>
@@ -1266,7 +1285,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         <span>Diperbarui: {task.updatedAt ? format(new Date(task.updatedAt), 'dd MMM yyyy, HH:mm') : '-'}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '16px 12px', maxWidth: '200px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    <td className="hide-tablet" style={{ padding: '12px 10px', maxWidth: '200px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                       <div style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -1275,20 +1294,20 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         textOverflow: 'ellipsis',
                         whiteSpace: 'pre-wrap'
                       }}>
-                        {task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}
+                        {task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </div>
                     </td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    <td className="hide-tablet" style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                       {task.subTasksJson ? (() => {
-                         try {
-                           const st = JSON.parse(task.subTasksJson);
-                           if (!st || st.length === 0) return '-';
-                           const doneCount = st.filter((s: any) => s.status === 'Done').length;
-                           return `${doneCount}/${st.length} Selesai`;
-                         } catch (e) { return '-'; }
+                        try {
+                          const st = JSON.parse(task.subTasksJson);
+                          if (!st || st.length === 0) return '-';
+                          const doneCount = st.filter((s: any) => s.status === 'Done').length;
+                          return `${doneCount}/${st.length} Selesai`;
+                        } catch (e) { return '-'; }
                       })() : '-'}
                     </td>
-                    <td style={{ padding: '16px 12px', fontWeight: '500' }}>
+                    <td style={{ padding: '12px 10px', fontWeight: '500' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
                         <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
                           {task.pic}
@@ -1300,83 +1319,181 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         ))}
                       </div>
                     </td>
-                    <td style={{ padding: '16px 12px' }}>
-                      <span {...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors).style, whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                        {task.kategori || 'Umum'}
-                      </span>
+                    <td className="hide-mobile" style={{ padding: '12px 10px' }}>
+                      {(() => {
+                        const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
+                        return (
+                          <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', ...badge.style }}>
+                            {task.kategori || 'Umum'}
+                          </span>
+                        );
+                      })()}
                     </td>
-                    <td style={{ padding: '16px 12px' }}>
-                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
+                    <td style={{ padding: '12px 10px' }}>
+                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ padding: '16px 12px', minWidth: '150px' }}>
+                    <td style={{ padding: '12px 10px', minWidth: '150px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12px' }}>
-                        <span {...getDynamicBadgeStyle('status', task.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', task.status, '', masterColors).style, fontWeight: '600' }}>
-                          {task.status}
-                        </span>
+                        {(() => {
+                          const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
+                          return (
+                            <span className={badge.className} style={{ fontWeight: '600', ...badge.style }}>
+                              {task.status}
+                            </span>
+                          );
+                        })()}
                         <span style={{ color: 'var(--text-secondary)' }}>{prog}%</span>
                       </div>
                       <div className="progress-container">
-                        <div 
-                          className="progress-bar" 
-                          style={{ 
-                            width: `${prog}%`, 
-                            backgroundColor: task.status === 'Done' ? 'var(--success)' : task.status === 'In Progress' ? 'var(--warning)' : 'var(--accent-primary)' 
-                          }} 
+                        <div
+                          className="progress-bar"
+                          style={{
+                            width: `${prog}%`,
+                            backgroundColor: task.status === 'Done' ? 'var(--success)' : task.status === 'In Progress' ? 'var(--warning)' : 'var(--accent-primary)'
+                          }}
                         />
                       </div>
                     </td>
-                    <td style={{ padding: '16px 12px' }}>
-                      {taskFiles.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {taskFiles.map((f, idx) => (
-                            <button 
-                              key={idx}
-                              type="button"
-                              className="btn btn-secondary"
-                              style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => setPreviewFile(f)}
-                              title={`Lihat File: ${f.name}`}
-                            >
-                              <Paperclip size={12} color="var(--accent-primary)" />
-                              <span style={{ maxWidth: '85px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {f.name}
-                              </span>
-                            </button>
-                          ))}
+                    <td className="hide-mobile" style={{ padding: '12px 10px' }}>
+                      {task.fileUrl ? (
+                        <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                          <Paperclip size={14} /> {task.fileName || 'Lampiran'}
+                        </a>
+                      ) : '-'}
+                      {taskFiles.length > 0 && !task.fileUrl && (
+                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Paperclip size={14} /> {taskFiles.length} Lampiran
                         </div>
-                      ) : (
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>-</span>
                       )}
                     </td>
-                    <td style={{ padding: '16px 12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    <td style={{ padding: '12px 10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                       <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
                       {!task.isAllDay && task.startTime && (
                         <div style={{ fontSize: '11px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
                       )}
                     </td>
-                    <td style={{ padding: '16px 12px', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <a 
-                          href={getGoogleCalendarUrl(task)} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="btn btn-secondary" 
-                          style={{ padding: '6px 8px' }} 
-                          title="Tambah ke Google Calendar"
+                    <td className="hide-tablet" style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {(() => {
+                        if (!task.lokasi) return '-';
+                        try {
+                          const loc = JSON.parse(task.lokasi);
+                          if (loc.tipe === 'online') {
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Online</span>
+                                {loc.linkZoom && <a href={loc.linkZoom} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'underline' }}>Link Zoom</a>}
+                                {loc.jam && <span>{loc.jam} WITA</span>}
+                              </div>
+                            );
+                          } else if (loc.tipe === 'offline') {
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                <span style={{ fontWeight: 600 }}>Offline</span>
+                                <span>{loc.lokasiFisik || '-'}</span>
+                                {loc.jam && <span>{loc.jam} WITA</span>}
+                              </div>
+                            );
+                          }
+                          return '-';
+                        } catch (e) {
+                          return task.lokasi;
+                        }
+                      })()}
+                    </td>
+                    <td style={{ padding: '12px 10px', textAlign: 'center', position: 'relative', width: '60px' }}>
+                      <div style={{ display: 'inline-block' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary clickable-hover"
+                          style={{ padding: '6px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === task.id ? null : task.id);
+                          }}
+                          title="Menu Aksi"
                         >
-                          <ExternalLink size={15} color="#4285F4" />
-                        </a>
-                        <button className="btn btn-secondary" style={{ padding: '6px 8px' }} onClick={() => handleExportICS(task)} title="Download .ics">
-                          <CalendarDays size={15} />
+                          <MoreVertical size={14} color="var(--text-secondary)" />
                         </button>
-                        <button className="btn btn-secondary" style={{ padding: '6px 8px' }} onClick={() => handleOpenEditModal(task)} title="Edit Pekerjaan">
-                          <Pencil size={15} />
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '6px 8px' }} onClick={() => handleDelete(task.id)} title="Hapus">
-                          <Trash2 size={15} />
-                        </button>
+                        {activeDropdownId === task.id && (
+                          <>
+                            <div
+                              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                right: '35px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                backgroundColor: 'var(--surface-color)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '10px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                                display: 'flex',
+                                flexDirection: 'row',
+                                gap: '6px',
+                                padding: '6px',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <a
+                                href={getGoogleCalendarUrl(task)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-secondary"
+                                style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Tambah ke Google Calendar"
+                                onClick={() => setActiveDropdownId(null)}
+                              >
+                                <ExternalLink size={13} color="#4285F4" />
+                              </a>
+                              <button
+                                className="btn btn-secondary"
+                                style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                onClick={() => {
+                                  handleExportICS(task);
+                                  setActiveDropdownId(null);
+                                }}
+                                title="Unduh .ics"
+                              >
+                                <CalendarDays size={13} />
+                              </button>
+                              {userRole !== 'SPV' && (
+                                <>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                    onClick={() => {
+                                      handleOpenEditModal(task);
+                                      setActiveDropdownId(null);
+                                    }}
+                                    title="Edit Pekerjaan"
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                  <button
+                                    className="btn btn-danger"
+                                    style={{ padding: '5px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                    onClick={() => {
+                                      handleDelete(task.id);
+                                      setActiveDropdownId(null);
+                                    }}
+                                    title="Hapus"
+                                  >
+                                    <Trash2 size={13} color="var(--danger)" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1385,7 +1502,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
               {processedTasks.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <td colSpan={11} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                     Tidak ada pekerjaan yang sesuai dengan filter atau pencarian Anda.
                   </td>
                 </tr>
@@ -1395,58 +1512,57 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         </div>
       </div>
 
-      
-                <BulkEditModal
-          isOpen={!!bulkEditField}
-          onClose={() => setBulkEditField(null)}
-          selectedTaskIds={Array.from(selectedTasks)}
-          field={bulkEditField}
-          masterStatuses={masterStatuses}
-          masterCats={masterCats}
-          masterPics={masterPics}
-          masterStatusProgress={masterStatusProgress}
-          onSuccess={() => {
-            setSelectedTasks(new Set());
-            fetch('/api/tasks').then(r => r.json()).then(setTasks);
-            refreshData();
-          }}
-        />
-        <TaskAddEditModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          taskToEdit={editingTask}
-          onSave={handleSaveModal}
-          formCategoryOptions={formCategoryOptions}
-          formPicOptions={formPicOptions}
-          formStatusOptions={masterStatuses}
-          formPriorityOptions={masterPriorities}
-          setPreviewFile={setPreviewFile}
-        />
+      <BulkEditModal
+        isOpen={!!bulkEditField}
+        onClose={() => setBulkEditField(null)}
+        selectedTaskIds={Array.from(selectedTasks)}
+        field={bulkEditField}
+        masterStatuses={masterStatuses}
+        masterCats={masterCats}
+        masterPics={masterPics}
+        masterStatusProgress={masterStatusProgress}
+        onSuccess={() => {
+          setSelectedTasks(new Set());
+          fetch('/api/tasks').then(r => r.json()).then(setTasks);
+          refreshData();
+        }}
+      />
+      <TaskAddEditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        taskToEdit={editingTask}
+        onSave={handleSaveModal}
+        formCategoryOptions={formCategoryOptions}
+        formPicOptions={formPicOptions}
+        formStatusOptions={masterStatuses}
+        formPriorityOptions={masterPriorities}
+        setPreviewFile={setPreviewFile}
+      />
 
-        <SmartAddModal 
-          isOpen={isSmartModalOpen}
-          onClose={() => setIsSmartModalOpen(false)}
-          picOptions={formPicOptions}
-          onSaveBulk={async (tasks) => {
-            setIsSmartModalOpen(false);
-            setLoading(true);
-            try {
-              const res = await fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(tasks)
-              });
-              if (!res.ok) throw new Error('Gagal menyimpan pekerjaan masal');
-              toast.success(`${tasks.length} Pekerjaan berhasil ditambahkan`);
-              refreshData();
-            } catch (err: any) {
-              setErrorMessage(err.message || 'Error saat menambahkan secara masal');
-              toast.error('Gagal menambah pekerjaan secara masal');
-            } finally {
-              setLoading(false);
-            }
-          }}
-        />
+      <SmartAddModal 
+        isOpen={isSmartModalOpen}
+        onClose={() => setIsSmartModalOpen(false)}
+        picOptions={formPicOptions}
+        onSaveBulk={async (tasks) => {
+          setIsSmartModalOpen(false);
+          setLoading(true);
+          try {
+            const res = await fetch('/api/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(tasks)
+            });
+            if (!res.ok) throw new Error('Gagal menyimpan pekerjaan masal');
+            toast.success(`${tasks.length} Pekerjaan berhasil ditambahkan`);
+            refreshData();
+          } catch (err: any) {
+            setErrorMessage(err.message || 'Error saat menambahkan secara masal');
+            toast.error('Gagal menambah pekerjaan secara masal');
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
 
       <TaskDetailModal
         task={detailTask}
@@ -1462,7 +1578,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       <AnimatePresence>
         {errorMessage && (
           <div className="modal-overlay" style={{ zIndex: 1100 }}>
-            <motion.div 
+            <motion.div
               className="modal-content"
               style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -1489,16 +1605,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => setErrorMessage(null)}
                 >
                   Tutup
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
+                <button
+                  type="button"
+                  className="btn btn-primary"
                   style={{ background: 'var(--danger)', borderColor: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={() => {
                     import('@/utils/clipboard').then(({ copyToClipboard }) => {
@@ -1515,7 +1631,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         )}
       </AnimatePresence>
 
-      
+
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );

@@ -23,7 +23,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
-import { getDynamicBadgeStyle } from '@/utils/taskUtils';
+import { getDynamicBadgeStyle, getLocalTimezone } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -60,6 +60,7 @@ type Task = {
   startDate: string | Date;
   endDate: string | Date;
   additionalPics?: string | null;
+  lokasi?: string | null;
 };
 
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
@@ -253,7 +254,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     datasets: [
       {
         data: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map(p => priorityCounts[p] || 0),
-        backgroundColor: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map((p, i) => masterColors['priority_' + p] || priorityColors[i % priorityColors.length]),
+        backgroundColor: (masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts)).map((p) => masterColors['priority_' + p] || (p === 'High' ? '#ef4444' : p === 'Medium' ? '#f97316' : p === 'Low' ? '#10b981' : p === 'Urgent' ? '#b91c1c' : '#64748b')),
         borderWidth: 0,
       },
     ],
@@ -957,7 +958,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                       })()}
                       • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
                     {t.deskripsi && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} dangerouslySetInnerHTML={{ __html: t.deskripsi }} />
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {t.deskripsi.replace(/<[^>]+>/g, '')}
+                      </div>
                     )}
                     {t.fileUrl && (
                       <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px', marginTop: '4px' }}>
@@ -1018,6 +1021,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                   <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('status')}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Status & Progress <ArrowUpDown size={14} /></div>
                   </th>
+                  <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Lokasi</th>
                   <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('endDate')}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Tenggat Waktu <ArrowUpDown size={14} /></div>
                   </th>
@@ -1027,7 +1031,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
                   const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
                   return (
-                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => {
+                    <tr key={t.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => {
                       setSelectedTaskForDetail(t);
                     }}>
                       <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
@@ -1041,7 +1045,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         )}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top', maxWidth: '200px', whiteSpace: 'normal' }}>
-                        {t.deskripsi || '-'}
+                        {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1056,20 +1060,30 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         </div>
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
-                        <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--border-color)', fontSize: '12px', fontWeight: 500 }}>
-                          {t.kategori || 'Umum'}
-                        </span>
+                        {(() => {
+                          const badge = getDynamicBadgeStyle('category', t.kategori || 'Umum', '', masterColors);
+                          return (
+                            <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-color)', ...badge.style }}>
+                              {t.kategori || 'Umum'}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                        <span className={`badge ${t.prioritas === 'Urgent' ? 'badge-urgent' : t.prioritas === 'High' ? 'badge-high' : t.prioritas === 'Low' ? 'badge-todo' : 'badge-warning'}`}>
+                        <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', t.prioritas === 'Urgent' ? 'badge badge-urgent' : t.prioritas === 'High' ? 'badge badge-high' : t.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)}>
                           {t.prioritas || 'Medium'}
                         </span>
                       </td>
                       <td style={{ padding: '16px', verticalAlign: 'top' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <span {...getDynamicBadgeStyle('status', t.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', t.status, '', masterColors).style, alignSelf: 'flex-start' }}>
-                            {t.status}
-                          </span>
+                          {(() => {
+                            const badge = getDynamicBadgeStyle('status', t.status, '', masterColors);
+                            return (
+                              <span className={badge.className} style={{ alignSelf: 'flex-start', ...badge.style }}>
+                                {t.status}
+                              </span>
+                            );
+                          })()}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100px' }}>
                             <div className="progress-bar-bg" style={{ flex: 1, height: '6px' }}>
                               <div className="progress-bar-fill" style={{ width: `${t.progress || 0}%`, background: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }}></div>
@@ -1077,6 +1091,34 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
                           </div>
                         </div>
+                      </td>
+                      <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top' }}>
+                        {(() => {
+                          if (!t.lokasi) return '-';
+                          try {
+                            const loc = JSON.parse(t.lokasi);
+                            if (loc.tipe === 'online') {
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Online</span>
+                                  {loc.linkZoom && <a href={loc.linkZoom} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'underline' }}>Link Zoom</a>}
+                                   {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
+                                </div>
+                              );
+                            } else if (loc.tipe === 'offline') {
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                  <span style={{ fontWeight: 600 }}>Offline</span>
+                                  <span>{loc.lokasiFisik || '-'}</span>
+                                  {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
+                                </div>
+                              );
+                            }
+                            return '-';
+                          } catch(e) {
+                            return t.lokasi;
+                          }
+                        })()}
                       </td>
                       <td style={{ padding: '16px', color: isOverdue ? 'var(--danger)' : 'var(--text-primary)', fontWeight: isOverdue ? 600 : 500, verticalAlign: 'top' }}>
                         {format(new Date(t.endDate), 'dd MMM yyyy')}

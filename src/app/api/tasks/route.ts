@@ -65,6 +65,7 @@ export async function POST(req: Request) {
             subTasksJson: task.subTasksJson || null,
             additionalPics: task.additionalPics || null,
             historyLogsJson: initialLog,
+            lokasi: task.lokasi || null,
             }
           }))
       );
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
       nama, pic, status, prioritas, kategori, progress, 
       deskripsi, catatan, fileUrl, fileName, filesJson, 
       isAllDay, startTime, endTime, repetisi, additionalPics, 
-      startDate, endDate, subTasksJson 
+      startDate, endDate, subTasksJson, lokasi 
     } = body;
     
     if (!nama || !pic) {
@@ -110,6 +111,7 @@ export async function POST(req: Request) {
           startDate: parseDate(startDate),
           endDate: parseDate(endDate),
           subTasksJson: subTasksJson || null,
+          lokasi: lokasi || null,
         },
       });
 

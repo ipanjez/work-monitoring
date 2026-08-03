@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
@@ -14,7 +15,7 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], ti
   const [expanded, setExpanded] = useState(false);
   if (!logs || logs.length === 0) return null;
   const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 3, 0));
-  
+
   return (
     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
@@ -25,7 +26,7 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], ti
         </div>
       ))}
       {logs.length > 3 && (
-        <button 
+        <button
           type="button"
           style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
           onClick={() => setExpanded(!expanded)}
@@ -46,6 +47,8 @@ interface TaskDetailModalProps {
 }
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'USER';
   const { masterColors } = useMaster();
   const router = useRouter();
   const pathname = usePathname();
@@ -89,7 +92,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       toast.error('Nama dan komentar tidak boleh kosong');
       return;
     }
-    
+
     localStorage.setItem('commentAuthor', commentAuthor.trim());
 
     const comment: CommentItem = {
@@ -106,7 +109,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     };
     const updatedLogs = [...localHistoryLogs, newLog];
     const updatedComments = [...localComments, comment];
-    
+
     setLocalComments(updatedComments);
     setLocalHistoryLogs(updatedLogs);
     setNewComment('');
@@ -116,7 +119,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const res = await fetch(`/api/tasks/${task!.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           commentsJson: JSON.stringify(updatedComments),
           historyLogsJson: JSON.stringify(updatedLogs)
         })
@@ -125,7 +128,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       toast.success('Komentar berhasil ditambahkan');
       if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
-    } catch(e) {
+    } catch (e) {
       toast.error('Gagal menyimpan komentar');
       setLocalComments(localComments); // revert
     } finally {
@@ -138,7 +141,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   return (
     <AnimatePresence>
       <div className="modal-overlay">
-        <motion.div 
+        <motion.div
           className="modal-content"
           style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}
           initial={{ scale: 0.9, opacity: 0 }}
@@ -148,9 +151,14 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
             <div>
-              <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge', masterColors).style, marginBottom: '8px' }}>
-                {task.prioritas || 'Medium'}
-              </span>
+              {(() => {
+                const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
+                return (
+                  <span className={badge.className} style={{ ...badge.style, marginBottom: '8px' }}>
+                    {task.prioritas || 'Medium'}
+                  </span>
+                );
+              })()}
               <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -178,17 +186,27 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
                 <p style={{ marginTop: '4px' }}>
-                  <span {...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
-                    {task.kategori || 'Umum'}
-                  </span>
+                  {(() => {
+                    const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
+                    return (
+                      <span className={badge.className} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500', ...badge.style }}>
+                        {task.kategori || 'Umum'}
+                      </span>
+                    );
+                  })()}
                 </p>
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status:</span>
                 <p style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span {...getDynamicBadgeStyle('status', task.status, '', masterColors)} style={{ ...getDynamicBadgeStyle('status', task.status, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
-                    {task.status}
-                  </span>
+                  {(() => {
+                    const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
+                    return (
+                      <span className={badge.className} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500', ...badge.style }}>
+                        {task.status}
+                      </span>
+                    );
+                  })()}
                   <span style={{ fontWeight: '600', color: 'var(--text-secondary)', fontSize: '12px' }}>({task.progress || 0}%)</span>
                 </p>
               </div>
@@ -204,6 +222,43 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tenggat Waktu:</span>
                 <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.endDate), 'dd MMM yyyy')}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}</p>
               </div>
+
+              {(() => {
+                if (!task.lokasi) return null;
+                try {
+                  const loc = JSON.parse(task.lokasi);
+                  if (loc.tipe === 'online') {
+                    return (
+                      <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi (Online):</span>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
+                          <p style={{ fontWeight: '500', color: 'var(--accent-primary)' }}>
+                            <a href={loc.linkZoom} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>{loc.linkZoom || 'Tidak ada link'}</a>
+                          </p>
+                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>Jam: {loc.jam ? `${loc.jam} WITA` : '-'}</p>
+                        </div>
+                      </div>
+                    );
+                  } else if (loc.tipe === 'offline') {
+                    return (
+                      <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi (Offline):</span>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
+                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{loc.lokasiFisik || '-'}</p>
+                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>Jam: {loc.jam ? `${loc.jam} WITA` : '-'}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                } catch (e) {
+                  return (
+                    <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi:</span>
+                      <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{task.lokasi}</p>
+                    </div>
+                  );
+                }
+              })()}
             </div>
 
             {/* Audit Logging Information Box */}
@@ -274,10 +329,10 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               let subTasks: SubTask[] = [];
               try {
                 subTasks = JSON.parse(task.subTasksJson);
-              } catch (e) {}
-              
+              } catch (e) { }
+
               if (subTasks.length === 0) return null;
-              
+
               return (
                 <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>Sub Pekerjaan</h4>
@@ -286,15 +341,14 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                           <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
-                          <span 
-                            {...getDynamicBadgeStyle('status', subTask.status, '', masterColors)}
-                            style={{ 
-                              ...getDynamicBadgeStyle('status', subTask.status, '', masterColors).style, 
-                              padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 
-                            }}
-                          >
-                            {subTask.status}
-                          </span>
+                          {(() => {
+                            const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
+                            return (
+                              <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, ...badge.style }}>
+                                {subTask.status}
+                              </span>
+                            );
+                          })()}
                         </div>
                         {subTask.logs && subTask.logs.length > 0 && (
                           <SubTaskLogViewer logs={subTask.logs} />
@@ -321,7 +375,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                           <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
                         </div>
                         {!f.isDeleted && (
-                          <button 
+                          <button
                             type="button"
                             className="btn btn-secondary"
                             style={{ padding: '4px 8px' }}
@@ -346,7 +400,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <MessageSquare size={16} color="var(--accent-primary)" /> Komentar
               </h4>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '200px', overflowY: 'auto' }}>
                 {localComments.length === 0 ? (
                   <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', padding: '12px 0' }}>Belum ada komentar.</div>
@@ -357,14 +411,16 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          <button 
-                            type="button" 
-                            onClick={() => handleDeleteComment(comment.id)}
-                            style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}
-                            title="Hapus Komentar"
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                          {userRole !== 'SPV' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}
+                              title="Hapus Komentar"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div style={{ fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{comment.text}</div>
@@ -372,52 +428,54 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                   ))
                 )}
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  className="input" 
-                  placeholder="Nama Anda" 
-                  value={commentAuthor}
-                  onChange={e => setCommentAuthor(e.target.value)}
-                  style={{ fontSize: '13px', padding: '8px 12px' }}
-                />
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <textarea 
-                    className="input" 
-                    placeholder="Tulis komentar..." 
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    rows={2}
-                    style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '8px 12px' }}
+ 
+              {userRole !== 'SPV' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Nama Anda"
+                    value={commentAuthor}
+                    onChange={e => setCommentAuthor(e.target.value)}
+                    style={{ fontSize: '13px', padding: '8px 12px' }}
                   />
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={handleAddComment}
-                    disabled={isSubmittingComment || !newComment.trim() || !commentAuthor.trim()}
-                    style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <Send size={16} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <textarea
+                      className="input"
+                      placeholder="Tulis komentar..."
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                      rows={2}
+                      style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '8px 12px' }}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleAddComment}
+                      disabled={isSubmittingComment || !newComment.trim() || !commentAuthor.trim()}
+                      style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-
+ 
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-              {onEdit && (
+              {onEdit && userRole !== 'SPV' && (
                 <button className="btn btn-secondary" onClick={onEdit}>
                   <Edit size={16} /> Edit Pekerjaan Ini
                 </button>
               )}
-              {onDelete && (
+              {onDelete && userRole !== 'SPV' && (
                 <button className="btn btn-danger" onClick={onDelete}>
                   <X size={16} /> Hapus Pekerjaan
                 </button>
               )}
-              <a 
-                href={getGoogleCalendarUrl(task)} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={getGoogleCalendarUrl(task)}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-primary"
               >
                 <ExternalLink size={16} /> Tambah ke Google Calendar

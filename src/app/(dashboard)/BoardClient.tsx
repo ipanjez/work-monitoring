@@ -3,6 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -12,6 +13,8 @@ import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'USER';
   const { masterColors } = useMaster();
   const router = useRouter();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
@@ -33,8 +36,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
-  
-  
+
+
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
@@ -107,7 +110,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     e.preventDefault();
     setDragOverColumn(null);
     setDragOverCardId(null);
-    
+
     if (sortBy !== 'Manual') {
       setSortBy('Manual');
       toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
@@ -123,7 +126,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
     const previousTasks = [...tasks];
     let updatedTasks = [...tasks];
-    
+
     updatedTasks = updatedTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
     setTasks(updatedTasks);
 
@@ -136,22 +139,25 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         });
         toast.success(`Tugas dipindah ke ${newStatus}`);
       }
-      
-      const colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+
+      const colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => {
+        if (a.orderIndex === b.orderIndex) return b.id - a.id;
+        return (a.orderIndex || 0) - (b.orderIndex || 0);
+      });
       const taskInCol = colTasks.find(t => t.id === taskId);
       const otherTasksInCol = colTasks.filter(t => t.id !== taskId);
-      const finalColTasks = [...otherTasksInCol, taskInCol]; // Appended to end
-      
+      const finalColTasks = [taskInCol, ...otherTasksInCol]; // Prepend to top
+
       setTasks(prev => prev.map(t => {
         const idx = finalColTasks.findIndex(ft => ft.id === t.id);
         return idx !== -1 ? { ...t, orderIndex: idx, status: t.id === taskId ? newStatus : t.status } : t;
       }));
-      
+
       saveReorder(finalColTasks);
     } catch (err) {
       console.error(err);
       toast.error('Gagal memperbarui status');
-      setTasks(previousTasks); 
+      setTasks(previousTasks);
     }
     setDraggedTaskId(null);
   };
@@ -189,7 +195,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     e.stopPropagation();
     setDragOverColumn(null);
     setDragOverCardId(null);
-    
+
     if (sortBy !== 'Manual') {
       setSortBy('Manual');
       toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
@@ -205,17 +211,20 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
     const previousTasks = [...tasks];
     let updatedTasks = [...tasks].map(t => t.id === taskId ? { ...t, status: newStatus } : t);
-    
-    let colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-    
+
+    let colTasks = updatedTasks.filter(t => t.status === newStatus).sort((a, b) => {
+      if (a.orderIndex === b.orderIndex) return b.id - a.id;
+      return (a.orderIndex || 0) - (b.orderIndex || 0);
+    });
+
     const draggedTask = colTasks.find(t => t.id === taskId);
     colTasks = colTasks.filter(t => t.id !== taskId);
-    
+
     const targetIndex = colTasks.findIndex(t => t.id === targetCardId);
     if (targetIndex !== -1) {
       colTasks.splice(targetIndex, 0, draggedTask);
     } else {
-      colTasks.push(draggedTask);
+      colTasks.unshift(draggedTask); // Prepend to top
     }
 
     setTasks(prev => prev.map(t => {
@@ -236,7 +245,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     } catch (err) {
       console.error(err);
       toast.error('Gagal memperbarui urutan');
-      setTasks(previousTasks); 
+      setTasks(previousTasks);
     }
     setDraggedTaskId(null);
   };
@@ -248,22 +257,30 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
   const openTaskEdit = (task: any) => {
     let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+
+    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+      try {
+        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        repetisiValue = 'Custom';
+      } catch (e) { }
+    }
 
     let parsedSubTasks: any[] = [];
     if (task.subTasksJson) {
-      try { parsedSubTasks = JSON.parse(task.subTasksJson); } catch (e) {}
+      try { parsedSubTasks = JSON.parse(task.subTasksJson); } catch (e) { }
     }
 
     let parsedFiles: any[] = [];
     if (task.filesJson) {
-        try { parsedFiles = JSON.parse(task.filesJson); } catch (e) {}
+      try { parsedFiles = JSON.parse(task.filesJson); } catch (e) { }
     } else if (task.fileUrl) {
-        parsedFiles = [{ url: task.fileUrl, name: task.fileName || 'Attachment' }];
+      parsedFiles = [{ url: task.fileUrl, name: task.fileName || 'Attachment' }];
     }
 
     let parsedPics: string[] = [];
     if (task.additionalPics) {
-        try { parsedPics = JSON.parse(task.additionalPics); } catch (e) {}
+      try { parsedPics = JSON.parse(task.additionalPics); } catch (e) { }
     }
 
     setSelectedTask({
@@ -305,7 +322,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}>
+    <div className="board-container">
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <Search size={14} color="var(--text-secondary)" />
@@ -321,13 +338,13 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <Filter size={14} color="var(--text-secondary)" />
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Kategori:</span>
-          <select 
-            value={filterCategory} 
+          <select
+            value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: 'var(--text-primary)', 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
               fontSize: '13px',
               fontWeight: 500,
               outline: 'none',
@@ -344,13 +361,13 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <ArrowUpDown size={14} color="var(--text-secondary)" />
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
-          <select 
-            value={sortBy} 
+          <select
+            value={sortBy}
             onChange={e => setSortBy(e.target.value as any)}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: 'var(--text-primary)', 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
               fontSize: '13px',
               fontWeight: 500,
               outline: 'none',
@@ -365,14 +382,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px', flex: 1, height: 'calc(100vh - 230px)', alignItems: 'stretch' }}>
+      <div className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
           let columnTasks = tasks.filter((t: any) => {
             if (t.status !== col) return false;
-            
-            const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
 
             const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
 
@@ -381,7 +398,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                 try {
                   const arr = JSON.parse(t.additionalPics);
                   return Array.isArray(arr) && arr.includes(globalPicFilter);
-                } catch(e) { return false; }
+                } catch (e) { return false; }
               })() : false
             );
 
@@ -389,7 +406,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             const taskStart = new Date(t.startDate).getTime();
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
+
             let startBoundary = today.getTime();
             let endBoundary = today.getTime() + 86400000 - 1;
 
@@ -412,16 +429,17 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               matchDate = true;
             } else {
               if (taskStart <= endBoundary && taskEnd >= startBoundary) {
-                  matchDate = true;
+                matchDate = true;
               }
             }
-            
+
             return matchSearch && matchCategory && matchPic && matchDate;
           });
 
           // Sort tasks
           columnTasks = columnTasks.sort((a, b) => {
             if (sortBy === 'Manual') {
+              if (a.orderIndex === b.orderIndex) return b.id - a.id; // Newest on top if same order
               return (a.orderIndex || 0) - (b.orderIndex || 0);
             } else if (sortBy === 'Deadline') {
               return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
@@ -434,7 +452,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           });
 
           const isDragOverCol = dragOverColumn === col;
-          
+
           return (
             <div
               key={col}
@@ -445,29 +463,29 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               style={{
                 backgroundColor: isDragOverCol ? 'var(--background)' : 'var(--surface-color)',
                 border: isDragOverCol ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                width: '320px',
-                minWidth: '320px',
-                transition: 'width 0.2s, min-width 0.2s',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              <div style={{ 
-                display: 'flex', 
+              <div style={{
+                display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: '8px',
                 gap: '8px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexDirection: 'row' }}>
-                  <h3 style={{ 
-                    fontSize: '15px', 
-                    fontWeight: 'bold', 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexDirection: 'row', minWidth: 0 }}>
+                  <h3 style={{
+                    fontSize: '13px',
+                    fontWeight: 'bold',
                     color: 'var(--text-primary)',
-                    writingMode: 'horizontal-tb',
-                    transform: 'none',
-                    margin: '0'
+                    margin: '0',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                   }}>
                     {col}
                   </h3>
@@ -475,79 +493,92 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     {columnTasks.length}
                   </span>
                 </div>
-                
+
               </div>
 
-              {columnTasks.map((task: any) => {
-                const subStats = getSubtaskStats(task.subTasksJson);
-                const isDragged = draggedTaskId === task.id;
-                const isDragOverThisCard = dragOverCardId === task.id;
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minHeight: '60px', overflowY: 'auto', paddingRight: '4px' }} className="kanban-cards-container">
+                {columnTasks.map((task: any) => {
+                  const subStats = getSubtaskStats(task.subTasksJson);
+                  const isDragged = draggedTaskId === task.id;
+                  const isDragOverThisCard = dragOverCardId === task.id;
 
-                return (
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onDragOver={(e) => handleDragOverCard(e, task.id)}
-                    onDrop={(e) => handleDropCard(e, col, task.id)}
-                    onClick={() => openTaskDetail(task)}
-                    style={{
-                      backgroundColor: 'var(--background)',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                      cursor: 'grab',
-                      opacity: isDragged ? 0.5 : 1,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      transition: 'transform 0.1s',
-                      marginTop: isDragOverThisCard ? '20px' : '0px'
-                    }}
-                    onDragEnd={() => setDraggedTaskId(null)}
-                  >
-                      {/* Card Content Top */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                {sortBy === 'Manual' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
-                    <ChevronUp 
-                      size={14} 
-                      color="var(--text-secondary)" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMoveUp(col, task.id);
-                      }} 
-                    />
-                    <ChevronDown 
-                      size={14} 
-                      color="var(--text-secondary)" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMoveDown(col, task.id);
-                      }} 
-                    />
-                  </div>
-                )}
-                <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', 'badge badge-medium', masterColors)}>
-                  {task.prioritas || 'Medium'}
-                </span>
-              </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}
+                    return (
+                      <div
+                        key={task.id}
+                        className="kanban-card"
+                        draggable={userRole !== 'SPV'}
+                        onDragStart={(e) => {
+                          if (userRole === 'SPV') {
+                            e.preventDefault();
+                            return;
+                          }
+                          handleDragStart(e, task.id);
+                        }}
+                        onDragOver={(e) => handleDragOverCard(e, task.id)}
+                        onDrop={(e) => handleDropCard(e, col, task.id)}
+                        onClick={() => openTaskDetail(task)}
+                        style={{
+                          backgroundColor: 'var(--background)',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                          cursor: userRole === 'SPV' ? 'pointer' : 'grab',
+                          opacity: isDragged ? 0.5 : 1,
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          transition: 'transform 0.1s',
+                          marginTop: isDragOverThisCard ? '20px' : '0px'
+                        }}
+                        onDragEnd={() => setDraggedTaskId(null)}
+                      >
+                        {/* Card Content Top */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {sortBy === 'Manual' && userRole !== 'SPV' && (
+                              <div className="kanban-sort-arrows" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginRight: '2px' }}>
+                                <ChevronUp
+                                  size={12}
+                                  color="var(--text-secondary)"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoveUp(col, task.id);
+                                  }}
+                                />
+                                <ChevronDown
+                                  size={12}
+                                  color="var(--text-secondary)"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoveDown(col, task.id);
+                                  }}
+                                />
+                              </div>
+                            )}
+                          {(() => {
+                            const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
+                            return (
+                              <span className={badge.className} style={{ fontSize: '10px', padding: '2px 6px', ...badge.style }}>
+                                {task.prioritas || 'Medium'}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
                         </span>
                       </div>
 
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>
+                      <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         {task.nama}
                       </h4>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                          
+
                           {/* Subtasks Count */}
                           {subStats && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: subStats.done === subStats.total ? 'var(--success)' : 'inherit' }} title="Sub-Tugas">
@@ -563,7 +594,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           )}
 
                           {/* Comments Count */}
-                          <div 
+                          <div
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -596,21 +627,23 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           fontSize: '10px', 
-                          fontWeight: 'bold' 
+                          fontWeight: 'bold',
+                          flexShrink: 0
                         }}
                       >
                         {task.pic.substring(0, 2).toUpperCase()}
                       </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {columnTasks.length === 0 && (
-                <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                  Tarik tugas ke sini
-                </div>
-              )}
+                {columnTasks.length === 0 && (
+                  <div style={{ border: '2px dashed var(--border-color)', borderRadius: '8px', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    Tarik tugas ke sini
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -650,7 +683,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       )}
 
       {commentTask && (
-        <QuickCommentModal 
+        <QuickCommentModal
           task={commentTask}
           onClose={() => setCommentTask(null)}
         />
@@ -672,6 +705,6 @@ function ListTodoIcon() {
       <path d="M8 14h.01" />
       <path d="M8 19h.01" />
       <path d="M8 9h.01" />
-      </svg>
+    </svg>
   );
 }

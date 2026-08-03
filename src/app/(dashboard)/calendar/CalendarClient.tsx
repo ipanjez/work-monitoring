@@ -461,7 +461,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         />
       </div>
 
-      {/* Task Pop-up Detail Modal */}
       <TaskDetailModal
         task={selectedTask}
         onClose={() => setSelectedTask(null)}

@@ -26,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       nama, pic, status, prioritas, kategori, progress, 
       deskripsi, catatan, fileUrl, fileName, filesJson, 
       isAllDay, startTime, endTime, repetisi, additionalPics, 
-      startDate, endDate, subTasksJson, commentsJson, historyLogsJson 
+      startDate, endDate, subTasksJson, commentsJson, historyLogsJson, lokasi 
     } = body;
 
     const parseDate = (d: any) => {
@@ -110,13 +110,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           ...(endTime !== undefined && { endTime }),
           ...(repetisi !== undefined && { repetisi }),
           ...(additionalPics !== undefined && { additionalPics }),
-          ...(startDate && { startDate: parseDate(startDate) }),
-          ...(endDate && { endDate: parseDate(endDate) }),
+          ...(startDate !== undefined && { startDate: parseDate(startDate) }),
+          ...(endDate !== undefined && { endDate: parseDate(endDate) }),
           ...(subTasksJson !== undefined && { subTasksJson }),
-          editCount: historyLogsJson !== undefined || commentsJson !== undefined ? existingTask.editCount : newCount,
+          ...(commentsJson !== undefined && { commentsJson }),
+          ...(historyLogsJson !== undefined && { historyLogsJson }),
+          ...(lokasi !== undefined && { lokasi }),
+          editCount: changes.length > 0 ? newCount : existingTask?.editCount || 0,
           lastEditedAt: historyLogsJson !== undefined || commentsJson !== undefined ? existingTask.lastEditedAt : now,
           historyLogsJson: JSON.stringify(currentLogs),
-          ...(commentsJson !== undefined && { commentsJson }),
         },
       });
 

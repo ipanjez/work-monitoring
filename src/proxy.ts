@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Izinkan akses ke file statis dan public
+  // Allow static assets, favicon, calendar exports, and auth endpoints
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
@@ -16,13 +16,22 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Jika belum login dan mencoba mengakses selain halaman login
-  if (!token && pathname !== '/login') {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Get NextAuth session token
+  const session = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET || 'dept-monitor-secret-key-12345',
+  });
+
+  // If not logged in and trying to access app pages/APIs
+  if (!session && pathname !== '/auth/signin') {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
-  // Jika sudah login dan mencoba mengakses halaman login
-  if (token && pathname === '/login') {
+  // If already logged in and trying to access signin page
+  if (session && pathname === '/auth/signin') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

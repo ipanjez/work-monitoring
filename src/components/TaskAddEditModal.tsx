@@ -15,7 +15,7 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
   const [expanded, setExpanded] = useState(false);
   if (!logs || logs.length === 0) return null;
   const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 3, 0));
-  
+
   return (
     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
@@ -26,7 +26,7 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
         </div>
       ))}
       {logs.length > 3 && (
-        <button 
+        <button
           type="button"
           style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
           onClick={() => setExpanded(!expanded)}
@@ -45,6 +45,7 @@ export type EditingTaskType = Partial<Task> & {
   isCustomPic?: boolean;
   customRecurrenceSettings?: any;
   subTasksList?: SubTask[];
+  lokasiData?: { tipe: string, linkZoom?: string, lokasiFisik?: string, jam?: string };
 };
 
 interface TaskAddEditModalProps {
@@ -76,7 +77,7 @@ export default function TaskAddEditModal({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
-  
+
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -84,13 +85,13 @@ export default function TaskAddEditModal({
       try {
         const cached = localStorage.getItem('master_status_progress');
         if (cached) setMasterProgressMap(JSON.parse(cached));
-      } catch(e) {}
+      } catch (e) { }
       fetch('/api/settings').then(r => r.json()).then(data => {
         if (data.master_status_progress) {
           setMasterProgressMap(data.master_status_progress);
           localStorage.setItem('master_status_progress', JSON.stringify(data.master_status_progress));
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [isOpen]);
 
@@ -112,6 +113,16 @@ export default function TaskAddEditModal({
         cloned.repetisi = 'Custom';
       } else if (!cloned.customRecurrenceSettings) {
         cloned.customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [], endType: 'never', endDate: '', endOccurrences: 1 };
+      }
+
+      if (cloned.lokasi) {
+        try {
+          cloned.lokasiData = JSON.parse(cloned.lokasi);
+        } catch (e) {
+          cloned.lokasiData = { tipe: 'offline', lokasiFisik: cloned.lokasi, jam: '' };
+        }
+      } else {
+        cloned.lokasiData = { tipe: '', linkZoom: '', lokasiFisik: '', jam: '' };
       }
 
       setEditingTask(cloned);
@@ -143,14 +154,14 @@ export default function TaskAddEditModal({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !editingTask) return;
-    
+
     setUploadingFile(true);
     toast.loading('Mengunggah file...', { id: 'upload' });
-    
+
     try {
       const filesArr = Array.from(e.target.files);
       const newFiles: FileItem[] = [];
-      
+
       for (const file of filesArr) {
         if (file.size > 25 * 1024 * 1024) {
           toast.error(`File ${file.name} melebihi 25MB`);
@@ -167,7 +178,7 @@ export default function TaskAddEditModal({
         });
 
         if (!res.ok) throw new Error(`Gagal mengunggah ${file.name}`);
-        
+
         const data = await res.json();
         newFiles.push({
           url: data.fileUrl,
@@ -175,7 +186,7 @@ export default function TaskAddEditModal({
           uploadedAt: new Date().toISOString()
         });
       }
-      
+
       if (newFiles.length > 0) {
         setEditingTask({
           ...editingTask,
@@ -185,7 +196,7 @@ export default function TaskAddEditModal({
       } else {
         toast.dismiss('upload');
       }
-      
+
     } catch (error: any) {
       console.error('File upload error:', error);
       toast.error('Gagal mengunggah file', { id: 'upload' });
@@ -199,10 +210,10 @@ export default function TaskAddEditModal({
     if (!editingTask) return;
     const updatedList = [...(editingTask.filesList || [])];
     if (updatedList[idx].uploadedAt) {
-       updatedList[idx].isDeleted = true;
-       updatedList[idx].deletedAt = new Date().toISOString();
+      updatedList[idx].isDeleted = true;
+      updatedList[idx].deletedAt = new Date().toISOString();
     } else {
-       updatedList.splice(idx, 1);
+      updatedList.splice(idx, 1);
     }
     setEditingTask({ ...editingTask, filesList: updatedList });
   };
@@ -221,6 +232,7 @@ export default function TaskAddEditModal({
       const additionalPicsJson = JSON.stringify((editingTask.additionalPicsList || []).filter(p => p.trim() !== ''));
       const subTasksJson = JSON.stringify(editingTask.subTasksList || []);
       const customRecurrenceSettingsStr = editingTask.customRecurrenceSettings ? JSON.stringify(editingTask.customRecurrenceSettings) : null;
+      const lokasiJson = editingTask.lokasiData?.tipe ? JSON.stringify(editingTask.lokasiData) : null;
 
       const { historyLogsJson, commentsJson, ...restEditingTask } = editingTask;
       const payload = {
@@ -228,9 +240,10 @@ export default function TaskAddEditModal({
         filesJson,
         additionalPics: additionalPicsJson,
         subTasksJson,
-        customRecurrenceSettings: customRecurrenceSettingsStr
+        customRecurrenceSettings: customRecurrenceSettingsStr,
+        lokasi: lokasiJson
       };
-      
+
       await onSave(payload);
     } finally {
       setLoading(false);
@@ -241,7 +254,7 @@ export default function TaskAddEditModal({
     <AnimatePresence>
       {isOpen && editingTask && (
         <div className="modal-overlay" style={{ zIndex: 1050 }}>
-          <motion.div 
+          <motion.div
             className="modal-content"
             style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}
             initial={{ scale: 0.9, opacity: 0 }}
@@ -263,11 +276,11 @@ export default function TaskAddEditModal({
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                   Nama Pekerjaan *
                 </label>
-                <input 
-                  className="input" 
-                  placeholder="Contoh: Audit Keuangan Kuartal II" 
-                  value={editingTask.nama || ''} 
-                  onChange={e => setEditingTask({ ...editingTask, nama: e.target.value })} 
+                <input
+                  className="input"
+                  placeholder="Contoh: Audit Keuangan Kuartal II"
+                  value={editingTask.nama || ''}
+                  onChange={e => setEditingTask({ ...editingTask, nama: e.target.value })}
                 />
               </div>
 
@@ -277,8 +290,8 @@ export default function TaskAddEditModal({
                   <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     Penanggung Jawab (PIC Utama & Tambahan) *
                   </label>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-secondary"
                     style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onClick={handleAddAnotherPic}
@@ -291,9 +304,9 @@ export default function TaskAddEditModal({
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>PIC Utama *</span>
                     {!editingTask.isCustomPic ? (
-                      <select 
-                        className="input" 
-                        value={editingTask.pic || ''} 
+                      <select
+                        className="input"
+                        value={editingTask.pic || ''}
                         onChange={e => {
                           if (e.target.value === '__custom__') {
                             setEditingTask({ ...editingTask, pic: '', isCustomPic: true });
@@ -310,15 +323,15 @@ export default function TaskAddEditModal({
                       </select>
                     ) : (
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <input 
-                          className="input" 
-                          placeholder="Nama PIC Utama Baru..." 
-                          value={editingTask.pic || ''} 
-                          onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })} 
+                        <input
+                          className="input"
+                          placeholder="Nama PIC Utama Baru..."
+                          value={editingTask.pic || ''}
+                          onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })}
                         />
-                        <button 
-                          type="button" 
-                          className="btn btn-secondary" 
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
                           style={{ padding: '6px' }}
                           onClick={() => setEditingTask({ ...editingTask, isCustomPic: false })}
                           title="Kembali ke Dropdown PIC"
@@ -337,10 +350,10 @@ export default function TaskAddEditModal({
                           value={extraPic}
                           onChange={e => {
                             if (e.target.value === '__custom__') {
-                               setCustomAdditionalPics([...customAdditionalPics, idx]);
-                               handleUpdateAdditionalPic(idx, '');
+                              setCustomAdditionalPics([...customAdditionalPics, idx]);
+                              handleUpdateAdditionalPic(idx, '');
                             } else {
-                               handleUpdateAdditionalPic(idx, e.target.value);
+                              handleUpdateAdditionalPic(idx, e.target.value);
                             }
                           }}
                         >
@@ -352,19 +365,19 @@ export default function TaskAddEditModal({
                         </select>
                       ) : (
                         <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                          <input 
-                            className="input" 
-                            placeholder={`Nama PIC Tambahan ${idx + 1}...`} 
-                            value={extraPic} 
-                            onChange={e => handleUpdateAdditionalPic(idx, e.target.value)} 
+                          <input
+                            className="input"
+                            placeholder={`Nama PIC Tambahan ${idx + 1}...`}
+                            value={extraPic}
+                            onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
                           />
-                          <button 
-                            type="button" 
-                            className="btn btn-secondary" 
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
                             style={{ padding: '6px' }}
                             onClick={() => {
-                               setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx));
-                               handleUpdateAdditionalPic(idx, '');
+                              setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx));
+                              handleUpdateAdditionalPic(idx, '');
                             }}
                             title="Kembali ke Dropdown PIC"
                           >
@@ -372,8 +385,8 @@ export default function TaskAddEditModal({
                           </button>
                         </div>
                       )}
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
                         onClick={() => {
                           handleRemoveAdditionalPic(idx);
@@ -394,9 +407,9 @@ export default function TaskAddEditModal({
                     Kategori *
                   </label>
                   {!editingTask.isCustomCategory ? (
-                    <select 
-                      className="input" 
-                      value={editingTask.kategori || 'Umum'} 
+                    <select
+                      className="input"
+                      value={editingTask.kategori || 'Umum'}
                       onChange={e => {
                         if (e.target.value === '__custom__') {
                           setEditingTask({ ...editingTask, kategori: '', isCustomCategory: true });
@@ -412,15 +425,15 @@ export default function TaskAddEditModal({
                     </select>
                   ) : (
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <input 
-                        className="input" 
-                        placeholder="Nama Kategori Baru..." 
-                        value={editingTask.kategori || ''} 
-                        onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })} 
+                      <input
+                        className="input"
+                        placeholder="Nama Kategori Baru..."
+                        value={editingTask.kategori || ''}
+                        onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
                       />
-                      <button 
-                        type="button" 
-                        className="btn btn-secondary" 
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
                         style={{ padding: '6px' }}
                         onClick={() => setEditingTask({ ...editingTask, kategori: 'Umum', isCustomCategory: false })}
                         title="Kembali ke Pilihan Dropdown"
@@ -459,13 +472,105 @@ export default function TaskAddEditModal({
                 </div>
               </div>
 
+              {/* Lokasi Pekerjaan */}
+              <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <input
+                      type="radio"
+                      name="lokasiTipe"
+                      checked={editingTask.lokasiData?.tipe === 'online'}
+                      onChange={() => setEditingTask({
+                        ...editingTask,
+                        lokasiData: { ...editingTask.lokasiData, tipe: 'online' } as any
+                      })}
+                    />
+                    Online
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <input
+                      type="radio"
+                      name="lokasiTipe"
+                      checked={editingTask.lokasiData?.tipe === 'offline'}
+                      onChange={() => setEditingTask({
+                        ...editingTask,
+                        lokasiData: { ...editingTask.lokasiData, tipe: 'offline' } as any
+                      })}
+                    />
+                    Offline
+                  </label>
+                </div>
+
+                {editingTask.lokasiData?.tipe === 'online' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom</label>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="https://zoom.us/j/..."
+                        value={editingTask.lokasiData?.linkZoom || ''}
+                        onChange={e => setEditingTask({
+                          ...editingTask,
+                          lokasiData: { ...editingTask.lokasiData, linkZoom: e.target.value } as any
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam (Waktu Bontang / WITA)</label>
+                      <input
+                        type="time"
+                        className="input"
+                        value={editingTask.lokasiData?.jam || ''}
+                        onChange={e => setEditingTask({
+                          ...editingTask,
+                          lokasiData: { ...editingTask.lokasiData, jam: e.target.value } as any
+                        })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {editingTask.lokasiData?.tipe === 'offline' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Lokasi Fisik / Tempat</label>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="Contoh: R.R Komp TKMR / KPJ"
+                        value={editingTask.lokasiData?.lokasiFisik || ''}
+                        onChange={e => setEditingTask({
+                          ...editingTask,
+                          lokasiData: { ...editingTask.lokasiData, lokasiFisik: e.target.value } as any
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam (Waktu Bontang / WITA)</label>
+                      <input
+                        type="time"
+                        className="input"
+                        value={editingTask.lokasiData?.jam || ''}
+                        onChange={e => setEditingTask({
+                          ...editingTask,
+                          lokasiData: { ...editingTask.lokasiData, jam: e.target.value } as any
+                        })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Date & Time Settings */}
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Waktu & Jadwal Pekerjaan</span>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={editingTask.isAllDay ?? true}
                       onChange={e => setEditingTask({ ...editingTask, isAllDay: e.target.checked })}
                     />
@@ -476,20 +581,20 @@ export default function TaskAddEditModal({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Tanggal Mulai</label>
-                    <input 
-                      type="date" 
-                      className="input" 
-                      value={editingTask.startDate as string} 
-                      onChange={e => setEditingTask({ ...editingTask, startDate: e.target.value })} 
+                    <input
+                      type="date"
+                      className="input"
+                      value={editingTask.startDate as string}
+                      onChange={e => setEditingTask({ ...editingTask, startDate: e.target.value })}
                     />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Tenggat Waktu</label>
-                    <input 
-                      type="date" 
-                      className="input" 
-                      value={editingTask.endDate as string} 
-                      onChange={e => setEditingTask({ ...editingTask, endDate: e.target.value })} 
+                    <input
+                      type="date"
+                      className="input"
+                      value={editingTask.endDate as string}
+                      onChange={e => setEditingTask({ ...editingTask, endDate: e.target.value })}
                     />
                   </div>
                 </div>
@@ -501,7 +606,7 @@ export default function TaskAddEditModal({
                       <input 
                         type="time" 
                         className="input" 
-                        value={editingTask.startTime || ''} 
+                        value={editingTask.startTime || '08:00'} 
                         onChange={e => setEditingTask({ ...editingTask, startTime: e.target.value })} 
                       />
                     </div>
@@ -510,7 +615,7 @@ export default function TaskAddEditModal({
                       <input 
                         type="time" 
                         className="input" 
-                        value={editingTask.endTime || ''} 
+                        value={editingTask.endTime || '17:00'} 
                         onChange={e => setEditingTask({ ...editingTask, endTime: e.target.value })} 
                       />
                     </div>
@@ -521,9 +626,9 @@ export default function TaskAddEditModal({
                   <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                     Pengulangan (Recurrence)
                   </label>
-                  <select 
-                    className="input" 
-                    value={editingTask.repetisi || 'Tidak Berulang'} 
+                  <select
+                    className="input"
+                    value={editingTask.repetisi || 'Tidak Berulang'}
                     onChange={e => setEditingTask({ ...editingTask, repetisi: e.target.value })}
                   >
                     <option value="Tidak Berulang">Tidak Berulang (Does not repeat)</option>
@@ -537,26 +642,26 @@ export default function TaskAddEditModal({
 
                   {editingTask.repetisi === 'Custom' && editingTask.customRecurrenceSettings && (
                     <div style={{ marginTop: '12px', padding: '16px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      
+
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '13px', fontWeight: 600 }}>Ulangi setiap</span>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          className="input" 
+                        <input
+                          type="number"
+                          min="1"
+                          className="input"
                           style={{ width: '70px', padding: '6px 10px' }}
                           value={editingTask.customRecurrenceSettings.every}
-                          onChange={e => setEditingTask({ 
-                            ...editingTask, 
+                          onChange={e => setEditingTask({
+                            ...editingTask,
                             customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, every: Math.max(1, Number(e.target.value)) }
                           })}
                         />
-                        <select 
-                          className="input" 
+                        <select
+                          className="input"
                           style={{ width: '120px', padding: '6px 10px' }}
                           value={editingTask.customRecurrenceSettings.unit}
-                          onChange={e => setEditingTask({ 
-                            ...editingTask, 
+                          onChange={e => setEditingTask({
+                            ...editingTask,
                             customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, unit: e.target.value }
                           })}
                         >
@@ -605,26 +710,26 @@ export default function TaskAddEditModal({
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Berakhir pada:</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                            <input 
-                              type="radio" 
-                              name="endType" 
+                            <input
+                              type="radio"
+                              name="endType"
                               checked={editingTask.customRecurrenceSettings.endType === 'never'}
                               onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'never' } })}
                             />
                             Tidak pernah (Never)
                           </label>
-                          
+
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                            <input 
-                              type="radio" 
-                              name="endType" 
+                            <input
+                              type="radio"
+                              name="endType"
                               checked={editingTask.customRecurrenceSettings.endType === 'date'}
                               onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'date' } })}
                             />
                             Pada tanggal
-                            <input 
-                              type="date" 
-                              className="input" 
+                            <input
+                              type="date"
+                              className="input"
                               style={{ width: '130px', padding: '4px 8px', fontSize: '12px', marginLeft: '8px' }}
                               value={editingTask.customRecurrenceSettings.endDate}
                               disabled={editingTask.customRecurrenceSettings.endType !== 'date'}
@@ -633,17 +738,17 @@ export default function TaskAddEditModal({
                           </label>
 
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                            <input 
-                              type="radio" 
-                              name="endType" 
+                            <input
+                              type="radio"
+                              name="endType"
                               checked={editingTask.customRecurrenceSettings.endType === 'occurrences'}
                               onChange={() => setEditingTask({ ...editingTask, customRecurrenceSettings: { ...editingTask.customRecurrenceSettings, endType: 'occurrences' } })}
                             />
                             Setelah
-                            <input 
-                              type="number" 
-                              min="1" 
-                              className="input" 
+                            <input
+                              type="number"
+                              min="1"
+                              className="input"
                               style={{ width: '60px', padding: '4px 8px', fontSize: '12px', marginLeft: '8px' }}
                               value={editingTask.customRecurrenceSettings.endOccurrences}
                               disabled={editingTask.customRecurrenceSettings.endType !== 'occurrences'}
@@ -682,7 +787,7 @@ export default function TaskAddEditModal({
                     const cleaned = newContent === '<p><br></p>' ? '' : newContent;
                     setEditingTask({ ...editingTask, deskripsi: cleaned });
                   }}
-                  onChange={() => {}}
+                  onChange={() => { }}
                 />
               </div>
 
@@ -692,8 +797,8 @@ export default function TaskAddEditModal({
                   <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     Sub Pekerjaan (Sub Deskripsi)
                   </label>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className="btn btn-secondary"
                     style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onClick={() => {
@@ -716,34 +821,34 @@ export default function TaskAddEditModal({
                   {editingTask.subTasksList?.map((subTask, idx) => (
                     <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <textarea 
-                          className="input" 
+                        <textarea
+                          className="input"
                           style={{ flex: 1, resize: 'vertical', minHeight: '60px' }}
-                          placeholder="Deskripsi Sub Pekerjaan..." 
-                          value={subTask.text} 
+                          placeholder="Deskripsi Sub Pekerjaan..."
+                          value={subTask.text}
                           onChange={e => {
                             const updated = [...(editingTask.subTasksList || [])];
                             updated[idx].text = e.target.value;
                             setEditingTask({ ...editingTask, subTasksList: updated });
-                          }} 
+                          }}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <select 
-                            className="input" 
+                          <select
+                            className="input"
                             style={{ width: '140px', flexShrink: 0 }}
                             value={subTask.status}
                             onChange={e => {
                               const newStatus = e.target.value;
                               const updated = [...(editingTask.subTasksList || [])];
                               updated[idx].status = newStatus;
-                              
+
                               const allSame = updated.every(st => st.status === newStatus);
                               if (allSame) {
                                 let newProgress = editingTask.progress;
                                 if (masterProgressMap[newStatus] !== undefined) {
                                   newProgress = masterProgressMap[newStatus];
                                 }
-                                
+
                                 setEditingTask({ ...editingTask, subTasksList: updated, status: newStatus, progress: newProgress });
                               } else {
                                 setEditingTask({ ...editingTask, subTasksList: updated });
@@ -756,8 +861,8 @@ export default function TaskAddEditModal({
                           </select>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === 0 ? 0.3 : 1 }}
                             disabled={idx === 0}
                             title="Geser ke Atas"
@@ -772,8 +877,8 @@ export default function TaskAddEditModal({
                           >
                             <ArrowUp size={16} />
                           </button>
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === (editingTask.subTasksList?.length || 0) - 1 ? 0.3 : 1 }}
                             disabled={idx === (editingTask.subTasksList?.length || 0) - 1}
                             title="Geser ke Bawah"
@@ -789,8 +894,8 @@ export default function TaskAddEditModal({
                             <ArrowDown size={16} />
                           </button>
                         </div>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
                           title="Hapus"
                           onClick={() => {
@@ -801,7 +906,7 @@ export default function TaskAddEditModal({
                           <X size={16} />
                         </button>
                       </div>
-                      
+
                       {subTask.logs && subTask.logs.length > 0 && (
                         <SubTaskLogViewer logs={subTask.logs} />
                       )}
@@ -809,7 +914,7 @@ export default function TaskAddEditModal({
                     </div>
                   ))}
                   {(!editingTask.subTasksList || editingTask.subTasksList.length === 0) && (
-                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px' }}>Belum ada sub pekerjaan.</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', padding: '8px' }}>Belum ada sub pekerjaan.</div>
                   )}
                 </div>
               </div>
@@ -819,17 +924,17 @@ export default function TaskAddEditModal({
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                   File Lampiran (Bisa Unggah Lebih dari 1 File)
                 </label>
-                <input 
-                  type="file" 
-                  ref={attachmentInputRef} 
-                  style={{ display: 'none' }} 
+                <input
+                  type="file"
+                  ref={attachmentInputRef}
+                  style={{ display: 'none' }}
                   multiple
-                  onChange={handleFileUpload} 
+                  onChange={handleFileUpload}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
                     onClick={() => attachmentInputRef.current?.click()}
                     disabled={uploadingFile}
                     style={{ alignSelf: 'flex-start' }}
@@ -854,16 +959,16 @@ export default function TaskAddEditModal({
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             {!f.isDeleted && (
                               <>
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
                                   onClick={() => setPreviewFile?.(f)}
                                   title="Pratinjau File"
                                 >
                                   <Eye size={15} />
                                 </button>
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
                                   onClick={() => handleRemoveFileFromEdit(idx)}
                                   title="Hapus Lampiran Ini"

@@ -9,6 +9,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationBell from '@/components/NotificationBell';
 import IdleTimer from '@/components/IdleTimer';
 import FocusModeToggle from '@/components/FocusModeToggle';
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 export const metadata: Metadata = {
   title: "Dashboard Monitoring Pekerjaan",
@@ -23,38 +24,40 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <ThemeProvider>
-          <MasterProvider>
-            <FilterProvider>
-              <NotificationProvider>
-                {children}
-              <Toaster 
-                position="top-right" 
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#333',
-                    color: '#fff',
-                    fontSize: '13px',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                  },
-                  success: {
+        <SessionProviderWrapper>
+          <ThemeProvider>
+            <MasterProvider>
+              <FilterProvider>
+                <NotificationProvider>
+                  {children}
+                <Toaster 
+                  position="top-right" 
+                  toastOptions={{
+                    duration: 4000,
                     style: {
-                      background: 'var(--accent-primary)',
+                      background: '#333',
+                      color: '#fff',
+                      fontSize: '13px',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
                     },
-                  },
-                  error: {
-                    style: {
-                      background: 'var(--danger)',
+                    success: {
+                      style: {
+                        background: 'var(--accent-primary)',
+                      },
                     },
-                  },
-                }} 
-              />
-              </NotificationProvider>
-            </FilterProvider>
-          </MasterProvider>
-        </ThemeProvider>
+                    error: {
+                      style: {
+                        background: 'var(--danger)',
+                      },
+                    },
+                  }} 
+                />
+                </NotificationProvider>
+              </FilterProvider>
+            </MasterProvider>
+          </ThemeProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

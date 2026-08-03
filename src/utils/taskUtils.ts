@@ -50,6 +50,7 @@ export interface Task {
   fileUrl?: string | null;
   fileName?: string | null;
   filesJson?: string | null;
+  lokasi?: string | null;
   commentsJson?: string | null;
   subTasksJson?: string | null;
   isAllDay?: boolean | null;
@@ -70,7 +71,7 @@ export const getTaskFiles = (task: Task | Partial<Task>): FileItem[] => {
   if (task.filesJson) {
     try {
       return JSON.parse(task.filesJson);
-    } catch (e) {}
+    } catch (e) { }
   }
   if (task.fileUrl) {
     return [{ url: task.fileUrl, name: task.fileName || 'File Lampiran' }];
@@ -83,7 +84,7 @@ export const getAdditionalPics = (task: Task | Partial<Task>): string[] => {
     try {
       const parsed = JSON.parse(task.additionalPics);
       if (Array.isArray(parsed)) return parsed;
-    } catch (e) {}
+    } catch (e) { }
   }
   return [];
 };
@@ -104,9 +105,25 @@ export const getHistoryLogs = (task: Task | Partial<Task>): LogItem[] => {
     try {
       const parsed = JSON.parse(task.historyLogsJson);
       if (Array.isArray(parsed)) return parsed;
-    } catch (e) {}
+    } catch (e) { }
   }
   return [];
+};
+
+export const getLocalTimezone = (): string => {
+  if (typeof window === 'undefined') return 'WITA';
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz.includes('Makassar') || tz.includes('Singapore') || tz.includes('Ulaanbaatar') || tz.includes('Manila')) return 'WITA';
+    if (tz.includes('Jakarta') || tz.includes('Bangkok') || tz.includes('Saigon') || tz.includes('Hanoi')) return 'WIB';
+    if (tz.includes('Jayapura') || tz.includes('Tokyo') || tz.includes('Seoul') || tz.includes('Dili')) return 'WIT';
+    
+    const formatted = new Date().toLocaleDateString('id-ID', { timeZoneName: 'short' });
+    const parts = formatted.split(' ');
+    const lastPart = parts[parts.length - 1];
+    if (['WIB', 'WITA', 'WIT'].includes(lastPart)) return lastPart;
+  } catch (e) {}
+  return 'WITA';
 };
 
 export const getDynamicColor = (type: string, value: string): string => {
@@ -161,7 +178,7 @@ export const getGoogleCalendarUrl = (task: Task) => {
       if (Array.isArray(subTasks) && subTasks.length > 0) {
         subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
@@ -170,7 +187,7 @@ export const getGoogleCalendarUrl = (task: Task) => {
   const details = encodeURIComponent(
     `PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`
   );
-  
+
   const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
 };
@@ -188,7 +205,7 @@ export const handleExportICS = (task: Task) => {
       if (Array.isArray(subTasks) && subTasks.length > 0) {
         subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
