@@ -6,6 +6,7 @@ import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
 
 
 export default function GlobalAddButton() {
@@ -80,6 +81,32 @@ export default function GlobalAddButton() {
     }
   };
 
+  // Helper: normalize time values from Excel (decimal, dot, or colon format) to HH:mm
+  const normalizeTime = (val: any): string | null => {
+    if (val == null || val === '') return null;
+    const str = String(val).trim();
+    // Already HH:mm format
+    if (/^\d{1,2}:\d{2}$/.test(str)) return str.padStart(5, '0');
+    // Dot format like 12.25 meaning 12:25
+    if (/^\d{1,2}\.\d{2}$/.test(str)) {
+      const [h, m] = str.split('.');
+      return `${h.padStart(2, '0')}:${m}`;
+    }
+    // Excel decimal time (0-1 range, e.g. 0.333 = 08:00)
+    const num = Number(str);
+    if (!isNaN(num) && num >= 0 && num < 1) {
+      const totalMinutes = Math.round(num * 24 * 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+    // Plain number like 8 or 13 (just hours)
+    if (!isNaN(num) && num >= 0 && num <= 24 && Number.isInteger(num)) {
+      return `${String(num).padStart(2, '0')}:00`;
+    }
+    return str;
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -148,8 +175,8 @@ export default function GlobalAddButton() {
             kategori: row['kategori'] || 'Umum',
             progress: p,
             isAllDay,
-            startTime: row['jam mulai'] || row['starttime'] || null,
-            endTime: row['jam selesai'] || row['endtime'] || null,
+            startTime: normalizeTime(row['jam mulai'] || row['starttime']),
+            endTime: normalizeTime(row['jam selesai'] || row['endtime']),
             repetisi: row['repetisi'] || 'Tidak Berulang',
             deskripsi: row['deskripsi'] || '',
             catatan: row['catatan'] || '',
@@ -191,29 +218,220 @@ export default function GlobalAddButton() {
     try {
       const ExcelJS = (await import('exceljs')).default;
       const workbook = new ExcelJS.Workbook();
+
+      // Buat sheet konfigurasi tersembunyi untuk referensi dropdown panjang
+      const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
+      const uniquePics = masterPics.length > 0 ? masterPics : ['Unassigned'];
+      configSheet.getColumn('A').values = uniquePics;
+      const uniqueCats = masterCats.length > 0 ? masterCats : ['Umum'];
+      configSheet.getColumn('B').values = uniqueCats;
+
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
 
+      // Tentukan Header — urutan sama persis dengan TasksClient
       worksheet.columns = [
-        { header: 'Nama Pekerjaan', key: 'nama', width: 30 },
-        { header: 'PIC Utama', key: 'pic', width: 20 },
-        { header: 'PIC Tambahan', key: 'picTambahan', width: 25 },
-        { header: 'Status', key: 'status', width: 15 },
-        { header: 'Prioritas', key: 'prioritas', width: 15 },
+        { header: 'Nama Pekerjaan', key: 'nama', width: 35 },
+        { header: 'PIC Utama', key: 'pic', width: 25 },
+        { header: 'PIC Tambahan', key: 'picTambahan', width: 30 },
         { header: 'Kategori', key: 'kategori', width: 20 },
-        { header: 'Progress (%)', key: 'progress', width: 15 },
-        { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 40 },
-        { header: 'Sepanjang Hari', key: 'isAllDay', width: 15 },
-        { header: 'Tanggal Mulai', key: 'startDate', width: 20 },
-        { header: 'Tenggat Waktu', key: 'endDate', width: 20 },
-        { header: 'Jam Mulai', key: 'startTime', width: 15 },
-        { header: 'Jam Selesai', key: 'endTime', width: 15 },
-        { header: 'Repetisi', key: 'repetisi', width: 20 },
+        { header: 'Prioritas', key: 'prioritas', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Progress', key: 'progress', width: 12 },
+        { header: 'Sepanjang Hari', key: 'isAllDay', width: 16 },
+        { header: 'Jam Mulai', key: 'startTime', width: 12 },
+        { header: 'Jam Selesai', key: 'endTime', width: 12 },
+        { header: 'Tanggal Mulai', key: 'startDate', width: 15 },
+        { header: 'Tenggat Waktu', key: 'endDate', width: 15 },
+        { header: 'Repetisi', key: 'repetisi', width: 18 },
         { header: 'Deskripsi', key: 'deskripsi', width: 40 },
         { header: 'Catatan', key: 'catatan', width: 40 },
+        { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 50 },
       ];
 
-      worksheet.getRow(1).font = { bold: true };
-      worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+      // Beri warna pada header
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF10B981' }
+      };
+
+      // Auto wrap untuk kolom Sub Pekerjaan
+      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
+
+      // Tambahkan Contoh Isian di baris ke-2
+      const exampleRow = worksheet.addRow({
+        nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
+        pic: uniquePics[0] || 'Unassigned',
+        picTambahan: 'PIC Lain 1, PIC Lain 2',
+        kategori: uniqueCats[0] || 'Umum',
+        prioritas: 'High',
+        status: 'In Progress',
+        progress: 50,
+        isAllDay: 'Tidak',
+        startTime: '08.00',
+        endTime: '17.00',
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: format(new Date(), 'yyyy-MM-dd'),
+        repetisi: 'Tidak Berulang',
+        deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
+        catatan: 'Contoh catatan',
+        subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
+      });
+      // Beri warna latar abu-abu muda untuk baris contoh
+      exampleRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF3F4F6' }
+        };
+        cell.font = { italic: true, color: { argb: 'FF4B5563' } };
+      });
+
+      // Set kolom Jam Mulai & Jam Selesai sebagai text agar Excel tidak auto-convert
+      for (let i = 2; i <= 1000; i++) {
+        worksheet.getCell(`I${i}`).numFmt = '@';
+        worksheet.getCell(`J${i}`).numFmt = '@';
+      }
+
+      // Tambahkan Data Validation untuk 1000 baris pertama
+      for (let i = 2; i <= 1000; i++) {
+        // PIC Utama
+        worksheet.getCell(`B${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$A$1:$A$${uniquePics.length}`]
+        };
+
+        // Kategori
+        worksheet.getCell(`D${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$B$1:$B$${uniqueCats.length}`]
+        };
+
+        // Prioritas
+        worksheet.getCell(`E${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
+        };
+
+        // Status
+        worksheet.getCell(`F${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do','In Progress','Done']).join(',')}"`]
+        };
+
+        // Progress (Angka 0-100)
+        worksheet.getCell(`G${i}`).dataValidation = {
+          type: 'whole',
+          operator: 'between',
+          allowBlank: true,
+          showInputMessage: true,
+          promptTitle: 'Progress',
+          prompt: 'Masukkan angka antara 0 hingga 100',
+          formulae: [0, 100]
+        };
+
+        // Sepanjang Hari (Ya/Tidak)
+        worksheet.getCell(`H${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Ya,Tidak"']
+        };
+
+        // Repetisi
+        worksheet.getCell(`M${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
+        };
+      }
+
+      // === Sheet Panduan ===
+      const guideSheet = workbook.addWorksheet('Panduan');
+      guideSheet.columns = [
+        { header: '', key: 'kolom', width: 25 },
+        { header: '', key: 'penjelasan', width: 60 },
+        { header: '', key: 'contoh', width: 35 },
+        { header: '', key: 'wajib', width: 12 },
+      ];
+
+      // Title
+      guideSheet.mergeCells('A1:D1');
+      const titleCell = guideSheet.getCell('A1');
+      titleCell.value = 'PANDUAN PENGISIAN TEMPLATE IMPORT PEKERJAAN';
+      titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      guideSheet.getRow(1).height = 30;
+
+      // Table Header
+      const headerRow = guideSheet.getRow(3);
+      headerRow.values = ['Nama Kolom', 'Penjelasan', 'Contoh Isian', 'Wajib?'];
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+
+      const guideData = [
+        ['Nama Pekerjaan', 'Nama atau judul pekerjaan yang akan dilakukan', 'Membuat Laporan Bulanan', 'Ya'],
+        ['PIC Utama', 'Penanggung jawab utama pekerjaan (pilih dari dropdown)', 'Ahmad Fajar', 'Ya'],
+        ['PIC Tambahan', 'Penanggung jawab tambahan, pisahkan dengan koma', 'Budi, Sari', 'Tidak'],
+        ['Kategori', 'Kategori/jenis pekerjaan sesuai master pengaturan', 'Umum', 'Tidak'],
+        ['Prioritas', 'Tingkat prioritas pekerjaan (pilih dari dropdown)', 'High', 'Tidak'],
+        ['Status', 'Status progres pekerjaan saat ini (pilih dari dropdown)', 'In Progress', 'Tidak'],
+        ['Progress', 'Persentase penyelesaian pekerjaan (angka 0-100)', '50', 'Tidak'],
+        ['Sepanjang Hari', 'Apakah pekerjaan berlangsung seharian? Ya = tanpa jam, Tidak = pakai jam', 'Tidak', 'Tidak'],
+        ['Jam Mulai', 'Jam mulai pekerjaan, gunakan format titik (HH.mm). Diisi jika Sepanjang Hari = Tidak', '08.00', 'Tidak'],
+        ['Jam Selesai', 'Jam selesai pekerjaan, gunakan format titik (HH.mm). Diisi jika Sepanjang Hari = Tidak', '17.00', 'Tidak'],
+        ['Tanggal Mulai', 'Tanggal dimulainya pekerjaan dalam format YYYY-MM-DD', '2026-08-01', 'Tidak'],
+        ['Tenggat Waktu', 'Batas waktu penyelesaian pekerjaan dalam format YYYY-MM-DD', '2026-08-15', 'Tidak'],
+        ['Repetisi', 'Pengulangan pekerjaan (pilih dari dropdown)', 'Tidak Berulang', 'Tidak'],
+        ['Deskripsi', 'Penjelasan detail mengenai pekerjaan. Gunakan Alt+Enter untuk baris baru', 'Membuat laporan keuangan Q3', 'Tidak'],
+        ['Catatan', 'Catatan tambahan terkait pekerjaan', 'Perlu koordinasi dengan tim finance', 'Tidak'],
+        ['Sub Pekerjaan', 'Daftar sub-tugas dengan format [Status] Nama. Pisahkan dengan Enter (Alt+Enter di Excel)', '[Done] Kumpulkan data\n[To Do] Analisis', 'Tidak'],
+      ];
+      guideData.forEach((row, idx) => {
+        const r = guideSheet.getRow(4 + idx);
+        r.values = row;
+        r.getCell(1).font = { bold: true };
+        if (idx % 2 === 0) {
+          r.eachCell(c => {
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+          });
+        }
+      });
+
+      // Tips section
+      const tipsStartRow = 4 + guideData.length + 2;
+      guideSheet.mergeCells(`A${tipsStartRow}:D${tipsStartRow}`);
+      const tipsTitle = guideSheet.getCell(`A${tipsStartRow}`);
+      tipsTitle.value = 'TIPS PENTING';
+      tipsTitle.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      tipsTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
+
+      const tips = [
+        '1. Baris contoh (baris ke-2 di sheet Template) boleh ditimpa atau dihapus.',
+        '2. Kolom dengan dropdown (PIC, Prioritas, Status, dll) sudah disediakan pilihan otomatis.',
+        '3. Format tanggal wajib menggunakan YYYY-MM-DD (contoh: 2026-08-01).',
+        '4. Format jam menggunakan titik HH.mm (contoh: 08.00, 13.30, 17.00). Jangan gunakan titik dua (:) karena tidak terbaca di sebagian Excel.',
+        '5. Jika Sepanjang Hari = "Ya", kolom Jam Mulai dan Jam Selesai akan diabaikan.',
+        '6. Untuk Sub Pekerjaan, gunakan format: [Status] Nama Sub Pekerjaan.',
+        '7. Status yang valid untuk Sub Pekerjaan sesuai dengan Master Status yang sudah diatur.',
+        '8. PIC Tambahan dipisahkan dengan tanda koma (,).',
+        '9. Gunakan Alt+Enter untuk membuat baris baru di dalam satu sel Excel.',
+      ];
+      tips.forEach((tip, idx) => {
+        const r = guideSheet.getRow(tipsStartRow + 1 + idx);
+        guideSheet.mergeCells(`A${tipsStartRow + 1 + idx}:D${tipsStartRow + 1 + idx}`);
+        r.getCell(1).value = tip;
+        r.getCell(1).font = { size: 11 };
+      });
+
+      // Set all columns alignment
+      guideSheet.getColumn(2).alignment = { wrapText: true, vertical: 'top' };
+      guideSheet.getColumn(3).alignment = { wrapText: true, vertical: 'top' };
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -224,6 +442,7 @@ export default function GlobalAddButton() {
       anchor.click();
       window.URL.revokeObjectURL(url);
       setIsOpen(false);
+      toast.success('Template berhasil diunduh!');
     } catch (err) {
       console.error(err);
       toast.error('Gagal membuat template Excel.');
