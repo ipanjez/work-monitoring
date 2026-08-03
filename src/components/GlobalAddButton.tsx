@@ -252,7 +252,30 @@ export default function GlobalAddButton() {
           overflow: 'hidden', display: 'flex', flexDirection: 'column'
         }}>
           <button 
-            onClick={() => { setIsOpen(false); setIsAddModalOpen(true); }}
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setTaskToEdit({
+                nama: '',
+                deskripsi: '',
+                pic: 'Unassigned',
+                kategori: 'Umum',
+                prioritas: 'Medium',
+                status: 'To Do',
+                repetisi: 'Tidak Berulang',
+                filesList: [],
+                additionalPicsList: [],
+                subTasksList: [],
+                isAllDay: true,
+                startTime: '',
+                endTime: '',
+                startDate: today,
+                endDate: today,
+                isCustomCategory: false,
+                isCustomPic: false,
+              });
+              setIsOpen(false);
+              setIsAddModalOpen(true);
+            }}
             style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%' }}
             onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
             onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
