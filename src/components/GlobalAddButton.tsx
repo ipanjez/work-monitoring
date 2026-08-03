@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 export default function GlobalAddButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<any>(null);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   
   const [masterCats, setMasterCats] = useState<string[]>([]);
