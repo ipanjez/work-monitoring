@@ -120,13 +120,12 @@ export default function NotificationBell() {
                 <Bell size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                 <p style={{ fontSize: '13px' }}>Belum ada notifikasi pembaruan.</p>
               </div>
+            ) : finalFiltered.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '13px' }}>Tidak ada notifikasi yang sesuai dengan filter.</p>
+              </div>
             ) : (
-              finalFiltered.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  <p style={{ fontSize: '13px' }}>Tidak ada notifikasi yang sesuai dengan filter.</p>
-                </div>
-              ) : (
-                finalFiltered.map(notif => (
+              finalFiltered.map(notif => (
                 <div 
                   key={notif.id}
                   style={{
