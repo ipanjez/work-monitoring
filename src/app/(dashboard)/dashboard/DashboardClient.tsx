@@ -23,7 +23,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
-import { getDynamicBadgeStyle, getTaskFiles, getAdditionalPics, SubTask } from '@/utils/taskUtils';
+import { getDynamicBadgeStyle, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -46,22 +46,7 @@ ChartJS.register(
   ArcElement
 );
 
-type Task = {
-  id: number;
-  nama: string;
-  pic: string;
-  status: string;
-  prioritas?: string | null;
-  kategori?: string | null;
-  progress?: number | null;
-  deskripsi?: string | null;
-  catatan?: string | null;
-  fileUrl?: string | null;
-  fileName?: string | null;
-  startDate: string | Date;
-  endDate: string | Date;
-  additionalPics?: string | null;
-};
+
 
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const { theme } = useTheme();
