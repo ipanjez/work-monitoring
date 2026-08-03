@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, LayoutDashboard, ListTodo, FileText, CheckCircle2, 
   Users, Shield, CalendarDays, Kanban, Download, Upload, 
-  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle
+  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle, Eye, EyeOff
 } from 'lucide-react';
 import 'driver.js/dist/driver.css';
 
 export default function GuidePage() {
   const [activeAccordion, setActiveAccordion] = useState<string | null>('dashboard');
+  const [useHighlight, setUseHighlight] = useState(true);
 
   const toggleAccordion = (id: string) => {
     setActiveAccordion(activeAccordion === id ? null : id);
@@ -212,6 +213,8 @@ export default function GuidePage() {
     const { driver } = await import('driver.js');
     const driverObj = driver({
       showProgress: true,
+      animate: useHighlight,
+      opacity: useHighlight ? 0.75 : 0,
       nextBtnText: 'Selanjutnya',
       prevBtnText: 'Sebelumnya',
       doneBtnText: 'Selesai',
@@ -331,6 +334,15 @@ export default function GuidePage() {
           <PlayCircle size={20} />
           🚀 Mulai Tutorial Interaktif
         </button>
+        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+          <button 
+            onClick={() => setUseHighlight(!useHighlight)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: useHighlight ? 'var(--accent-primary)' : 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}
+          >
+            {useHighlight ? <Eye size={16} /> : <EyeOff size={16} />}
+            {useHighlight ? 'Efek Gelap (Highlight) Aktif' : 'Efek Gelap (Highlight) Nonaktif'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
