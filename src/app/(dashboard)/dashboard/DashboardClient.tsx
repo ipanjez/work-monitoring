@@ -1050,15 +1050,26 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
               {urgentTasks.map(t => (
                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '10px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>{t.nama}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC: {t.pic} 
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>{t.nama}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC:</span>
+                      <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        {t.pic}
+                      </span>
                       {t.additionalPics && (() => {
                         try {
                           const arr = JSON.parse(t.additionalPics);
-                          return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
-                        } catch(e) { return ''; }
+                          return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
+                            <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                              {p}
+                            </span>
+                          )) : null;
+                        } catch(e) { return null; }
                       })()}
-                      • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}
+                    </span>
                     {t.deskripsi && (
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} dangerouslySetInnerHTML={{ __html: t.deskripsi }} />
                     )}
@@ -1069,8 +1080,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className={`badge ${t.prioritas === 'Urgent' ? 'badge-urgent' : 'badge-high'}`}>{t.prioritas}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.status}</span>
+                    <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors).style }}>{t.prioritas || 'Medium'}</span>
+                    <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('status', t.status, 'badge', masterColors).style, fontSize: '13px', fontWeight: 600 }}>{t.status}</span>
                   </div>
                 </div>
               ))}
@@ -1147,24 +1158,29 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         {t.deskripsi || '-'}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <User size={14} color="var(--text-secondary)" />
-                          {t.pic}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                            <User size={12} color="currentColor" /> {t.pic}
+                          </span>
                           {t.additionalPics && (() => {
                             try {
                               const arr = JSON.parse(t.additionalPics);
-                              return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
-                            } catch(e) { return ''; }
+                              return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
+                                <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                                  {p}
+                                </span>
+                              )) : null;
+                            } catch(e) { return null; }
                           })()}
                         </div>
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
-                        <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--border-color)', fontSize: '12px', fontWeight: 500 }}>
+                        <span {...getDynamicBadgeStyle('cat', t.kategori || 'Umum', '', masterColors)} style={{ ...getDynamicBadgeStyle('cat', t.kategori || 'Umum', '', masterColors).style, padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 500 }}>
                           {t.kategori || 'Umum'}
                         </span>
                       </td>
                       <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                        <span className={`badge ${t.prioritas === 'Urgent' ? 'badge-urgent' : t.prioritas === 'High' ? 'badge-high' : t.prioritas === 'Low' ? 'badge-todo' : 'badge-warning'}`}>
+                        <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors).style }}>
                           {t.prioritas || 'Medium'}
                         </span>
                       </td>
