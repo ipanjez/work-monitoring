@@ -197,6 +197,7 @@ export default function GuidePage() {
     const driverObj = driver({
       showProgress: true,
       animate: useHighlight,
+      // @ts-ignore - driver.js type definition doesn't include opacity but it works
       opacity: useHighlight ? 0.75 : 0,
       nextBtnText: 'Selanjutnya',
       prevBtnText: 'Sebelumnya',
