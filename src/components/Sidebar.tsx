@@ -13,6 +13,7 @@ import { useMaster } from '@/context/MasterContext';
 import IdleTimer from './IdleTimer';
 import { useSession, signOut } from 'next-auth/react';
 
+
 export default function Sidebar() {
   const { masterColors } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
@@ -307,6 +308,8 @@ export default function Sidebar() {
 
 
 
+
+
         <button 
           onClick={toggleTheme} 
           className={`btn ${styles.navItem}`} 
@@ -333,6 +336,8 @@ export default function Sidebar() {
           <LogOut size={20} style={{ flexShrink: 0 }} />
           {!isSidebarCollapsed && <span className={styles.navText}>Keluar</span>}
         </button>
+
+
       </div>
     </div>
     </>

@@ -3,7 +3,6 @@ import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -13,8 +12,7 @@ import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
-  const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'USER';
+  const userRole = 'ADMIN';
   const { masterColors } = useMaster();
   const router = useRouter();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();

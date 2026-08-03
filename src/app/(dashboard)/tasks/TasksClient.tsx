@@ -12,7 +12,6 @@ import { createEvent, createEvents, EventAttributes } from 'ics';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { useSession } from 'next-auth/react';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -30,8 +29,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
-  const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'USER';
+  const userRole = 'ADMIN';
   const { masterColors } = useMaster();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();

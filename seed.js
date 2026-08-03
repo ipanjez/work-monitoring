@@ -155,36 +155,18 @@ async function seed() {
 
   // Seed Users
   await prisma.user.deleteMany({});
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await bcrypt.hash('rahasia123', 10);
   
   await prisma.user.create({
     data: {
-      name: 'Ryan Hamvy',
+      name: 'Admin',
       email: 'admin@pkt.co.id',
       password: hashedPassword,
       role: 'ADMIN',
     }
   });
 
-  await prisma.user.create({
-    data: {
-      name: 'Brian',
-      email: 'brian@pkt.co.id',
-      password: hashedPassword,
-      role: 'USER',
-    }
-  });
-
-  await prisma.user.create({
-    data: {
-      name: 'Oky',
-      email: 'oky@pkt.co.id',
-      password: hashedPassword,
-      role: 'USER',
-    }
-  });
-
-  console.log('✅ User accounts (Ryan Hamvy, Brian, Oky) successfully seeded with password: password123');
+  console.log('✅ User account (admin@pkt.co.id) successfully seeded with password: rahasia123');
   console.log(`✅ Seeding selesai. ${tasks.length} data pekerjaan asli berhasil dimasukkan!`);
 }
 
