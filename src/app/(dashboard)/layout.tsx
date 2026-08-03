@@ -5,6 +5,8 @@ import GlobalAddButton from '@/components/GlobalAddButton';
 
 import FocusModeToggle from '@/components/FocusModeToggle';
 import { Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function DashboardLayout({
@@ -13,6 +15,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { toggleMobileMenu } = useTheme();
+  const router = useRouter();
+  useEffect(() => {
+    const handleRefresh = () => router.refresh();
+    window.addEventListener('tasksUpdated', handleRefresh);
+    return () => window.removeEventListener('tasksUpdated', handleRefresh);
+  }, [router]);
 
   return (
     <>

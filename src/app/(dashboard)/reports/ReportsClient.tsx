@@ -71,7 +71,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const [reportCategoryFilter, setReportCategoryFilter] = useState('Semua Kategori');
 
   // Extract unique categories and PICs from all tasks for the dropdowns
-  const allCategories = useMemo(() => Array.from(new Set(tasks.map(t => t.kategori || 'Umum'))).sort(), [tasks]);
+  const allCategories = useMemo(() => Array.from(new Set(tasks.map((t: Task) => t.kategori || 'Umum'))).sort(), [tasks]);
   const allPics = useMemo(() => {
     const pics = new Set<string>();
     tasks.forEach(t => {
@@ -88,7 +88,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   // Filtering Logic
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
+    return tasks.filter((t: Task) => {
       // 1. Time Filter
       let matchTime = true;
       const taskDate = new Date(t.endDate).getTime();
@@ -144,15 +144,15 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const totalTasks = filteredTasks.length;
   
   const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Selesai';
-  const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter(t => t.status === completedLabel).length : 0;
+  const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter((t: Task) => t.status === completedLabel).length : 0;
 
 
-  const statusCounts = masterStatuses.map(status => {
-    return filteredTasks.filter(t => t.status === status).length;
+  const statusCounts = masterStatuses.map((status: string) => {
+    return filteredTasks.filter((t: Task) => t.status === status).length;
   });
 
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc, curr) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
+  const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc: number, curr: Task) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
 
   const chartOptions = {
     responsive: true,
@@ -175,21 +175,21 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     labels: masterStatuses,
     datasets: [{
       data: statusCounts,
-      backgroundColor: masterStatuses.map(status => masterColors[`status_${status}`] || getDynamicColor('status', status)),
+      backgroundColor: masterStatuses.map((status: string) => masterColors[`status_${status}`] || getDynamicColor('status', status)),
       borderWidth: 0,
     }]
   };
 
   // 2. Distribusi Prioritas (Doughnut)
-  const priorityCounts = masterPriorities.map(prio => {
-    return filteredTasks.filter(t => t.prioritas === prio || (!t.prioritas && prio === 'Medium')).length;
+  const priorityCounts = masterPriorities.map((prio: string) => {
+    return filteredTasks.filter((t: Task) => t.prioritas === prio || (!t.prioritas && prio === 'Medium')).length;
   });
   
   const priorityData = {
     labels: masterPriorities,
     datasets: [{
       data: priorityCounts,
-      backgroundColor: masterPriorities.map(prio => masterColors[`prioritas_${prio}`] || getDynamicColor('priority', prio)),
+      backgroundColor: masterPriorities.map((prio: string) => masterColors[`prioritas_${prio}`] || getDynamicColor('priority', prio)),
       borderWidth: 0,
     }]
   };
@@ -220,14 +220,14 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   });
 
   const sortedPics = Object.keys(picStats).sort((a, b) => {
-    const sumA = Object.values(picStats[a]).reduce((acc, curr) => acc + curr, 0);
-    const sumB = Object.values(picStats[b]).reduce((acc, curr) => acc + curr, 0);
+    const sumA = Object.values(picStats[a]).reduce((acc: number, curr: Task) => acc + curr, 0);
+    const sumB = Object.values(picStats[b]).reduce((acc: number, curr: Task) => acc + curr, 0);
     return sumB - sumA;
   }).slice(0, 10); // Top 10
 
   const picWorkloadData = {
     labels: sortedPics,
-    datasets: masterStatuses.map(status => ({
+    datasets: masterStatuses.map((status: string) => ({
       label: status,
       data: sortedPics.map(p => picStats[p][status] || 0),
       backgroundColor: masterColors[`status_${status}`] || getDynamicColor('status', status)
@@ -254,7 +254,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   };
 
   const handleExportFullReport = () => {
-    const reportData = filteredTasks.map((t, idx) => {
+    const reportData = filteredTasks.map((t: Task, idx: number) => {
       let subTasksStr = '';
       // Cannot easily use t.subTasksJson since it's not in the Task type locally, wait, I can add it to the type above or cast.
       // Let's assume t has it or we can cast as any.
@@ -407,7 +407,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Waktu:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={(e: any) => setGlobalTargetFilter(e.target.value)}>
             <option value="Hari Ini">Hari Ini</option>
             <option value="Minggu Ini">Minggu Ini</option>
             <option value="Bulan Ini">Bulan Ini</option>
@@ -425,7 +425,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>PIC:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={(e: any) => setGlobalPicFilter(e.target.value)}>
             <option value="Semua PIC">Semua PIC</option>
             {allPics.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -433,7 +433,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Kategori:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={reportCategoryFilter} onChange={e => setReportCategoryFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={reportCategoryFilter} onChange={(e: any) => setReportCategoryFilter(e.target.value)}>
             <option value="Semua Kategori">Semua Kategori</option>
             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -484,7 +484,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         <div className="glass" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {masterStatuses.map((s, i) => (
+              {masterStatuses.map((s: string, i: number) => (
                 <span key={s}>
                   <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{s}</span>
                   {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
@@ -493,8 +493,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
             </span>
           </div>
           <div style={{ fontSize: '24px', fontWeight: 'bold', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {masterStatuses.map((s, i) => {
-              const count = filteredTasks.filter(t => t.status === s).length;
+            {masterStatuses.map((s: string, i: number) => {
+              const count = filteredTasks.filter((t: Task) => t.status === s).length;
               return (
                 <span key={s}>
                   <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{count}</span>

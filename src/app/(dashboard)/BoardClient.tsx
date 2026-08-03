@@ -83,6 +83,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       setSelectedTask(null);
       setTasks(prev => prev.filter(t => t.id !== id));
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       toast.error('Gagal menghapus pekerjaan');
     }
@@ -98,6 +99,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         body: JSON.stringify({ updates })
       });
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       console.error('Failed to save reorder', e);
     }
@@ -645,6 +647,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             if (!res.ok) throw new Error('Failed to update task');
             setIsEditOpen(false);
             router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
           }}
           formPicOptions={formPicOptions}
           formCategoryOptions={formCategoryOptions}

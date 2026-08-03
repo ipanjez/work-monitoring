@@ -268,6 +268,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         if (Array.isArray(updated)) setTasks(updated);
       }
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
     } catch (error: any) {
       console.error('Save error:', error);
@@ -286,6 +287,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       setTasks(prev => prev.filter(t => t.id !== realId));
       setSelectedTask(null);
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Pekerjaan berhasil dihapus dari kalender.');
     } catch (error: any) {
       console.error(error);
