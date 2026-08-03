@@ -305,49 +305,7 @@ export default function Sidebar() {
 
         <IdleTimer isSidebarCollapsed={isSidebarCollapsed} />
 
-        {session?.user && (
-           <Link href="/settings#profile" style={{
-             display: 'flex',
-             alignItems: 'center',
-             gap: '10px',
-             padding: '10px 12px',
-             background: 'var(--input-bg)',
-             borderRadius: '12px',
-             border: '1px solid var(--border-color)',
-             marginBottom: '4px',
-             minWidth: 0,
-             textDecoration: 'none',
-             color: 'inherit',
-             transition: 'border-color 0.2s, background-color 0.2s'
-           }} className="clickable-hover-profile">
-             <div style={{
-               width: '32px',
-               height: '32px',
-               borderRadius: '50%',
-               background: 'var(--accent-primary)',
-               color: '#ffffff',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center',
-               fontWeight: 700,
-               fontSize: '13px',
-               flexShrink: 0,
-               boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
-             }}>
-               {getInitials(session.user.name)}
-             </div>
-             {!isSidebarCollapsed && (
-               <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                 <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                   {session.user.name}
-                 </span>
-                 <span style={{ fontSize: '10px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                   {session.user.email}
-                 </span>
-               </div>
-             )}
-           </Link>
-         )}
+
 
         <button 
           onClick={toggleTheme} 
