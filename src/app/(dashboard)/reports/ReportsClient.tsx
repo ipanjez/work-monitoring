@@ -144,13 +144,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const totalTasks = filteredTasks.length;
   
   const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Selesai';
-  const todoLabel = masterStatuses.length > 0 ? masterStatuses[0] : 'Belum Dimulai';
-  
   const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter(t => t.status === completedLabel).length : 0;
-  const toDoTasks = masterStatuses.length > 0 ? filteredTasks.filter(t => t.status === todoLabel).length : 0;
-  const inProgressTasks = masterStatuses.length > 2 
-    ? filteredTasks.filter(t => masterStatuses.slice(1, -1).includes(t.status)).length 
-    : (masterStatuses.length === 2 ? 0 : filteredTasks.filter(t => t.status !== completedLabel && t.status !== todoLabel).length);
 
 
   const statusCounts = masterStatuses.map(status => {
@@ -489,20 +483,26 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div className="glass" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{completedLabel} / Proses</span>
-            <CheckCircle2 size={20} color={masterColors[`status_${completedLabel}`] || "var(--success)"} />
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {masterStatuses.map((s, i) => (
+                <span key={s}>
+                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{s}</span>
+                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
+                </span>
+              ))}
+            </span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-            <span style={{ color: masterColors[`status_${completedLabel}`] || 'var(--success)' }}>{completedTasks}</span> / <span style={{ color: masterStatuses.length > 1 ? (masterColors[`status_${masterStatuses[1]}`] || 'var(--warning)') : 'var(--warning)' }}>{inProgressTasks}</span>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {masterStatuses.map((s, i) => {
+              const count = filteredTasks.filter(t => t.status === s).length;
+              return (
+                <span key={s}>
+                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{count}</span>
+                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
+                </span>
+              );
+            })}
           </div>
-        </div>
-
-        <div className="glass" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{todoLabel}</span>
-            <AlertCircle size={20} color={masterColors[`status_${todoLabel}`] || "var(--text-secondary)"} />
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: masterColors[`status_${todoLabel}`] || 'var(--text-secondary)' }}>{toDoTasks}</div>
         </div>
       </motion.div>
 
