@@ -2,7 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -14,6 +14,7 @@ import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } f
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { masterColors } = useMaster();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -413,8 +414,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
               matchDate = true;
             } else {
-              if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+              if (searchParams.get('deadlineOnly') === 'true') {
+                if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
                   matchDate = true;
+                }
+              } else {
+                if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+                    matchDate = true;
+                }
               }
             }
             

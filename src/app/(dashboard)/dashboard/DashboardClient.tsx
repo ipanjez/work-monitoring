@@ -542,7 +542,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           setGlobalTargetFilter('Custom');
           setGlobalCustomStartDate(format(range.start, 'yyyy-MM-dd'));
           setGlobalCustomEndDate(format(range.end, 'yyyy-MM-dd'));
-          router.push('/tasks');
+          router.push('/tasks?deadlineOnly=true');
         }
       }
     }
