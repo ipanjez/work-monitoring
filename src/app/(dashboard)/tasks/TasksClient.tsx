@@ -29,7 +29,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
-  const userRole = 'ADMIN';
+  const userRole: string = 'ADMIN';
   const { masterColors } = useMaster();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();

@@ -46,7 +46,7 @@ interface TaskDetailModalProps {
 }
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
-  const userRole = 'ADMIN';
+  const userRole: string = 'ADMIN';
   const { masterColors } = useMaster();
   const router = useRouter();
   const pathname = usePathname();

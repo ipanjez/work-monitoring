@@ -12,7 +12,7 @@ import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
-  const userRole = 'ADMIN';
+  const userRole: string = 'ADMIN';
   const { masterColors } = useMaster();
   const router = useRouter();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
