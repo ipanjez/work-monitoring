@@ -52,9 +52,9 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
-        if (data.status) setMasterStatuses(data.status.split(',').map((s: string) => s.trim()).filter(Boolean));
-        if (data.prioritas) setMasterPriorities(data.prioritas.split(',').map((s: string) => s.trim()).filter(Boolean));
-        if (data.kategori) setMasterCats(data.kategori.split(',').map((s: string) => s.trim()).filter(Boolean));
+        if (data.master_statuses && data.master_statuses.length > 0) setMasterStatuses(data.master_statuses);
+        if (data.master_priorities && data.master_priorities.length > 0) setMasterPriorities(data.master_priorities);
+        if (data.master_categories && data.master_categories.length > 0) setMasterCats(data.master_categories);
       })
       .catch(err => console.error("Failed to load master settings", err));
   }, []);
