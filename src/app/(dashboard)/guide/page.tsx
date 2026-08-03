@@ -10,7 +10,7 @@ import {
 import 'driver.js/dist/driver.css';
 
 export default function GuidePage() {
-  const [activeAccordion, setActiveAccordion] = useState<string | null>('dashboard');
+  const [activeAccordion, setActiveAccordion] = useState<string | null>('monitoring-board');
   const [useHighlight, setUseHighlight] = useState(true);
 
   const toggleAccordion = (id: string) => {
@@ -19,81 +19,15 @@ export default function GuidePage() {
 
   const sections = [
     {
-      id: 'dashboard',
-      icon: <LayoutDashboard size={24} />,
-      color: '#3b82f6',
-      bg: 'rgba(59, 130, 246, 0.1)',
-      title: '1. Dashboard Executive',
-      content: (
-        <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Dashboard adalah pusat kendali analitik Anda. Di sini Anda dapat melihat ringkasan seluruh metrik penting secara real-time.
-          </p>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Global:</strong> Gunakan menu sidebar (Kategori, PIC, Waktu) untuk memfilter seluruh data pada dashboard secara instan.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Interaktivitas Grafik:</strong> Klik elemen pada grafik (misal: bagian status "In Progress" di Donut Chart) untuk difilter dan diarahkan ke rincian tugas.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Dinamis:</strong> Label status pekerjaan dan prioritas yang ditampilkan mengikuti pengaturan (Settings) yang Anda buat.</span>
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 'daftar-pekerjaan',
-      icon: <ListTodo size={24} />,
-      color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.1)',
-      title: '2. Daftar Pekerjaan (Task List)',
-      content: (
-        <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Modul utama untuk mengelola pekerjaan secara tabular (tabel). Cocok untuk melihat data dalam jumlah banyak dan melakukan aksi massal.
-          </p>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Pembuatan Pekerjaan:</strong> Klik tombol "+ Pekerjaan Baru" untuk menambah pekerjaan. Anda dapat menentukan Deskripsi, PIC Utama, PIC Tambahan (jika lebih dari satu orang), Kategori, Status, dan Prioritas.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Sub-Pekerjaan (To-Do List):</strong> Pecah pekerjaan besar menjadi beberapa sub-pekerjaan kecil agar mudah dipantau persentasenya.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Fitur Komentar (Baru):</strong> Setiap pekerjaan kini dilengkapi dengan kolom komentar di bagian detailnya. Anda dapat berdiskusi, menghapus komentar, dan melihat riwayat (log) perubahan tugas secara mendetail.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Pekerjaan Berulang (Repetisi):</strong> Anda bisa mengatur agar tugas berulang harian, mingguan, atau bulanan secara otomatis.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <Upload size={18} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Import/Export Excel:</strong> <br/>
-              - <strong>Export:</strong> Klik ikon Excel di pojok kanan atas tabel untuk mengunduh seluruh pekerjaan yang sedang ditampilkan ke format `.xlsx`. <br/>
-              - <strong>Import (Template):</strong> Untuk memasukkan banyak data sekaligus, klik ikon Upload, lalu unduh (Download) template kosong terlebih dahulu. Isi data pekerjaan beserta Sub-Pekerjaannya di Excel sesuai format template, simpan, lalu unggah (Import) kembali file tersebut.</span>
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 'board',
+      id: 'monitoring-board',
       icon: <Kanban size={24} />,
       color: '#f59e0b',
       bg: 'rgba(245, 158, 11, 0.1)',
-      title: '3. Monitoring Board (Kanban)',
+      title: '1. Monitoring Board',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Visualisasi pekerjaan dalam bentuk papan Kanban. Sangat cocok untuk rapat stand-up dan memantau perpindahan status pekerjaan.
+            Visualisasi pekerjaan dalam bentuk papan Kanban per departemen. Sangat cocok untuk rapat stand-up dan memantau perpindahan status pekerjaan.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -106,11 +40,59 @@ export default function GuidePage() {
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Collapse / Expand Kolom:</strong> Anda dapat melipat (collapse) kolom status yang tidak ingin dilihat agar tampilan board menjadi lebih luas dan fokus.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Dinamis:</strong> Board ini dilengkapi dengan fitur pencarian dan Filter (berdasarkan kategori atau urutan Abjad/Tenggat Waktu) sehingga Anda bisa menampilkan Kanban khusus yang relevan.</span>
+            </li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: 'dashboard',
+      icon: <LayoutDashboard size={24} />,
+      color: '#3b82f6',
+      bg: 'rgba(59, 130, 246, 0.1)',
+      title: '2. Dashboard',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+            Dashboard adalah pusat kendali analitik Anda. Di sini Anda dapat melihat ringkasan metrik kinerja secara real-time.
+          </p>
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Global:</strong> Gunakan menu filter (Kategori, PIC, Waktu) untuk menyaring seluruh data pada dashboard secara instan.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Dinamis:</strong> Board ini dilengkapi dengan fitur pencarian dan Filter (berdasarkan kategori atau urutan Abjad/Tenggat Waktu) sehingga Anda bisa menampilkan Kanban khusus yang relevan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Notifikasi & Aktivitas (Baru):</strong> Ikon lonceng notifikasi di pojok kanan atas untuk memantau semua perubahan. Anda kini dapat memfilter berdasarkan status baca atau aksi spesifik (seperti 'Pekerjaan Diperbarui').</span>
+            </li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: 'daftar-pekerjaan',
+      icon: <ListTodo size={24} />,
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.1)',
+      title: '3. Daftar Pekerjaan (Task List)',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+            Modul utama untuk mengelola pekerjaan secara tabular (tabel). Cocok untuk melihat data dalam jumlah banyak dan melakukan aksi massal.
+          </p>
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Massal (Bulk Edit) Lanjutan (Baru):</strong> Centang beberapa tugas sekaligus dan ubah status, kategori, PIC, deskripsi, atau bahkan <strong>Jadwal & Waktu</strong> secara bersamaan.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Sub-Pekerjaan & Komentar:</strong> Pecah pekerjaan besar menjadi to-do list kecil. Tambahkan komentar dengan log riwayat lengkap.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Pekerjaan Berulang (Repetisi) (Baru):</strong> Tugas berulang harian, mingguan, atau bulanan dihitung secara akurat dalam kalender tanpa membuat tumpukan peristiwa tak terhingga.</span>
             </li>
           </ul>
         </>
@@ -121,7 +103,7 @@ export default function GuidePage() {
       icon: <CalendarDays size={24} />,
       color: '#8b5cf6',
       bg: 'rgba(139, 92, 246, 0.1)',
-      title: '4. Kalender & Sinkronisasi (.ics)',
+      title: '4. Kalender',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
@@ -130,22 +112,35 @@ export default function GuidePage() {
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Tampilan Kalender:</strong> Klik salah satu acara (event) di kalender untuk melihat detail pekerjaan, mengedit (ikon pensil), atau menghapus (ikon tempat sampah).</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Perbaikan Performa (Baru):</strong> Algoritma kalender telah diperbarui untuk mencegah tumpang tindih dari peristiwa perulangan jangka panjang (misal dari impor Excel yang kurang tepat).</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Drag and Drop (Baru):</strong> Anda dapat menggeser event di dalam kalender ke hari lain, atau memanjangkan durasinya (resize) secara langsung untuk mengubah Tanggal Mulai dan Tenggat Waktu dengan cepat.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Drag and Drop:</strong> Anda dapat menggeser event di dalam kalender ke hari lain, atau memanjangkan durasinya secara langsung.</span>
             </li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: 'reports',
+      icon: <BarChart3 size={24} />,
+      color: '#06b6d4',
+      bg: 'rgba(6, 182, 212, 0.1)',
+      title: '5. Analisis Laporan',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+            Modul pelaporan komprehensif berisi grafik kinerja mendalam untuk evaluasi tingkat manajerial.
+          </p>
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <FileSpreadsheet size={18} color="#8b5cf6" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Apa itu Sinkronisasi (.ics)?</strong> <br/>
-              Format `.ics` (iCalendar) adalah standar format file global untuk menyimpan data acara kalender. Hampir semua aplikasi kalender (Google Calendar, Apple Calendar, Microsoft Outlook) mendukung format ini.</span>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Grafik Kinerja Dinamis (Baru):</strong> Terdapat grafik tambahan seperti Rata-rata Progress per Kategori, Kepatuhan Tenggat Waktu, dan Distribusi Pekerjaan.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Cara Menggunakan .ics & Google Calendar:</strong> <br/>
-              - <strong>Local Calendar:</strong> Klik tombol berlogo Kalender (Download .ics) pada tabel daftar tugas atau detail tugas. File `task.ics` akan terunduh. Buka file tersebut, maka aplikasi Kalender di HP/Laptop akan otomatis terbuka.<br/>
-              - <strong>Google Calendar:</strong> Klik ikon kotak dengan panah keluar (External Link) berwarna biru untuk langsung membuat acara di Google Calendar web browser Anda.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Render Dinamis Label Data (Baru):</strong> Distribusi warna bagan dan labelnya (seperti Doughnut Chart) kini secara cerdas merender berdasarkan kategori yang sebenarnya ada di data Anda.</span>
             </li>
           </ul>
         </>
@@ -156,7 +151,7 @@ export default function GuidePage() {
       icon: <Users size={24} />,
       color: '#ec4899',
       bg: 'rgba(236, 72, 153, 0.1)',
-      title: '5. Manajemen Tim',
+      title: '6. Manajemen Tim',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
@@ -167,10 +162,6 @@ export default function GuidePage() {
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span style={{ color: 'var(--text-primary)' }}><strong>Produktivitas Individu:</strong> Lihat persentase penyelesaian tugas (Done vs Total Tugas) untuk setiap PIC.</span>
             </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Status Pekerjaan per PIC:</strong> Statistik status pekerjaan (sesuai Master Status) akan ditampilkan pada kartu setiap individu. Klik kartu PIC untuk memunculkan tabel rincian pekerjaan di bawahnya.</span>
-            </li>
           </ul>
         </>
       )
@@ -180,28 +171,20 @@ export default function GuidePage() {
       icon: <Settings size={24} />,
       color: '#ef4444',
       bg: 'rgba(239, 68, 68, 0.1)',
-      title: '6. Pengaturan (Settings)',
+      title: '7. Pengaturan (Settings)',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Area kontrol untuk menyesuaikan aplikasi dengan kebutuhan spesifik organisasi Anda. <strong>Aplikasi ini bersifat 100% dinamis!</strong>
+            Area kontrol untuk menyesuaikan aplikasi dengan kebutuhan spesifik organisasi Anda.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Master Kategori & PIC:</strong> Tambahkan atau hapus daftar Kategori Pekerjaan dan nama-nama Person In Charge (PIC). Perubahan di sini akan tercermin di seluruh form pilihan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Kustomisasi Master Warna & Ikon (Baru):</strong> Anda bebas memilih warna dan ikon spesifik untuk merepresentasikan status, kategori, dan prioritas, yang langsung diterapkan di seluruh UI!</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Master Status & Prioritas (Baru):</strong> Tidak ada lagi status statis! Anda bebas mendefinisikan tahapan kerja Anda sendiri (misal: "Backlog", "Sedang Dikerjakan", "Menunggu Verifikasi", "Selesai"). Seluruh grafik, filter, dan form akan menyesuaikan secara otomatis.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Kustomisasi Warna dan Ikon (Baru):</strong> Atur warna kustom (baik tampilan terang maupun gelap) serta pilih ikon yang merepresentasikan setiap Nilai Master (Kategori, Status, Prioritas). Tampilan ini akan langsung diterapkan di Kanban, Tabel, dan Kalender!</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Sesi Otomatis & Perpanjangan:</strong> Demi keamanan, jika Anda membiarkan layar tanpa aktivitas selama 10 menit, sistem akan mengeluarkan Anda (logout) secara otomatis. Namun, kini Anda bisa menambahkan perpanjangan sesi yang bersifat akumulatif secara bebas.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Panduan Interaktif (Baru):</strong> Tutorial interaktif bergaya penyorotan area ini, yang juga memiliki opsi untuk mematikan efek redup (highlight).</span>
             </li>
           </ul>
         </>
