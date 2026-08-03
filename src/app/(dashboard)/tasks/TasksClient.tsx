@@ -538,7 +538,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
-        nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
+        nama: 'Contoh Pekerjaan A (Jangan dihapus)',
         pic: uniquePics[0] || 'Unassigned',
         picTambahan: 'PIC Lain 1, PIC Lain 2',
         kategori: uniqueCats[0] || 'Umum',
@@ -676,7 +676,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       tipsTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
 
       const tips = [
-        '1. Baris contoh (baris ke-2 di sheet Template) boleh ditimpa atau dihapus.',
+        '1. Baris contoh (baris ke-2 di sheet Template) wajib dibiarkan, mulai isi data asli dari baris ke-3 dan seterusnya.',
         '2. Kolom dengan dropdown (PIC, Prioritas, Status, dll) sudah disediakan pilihan otomatis.',
         '3. Format tanggal wajib menggunakan YYYY-MM-DD (contoh: 2026-08-01).',
         '4. Format jam menggunakan HH:mm 24 jam (contoh: 08:00, 13:30, 17:00).',
@@ -773,7 +773,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           return normalized;
         }).filter((r: any) => {
           const nama = r['nama pekerjaan'] || r['nama'] || '';
-          return !nama.includes('Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)');
+          return !nama.includes('Contoh Pekerjaan A');
         });
 
         const formattedData = data.map((row: any, idx: number) => {
