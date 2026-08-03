@@ -216,14 +216,28 @@ export default function GlobalAddButton() {
 
   const handleDownloadTemplate = async () => {
     try {
+      // Selalu fetch data master terbaru sebelum membuat template
+      let latestPics = masterPics;
+      let latestCats = masterCats;
+      let latestStatuses = masterStatuses;
+      let latestPriorities = masterPriorities;
+      try {
+        const settingsRes = await fetch('/api/settings');
+        const settingsData = await settingsRes.json();
+        if (settingsData.master_pics && settingsData.master_pics.length > 0) latestPics = settingsData.master_pics;
+        if (settingsData.master_categories && settingsData.master_categories.length > 0) latestCats = settingsData.master_categories;
+        if (settingsData.master_statuses && settingsData.master_statuses.length > 0) latestStatuses = settingsData.master_statuses;
+        if (settingsData.master_priorities && settingsData.master_priorities.length > 0) latestPriorities = settingsData.master_priorities;
+      } catch (e) { console.error('Failed to fetch settings for template', e); }
+
       const ExcelJS = (await import('exceljs')).default;
       const workbook = new ExcelJS.Workbook();
 
       // Buat sheet konfigurasi tersembunyi untuk referensi dropdown panjang
       const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
-      const uniquePics = masterPics.length > 0 ? masterPics : ['Unassigned'];
+      const uniquePics = latestPics.length > 0 ? latestPics : ['Unassigned'];
       configSheet.getColumn('A').values = uniquePics;
-      const uniqueCats = masterCats.length > 0 ? masterCats : ['Umum'];
+      const uniqueCats = latestCats.length > 0 ? latestCats : ['Umum'];
       configSheet.getColumn('B').values = uniqueCats;
 
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
@@ -314,14 +328,14 @@ export default function GlobalAddButton() {
         worksheet.getCell(`E${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
+          formulae: [`"${(latestPriorities.length > 0 ? latestPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
         };
 
         // Status
         worksheet.getCell(`F${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do','In Progress','Done']).join(',')}"`]
+          formulae: [`"${(latestStatuses.length > 0 ? latestStatuses : ['To Do','In Progress','Done']).join(',')}"`]
         };
 
         // Progress (Angka 0-100)
