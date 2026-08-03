@@ -142,9 +142,16 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter]);
 
   const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter(t => t.status === 'Done' || t.status.toLowerCase() === 'selesai' || t.status === masterStatuses[masterStatuses.length - 1]).length;
-  const inProgressTasks = filteredTasks.filter(t => t.status === 'In Progress' || t.status.toLowerCase() === 'dalam proses' || t.status === masterStatuses[1] || t.status === masterStatuses[masterStatuses.length - 2]).length;
-  const toDoTasks = filteredTasks.filter(t => t.status === 'To Do' || t.status.toLowerCase() === 'belum dimulai' || t.status === masterStatuses[0]).length;
+  
+  const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Selesai';
+  const todoLabel = masterStatuses.length > 0 ? masterStatuses[0] : 'Belum Dimulai';
+  
+  const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter(t => t.status === completedLabel).length : 0;
+  const toDoTasks = masterStatuses.length > 0 ? filteredTasks.filter(t => t.status === todoLabel).length : 0;
+  const inProgressTasks = masterStatuses.length > 2 
+    ? filteredTasks.filter(t => masterStatuses.slice(1, -1).includes(t.status)).length 
+    : (masterStatuses.length === 2 ? 0 : filteredTasks.filter(t => t.status !== completedLabel && t.status !== todoLabel).length);
+
 
   const statusCounts = masterStatuses.map(status => {
     return filteredTasks.filter(t => t.status === status).length;
@@ -482,20 +489,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div className="glass" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Selesai / Dalam Proses</span>
-            <CheckCircle2 size={20} color="var(--success)" />
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{completedLabel} / Proses</span>
+            <CheckCircle2 size={20} color={masterColors[`status_${completedLabel}`] || "var(--success)"} />
           </div>
           <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-            <span style={{ color: 'var(--success)' }}>{completedTasks}</span> / <span style={{ color: 'var(--warning)' }}>{inProgressTasks}</span>
+            <span style={{ color: masterColors[`status_${completedLabel}`] || 'var(--success)' }}>{completedTasks}</span> / <span style={{ color: masterStatuses.length > 1 ? (masterColors[`status_${masterStatuses[1]}`] || 'var(--warning)') : 'var(--warning)' }}>{inProgressTasks}</span>
           </div>
         </div>
 
         <div className="glass" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Belum Dimulai</span>
-            <AlertCircle size={20} color="var(--text-secondary)" />
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{todoLabel}</span>
+            <AlertCircle size={20} color={masterColors[`status_${todoLabel}`] || "var(--text-secondary)"} />
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{toDoTasks}</div>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: masterColors[`status_${todoLabel}`] || 'var(--text-secondary)' }}>{toDoTasks}</div>
         </div>
       </motion.div>
 
