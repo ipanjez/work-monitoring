@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, LayoutDashboard, ListTodo, FileText, CheckCircle2, 
   Users, Shield, CalendarDays, Kanban, Download, Upload, 
-  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle, Eye, EyeOff
+  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle, Eye, EyeOff, BarChart3
 } from 'lucide-react';
 import 'driver.js/dist/driver.css';
 
