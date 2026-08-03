@@ -220,8 +220,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   });
 
   const sortedPics = Object.keys(picStats).sort((a, b) => {
-    const sumA = Object.values(picStats[a]).reduce((acc: number, curr: Task) => acc + curr, 0);
-    const sumB = Object.values(picStats[b]).reduce((acc: number, curr: Task) => acc + curr, 0);
+    const sumA = Object.values(picStats[a]).reduce((acc: number, curr: number) => acc + curr, 0);
+    const sumB = Object.values(picStats[b]).reduce((acc: number, curr: number) => acc + curr, 0);
     return sumB - sumA;
   }).slice(0, 10); // Top 10
 
