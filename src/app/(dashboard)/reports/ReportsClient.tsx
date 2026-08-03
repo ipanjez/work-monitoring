@@ -281,15 +281,15 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   };
 
   // 6. Distribusi Pekerjaan per Kategori (Doughnut)
-  const categoryCounts = masterCategories.map((cat: string) => {
+  const categoryCounts = masterCats.map((cat: string) => {
     return filteredTasks.filter((t: Task) => (t.kategori || 'Umum') === cat).length;
   });
   
   const categoryData = {
-    labels: masterCategories,
+    labels: masterCats,
     datasets: [{
       data: categoryCounts,
-      backgroundColor: masterCategories.map((cat: string, i: number) => {
+      backgroundColor: masterCats.map((cat: string, i: number) => {
          const colors = ['#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#eab308'];
          return masterColors[`cat_${cat}`] || colors[i % colors.length];
       }),
