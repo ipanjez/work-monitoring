@@ -536,9 +536,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   {task.prioritas || 'Medium'}
                 </span>
               </div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}
-                        </span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'right' }}>
+                          <div>{new Date(task.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                          {!task.isAllDay && (task.startTime || task.endTime) && (
+                            <div style={{ marginTop: '2px' }}>
+                              {task.startTime ? `${task.startTime} - ` : ''}{task.endTime || ''}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.4 }}>

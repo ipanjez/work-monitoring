@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter, Copy, FileText, FileSpreadsheet
 } from 'lucide-react';
@@ -17,6 +17,8 @@ import html2canvas from 'html2canvas';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useMaster } from '@/context/MasterContext';
+import { getDynamicColor } from '@/utils/taskUtils';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -38,8 +40,24 @@ type Task = {
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
+  const { masterColors } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  
+  const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Review', 'Done']);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>(['Urgent', 'High', 'Medium', 'Low']);
+  const [masterCats, setMasterCats] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.status) setMasterStatuses(data.status.split(',').map((s: string) => s.trim()).filter(Boolean));
+        if (data.prioritas) setMasterPriorities(data.prioritas.split(',').map((s: string) => s.trim()).filter(Boolean));
+        if (data.kategori) setMasterCats(data.kategori.split(',').map((s: string) => s.trim()).filter(Boolean));
+      })
+      .catch(err => console.error("Failed to load master settings", err));
+  }, []);
   
   // Use global filters
   const { 
@@ -124,10 +142,11 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter]);
 
   const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter(t => t.status === 'Done').length;
-  const reviewTasks = filteredTasks.filter(t => t.status === 'Review').length;
-  const inProgressTasks = filteredTasks.filter(t => t.status === 'In Progress').length;
-  const toDoTasks = filteredTasks.filter(t => t.status === 'To Do').length;
+  const completedTasks = filteredTasks.filter(t => t.status === 'Done' || t.status.toLowerCase() === 'selesai' || t.status === masterStatuses[masterStatuses.length - 1]).length;
+
+  const statusCounts = masterStatuses.map(status => {
+    return filteredTasks.filter(t => t.status === status).length;
+  });
 
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc, curr) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
@@ -150,38 +169,43 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   // 1. Status Pekerjaan (Doughnut)
   const statusData = {
-    labels: ['Done', 'Review', 'In Progress', 'To Do'],
+    labels: masterStatuses,
     datasets: [{
-      data: [completedTasks, reviewTasks, inProgressTasks, toDoTasks],
-      backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#94a3b8'],
+      data: statusCounts,
+      backgroundColor: masterStatuses.map(status => getDynamicColor(status, 'status', masterColors, theme)),
       borderWidth: 0,
     }]
   };
 
   // 2. Distribusi Prioritas (Doughnut)
-  const urgentCount = filteredTasks.filter(t => t.prioritas === 'Urgent').length;
-  const highCount = filteredTasks.filter(t => t.prioritas === 'High').length;
-  const mediumCount = filteredTasks.filter(t => t.prioritas === 'Medium' || !t.prioritas).length;
-  const lowCount = filteredTasks.filter(t => t.prioritas === 'Low').length;
+  const priorityCounts = masterPriorities.map(prio => {
+    return filteredTasks.filter(t => t.prioritas === prio || (!t.prioritas && prio === 'Medium')).length;
+  });
   
   const priorityData = {
-    labels: ['Urgent', 'High', 'Medium', 'Low'],
+    labels: masterPriorities,
     datasets: [{
-      data: [urgentCount, highCount, mediumCount, lowCount],
-      backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
+      data: priorityCounts,
+      backgroundColor: masterPriorities.map(prio => getDynamicColor(prio, 'prioritas', masterColors, theme)),
       borderWidth: 0,
     }]
   };
 
   // 3. Beban Kerja PIC (Bar)
-  const picStats: Record<string, { done: number, review: number, inProgress: number, todo: number }> = {};
+  const picStats: Record<string, Record<string, number>> = {};
   filteredTasks.forEach(t => {
     const processPic = (p: string) => {
-      if (!picStats[p]) picStats[p] = { done: 0, review: 0, inProgress: 0, todo: 0 };
-      if (t.status === 'Done') picStats[p].done++;
-      else if (t.status === 'Review') picStats[p].review++;
-      else if (t.status === 'In Progress') picStats[p].inProgress++;
-      else picStats[p].todo++;
+      if (!picStats[p]) {
+        picStats[p] = {};
+        masterStatuses.forEach(s => picStats[p][s] = 0);
+      }
+      if (picStats[p][t.status] !== undefined) {
+        picStats[p][t.status]++;
+      } else {
+        // Fallback if status doesn't match master statuses
+        const lastStatus = masterStatuses[masterStatuses.length - 1];
+        if (picStats[p][lastStatus] !== undefined) picStats[p][lastStatus]++;
+      }
     };
     if (t.pic) processPic(t.pic);
     if (t.additionalPics) {
@@ -192,19 +216,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }
   });
 
-  const sortedPics = Object.keys(picStats).sort((a, b) => 
-    (picStats[b].done + picStats[b].review + picStats[b].inProgress + picStats[b].todo) - 
-    (picStats[a].done + picStats[a].review + picStats[a].inProgress + picStats[a].todo)
-  ).slice(0, 10); // Top 10
+  const sortedPics = Object.keys(picStats).sort((a, b) => {
+    const sumA = Object.values(picStats[a]).reduce((acc, curr) => acc + curr, 0);
+    const sumB = Object.values(picStats[b]).reduce((acc, curr) => acc + curr, 0);
+    return sumB - sumA;
+  }).slice(0, 10); // Top 10
 
   const picWorkloadData = {
     labels: sortedPics,
-    datasets: [
-      { label: 'Done', data: sortedPics.map(p => picStats[p].done), backgroundColor: '#10b981' },
-      { label: 'Review', data: sortedPics.map(p => picStats[p].review), backgroundColor: '#3b82f6' },
-      { label: 'In Progress', data: sortedPics.map(p => picStats[p].inProgress), backgroundColor: '#f59e0b' },
-      { label: 'To Do', data: sortedPics.map(p => picStats[p].todo), backgroundColor: '#94a3b8' }
-    ]
+    datasets: masterStatuses.map(status => ({
+      label: status,
+      data: sortedPics.map(p => picStats[p][status] || 0),
+      backgroundColor: getDynamicColor(status, 'status', masterColors, theme)
+    }))
   };
 
   // 4. Progress Rata-rata per Kategori (Bar)
