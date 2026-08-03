@@ -1,6 +1,7 @@
 'use client';
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from '@/components/NotificationBell';
+import GlobalAddButton from '@/components/GlobalAddButton';
 
 import FocusModeToggle from '@/components/FocusModeToggle';
 import { Menu } from 'lucide-react';
@@ -29,6 +30,7 @@ export default function DashboardLayout({
         {children}
       </main>
       <NotificationBell />
+      <GlobalAddButton />
 
       <FocusModeToggle />
     </>
