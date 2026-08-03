@@ -567,9 +567,16 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                             );
                           })()}
                         </div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          {!task.isAllDay && task.startTime && task.endTime && (
+                            <span style={{ fontSize: '9px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                              {task.startTime} - {task.endTime}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
