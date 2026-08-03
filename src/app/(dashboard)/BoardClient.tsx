@@ -334,10 +334,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               cursor: 'pointer'
             }}
           >
-            <option value="All" style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>Semua Kategori</option>
+            <option value="All" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Semua Kategori</option>
             {formCategoryOptions
               .filter((v, i, a) => a.indexOf(v) === i)
-              .map(c => <option key={c} value={c} style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>{c}</option>)}
+              .map(c => <option key={c} value={c} style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>{c}</option>)}
           </select>
         </div>
 
@@ -357,10 +357,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               cursor: 'pointer'
             }}
           >
-            <option value="Manual" style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>Urutan Manual</option>
-            <option value="Deadline" style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>Tenggat Waktu</option>
-            <option value="Prioritas" style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>Prioritas</option>
-            <option value="Abjad" style={{ background: 'var(--background)', color: 'var(--text-primary)' }}>Abjad (Nama)</option>
+            <option value="Manual" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Urutan Manual</option>
+            <option value="Deadline" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Tenggat Waktu</option>
+            <option value="Prioritas" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Prioritas</option>
+            <option value="Abjad" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Abjad (Nama)</option>
           </select>
         </div>
       </div>
