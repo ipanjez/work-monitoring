@@ -143,6 +143,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   const totalTasks = filteredTasks.length;
   const completedTasks = filteredTasks.filter(t => t.status === 'Done' || t.status.toLowerCase() === 'selesai' || t.status === masterStatuses[masterStatuses.length - 1]).length;
+  const inProgressTasks = filteredTasks.filter(t => t.status === 'In Progress' || t.status.toLowerCase() === 'dalam proses' || t.status === masterStatuses[1] || t.status === masterStatuses[masterStatuses.length - 2]).length;
+  const toDoTasks = filteredTasks.filter(t => t.status === 'To Do' || t.status.toLowerCase() === 'belum dimulai' || t.status === masterStatuses[0]).length;
 
   const statusCounts = masterStatuses.map(status => {
     return filteredTasks.filter(t => t.status === status).length;
