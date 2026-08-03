@@ -266,7 +266,7 @@ export default function GlobalAddButton() {
                 filesList: [],
                 additionalPicsList: [],
                 subTasksList: [],
-                isAllDay: true,
+                isAllDay: false,
                 startTime: '',
                 endTime: '',
                 startDate: today,

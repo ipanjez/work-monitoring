@@ -466,10 +466,10 @@ export default function TaskAddEditModal({
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
                     <input 
                       type="checkbox" 
-                      checked={editingTask.isAllDay ?? true}
+                      checked={editingTask.isAllDay ?? false}
                       onChange={e => setEditingTask({ ...editingTask, isAllDay: e.target.checked })}
                     />
-                    Seharian (All Day)
+                    Seharian (All Day) <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>(Centang jika tanpa jam spesifik)</span>
                   </label>
                 </div>
 
