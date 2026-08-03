@@ -107,6 +107,24 @@ export default function GlobalAddButton() {
     return str;
   };
 
+  // Helper: normalize date values from Excel (serial number or string) to ISO string
+  const normalizeDate = (val: any, fieldName: string, idx: number): string => {
+    if (val == null || val === '') return new Date().toISOString();
+    
+    let date: Date;
+    if (typeof val === 'number') {
+      // Excel serial date (days since Dec 30, 1899)
+      date = new Date(Math.round((val - 25569) * 86400 * 1000));
+    } else {
+      date = new Date(String(val).trim());
+    }
+
+    if (isNaN(date.getTime()) || date.getFullYear() < 2000 || date.getFullYear() > 2100) {
+      throw new Error(`Format ${fieldName} pada Data ke-${idx + 1} tidak valid: "${val}". Harap gunakan format YYYY-MM-DD.`);
+    }
+    return date.toISOString();
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -128,7 +146,7 @@ export default function GlobalAddButton() {
           return normalized;
         });
 
-        const formattedData = data.map((row: any) => {
+        const formattedData = data.map((row: any, idx: number) => {
           let p = Number(row['progress (%)'] || row['progress'] || 0);
           if (isNaN(p)) p = 0;
           
@@ -180,8 +198,8 @@ export default function GlobalAddButton() {
             repetisi: row['repetisi'] || 'Tidak Berulang',
             deskripsi: row['deskripsi'] || '',
             catatan: row['catatan'] || '',
-            startDate: row['tanggal mulai'] || row['startdate'] || new Date().toISOString(),
-            endDate: row['tenggat waktu'] || row['enddate'] || new Date().toISOString(),
+            startDate: normalizeDate(row['tanggal mulai'] || row['startdate'], 'Tanggal Mulai', idx),
+            endDate: normalizeDate(row['tenggat waktu'] || row['enddate'], 'Tenggat Waktu', idx),
             ...(subTasksJson ? { subTasksJson } : {}),
             ...(additionalPicsJson ? { additionalPics: additionalPicsJson } : {}),
           };
