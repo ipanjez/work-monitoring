@@ -74,6 +74,14 @@ export default function FileViewer({ url, name }: FileViewerProps) {
               />
             );
           }
+        } else if (['ppt', 'pptx', 'doc'].includes(extension)) {
+          setContent(
+            <iframe 
+              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
+              style={{ width: '100%', height: '65vh', border: 'none', borderRadius: '8px', backgroundColor: 'white' }} 
+              title={name}
+            />
+          );
         } else {
           // Unsupported local preview (like .doc binary)
           setContent(null);

@@ -901,7 +901,12 @@ export default function TaskAddEditModal({
               {/* Multiple File Attachments Upload */}
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                  File Lampiran (Maks {maxFileSizeMb}MB/file, Total {maxTaskFilesSizeMb}MB)
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span>File Lampiran (Maks {maxFileSizeMb} MB/file)</span>
+                    <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                      Total terpakai: {editingTask.filesList ? (editingTask.filesList.filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0) / (1024 * 1024)).toFixed(2) : '0.00'} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                    </span>
+                  </div>
                 </label>
                 <input
                   type="file"
@@ -928,7 +933,9 @@ export default function TaskAddEditModal({
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile?.(f)}>
                               <File size={15} />
-                              <span style={{ fontWeight: 500 }}>{f.name}</span>
+                              <span style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.name}>
+                                {f.name} {f.size ? `(${(f.size / (1024*1024)).toFixed(2)} MB)` : ''}
+                              </span>
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                               {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}

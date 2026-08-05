@@ -26,7 +26,7 @@ import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'deskripsi' | 'subPekerjaan' | 'lampiran';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'deskripsi' | 'subPekerjaan' | 'lampiran' | 'lokasi';
 
 import { useSession } from 'next-auth/react';
 
@@ -287,18 +287,40 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       valA = (a.subTasksJson || '').toLowerCase();
       valB = (b.subTasksJson || '').toLowerCase();
     } else if (sortField === 'lampiran') {
-      const getFileSize = (task: any) => {
-        if (!task.filesJson && !task.fileUrl) return 0;
-        try {
-          if (task.filesJson) {
+      const getAttachmentStats = (task: any) => {
+        let count = 0;
+        let size = 0;
+        if (task.filesJson) {
+          try {
             const files = JSON.parse(task.filesJson);
-            return files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
-          }
-        } catch(e) {}
-        return task.fileUrl ? 1 : 0;
+            count = files.length;
+            size = files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+          } catch(e) {}
+        } else if (task.fileUrl) {
+          count = 1;
+          size = 1;
+        }
+        return { count, size };
       };
-      valA = getFileSize(a);
-      valB = getFileSize(b);
+      const statsA = getAttachmentStats(a);
+      const statsB = getAttachmentStats(b);
+      
+      if (statsA.count !== statsB.count) {
+        return sortDirection === 'asc' ? statsA.count - statsB.count : statsB.count - statsA.count;
+      }
+      return sortDirection === 'asc' ? statsA.size - statsB.size : statsB.size - statsA.size;
+    } else if (sortField === 'lokasi') {
+      const getLocStr = (val: string | null) => {
+        if (!val) return '';
+        try {
+          const loc = JSON.parse(val);
+          return loc.tipe === 'online' ? loc.linkZoom || '' : loc.lokasiFisik || '';
+        } catch {
+          return val || '';
+        }
+      };
+      valA = getLocStr(a.lokasi).toLowerCase();
+      valB = getLocStr(b.lokasi).toLowerCase();
     } else if (typeof valA === 'string') {
       valA = valA.toLowerCase();
       valB = (valB || '').toLowerCase();
@@ -1362,7 +1384,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Tenggat Waktu {renderSortIcon('endDate')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>Lokasi</th>
+                <th className="hide-tablet" style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lokasi')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Lokasi {renderSortIcon('lokasi')}
+                  </div>
+                </th>
                 <th style={{ padding: '12px 10px', textAlign: 'center', width: '60px' }}>Aksi</th>
               </tr>
             </thead>
@@ -1483,16 +1509,19 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </div>
                     </td>
                     <td className="hide-mobile" style={{ padding: '12px 10px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {task.fileUrl ? (
-                        <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                          <Paperclip size={14} /> {task.fileName || 'Lampiran'}
-                        </a>
-                      ) : '-'}
-                      {taskFiles.length > 0 && !task.fileUrl && (
-                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {taskFiles.length > 1 ? (
+                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setEditingTask(task); setModalMode('detail'); }}>
                           <Paperclip size={14} /> {taskFiles.length} Lampiran
                         </div>
-                      )}
+                      ) : taskFiles.length === 1 ? (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setPreviewFile({ url: taskFiles[0].url, name: taskFiles[0].name }); }}
+                          style={{ background: 'none', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}
+                          title="Pratinjau File"
+                        >
+                          <Paperclip size={14} /> <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{taskFiles[0].name || 'Lampiran'}</span>
+                        </button>
+                      ) : '-'}
                     </td>
                     <td style={{ padding: '12px 10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                       <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
