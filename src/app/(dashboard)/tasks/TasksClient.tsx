@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
   ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical
+  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical,
+  Video, MapPin
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
@@ -1280,7 +1281,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </AnimatePresence>
 
       <div id="task-table-container" className="glass" style={{ padding: '16px', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        {/* Desktop View Table */}
+        <div className="desktop-table-view" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '13px' }}>
@@ -1603,6 +1605,160 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View Cards */}
+        <div className="mobile-card-view">
+          {processedTasks.map(task => {
+            const prog = task.progress || (masterStatusProgress[task.status] ?? (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0));
+            const extraPics = getAdditionalPics(task);
+            const badgePriority = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
+            const badgeStatus = getDynamicBadgeStyle('status', task.status, '', masterColors);
+            const badgeCat = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
+
+            return (
+              <div 
+                key={task.id} 
+                className="mobile-task-card"
+                onClick={() => setDetailTask(task)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Header Row: Title & Priority */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>
+                    {task.nama}
+                  </div>
+                  <span {...badgePriority} style={{ ...badgePriority.style, flexShrink: 0 }}>
+                    {task.prioritas || 'Medium'}
+                  </span>
+                </div>
+
+                {/* Meta details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {/* PIC Badge */}
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600 }}>PIC:</span>
+                    <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                      {task.pic}
+                    </span>
+                    {extraPics.map((p, i) => (
+                      <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Category & Date */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600 }}>Kategori:</span>
+                      <span className={badgeCat.className} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', ...badgeCat.style }}>
+                        {task.kategori || 'Umum'}
+                      </span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CalendarDays size={12} />
+                      <span style={{ fontWeight: 500 }}>{format(new Date(task.endDate), 'dd MMM yyyy')}</span>
+                    </div>
+                  </div>
+
+                  {/* Location Info */}
+                  {task.lokasi && (() => {
+                    try {
+                      const loc = JSON.parse(task.lokasi);
+                      if (loc.tipe === 'online') {
+                        return (
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', background: 'rgba(37,99,235,0.05)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(37,99,235,0.1)' }}>
+                            <Video size={12} color="var(--accent-primary)" />
+                            <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Online Meeting</span>
+                            {loc.linkZoom && (
+                              <a href={loc.linkZoom} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'underline', color: 'var(--accent-primary)', fontSize: '11px' }}>
+                                Link
+                              </a>
+                            )}
+                          </div>
+                        );
+                      } else if (loc.tipe === 'offline') {
+                        return (
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', background: 'var(--input-bg)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                            <MapPin size={12} color="var(--text-secondary)" />
+                            <span style={{ fontWeight: 600 }}>Offline:</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{loc.lokasiFisik || '-'}</span>
+                          </div>
+                        );
+                      }
+                    } catch (e) {}
+                    return null;
+                  })()}
+                </div>
+
+                {/* Progress Bar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                    <span className={badgeStatus.className} style={{ fontWeight: '600', ...badgeStatus.style }}>
+                      {task.status}
+                    </span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{prog}%</span>
+                  </div>
+                  <div className="progress-container" style={{ height: '6px' }}>
+                    <div
+                      className="progress-bar"
+                      style={{
+                        width: `${prog}%`,
+                        backgroundColor: task.status === 'Done' ? 'var(--success)' : task.status === 'In Progress' ? 'var(--warning)' : 'var(--accent-primary)'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom Row Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '4px' }} onClick={e => e.stopPropagation()}>
+                  <a
+                    href={getGoogleCalendarUrl(task)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Google Calendar"
+                  >
+                    <ExternalLink size={12} color="#4285F4" /> Cal
+                  </a>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => handleExportICS(task)}
+                  >
+                    <CalendarDays size={12} /> .ics
+                  </button>
+                  {userRole !== 'SPV' && (
+                    <>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => handleOpenEditModal(task)}
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                        onClick={() => handleDelete(task.id)}
+                      >
+                        <Trash2 size={12} color="var(--danger)" /> Hapus
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {processedTasks.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--surface-color)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+              Tidak ada pekerjaan yang sesuai dengan filter atau pencarian Anda.
+            </div>
+          )}
         </div>
       </div>
 
