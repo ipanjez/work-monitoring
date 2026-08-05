@@ -26,7 +26,7 @@ import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'deskripsi' | 'subPekerjaan' | 'lampiran';
 
 import { useSession } from 'next-auth/react';
 
@@ -220,7 +220,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     const matchesSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
       extraPics.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.subTasksJson && t.subTasksJson.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.fileName && t.fileName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (t.filesJson && t.filesJson.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
     const matchesPriority = filterPriority === 'All' || (t.prioritas || 'Medium') === filterPriority;
     const matchesCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
@@ -262,8 +265,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   }).sort((a, b) => {
     if (!sortField) return 0;
 
-    let valA: any = a[sortField];
-    let valB: any = b[sortField];
+    let valA: any = (a as any)[sortField];
+    let valB: any = (b as any)[sortField];
 
     if (sortField === 'prioritas') {
       valA = priorityWeight[a.prioritas || 'Medium'] || 0;
@@ -277,6 +280,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } else if (sortField === 'endDate') {
       valA = new Date(a.endDate).getTime();
       valB = new Date(b.endDate).getTime();
+    } else if (sortField === 'deskripsi') {
+      valA = (a.deskripsi || '').toLowerCase();
+      valB = (b.deskripsi || '').toLowerCase();
+    } else if (sortField === 'subPekerjaan') {
+      valA = (a.subTasksJson || '').toLowerCase();
+      valB = (b.subTasksJson || '').toLowerCase();
+    } else if (sortField === 'lampiran') {
+      const getFileSize = (task: any) => {
+        if (!task.filesJson && !task.fileUrl) return 0;
+        try {
+          if (task.filesJson) {
+            const files = JSON.parse(task.filesJson);
+            return files.reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+          }
+        } catch(e) {}
+        return task.fileUrl ? 1 : 0;
+      };
+      valA = getFileSize(a);
+      valB = getFileSize(b);
     } else if (typeof valA === 'string') {
       valA = valA.toLowerCase();
       valB = (valB || '').toLowerCase();
@@ -1300,11 +1322,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Pekerjaan {renderSortIcon('nama')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
-                  Deskripsi
+                <th className="hide-tablet" style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('deskripsi')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Deskripsi {renderSortIcon('deskripsi')}
+                  </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
-                  Sub Pekerjaan
+                <th className="hide-tablet" style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('subPekerjaan')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Sub Pekerjaan {renderSortIcon('subPekerjaan')}
+                  </div>
                 </th>
                 <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -1326,7 +1352,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '12px 10px', width: '100px' }}>Lampiran</th>
+                <th className="hide-mobile" style={{ padding: '12px 10px', width: '100px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lampiran')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Lampiran {renderSortIcon('lampiran')}
+                  </div>
+                </th>
                 <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
