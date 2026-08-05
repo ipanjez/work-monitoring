@@ -19,7 +19,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { masterColors } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { globalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
@@ -346,6 +346,30 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-primary)', width: '120px' }}
           />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <Filter size={14} color="var(--text-secondary)" />
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>PIC:</span>
+          <select
+            id="filter-pic"
+            value={globalPicFilter}
+            onChange={e => setGlobalPicFilter(e.target.value)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+              fontWeight: 500,
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="Semua PIC" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Semua PIC</option>
+            {formPicOptions.map(p => (
+              <option key={p} value={p} style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>{p}</option>
+            ))}
+          </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>

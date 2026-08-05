@@ -39,10 +39,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     
     // If the logged-in user is a member, default to their own name first.
     // Otherwise, default to the stored PIC filter or "Semua PIC".
-    if (isMember && user?.name) {
-      setPicFilter(user.name);
-    } else if (storedPic) {
+    if (storedPic) {
       setPicFilter(storedPic);
+    } else {
+      setPicFilter('Semua PIC');
     }
     
     if (storedStart) setCustomStartDate(storedStart);
