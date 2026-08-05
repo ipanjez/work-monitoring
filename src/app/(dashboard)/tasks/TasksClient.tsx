@@ -1055,7 +1055,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </datalist>
 
       {/* Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="action-bar-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         {userRole !== 'SPV' ? (
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-primary" onClick={handleOpenAddModal}>
@@ -1087,7 +1087,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100,
                     background: 'var(--surface-color)', padding: '16px', borderRadius: '12px',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
-                    width: '300px', fontSize: '13px', color: 'var(--text-primary)'
+                    width: '300px', maxWidth: '90vw', fontSize: '13px', color: 'var(--text-primary)'
                   }}>
                     <h4 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <FileText size={16} color="var(--accent-primary)" /> Panduan Excel

@@ -54,9 +54,9 @@ export default function NotificationBell() {
 
       {isOpen && (
         <div style={{
-          position: 'absolute', top: '55px', right: '0', width: '350px', background: 'var(--surface-color)',
+          position: 'absolute', top: '55px', right: '0', width: '350px', maxWidth: '90vw', background: 'var(--surface-color)',
           border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-          overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '500px'
+          overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '500px', zIndex: 1000
         }}>
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.02)' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Notifikasi Pembaruan</h3>

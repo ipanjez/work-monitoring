@@ -172,7 +172,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
+            <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC:</span>
                 <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -269,7 +269,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <History size={16} color="var(--accent-primary)" /> Log Informasi & Riwayat Perubahan
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
+              <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
                 <div>
                   <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
