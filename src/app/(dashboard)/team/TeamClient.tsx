@@ -204,9 +204,9 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
-                {(masterStatuses.length > 0 ? masterStatuses.slice(0, 4) : ['Done', 'Review', 'In Progress', 'To Do']).map((statusName, idx) => {
-                  const defaultColors = ['var(--success)', '#3b82f6', 'var(--warning)', 'var(--accent-primary)'];
-                  const color = defaultColors[idx % defaultColors.length];
+                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stat.statusCounts)).map((statusName) => {
+                  const color = masterColors[statusName] || 'var(--text-secondary)';
+                  if (!stat.statusCounts[statusName]) return null; // Only show statuses that have count > 0 for this PIC
                   return (
                     <div key={statusName}>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={statusName}>{statusName}</span>
@@ -257,7 +257,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                         {t.prioritas || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px' }}>{t.status} ({t.progress || 0}%)</td>
+                    <td style={{ padding: '12px' }}>
+                      <span className="badge" style={getDynamicBadgeStyle(masterColors, t.status)}>
+                        {t.status}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '6px' }}>({t.progress || 0}%)</span>
+                    </td>
                     <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
