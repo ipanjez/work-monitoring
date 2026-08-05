@@ -498,7 +498,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDropColumn(e, col)}
               style={{
-                backgroundColor: isDragOverCol ? 'var(--background)' : 'var(--surface-color)',
+                backgroundColor: isDragOverCol ? 'var(--surface-hover)' : 'var(--input-bg)',
                 border: isDragOverCol ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
                 overflow: 'hidden',
                 position: 'relative',
@@ -567,7 +567,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       onDrop={(e) => handleDropCard(e, col, task.id)}
                       onClick={() => openTaskDetail(task)}
                       style={{
-                        backgroundColor: 'var(--background)',
+                        backgroundColor: 'var(--surface-color)',
                         padding: '8px',
                         borderRadius: '8px',
                         border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
