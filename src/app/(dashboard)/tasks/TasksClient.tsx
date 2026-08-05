@@ -310,7 +310,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       }
       return sortDirection === 'asc' ? statsA.size - statsB.size : statsB.size - statsA.size;
     } else if (sortField === 'lokasi') {
-      const getLocStr = (val: string | null) => {
+      const getLocStr = (val: string | null | undefined) => {
         if (!val) return '';
         try {
           const loc = JSON.parse(val);
