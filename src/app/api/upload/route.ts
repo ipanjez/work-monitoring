@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       uploadedResults.push({
         url: blob.url,
         name: file.name,
+        size: file.size,
       });
     }
 
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       files: uploadedResults,
       fileUrl: uploadedResults[0]?.url || '',
       fileName: uploadedResults[0]?.name || '',
+      fileSize: uploadedResults[0]?.size || 0,
     });
   } catch (error) {
     console.error('File upload error:', error);

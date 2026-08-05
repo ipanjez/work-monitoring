@@ -98,7 +98,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
     const setFunc = type === 'cat' ? setCategories : type === 'pic' ? setPics : type === 'status' ? setStatuses : setPriorities;
 
-    setFunc(prev => {
+    (setFunc as React.Dispatch<React.SetStateAction<string[]>>)((prev: string[]) => {
       const next = updater(prev as any);
       fetch('/api/settings', {
         method: 'POST',
@@ -214,9 +214,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           <span
             key={s}
             draggable
-            onDragStart={(e) => handleDragStart(e, type, idx)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, type, idx)}
+            onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
+            onDragOver={(e: React.DragEvent) => handleDragOver(e, idx)}
+            onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
             onDragEnd={() => setDraggedIdx(null)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
@@ -231,21 +231,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="number"
                 min="0"
                 max="100"
-                placeholder="%"
-                value={masterStatusProgress[s] ?? ''}
-                onChange={(e) => handleProgressChange(s, parseInt(e.target.value) || 0)}
-                style={{
-                  width: '40px', padding: '2px 4px', fontSize: '12px', borderRadius: '4px',
-                  border: '1px solid var(--border-color)', background: 'var(--surface-color)',
-                  color: 'var(--text-primary)', marginLeft: '4px'
-                }}
+                value={masterStatusProgress[s] ?? 0}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(s, Number(e.target.value))}
+                style={{ width: '40px', padding: '2px 4px', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
             <input
               type="color"
               value={masterColors[`${type}_${s}`] || '#ffffff'}
-              onChange={(e) => handleColorChange(type, s, e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleColorChange(type, s, e.target.value)}
               style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
               title="Ubah Warna"
             />
@@ -494,7 +489,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="text"
                 className="input"
                 value={profileName}
-                onChange={e => setProfileName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfileName(e.target.value)}
                 required
               />
             </div>
@@ -518,7 +513,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
                 placeholder="Password lama Anda"
               />
             </div>
@@ -530,7 +525,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
                 placeholder="Minimal 6 karakter"
               />
             </div>
@@ -542,7 +537,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 placeholder="Ulangi password baru"
               />
             </div>
@@ -628,7 +623,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <input
                 className="input"
                 value={deptName}
-                onChange={e => setDeptName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeptName(e.target.value)}
                 placeholder="Contoh: Divisi TI & Sistem Informasi"
               />
             </div>
@@ -641,7 +636,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={globalPassword}
-                onChange={e => setGlobalPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGlobalPassword(e.target.value)}
                 placeholder="Kosongkan jika tidak ingin mengubah sandi"
               />
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>

@@ -7,6 +7,7 @@ export type FileItem = {
   uploadedAt?: string;
   deletedAt?: string;
   isDeleted?: boolean;
+  size?: number;
 };
 
 export type LogItem = {
