@@ -258,7 +258,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                       </span>
                     </td>
                     <td style={{ padding: '12px' }}>
-                      <span className="badge" style={getDynamicBadgeStyle(masterColors, t.status)}>
+                      <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
                         {t.status}
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '6px' }}>({t.progress || 0}%)</span>
