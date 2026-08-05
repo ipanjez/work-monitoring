@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter, Copy, FileText, FileSpreadsheet
 } from 'lucide-react';
@@ -19,6 +19,7 @@ import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
+import { getDynamicColor } from '@/utils/taskUtils';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -46,6 +47,21 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   
+  const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Review', 'Done']);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>(['Urgent', 'High', 'Medium', 'Low']);
+  const [masterCats, setMasterCats] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.master_statuses && data.master_statuses.length > 0) setMasterStatuses(data.master_statuses);
+        if (data.master_priorities && data.master_priorities.length > 0) setMasterPriorities(data.master_priorities);
+        if (data.master_categories && data.master_categories.length > 0) setMasterCats(data.master_categories);
+      })
+      .catch(err => console.error("Failed to load master settings", err));
+  }, []);
+  
   // Use global filters
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
@@ -58,7 +74,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const [reportCategoryFilter, setReportCategoryFilter] = useState('Semua Kategori');
 
   // Extract unique categories and PICs from all tasks for the dropdowns
-  const allCategories = useMemo(() => Array.from(new Set(tasks.map(t => t.kategori || 'Umum'))).sort(), [tasks]);
+  const allCategories = useMemo(() => Array.from(new Set(tasks.map((t: Task) => t.kategori || 'Umum'))).sort(), [tasks]);
   const allPics = useMemo(() => {
     const pics = new Set<string>();
     tasks.forEach(t => {
@@ -78,7 +94,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   // Filtering Logic
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
+    return tasks.filter((t: Task) => {
       // 1. Time Filter
       let matchTime = true;
       const taskDate = new Date(t.endDate).getTime();
@@ -132,13 +148,17 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter]);
 
   const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter(t => t.status === 'Done').length;
-  const reviewTasks = filteredTasks.filter(t => t.status === 'Review').length;
-  const inProgressTasks = filteredTasks.filter(t => t.status === 'In Progress').length;
-  const toDoTasks = filteredTasks.filter(t => t.status === 'To Do').length;
+  
+  const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Selesai';
+  const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter((t: Task) => t.status === completedLabel).length : 0;
+
+
+  const statusCounts = masterStatuses.map((status: string) => {
+    return filteredTasks.filter((t: Task) => t.status === status).length;
+  });
 
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc, curr) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
+  const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc: number, curr: Task) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
 
   const chartOptions = {
     responsive: true,
@@ -158,48 +178,43 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   // 1. Status Pekerjaan (Doughnut)
   const statusData = {
-    labels: ['Done', 'Review', 'In Progress', 'To Do'],
+    labels: masterStatuses,
     datasets: [{
-      data: [completedTasks, reviewTasks, inProgressTasks, toDoTasks],
-      backgroundColor: [
-        masterColors['status_Done'] || '#10b981', 
-        masterColors['status_Review'] || '#3b82f6', 
-        masterColors['status_In Progress'] || '#f59e0b', 
-        masterColors['status_To Do'] || '#94a3b8'
-      ],
+      data: statusCounts,
+      backgroundColor: masterStatuses.map((status: string) => masterColors[`status_${status}`] || getDynamicColor('status', status)),
       borderWidth: 0,
     }]
   };
 
   // 2. Distribusi Prioritas (Doughnut)
-  const urgentCount = filteredTasks.filter(t => t.prioritas === 'Urgent').length;
-  const highCount = filteredTasks.filter(t => t.prioritas === 'High').length;
-  const mediumCount = filteredTasks.filter(t => t.prioritas === 'Medium' || !t.prioritas).length;
-  const lowCount = filteredTasks.filter(t => t.prioritas === 'Low').length;
+  const priorityCounts = masterPriorities.map((prio: string) => {
+    return filteredTasks.filter((t: Task) => t.prioritas === prio || (!t.prioritas && prio === 'Medium')).length;
+  });
   
   const priorityData = {
-    labels: ['Urgent', 'High', 'Medium', 'Low'],
+    labels: masterPriorities,
     datasets: [{
-      data: [urgentCount, highCount, mediumCount, lowCount],
-      backgroundColor: [
-        masterColors['prioritas_Urgent'] || '#ef4444', 
-        masterColors['prioritas_High'] || '#f97316', 
-        masterColors['prioritas_Medium'] || '#3b82f6', 
-        masterColors['prioritas_Low'] || '#10b981'
-      ],
+      data: priorityCounts,
+      backgroundColor: masterPriorities.map((prio: string) => masterColors[`prioritas_${prio}`] || getDynamicColor('priority', prio)),
       borderWidth: 0,
     }]
   };
 
   // 3. Beban Kerja PIC (Bar)
-  const picStats: Record<string, { done: number, review: number, inProgress: number, todo: number }> = {};
+  const picStats: Record<string, Record<string, number>> = {};
   filteredTasks.forEach(t => {
     const processPic = (p: string) => {
-      if (!picStats[p]) picStats[p] = { done: 0, review: 0, inProgress: 0, todo: 0 };
-      if (t.status === 'Done') picStats[p].done++;
-      else if (t.status === 'Review') picStats[p].review++;
-      else if (t.status === 'In Progress') picStats[p].inProgress++;
-      else picStats[p].todo++;
+      if (!picStats[p]) {
+        picStats[p] = {};
+        masterStatuses.forEach(s => picStats[p][s] = 0);
+      }
+      if (picStats[p][t.status] !== undefined) {
+        picStats[p][t.status]++;
+      } else {
+        // Fallback if status doesn't match master statuses
+        const lastStatus = masterStatuses[masterStatuses.length - 1];
+        if (picStats[p][lastStatus] !== undefined) picStats[p][lastStatus]++;
+      }
     };
     if (t.pic) processPic(t.pic);
     if (t.additionalPics) {
@@ -210,19 +225,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }
   });
 
-  const sortedPics = Object.keys(picStats).sort((a, b) => 
-    (picStats[b].done + picStats[b].review + picStats[b].inProgress + picStats[b].todo) - 
-    (picStats[a].done + picStats[a].review + picStats[a].inProgress + picStats[a].todo)
-  ).slice(0, 10); // Top 10
+  const sortedPics = Object.keys(picStats).sort((a, b) => {
+    const sumA = Object.values(picStats[a]).reduce((acc: number, curr: number) => acc + curr, 0);
+    const sumB = Object.values(picStats[b]).reduce((acc: number, curr: number) => acc + curr, 0);
+    return sumB - sumA;
+  }).slice(0, 10); // Top 10
 
   const picWorkloadData = {
     labels: sortedPics,
-    datasets: [
-      { label: 'Done', data: sortedPics.map(p => picStats[p].done), backgroundColor: masterColors['status_Done'] || '#10b981' },
-      { label: 'Review', data: sortedPics.map(p => picStats[p].review), backgroundColor: masterColors['status_Review'] || '#3b82f6' },
-      { label: 'In Progress', data: sortedPics.map(p => picStats[p].inProgress), backgroundColor: masterColors['status_In Progress'] || '#f59e0b' },
-      { label: 'To Do', data: sortedPics.map(p => picStats[p].todo), backgroundColor: masterColors['status_To Do'] || '#94a3b8' }
-    ]
+    datasets: masterStatuses.map((status: string) => ({
+      label: status,
+      data: sortedPics.map(p => picStats[p][status] || 0),
+      backgroundColor: masterColors[`status_${status}`] || getDynamicColor('status', status)
+    }))
   };
 
   // 4. Progress Rata-rata per Kategori (Bar)
@@ -244,8 +259,56 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }]
   };
 
+  // 5. Kepatuhan Tenggat Waktu (Doughnut)
+  let overdueCount = 0;
+  let dueTodayCount = 0;
+  let upcomingCount = 0;
+  let doneCountForDeadline = 0;
+
+  const todayStart = startOfDay(new Date()).getTime();
+  filteredTasks.forEach(t => {
+    if (t.status === 'Done') {
+      doneCountForDeadline++;
+      return;
+    }
+    const end = startOfDay(new Date(t.endDate)).getTime();
+    if (end < todayStart) overdueCount++;
+    else if (end === todayStart) dueTodayCount++;
+    else upcomingCount++;
+  });
+
+  const deadlineData = {
+    labels: ['Terlewat (Overdue)', 'Hari Ini', 'Akan Datang', 'Selesai'],
+    datasets: [{
+      data: [overdueCount, dueTodayCount, upcomingCount, doneCountForDeadline],
+      backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+      borderWidth: 0,
+    }]
+  };
+
+  // 6. Distribusi Pekerjaan per Kategori (Doughnut)
+  const catDistribution: Record<string, number> = {};
+  filteredTasks.forEach(t => {
+    const cat = (t.kategori || 'Umum').trim();
+    catDistribution[cat] = (catDistribution[cat] || 0) + 1;
+  });
+  const catDistLabels = Object.keys(catDistribution);
+
+  const categoryData = {
+    labels: catDistLabels,
+    datasets: [{
+      data: catDistLabels.map(cat => catDistribution[cat]),
+      backgroundColor: catDistLabels.map((cat: string, i: number) => {
+         const colors = ['#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#eab308'];
+         const matchCat = masterCats.find(mc => mc.trim() === cat) || cat;
+         return masterColors[`cat_${matchCat}`] || colors[i % colors.length];
+      }),
+      borderWidth: 0,
+    }]
+  };
+
   const handleExportFullReport = () => {
-    const reportData = filteredTasks.map((t, idx) => {
+    const reportData = filteredTasks.map((t: Task, idx: number) => {
       let subTasksStr = '';
       // Cannot easily use t.subTasksJson since it's not in the Task type locally, wait, I can add it to the type above or cast.
       // Let's assume t has it or we can cast as any.
@@ -398,7 +461,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Waktu:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={(e: any) => setGlobalTargetFilter(e.target.value)}>
             <option value="Hari Ini">Hari Ini</option>
             <option value="Minggu Ini">Minggu Ini</option>
             <option value="Bulan Ini">Bulan Ini</option>
@@ -416,7 +479,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>PIC:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={(e: any) => setGlobalPicFilter(e.target.value)}>
             <option value="Semua PIC">Semua PIC</option>
             {allPics.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -424,7 +487,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Kategori:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={reportCategoryFilter} onChange={e => setReportCategoryFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={reportCategoryFilter} onChange={(e: any) => setReportCategoryFilter(e.target.value)}>
             <option value="Semua Kategori">Semua Kategori</option>
             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -474,20 +537,26 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div className="glass" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Selesai / Dalam Proses</span>
-            <CheckCircle2 size={20} color="var(--success)" />
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {masterStatuses.map((s: string, i: number) => (
+                <span key={s}>
+                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{s}</span>
+                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
+                </span>
+              ))}
+            </span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-            <span style={{ color: 'var(--success)' }}>{completedTasks}</span> / <span style={{ color: 'var(--warning)' }}>{inProgressTasks}</span>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {masterStatuses.map((s: string, i: number) => {
+              const count = filteredTasks.filter((t: Task) => t.status === s).length;
+              return (
+                <span key={s}>
+                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{count}</span>
+                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
+                </span>
+              );
+            })}
           </div>
-        </div>
-
-        <div className="glass" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Belum Dimulai</span>
-            <AlertCircle size={20} color="var(--text-secondary)" />
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{toDoTasks}</div>
         </div>
       </motion.div>
 
@@ -522,6 +591,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           </div>
         </div>
 
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Kepatuhan Tenggat Waktu</h3>
+          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+            <Doughnut data={deadlineData} options={chartOptions} />
+          </div>
+        </div>
+
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Distribusi Pekerjaan per Kategori</h3>
+          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+            <Doughnut data={categoryData} options={chartOptions} />
+          </div>
+        </div>
       </div>
     </motion.div>
   );

@@ -80,6 +80,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
       });
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Komentar dihapus');
     } catch {
       toast.error('Gagal menghapus komentar');
@@ -129,6 +130,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       toast.success('Komentar berhasil ditambahkan');
       if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       toast.error('Gagal menyimpan komentar');
       setLocalComments(localComments); // revert

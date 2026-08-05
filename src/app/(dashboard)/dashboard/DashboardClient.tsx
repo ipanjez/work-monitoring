@@ -23,10 +23,11 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfDay } from 'date-fns';
-import { getDynamicBadgeStyle, getLocalTimezone } from '@/utils/taskUtils';
+import { getDynamicBadgeStyle, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { useTheme } from '@/context/ThemeContext';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FileViewer from '@/components/FileViewer';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -46,23 +47,7 @@ ChartJS.register(
   ArcElement
 );
 
-type Task = {
-  id: number;
-  nama: string;
-  pic: string;
-  status: string;
-  prioritas?: string | null;
-  kategori?: string | null;
-  progress?: number | null;
-  deskripsi?: string | null;
-  catatan?: string | null;
-  fileUrl?: string | null;
-  fileName?: string | null;
-  startDate: string | Date;
-  endDate: string | Date;
-  additionalPics?: string | null;
-  lokasi?: string | null;
-};
+
 
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
@@ -82,6 +67,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
   const [previewFile, setPreviewFile] = useState<any | null>(null);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -116,6 +105,104 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     window.addEventListener('tasksUpdated', loadMasterData);
     return () => window.removeEventListener('tasksUpdated', loadMasterData);
   }, []);
+
+  const handleOpenEditModal = (task: any) => {
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        parsedSubTasks = JSON.parse(task.subTasksJson);
+      } catch (e) {}
+    }
+    
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    if (task.isRepetitive && !task.repetisi) repetisiValue = 'Harian';
+
+    setEditingTask({
+      ...task,
+      filesList: getTaskFiles(task),
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      repetisi: repetisiValue,
+      startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
+      endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
+      isCustomCategory: false,
+      isCustomPic: false,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveModal = async (payloadData: any) => {
+    setIsSaving(true);
+    try {
+      const url = `/api/tasks/${payloadData.id}`;
+      const method = 'PUT';
+
+      const filteredExtraPics = payloadData.additionalPicsList ? payloadData.additionalPicsList.filter(Boolean) : [];
+      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0 
+        ? payloadData.filesList 
+        : (payloadData.fileUrl ? [{ url: payloadData.fileUrl, name: payloadData.fileName || 'File Lampiran' }] : []);
+
+      let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
+      
+      // Auto-update task progress if subtasks exist
+      let taskProgress = payloadData.progress || 0;
+      if (processedSubTasks.length > 0) {
+        const completed = processedSubTasks.filter((st: any) => st.status === 'Done').length;
+        taskProgress = Math.round((completed / processedSubTasks.length) * 100);
+      } else {
+        if (payloadData.status === 'Done') taskProgress = 100;
+        else if (payloadData.status === 'To Do') taskProgress = 0;
+      }
+
+      let historyLogs = [];
+      const originalTask = tasks.find(t => t.id === payloadData.id);
+      if (originalTask) {
+        if (originalTask.historyLogsJson) {
+           try { historyLogs = JSON.parse(originalTask.historyLogsJson); } catch(e){}
+        }
+        historyLogs.push({
+           action: 'Pekerjaan diubah melalui Edit Modal dari Dashboard',
+           details: 'Data pekerjaan diperbarui',
+           timestamp: new Date().toISOString()
+        });
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payloadData,
+          progress: taskProgress,
+          filesJson: JSON.stringify(filesListToSave),
+          additionalPics: JSON.stringify(filteredExtraPics),
+          subTasksJson: JSON.stringify(processedSubTasks),
+          historyLogsJson: JSON.stringify(historyLogs)
+        })
+      });
+
+      if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
+      
+      toast.success('Pekerjaan berhasil diperbarui!');
+      if (addActivityLog) {
+         addActivityLog('EDIT_TASK', 'Pekerjaan Diubah', `Pekerjaan "${payloadData.nama}" telah diubah dari Dashboard`, 'info');
+      }
+      
+      setIsEditModalOpen(false);
+      
+      // Trigger update
+      router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat menyimpan');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const categories = Array.from(new Set(['All', ...tasks.map(t => t.kategori || 'Umum'), ...masterCategories]));
   const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics, ...(session?.user?.name ? [session.user.name] : [])]));
@@ -157,7 +244,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchDate = true;
     } else {
-      if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
          matchDate = true;
       }
     }
@@ -912,8 +999,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
 
           <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
-            <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
-              <Bar data={picData} options={picOptions} />
+            <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
+              <div style={{ height: '240px', position: 'relative', minWidth: Math.max(100, picLabels.length * 40) + 'px', margin: '0 auto' }}>
+                <Bar data={picData} options={picOptions} />
+              </div>
             </div>
           </div>
 
@@ -926,8 +1015,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
 
           <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
-            <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
-              <Bar data={categoryData} options={categoryOptions} />
+            <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
+              <div style={{ height: '240px', position: 'relative', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
+                <Bar data={categoryData} options={categoryOptions} />
+              </div>
             </div>
           </div>
 
@@ -951,15 +1042,26 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
               {urgentTasks.map(t => (
                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '10px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>{t.nama}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC: {t.pic} 
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>{t.nama}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC:</span>
+                      <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        {t.pic}
+                      </span>
                       {t.additionalPics && (() => {
                         try {
                           const arr = JSON.parse(t.additionalPics);
-                          return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
-                        } catch(e) { return ''; }
+                          return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
+                            <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                              {p}
+                            </span>
+                          )) : null;
+                        } catch(e) { return null; }
                       })()}
-                      • Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}</span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Tenggat: {format(new Date(t.endDate), 'dd MMM yyyy')}
+                    </span>
                     {t.deskripsi && (
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         {t.deskripsi.replace(/<[^>]+>/g, '')}
@@ -972,8 +1074,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className={`badge ${t.prioritas === 'Urgent' ? 'badge-urgent' : 'badge-high'}`}>{t.prioritas}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.status}</span>
+                    <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors).style }}>{t.prioritas || 'Medium'}</span>
+                    <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('status', t.status, 'badge', masterColors).style, fontSize: '13px', fontWeight: 600 }}>{t.status}</span>
                   </div>
                 </div>
               ))}
@@ -1051,14 +1153,19 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <User size={14} color="var(--text-secondary)" />
-                          {t.pic}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                            <User size={12} color="currentColor" /> {t.pic}
+                          </span>
                           {t.additionalPics && (() => {
                             try {
                               const arr = JSON.parse(t.additionalPics);
-                              return Array.isArray(arr) && arr.length > 0 ? `, ${arr.join(', ')}` : '';
-                            } catch(e) { return ''; }
+                              return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
+                                <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                                  {p}
+                                </span>
+                              )) : null;
+                            } catch(e) { return null; }
                           })()}
                         </div>
                       </td>
@@ -1148,8 +1255,24 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           task={selectedTaskForDetail as any}
           onClose={() => setSelectedTaskForDetail(null)}
           setPreviewFile={setPreviewFile}
+          onEdit={() => {
+            setSelectedTaskForDetail(null);
+            handleOpenEditModal(selectedTaskForDetail);
+          }}
         />
       )}
+      
+      <TaskAddEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        taskToEdit={editingTask}
+        onSave={handleSaveModal}
+        formCategoryOptions={masterCategories}
+        formPicOptions={masterPics}
+        formStatusOptions={masterStatuses}
+        formPriorityOptions={masterPriorities}
+        setPreviewFile={setPreviewFile}
+      />
       
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </motion.div>

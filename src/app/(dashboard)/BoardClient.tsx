@@ -2,7 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -18,6 +18,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -96,6 +97,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       setSelectedTask(null);
       setTasks(prev => prev.filter(t => t.id !== id));
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       toast.error('Gagal menghapus pekerjaan');
     }
@@ -111,6 +113,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         body: JSON.stringify({ updates })
       });
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       console.error('Failed to save reorder', e);
     }
@@ -438,7 +441,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
               matchDate = true;
             } else {
-              if (taskStart <= endBoundary && taskEnd >= startBoundary) {
+              if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
                 matchDate = true;
               }
             }
@@ -524,62 +527,62 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
                   const canDrag = userRole !== 'SPV' && isOwnTask(task);
 
-                    return (
-                      <div
-                        key={task.id}
-                        className="kanban-card"
-                        draggable={canDrag}
-                        onDragStart={(e) => {
-                          if (!canDrag) {
-                            e.preventDefault();
-                            return;
-                          }
-                          handleDragStart(e, task.id);
-                        }}
-                        onDragOver={(e) => handleDragOverCard(e, task.id)}
-                        onDrop={(e) => handleDropCard(e, col, task.id)}
-                        onClick={() => openTaskDetail(task)}
-                        style={{
-                          backgroundColor: 'var(--background)',
-                          padding: '8px',
-                          borderRadius: '8px',
-                          border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                          cursor: canDrag ? 'grab' : 'pointer',
-                          opacity: isDragged ? 0.5 : 1,
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          transition: 'transform 0.1s',
-                          marginTop: isDragOverThisCard ? '20px' : '0px'
-                        }}
-                        onDragEnd={() => setDraggedTaskId(null)}
-                      >
-                        {/* Card Content Top */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
-                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                            {sortBy === 'Manual' && canDrag && (
-                              <div className="kanban-sort-arrows" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginRight: '2px' }}>
-                                <ChevronUp
-                                  size={12}
-                                  color="var(--text-secondary)"
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoveUp(col, task.id);
-                                  }}
-                                />
-                                <ChevronDown
-                                  size={12}
-                                  color="var(--text-secondary)"
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoveDown(col, task.id);
-                                  }}
-                                />
-                              </div>
-                            )}
+                  return (
+                    <div
+                      key={task.id}
+                      className="kanban-card"
+                      draggable={canDrag}
+                      onDragStart={(e) => {
+                        if (!canDrag) {
+                          e.preventDefault();
+                          return;
+                        }
+                        handleDragStart(e, task.id);
+                      }}
+                      onDragOver={(e) => handleDragOverCard(e, task.id)}
+                      onDrop={(e) => handleDropCard(e, col, task.id)}
+                      onClick={() => openTaskDetail(task)}
+                      style={{
+                        backgroundColor: 'var(--background)',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                        cursor: canDrag ? 'grab' : 'pointer',
+                        opacity: isDragged ? 0.5 : 1,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        transition: 'transform 0.1s',
+                        marginTop: isDragOverThisCard ? '20px' : '0px'
+                      }}
+                      onDragEnd={() => setDraggedTaskId(null)}
+                    >
+                      {/* Card Content Top */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          {sortBy === 'Manual' && canDrag && (
+                            <div className="kanban-sort-arrows" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginRight: '2px' }}>
+                              <ChevronUp
+                                size={12}
+                                color="var(--text-secondary)"
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveUp(col, task.id);
+                                }}
+                              />
+                              <ChevronDown
+                                size={12}
+                                color="var(--text-secondary)"
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveDown(col, task.id);
+                                }}
+                              />
+                            </div>
+                          )}
                           {(() => {
                             const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
                             return (
@@ -593,9 +596,9 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                             {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
-                          {!task.isAllDay && task.startTime && task.endTime && (
+                          {!task.isAllDay && (task.startTime || task.endTime) && (
                             <span style={{ fontSize: '9px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {task.startTime} - {task.endTime}
+                              {task.startTime ? `${task.startTime} - ` : ''}{task.endTime || ''}
                             </span>
                           )}
                         </div>
@@ -702,6 +705,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             if (!res.ok) throw new Error('Failed to update task');
             setIsEditOpen(false);
             router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
           }}
           formPicOptions={formPicOptions}
           formCategoryOptions={formCategoryOptions}

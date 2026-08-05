@@ -70,8 +70,9 @@ export interface Task {
 export const getTaskFiles = (task: Task | Partial<Task>): FileItem[] => {
   if (task.filesJson) {
     try {
-      return JSON.parse(task.filesJson);
-    } catch (e) { }
+      const allFiles: FileItem[] = JSON.parse(task.filesJson);
+      return allFiles.filter(f => !f.isDeleted);
+    } catch (e) {}
   }
   if (task.fileUrl) {
     return [{ url: task.fileUrl, name: task.fileName || 'File Lampiran' }];

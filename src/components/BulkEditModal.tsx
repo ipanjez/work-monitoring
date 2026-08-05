@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
 
 interface BulkEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTaskIds: number[];
-  field: 'status' | 'kategori' | 'pic' | 'deskripsi' | null;
+  field: 'status' | 'kategori' | 'pic' | 'deskripsi' | 'jadwal' | null;
   masterStatuses: string[];
   masterCats: string[];
   masterPics: string[];
@@ -29,6 +30,14 @@ export default function BulkEditModal({
 }: BulkEditModalProps) {
   const [value, setValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // States for jadwal
+  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [isAllDay, setIsAllDay] = useState(true);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
+  const [repetisi, setRepetisi] = useState('none');
 
   useEffect(() => {
     if (isOpen) {
@@ -40,24 +49,33 @@ export default function BulkEditModal({
     e.preventDefault();
     if (!field || selectedTaskIds.length === 0) return;
 
-    if (field !== 'deskripsi' && !value) {
+    if (field !== 'deskripsi' && field !== 'jadwal' && !value) {
       toast.error('Nilai tidak boleh kosong');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const updates: any = { [field]: value };
-      
-      // Auto progress mapping
-      if (field === 'status') {
-         if (masterStatusProgress[value] !== undefined) {
-             updates.progress = masterStatusProgress[value];
-         } else {
-             if (value === 'Done') updates.progress = 100;
-             else if (value === 'In Progress') updates.progress = 50;
-             else if (value === 'To Do') updates.progress = 0;
-         }
+      const updates: any = {};
+      if (field === 'jadwal') {
+        updates.startDate = new Date(startDate).toISOString();
+        updates.endDate = new Date(endDate).toISOString();
+        updates.isAllDay = isAllDay;
+        updates.startTime = isAllDay ? null : startTime;
+        updates.endTime = isAllDay ? null : endTime;
+        updates.repetisi = repetisi;
+      } else {
+        updates[field] = value;
+        // Auto progress mapping
+        if (field === 'status') {
+           if (masterStatusProgress[value] !== undefined) {
+               updates.progress = masterStatusProgress[value];
+           } else {
+               if (value === 'Done') updates.progress = 100;
+               else if (value === 'In Progress') updates.progress = 50;
+               else if (value === 'To Do') updates.progress = 0;
+           }
+        }
       }
 
       const res = await fetch('/api/tasks/bulk-edit', {
@@ -84,6 +102,7 @@ export default function BulkEditModal({
       case 'kategori': return 'Ubah Kategori Massal';
       case 'pic': return 'Ubah PIC Massal';
       case 'deskripsi': return 'Ubah Deskripsi Massal';
+      case 'jadwal': return 'Ubah Jadwal & Waktu Massal';
       default: return 'Edit Massal';
     }
   };
@@ -145,6 +164,48 @@ export default function BulkEditModal({
                   placeholder="Ketik deskripsi baru (Kosongkan jika ingin menghapus deskripsi lama)"
                   rows={4}
                 />
+              )}
+
+              {field === 'jadwal' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>Tanggal Mulai</label>
+                      <input type="date" className="form-control" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>Tenggat Waktu</label>
+                      <input type="date" className="form-control" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--text-primary)' }}>
+                      <input type="checkbox" checked={isAllDay} onChange={e => setIsAllDay(e.target.checked)} />
+                      Sepanjang Hari
+                    </label>
+                  </div>
+                  {!isAllDay && (
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>Waktu Mulai</label>
+                        <input type="time" className="form-control" value={startTime} onChange={e => setStartTime(e.target.value)} required />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>Waktu Selesai</label>
+                        <input type="time" className="form-control" value={endTime} onChange={e => setEndTime(e.target.value)} required />
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>Repetisi Pekerjaan</label>
+                    <select className="form-control" value={repetisi} onChange={e => setRepetisi(e.target.value)}>
+                      <option value="none">Tidak Berulang</option>
+                      <option value="daily">Setiap Hari</option>
+                      <option value="weekly">Setiap Minggu</option>
+                      <option value="monthly">Setiap Bulan</option>
+                    </select>
+                  </div>
+                </div>
               )}
             </div>
 

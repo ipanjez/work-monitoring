@@ -61,7 +61,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | null>(null);
+  const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | 'jadwal' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
 
@@ -253,8 +253,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchesTarget = true;
     } else {
-      if (start <= endBoundary && end >= startBoundary) {
-        matchesTarget = true;
+      if (end >= startBoundary && end <= endBoundary) {
+         matchesTarget = true;
       }
     }
 
@@ -301,7 +301,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       filesList: [],
       additionalPicsList: [],
       subTasksList: [],
-      isAllDay: true,
+      isAllDay: false,
       startTime: '',
       endTime: '',
       repetisi: 'Tidak Berulang',
@@ -337,7 +337,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       filesList: getTaskFiles(task),
       additionalPicsList: getAdditionalPics(task),
       subTasksList: parsedSubTasks,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : true,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
       startTime: task.startTime || '',
       endTime: task.endTime || '',
       repetisi: repetisiValue,
@@ -543,7 +543,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         { header: 'Kategori', key: 'kategori', width: 20 },
         { header: 'Prioritas', key: 'prioritas', width: 15 },
         { header: 'Status', key: 'status', width: 15 },
-        { header: 'Progress', key: 'progress', width: 12 },
         { header: 'Sepanjang Hari', key: 'isAllDay', width: 16 },
         { header: 'Jam Mulai', key: 'startTime', width: 12 },
         { header: 'Jam Selesai', key: 'endTime', width: 12 },
@@ -564,17 +563,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       };
 
       // Auto wrap untuk kolom Sub Pekerjaan
-      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
+      worksheet.getColumn('O').alignment = { wrapText: true, vertical: 'top' };
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
-        nama: 'Contoh Pekerjaan A (Jangan dihapus, bisa ditimpa)',
+        nama: 'Contoh Pekerjaan A (Jangan dihapus)',
         pic: uniquePics[0] || 'Unassigned',
         picTambahan: 'PIC Lain 1, PIC Lain 2',
         kategori: uniqueCats[0] || 'Umum',
         prioritas: 'High',
         status: 'In Progress',
-        progress: 50,
         isAllDay: 'Tidak',
         startTime: '08:00',
         endTime: '17:00',
@@ -594,6 +592,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         };
         cell.font = { italic: true, color: { argb: 'FF4B5563' } };
       });
+
+      // Set kolom Jam Mulai & Jam Selesai sebagai text agar Excel tidak auto-convert
+      for (let i = 2; i <= 1000; i++) {
+        worksheet.getCell(`I${i}`).numFmt = '@';
+        worksheet.getCell(`J${i}`).numFmt = '@';
+      }
 
       // Tambahkan Data Validation untuk 1000 baris pertama
       for (let i = 2; i <= 1000; i++) {
@@ -625,26 +629,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done']).join(',')}"`]
         };
 
-        // Progress (Angka 0-100)
-        worksheet.getCell(`G${i}`).dataValidation = {
-          type: 'whole',
-          operator: 'between',
-          allowBlank: true,
-          showInputMessage: true,
-          promptTitle: 'Progress',
-          prompt: 'Masukkan angka antara 0 hingga 100',
-          formulae: [0, 100]
-        };
-
         // Sepanjang Hari (Ya/Tidak)
-        worksheet.getCell(`H${i}`).dataValidation = {
+        worksheet.getCell(`G${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"Ya,Tidak"']
         };
 
         // Repetisi
-        worksheet.getCell(`M${i}`).dataValidation = {
+        worksheet.getCell(`L${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
           formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
@@ -682,7 +675,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         ['Kategori', 'Kategori/jenis pekerjaan sesuai master pengaturan', 'Umum', 'Tidak'],
         ['Prioritas', 'Tingkat prioritas pekerjaan (pilih dari dropdown)', 'High', 'Tidak'],
         ['Status', 'Status progres pekerjaan saat ini (pilih dari dropdown)', 'In Progress', 'Tidak'],
-        ['Progress', 'Persentase penyelesaian pekerjaan (angka 0-100)', '50', 'Tidak'],
         ['Sepanjang Hari', 'Apakah pekerjaan berlangsung seharian? Ya = tanpa jam, Tidak = pakai jam', 'Tidak', 'Tidak'],
         ['Jam Mulai', 'Jam mulai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '08:00', 'Tidak'],
         ['Jam Selesai', 'Jam selesai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '17:00', 'Tidak'],
@@ -713,7 +705,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       tipsTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
 
       const tips = [
-        '1. Baris contoh (baris ke-2 di sheet Template) boleh ditimpa atau dihapus.',
+        '1. Baris contoh (baris ke-2 di sheet Template) wajib dibiarkan, mulai isi data asli dari baris ke-3 dan seterusnya.',
         '2. Kolom dengan dropdown (PIC, Prioritas, Status, dll) sudah disediakan pilihan otomatis.',
         '3. Format tanggal wajib menggunakan YYYY-MM-DD (contoh: 2026-08-01).',
         '4. Format jam menggunakan HH:mm 24 jam (contoh: 08:00, 13:30, 17:00).',
@@ -750,6 +742,45 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
+  // Helper: normalize time values from Excel (decimal, dot, or colon format) to HH:mm
+  const normalizeTime = (val: any): string | null => {
+    if (val == null || val === '') return null;
+    const str = String(val).trim();
+    if (/^\d{1,2}:\d{2}$/.test(str)) return str.padStart(5, '0');
+    if (/^\d{1,2}\.\d{2}$/.test(str)) {
+      const [h, m] = str.split('.');
+      return `${h.padStart(2, '0')}:${m}`;
+    }
+    const num = Number(str);
+    if (!isNaN(num) && num >= 0 && num < 1) {
+      const totalMinutes = Math.round(num * 24 * 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+    if (!isNaN(num) && num >= 0 && num <= 24 && Number.isInteger(num)) {
+      return `${String(num).padStart(2, '0')}:00`;
+    }
+    return str;
+  };
+
+  // Helper: normalize date values from Excel (serial number or string) to ISO string
+  const normalizeDate = (val: any, fieldName: string, idx: number): string => {
+    if (val == null || val === '') return new Date().toISOString();
+    
+    let date: Date;
+    if (typeof val === 'number') {
+      date = new Date(Math.round((val - 25569) * 86400 * 1000));
+    } else {
+      date = new Date(String(val).trim());
+    }
+
+    if (isNaN(date.getTime()) || date.getFullYear() < 2000 || date.getFullYear() > 2100) {
+      throw new Error(`Format ${fieldName} pada Data ke-${idx + 1} tidak valid: "${val}". Harap gunakan format YYYY-MM-DD.`);
+    }
+    return date.toISOString();
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -769,12 +800,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             normalized[k.trim().toLowerCase()] = r[k];
           }
           return normalized;
+        }).filter((r: any) => {
+          const nama = r['nama pekerjaan'] || r['nama'] || '';
+          return !nama.includes('Contoh Pekerjaan A');
         });
 
-        const formattedData = data.map((row: any) => {
+        const formattedData = data.map((row: any, idx: number) => {
           let p = Number(row['progress (%)'] || row['progress'] || 0);
           if (isNaN(p)) p = 0;
-
           let subTasksJson = null;
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
@@ -815,15 +848,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             status: row['status'] || 'To Do',
             prioritas: row['prioritas'] || 'Medium',
             kategori: row['kategori'] || 'Umum',
-            progress: p,
             isAllDay,
-            startTime: row['jam mulai'] || row['starttime'] || null,
-            endTime: row['jam selesai'] || row['endtime'] || null,
+            startTime: normalizeTime(row['jam mulai'] || row['starttime']),
+            endTime: normalizeTime(row['jam selesai'] || row['endtime']),
             repetisi: row['repetisi'] || 'Tidak Berulang',
             deskripsi: row['deskripsi'] || '',
             catatan: row['catatan'] || '',
-            startDate: row['tanggal mulai'] || row['startdate'] || new Date().toISOString(),
-            endDate: row['tenggat waktu'] || row['enddate'] || new Date().toISOString(),
+            startDate: normalizeDate(row['tanggal mulai'] || row['startdate'], 'Tanggal Mulai', idx),
+            endDate: normalizeDate(row['tenggat waktu'] || row['enddate'], 'Tenggat Waktu', idx),
             ...(subTasksJson ? { subTasksJson } : {}),
             ...(additionalPicsJson ? { additionalPics: additionalPicsJson } : {}),
           };
@@ -1160,6 +1192,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Main Table with Sortable Columns */}
 
 
+
       <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, backgroundColor: 'var(--surface-color)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'inline-block' }}>
         Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{processedTasks.length}</strong> pekerjaan sesuai filter dari total <strong style={{ color: 'var(--text-primary)' }}>{tasks.length}</strong> data terdaftar.
       </div>
@@ -1190,6 +1223,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
               <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
               <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('jadwal')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Jadwal & Waktu</button>
               <button
                 className="btn"
                 onClick={handleBulkDelete}

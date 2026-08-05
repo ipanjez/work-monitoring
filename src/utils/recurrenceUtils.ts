@@ -11,7 +11,20 @@ export function expandTasksForCalendar(tasks: Task[], rangeStart: Date, rangeEnd
 
     const taskStart = new Date(task.startDate);
     const taskEnd = new Date(task.endDate);
-    const durationMs = taskEnd.getTime() - taskStart.getTime();
+    
+    // For recurring tasks, the task.endDate usually acts as the recurrence end date.
+    // The duration of a SINGLE occurrence shouldn't span the entire recurrence period!
+    // We determine duration based on startTime/endTime or default to 1 day.
+    let durationMs = 24 * 60 * 60 * 1000 - 1; // 1 day minus 1 ms by default
+    if (task.startTime && task.endTime) {
+      const [sh, sm] = task.startTime.split(':').map(Number);
+      const [eh, em] = task.endTime.split(':').map(Number);
+      const startMs = (sh * 60 + sm) * 60 * 1000;
+      const endMs = (eh * 60 + em) * 60 * 1000;
+      if (endMs > startMs) {
+        durationMs = endMs - startMs;
+      }
+    }
 
     // Determine settings
     let every = 1;
@@ -71,7 +84,13 @@ export function expandTasksForCalendar(tasks: Task[], rangeStart: Date, rangeEnd
         }
       }
 
-      // Ensure we don't generate past the end condition
+      // Ensure we don't generate past the end condition.
+      // Since task.endDate represents the end of the RECURRENCE period in the UI,
+      // we must stop if currentStart > taskEnd.
+      if (currentStart > taskEnd) {
+        break;
+      }
+
       if (endType === 'date' && endDate && currentStart > endDate) {
         break;
       }

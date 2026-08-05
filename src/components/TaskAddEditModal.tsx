@@ -554,7 +554,7 @@ export default function TaskAddEditModal({
                       checked={editingTask.isAllDay ?? true}
                       onChange={e => setEditingTask({ ...editingTask, isAllDay: e.target.checked })}
                     />
-                    Seharian (All Day)
+                    Seharian (All Day) <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>(Centang jika tanpa jam spesifik)</span>
                   </label>
                 </div>
 

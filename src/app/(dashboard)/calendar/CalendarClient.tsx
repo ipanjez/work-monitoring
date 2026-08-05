@@ -186,7 +186,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       ...task,
       filesList: getTaskFiles(task),
       additionalPicsList: getAdditionalPics(task),
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : true,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
       startTime: task.startTime || '',
       endTime: task.endTime || '',
       repetisi: task.repetisi || 'Tidak Berulang',
@@ -212,7 +212,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       catatan: '',
       filesList: [],
       additionalPicsList: [],
-      isAllDay: true,
+      isAllDay: false,
       startTime: '',
       endTime: '',
       repetisi: 'Tidak Berulang',
@@ -268,6 +268,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         if (Array.isArray(updated)) setTasks(updated);
       }
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
     } catch (error: any) {
       console.error('Save error:', error);
@@ -286,6 +287,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       setTasks(prev => prev.filter(t => t.id !== realId));
       setSelectedTask(null);
       router.refresh();
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Pekerjaan berhasil dihapus dari kalender.');
     } catch (error: any) {
       console.error(error);
