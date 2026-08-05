@@ -391,8 +391,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       }
 
       let parentStatusToSave = payloadData.status;
-      if (processedSubTasks.length > 0 && processedSubTasks.every((st: any) => st.status === 'Done')) {
-        parentStatusToSave = 'Done';
+      const finalStatusStr = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Done';
+      if (processedSubTasks.length > 0 && processedSubTasks.every((st: any) => st.status === finalStatusStr)) {
+        parentStatusToSave = finalStatusStr;
       }
 
       const finalPayload = {
@@ -1396,8 +1397,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         try {
                           const st = JSON.parse(task.subTasksJson);
                           if (!st || st.length === 0) return '-';
-                          const doneCount = st.filter((s: any) => s.status === 'Done').length;
-                          return `${doneCount}/${st.length} Selesai`;
+                          const finalStatusStr = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Done';
+                          const doneCount = st.filter((s: any) => s.status === finalStatusStr).length;
+                          return `${doneCount}/${st.length} ${finalStatusStr}`;
                         } catch (e) { return '-'; }
                       })() : '-'}
                     </td>

@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, X, CheckCircle, Trash2 } from 'lucide-react';
+import { Bell, X, CheckCircle, Trash2, CheckCheck } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread'>('unread');
   const [actionFilter, setActionFilter] = useState<string>('all_actions');
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -60,28 +60,28 @@ export default function NotificationBell() {
         }}>
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.02)' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Notifikasi Pembaruan</h3>
-            {notifications.length > 0 && (
-              <button 
-                onClick={clearAll}
-                style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <Trash2 size={12} /> Hapus Semua
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {unreadCount > 0 && (
+                <button 
+                  onClick={markAllAsRead}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
+                  title="Tandai semua dibaca"
+                >
+                  <CheckCheck size={16} />
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button 
+                  onClick={clearAll}
+                  style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                >
+                  <Trash2 size={12} /> Hapus Semua
+                </button>
+              )}
+            </div>
           </div>
           
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
-            <button
-              onClick={() => setFilter('all')}
-              style={{
-                flex: 1, padding: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px',
-                fontWeight: filter === 'all' ? 600 : 400,
-                color: filter === 'all' ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                borderBottom: filter === 'all' ? '2px solid var(--accent-primary)' : '2px solid transparent'
-              }}
-            >
-              Semua
-            </button>
             <button
               onClick={() => setFilter('unread')}
               style={{
@@ -92,6 +92,17 @@ export default function NotificationBell() {
               }}
             >
               Belum Dibaca
+            </button>
+            <button
+              onClick={() => setFilter('all')}
+              style={{
+                flex: 1, padding: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px',
+                fontWeight: filter === 'all' ? 600 : 400,
+                color: filter === 'all' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                borderBottom: filter === 'all' ? '2px solid var(--accent-primary)' : '2px solid transparent'
+              }}
+            >
+              Semua
             </button>
           </div>
 

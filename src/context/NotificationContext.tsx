@@ -19,6 +19,7 @@ interface NotificationContextType {
   notifications: NotificationItem[];
   unreadCount: number;
   markAsRead: (id: number) => void;
+  markAllAsRead: () => void;
   clearAll: () => void;
   addActivityLog?: (action: string, title: string, message: string, type?: 'info'|'success'|'warning'|'danger') => Promise<void>;
 }
@@ -172,6 +173,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
+
   const clearAll = () => {
     setNotifications([]);
     localStorage.setItem('dashboard_notifications_cleared_at', new Date().toISOString());
@@ -192,7 +197,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, clearAll, addActivityLog }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, clearAll, addActivityLog }}>
       {children}
     </NotificationContext.Provider>
   );

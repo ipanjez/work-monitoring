@@ -317,7 +317,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     try {
       const subtasks = JSON.parse(subTasksJson);
       if (!Array.isArray(subtasks) || subtasks.length === 0) return null;
-      const doneCount = subtasks.filter((s: any) => s.status === 'Done').length;
+      const finalStatusStr = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Done';
+      const doneCount = subtasks.filter((s: any) => s.status === finalStatusStr).length;
       return { total: subtasks.length, done: doneCount };
     } catch {
       return null;
