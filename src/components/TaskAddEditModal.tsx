@@ -134,11 +134,17 @@ export default function TaskAddEditModal({
         cloned.lokasiData = { tipe: '', linkZoom: '', lokasiFisik: '', jam: '' };
       }
 
+      if (!cloned.id) {
+        if (!cloned.kategori && formCategoryOptions.length > 0) cloned.kategori = formCategoryOptions[0];
+        if (!cloned.status && formStatusOptions.length > 0) cloned.status = formStatusOptions[0];
+        if (!cloned.prioritas && formPriorityOptions.length > 0) cloned.prioritas = formPriorityOptions[0];
+      }
+
       setEditingTask(cloned);
     } else {
       setEditingTask(null);
     }
-  }, [isOpen, taskToEdit]);
+  }, [isOpen, taskToEdit, formCategoryOptions, formStatusOptions, formPriorityOptions]);
 
   const handleAddAnotherPic = () => {
     if (!editingTask) return;
@@ -434,42 +440,15 @@ export default function TaskAddEditModal({
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Kategori *
                   </label>
-                  {!editingTask.isCustomCategory ? (
-                    <select
-                      className="input"
-                      value={editingTask.kategori || 'Umum'}
-                      onChange={e => {
-                        if (e.target.value === '__custom__') {
-                          setEditingTask({ ...editingTask, kategori: '', isCustomCategory: true });
-                        } else {
-                          setEditingTask({ ...editingTask, kategori: e.target.value });
-                        }
-                      }}
-                    >
-                      {formCategoryOptions.map((cat, idx) => (
-                        <option key={idx} value={cat}>{cat}</option>
-                      ))}
-                      <option value="__custom__">+ Ketik Kategori Baru...</option>
-                    </select>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        className="input"
-                        placeholder="Nama Kategori Baru..."
-                        value={editingTask.kategori || ''}
-                        onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '6px' }}
-                        onClick={() => setEditingTask({ ...editingTask, kategori: 'Umum', isCustomCategory: false })}
-                        title="Kembali ke Pilihan Dropdown"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  )}
+                  <select
+                    className="input"
+                    value={editingTask.kategori || (formCategoryOptions.length > 0 ? formCategoryOptions[0] : 'Umum')}
+                    onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
+                  >
+                    {formCategoryOptions.map((cat, idx) => (
+                      <option key={idx} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
