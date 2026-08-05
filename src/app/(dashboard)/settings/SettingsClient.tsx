@@ -406,6 +406,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               { id: 'purple', color: '#a855f7', label: 'Ungu' },
               { id: 'green', color: '#10b981', label: 'Hijau' },
               { id: 'orange', color: '#f97316', label: 'Oranye' },
+              { id: 'red', color: '#ef4444', label: 'Merah' },
+              { id: 'teal', color: '#14b8a6', label: 'Teal' },
             ].map(ac => (
               <button
                 key={ac.id}
@@ -469,6 +471,35 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           <button className="btn btn-primary" onClick={toggleFocusMode} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Maximize size={16} /> Aktifkan Mode Fokus
           </button>
+        </div>
+
+        {/* Theme Preview Card */}
+        <div style={{ marginTop: '32px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Pratinjau Tema & Warna</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
+            </div>
+          </div>
+          <div style={{ padding: density === 'compact' ? '16px' : '32px', background: 'var(--bg-color)', transition: 'padding 0.3s' }}>
+            <div className="glass" style={{ padding: density === 'compact' ? '16px' : '24px', display: 'flex', flexDirection: 'column', gap: density === 'compact' ? '12px' : '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Kartu Contoh Pekerjaan</h4>
+                <span className="badge" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' }}>
+                  In Progress (50%)
+                </span>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: density === 'compact' ? 1.4 : 1.6 }}>
+                Ini adalah simulasi bagaimana teks, kartu, dan tombol akan terlihat di seluruh aplikasi dengan kombinasi tema ({theme === 'dark' ? 'Gelap' : 'Terang'}) dan warna aksen pilihan Anda.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button className="btn btn-primary">Tombol Utama</button>
+                <button className="btn btn-secondary">Tombol Sekunder</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

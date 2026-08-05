@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light';
-type AccentColor = 'blue' | 'purple' | 'green' | 'orange';
+type AccentColor = 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'teal';
 type Density = 'comfortable' | 'compact';
 
 interface ThemeContextType {
