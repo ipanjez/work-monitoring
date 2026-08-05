@@ -557,8 +557,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             >
               {loading ? 'Menyimpan...' : 'Perbarui Profil'}
             </button>
-            <Link 
-              href={`/auth/forgot?npk=${profileNpk}`} 
+            <Link
+              href={`/auth/forgot?npk=${profileNpk}`}
               style={{ fontSize: '12px', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontWeight: 600, transition: 'all 0.2s' }}
             >
               <HelpCircle size={14} /> Lupa Password Saat Ini?

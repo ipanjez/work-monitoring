@@ -551,6 +551,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         { header: 'Repetisi', key: 'repetisi', width: 18 },
         { header: 'Deskripsi', key: 'deskripsi', width: 40 },
         { header: 'Catatan', key: 'catatan', width: 40 },
+        { header: 'Lokasi Pekerjaan', key: 'lokasi', width: 30 },
         { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 50 },
       ];
 
@@ -580,6 +581,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         endDate: format(new Date(), 'yyyy-MM-dd'),
         repetisi: 'Tidak Berulang',
         deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
+        lokasi: 'Online: https://zoom.us/j/12345678',
         catatan: 'Contoh catatan',
         subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
       });
@@ -682,6 +684,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         ['Tenggat Waktu', 'Batas waktu penyelesaian pekerjaan dalam format YYYY-MM-DD', '2026-08-15', 'Tidak'],
         ['Repetisi', 'Pengulangan pekerjaan (pilih dari dropdown)', 'Tidak Berulang', 'Tidak'],
         ['Deskripsi', 'Penjelasan detail mengenai pekerjaan. Gunakan Alt+Enter untuk baris baru', 'Membuat laporan keuangan Q3', 'Tidak'],
+        ['Lokasi Pekerjaan', 'Lokasi/Tempat pekerjaan. Gunakan awalan "Online:" untuk URL zoom/meet, atau tulis langsung untuk alamat fisik', 'Online: https://zoom.us/j/12345678\nOffline: Ruang Rapat Lt. 2', 'Tidak'],
         ['Catatan', 'Catatan tambahan terkait pekerjaan', 'Perlu koordinasi dengan tim finance', 'Tidak'],
         ['Sub Pekerjaan', 'Daftar sub-tugas dengan format [Status] Nama. Pisahkan dengan Enter (Alt+Enter di Excel)', '[Done] Kumpulkan data\n[To Do] Analisis', 'Tidak'],
       ];
@@ -739,6 +742,29 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } catch (err) {
       console.error('Error generating template:', err);
       toast.error('Gagal membuat template Excel.');
+    }
+  };
+
+  // Helper: parse lokasi value from Excel to JSON string
+  const parseLokasiFromExcel = (val: any): string | null => {
+    if (!val) return null;
+    const str = String(val).trim();
+    if (!str) return null;
+
+    if (str.startsWith('{') && str.endsWith('}')) {
+      try {
+        JSON.parse(str);
+        return str;
+      } catch (e) {}
+    }
+
+    const lower = str.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.live.com') || lower.includes('teams.microsoft') || lower.startsWith('online:')) {
+      const cleanLink = str.replace(/^online:\s*/i, '').trim();
+      return JSON.stringify({ tipe: 'online', linkZoom: cleanLink, lokasiFisik: '', jam: '' });
+    } else {
+      const cleanPhys = str.replace(/^offline:\s*/i, '').trim();
+      return JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: cleanPhys, jam: '' });
     }
   };
 
@@ -853,6 +879,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             endTime: normalizeTime(row['jam selesai'] || row['endtime']),
             repetisi: row['repetisi'] || 'Tidak Berulang',
             deskripsi: row['deskripsi'] || '',
+            lokasi: parseLokasiFromExcel(row['lokasi pekerjaan'] || row['lokasi']),
             catatan: row['catatan'] || '',
             startDate: normalizeDate(row['tanggal mulai'] || row['startdate'], 'Tanggal Mulai', idx),
             endDate: normalizeDate(row['tenggat waktu'] || row['enddate'], 'Tenggat Waktu', idx),
@@ -903,6 +930,20 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         } catch (e) { }
       }
 
+      let lokasiStr = '';
+      if (t.lokasi) {
+        try {
+          const parsedLoc = JSON.parse(t.lokasi);
+          if (parsedLoc.tipe === 'online') {
+            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+          } else if (parsedLoc.tipe === 'offline') {
+            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+          }
+        } catch (e) {
+          lokasiStr = t.lokasi;
+        }
+      }
+
       return {
         'Nama Pekerjaan': t.nama,
         'PIC Utama': t.pic,
@@ -917,6 +958,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         'Jam Selesai': t.endTime || '',
         'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
         'Repetisi': formatRecurrenceText(t.repetisi),
+        'Lokasi Pekerjaan': lokasiStr,
         'Sub Pekerjaan': subPekerjaanStr,
         'Diedit (kali)': t.editCount || 0,
         'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
