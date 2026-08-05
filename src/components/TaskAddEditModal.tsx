@@ -77,6 +77,8 @@ export default function TaskAddEditModal({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
 
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +93,8 @@ export default function TaskAddEditModal({
           setMasterProgressMap(data.master_status_progress);
           localStorage.setItem('master_status_progress', JSON.stringify(data.master_status_progress));
         }
+        if (data.max_file_size_mb) setMaxFileSizeMb(Number(data.max_file_size_mb));
+        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(Number(data.max_task_files_size_mb));
       }).catch(() => { });
     }
   }, [isOpen]);
@@ -160,6 +164,15 @@ export default function TaskAddEditModal({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !editingTask) return;
 
+    let currentTotalSize = 0;
+    if (editingTask.filesList) {
+      editingTask.filesList.forEach(f => {
+        if (!f.isDeleted && f.size) {
+          currentTotalSize += f.size;
+        }
+      });
+    }
+
     setUploadingFile(true);
     toast.loading('Mengunggah file...', { id: 'upload' });
 
@@ -168,8 +181,13 @@ export default function TaskAddEditModal({
       const newFiles: FileItem[] = [];
 
       for (const file of filesArr) {
-        if (file.size > 25 * 1024 * 1024) {
-          toast.error(`File ${file.name} melebihi 25MB`);
+        if (file.size > maxFileSizeMb * 1024 * 1024) {
+          toast.error(`File ${file.name} melebihi batas ${maxFileSizeMb}MB per file.`);
+          continue;
+        }
+
+        if (currentTotalSize + file.size > maxTaskFilesSizeMb * 1024 * 1024) {
+          toast.error(`Total file task melebihi batas ${maxTaskFilesSizeMb}MB. File ${file.name} dilewati.`);
           continue;
         }
 
@@ -188,8 +206,10 @@ export default function TaskAddEditModal({
         newFiles.push({
           url: data.fileUrl,
           name: data.fileName,
+          size: data.fileSize || file.size,
           uploadedAt: new Date().toISOString()
         });
+        currentTotalSize += file.size;
       }
 
       if (newFiles.length > 0) {
@@ -902,7 +922,7 @@ export default function TaskAddEditModal({
               {/* Multiple File Attachments Upload */}
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                  File Lampiran (Bisa Unggah Lebih dari 1 File)
+                  File Lampiran (Maks {maxFileSizeMb}MB/file, Total {maxTaskFilesSizeMb}MB)
                 </label>
                 <input
                   type="file"
