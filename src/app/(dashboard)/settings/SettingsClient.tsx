@@ -61,6 +61,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
+
+  const PRESET_COLORS = [
+    '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', 
+    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', 
+    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', 
+    '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
+  ];
 
   // Fetch initial data
   useEffect(() => {
@@ -234,14 +242,30 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             onDragEnd={() => setDraggedIdx(null)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
-              background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'),
-              border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
+              background: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c !== '#ffffff') {
+                  const base = c.length === 9 ? c.substring(0, 7) : c;
+                  return `color-mix(in srgb, ${base} 15%, transparent)`;
+                }
+                return draggedIdx?.type === type && draggedIdx.index === idx ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)' : 'var(--surface-color)';
+              })(),
+              border: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c !== '#ffffff') {
+                  const base = c.length === 9 ? c.substring(0, 7) : c;
+                  return `1px solid ${base}`;
+                }
+                return draggedIdx?.type === type && draggedIdx.index === idx ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)';
+              })(),
+              fontSize: '13px', fontWeight: 500,
               color: (() => {
                 const c = masterColors[`${type}_${s}`];
-                if (c && c.length === 9) return c.substring(0, 7);
-                if (c && c !== '#ffffff') return 'white';
-                return (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)');
-              })(), cursor: 'grab'
+                if (c && c !== '#ffffff') {
+                  return c.length === 9 ? c.substring(0, 7) : c;
+                }
+                return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
+              })(), cursor: 'grab', position: 'relative'
             }}
           >
             {s}
@@ -256,39 +280,38 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
-            <input
-              type="color"
-              value={(masterColors[`${type}_${s}`] || '#ffffff').substring(0, 7)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const currentVal = masterColors[`${type}_${s}`] || '#ffffff';
-                const alpha = currentVal.length === 9 ? currentVal.slice(7) : 'ff';
-                handleColorChange(type, s, e.target.value + (alpha === 'ff' ? '' : alpha));
-              }}
-              style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
-              title="Ubah Warna Dasar"
+            <button
+              type="button"
+              onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
+              style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '4px' }}
+              title="Pilih Warna Template"
             />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={(() => {
-                const currentVal = masterColors[`${type}_${s}`] || '#ffffff';
-                if (currentVal.length === 9) return Math.round(parseInt(currentVal.slice(7), 16) / 2.55);
-                return 100;
-              })()}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const opacity = parseInt(e.target.value, 10);
-                const hexColor = (masterColors[`${type}_${s}`] || '#ffffff').substring(0, 7);
-                if (opacity === 100) {
-                  handleColorChange(type, s, hexColor);
-                } else {
-                  const alpha = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
-                  handleColorChange(type, s, hexColor + alpha);
-                }
-              }}
-              style={{ width: '50px', cursor: 'pointer', margin: '0 4px' }}
-              title="Transparansi (Opacity) Label"
-            />
+            {activeColorPicker === `${type}_${s}` && (
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', width: '140px', display: 'flex', flexWrap: 'wrap', gap: '6px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', marginTop: '8px' }}>
+                {PRESET_COLORS.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      handleColorChange(type, s, c);
+                      setActiveColorPicker(null);
+                    }}
+                    style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: masterColors[`${type}_${s}`] === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: '2px' }}
+                    title={c}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleColorChange(type, s, '#ffffff');
+                    setActiveColorPicker(null);
+                  }}
+                  style={{ width: '100%', marginTop: '4px', padding: '6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  Gunakan Default Aksen
+                </button>
+              </div>
+            )}
             <button
               type="button" onClick={() => handleDelete(type, s)}
               style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}

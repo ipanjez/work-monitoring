@@ -172,17 +172,20 @@ export const getDynamicIconName = (type: string, value: string): string => {
 
 export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '', passedMasterColors?: Record<string, string>) => {
   let color = passedMasterColors ? passedMasterColors[`${type}_${value}`] : getDynamicColor(type, value);
+  
   if (color && color !== '#ffffff' && color !== '#ffffff00' && color !== '#fff') {
-    const isTranslucent = color.length === 9 || color.startsWith('rgba');
+    // Ensure we only use the base 7-character hex if a 9-character hex was previously saved
+    const baseColor = color.length === 9 ? color.substring(0, 7) : color;
     return { 
       style: { 
-        backgroundColor: color, 
-        color: isTranslucent ? color.substring(0,7) : '#fff',
-        border: isTranslucent ? `1px solid ${color.substring(0,7)}` : 'none'
+        backgroundColor: `color-mix(in srgb, ${baseColor} 15%, transparent)`,
+        color: baseColor,
+        border: `1px solid ${baseColor}`
       }, 
       className: 'badge' 
     };
   }
+  
   return { 
     style: { 
       backgroundColor: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
