@@ -172,10 +172,25 @@ export const getDynamicIconName = (type: string, value: string): string => {
 
 export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '', passedMasterColors?: Record<string, string>) => {
   let color = passedMasterColors ? passedMasterColors[`${type}_${value}`] : getDynamicColor(type, value);
-  if (color) {
-    return { style: { backgroundColor: color, color: '#fff' }, className: 'badge' };
+  if (color && color !== '#ffffff' && color !== '#ffffff00' && color !== '#fff') {
+    const isTranslucent = color.length === 9 || color.startsWith('rgba');
+    return { 
+      style: { 
+        backgroundColor: color, 
+        color: isTranslucent ? color.substring(0,7) : '#fff',
+        border: isTranslucent ? `1px solid ${color.substring(0,7)}` : 'none'
+      }, 
+      className: 'badge' 
+    };
   }
-  return { className: defaultClass || 'badge badge-medium', style: {} };
+  return { 
+    style: { 
+      backgroundColor: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
+      color: 'var(--accent-primary)',
+      border: '1px solid var(--accent-primary)'
+    }, 
+    className: 'badge' 
+  };
 };
 
 export const getPriorityBadgeClass = (p?: string | null) => {

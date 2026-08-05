@@ -104,16 +104,17 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !commentAuthor.trim()) {
+    const finalAuthor = session?.user?.name || commentAuthor;
+    if (!newComment.trim() || !finalAuthor.trim()) {
       toast.error('Nama dan komentar tidak boleh kosong');
       return;
     }
-
-    localStorage.setItem('commentAuthor', commentAuthor.trim());
+    
+    localStorage.setItem('commentAuthor', finalAuthor.trim());
 
     const comment: CommentItem = {
       id: Date.now().toString(),
-      author: commentAuthor.trim(),
+      author: finalAuthor.trim(),
       text: newComment.trim(),
       createdAt: new Date().toISOString()
     };
@@ -142,7 +143,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
       toast.success('Komentar berhasil ditambahkan');
-      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
+      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${finalAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
@@ -459,9 +460,9 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                     type="text"
                     className="input"
                     placeholder="Nama Anda"
-                    value={commentAuthor}
-                    onChange={e => setCommentAuthor(e.target.value)}
-                    style={{ fontSize: '13px', padding: '8px 12px' }}
+                    value={session?.user?.name || commentAuthor}
+                    readOnly
+                    style={{ fontSize: '13px', padding: '8px 12px', background: 'var(--surface-color)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
                   />
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <textarea
@@ -475,7 +476,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                     <button
                       className="btn btn-primary"
                       onClick={handleAddComment}
-                      disabled={isSubmittingComment || !newComment.trim() || !commentAuthor.trim()}
+                      disabled={isSubmittingComment || !newComment.trim() || !(session?.user?.name || commentAuthor).trim()}
                       style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Send size={16} />

@@ -236,7 +236,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
               background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'),
               border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
-              color: masterColors[`${type}_${s}`] ? 'white' : (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)'), cursor: 'grab'
+              color: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c.length === 9) return c.substring(0, 7);
+                if (c && c !== '#ffffff') return 'white';
+                return (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)');
+              })(), cursor: 'grab'
             }}
           >
             {s}
@@ -253,10 +258,36 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             )}
             <input
               type="color"
-              value={masterColors[`${type}_${s}`] || '#ffffff'}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleColorChange(type, s, e.target.value)}
+              value={(masterColors[`${type}_${s}`] || '#ffffff').substring(0, 7)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const currentVal = masterColors[`${type}_${s}`] || '#ffffff';
+                const alpha = currentVal.length === 9 ? currentVal.slice(7) : 'ff';
+                handleColorChange(type, s, e.target.value + (alpha === 'ff' ? '' : alpha));
+              }}
               style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
-              title="Ubah Warna"
+              title="Ubah Warna Dasar"
+            />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={(() => {
+                const currentVal = masterColors[`${type}_${s}`] || '#ffffff';
+                if (currentVal.length === 9) return Math.round(parseInt(currentVal.slice(7), 16) / 2.55);
+                return 100;
+              })()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const opacity = parseInt(e.target.value, 10);
+                const hexColor = (masterColors[`${type}_${s}`] || '#ffffff').substring(0, 7);
+                if (opacity === 100) {
+                  handleColorChange(type, s, hexColor);
+                } else {
+                  const alpha = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
+                  handleColorChange(type, s, hexColor + alpha);
+                }
+              }}
+              style={{ width: '50px', cursor: 'pointer', margin: '0 4px' }}
+              title="Transparansi (Opacity) Label"
             />
             <button
               type="button" onClick={() => handleDelete(type, s)}
@@ -264,6 +295,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             ><X size={14} /></button>
           </span>
         ))}
+      </div>
+      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+        <button type="button" className="btn btn-primary" onClick={handleSaveSettings} disabled={loading}>
+          {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+        </button>
       </div>
     </>
   );
