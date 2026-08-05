@@ -59,6 +59,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
 
   useEffect(() => {
     if (task) {
@@ -67,6 +69,18 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const savedAuthor = localStorage.getItem('commentAuthor');
       if (savedAuthor) setCommentAuthor(savedAuthor);
     }
+    
+    const loadSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.max_file_size_mb) setMaxFileSizeMb(Number(data.max_file_size_mb));
+        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(Number(data.max_task_files_size_mb));
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    loadSettings();
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
@@ -366,16 +380,23 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
             {/* Multiple Files Detail Display */}
             {getTaskFiles(task).length > 0 && (
               <div>
-                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  File Lampiran ({getTaskFiles(task).length} File)
-                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    File Lampiran ({getTaskFiles(task).length} File, Maks {maxFileSizeMb} MB/file)
+                  </h4>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                    Total terpakai: {(getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                  </span>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {getTaskFiles(task).map((f, idx) => (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
                           <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
-                          <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
+                          <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.name}>
+                            {f.name} {f.size ? `(${(f.size / (1024*1024)).toFixed(2)} MB)` : ''}
+                          </span>
                         </div>
                         {!f.isDeleted && (
                           <button
