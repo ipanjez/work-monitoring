@@ -1510,7 +1510,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </td>
                     <td className="hide-mobile" style={{ padding: '12px 10px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {taskFiles.length > 1 ? (
-                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setEditingTask(task); setModalMode('detail'); }}>
+                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setDetailTask(task); }}>
                           <Paperclip size={14} /> {taskFiles.length} Lampiran
                         </div>
                       ) : taskFiles.length === 1 ? (
