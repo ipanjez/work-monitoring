@@ -38,7 +38,7 @@ export default function DashboardLayout({
       <main className="main-content">
         {children}
       </main>
-      <div style={{ position: 'fixed', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 9999 }}>
+      <div className="header-actions-container">
         <GlobalAddButton />
         <NotificationBell />
         <UserProfileButton />

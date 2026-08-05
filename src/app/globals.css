@@ -417,13 +417,37 @@ th[style*="cursor: pointer"]:hover, .clickable-hover:hover { color: var(--accent
   background-color: var(--surface-hover) !important;
 }
 
-@media (max-width: 1024px) {
+/* Header Actions Wrapper Styling */
+.header-actions-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .header-actions-container {
+    top: 10px !important;
+    right: 12px !important;
+    gap: 8px !important;
+    z-index: 100 !important;
+  }
+  
   .profile-name-text,
   .profile-chevron {
     display: none !important;
   }
+  
   .profile-btn {
     padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
     gap: 0 !important;
   }
 }
