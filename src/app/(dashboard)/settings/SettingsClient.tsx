@@ -215,7 +215,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             key={s}
             draggable
             onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
-            onDragOver={(e: React.DragEvent) => handleDragOver(e, idx)}
+            onDragOver={(e: React.DragEvent) => handleDragOver(e)}
             onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
             onDragEnd={() => setDraggedIdx(null)}
             style={{
