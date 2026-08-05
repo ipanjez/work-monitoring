@@ -32,6 +32,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | string>(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -72,6 +74,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.dept_name) setDeptName(data.dept_name);
+        if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
+        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
       })
       .catch(e => console.error(e));
 
@@ -314,7 +318,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_priorities: priorities,
         master_colors: masterColors,
         master_icons: masterIcons,
-        master_status_progress: masterStatusProgress
+        master_status_progress: masterStatusProgress,
+        max_file_size_mb: Number(maxFileSizeMb) || 25,
+        max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100
       })
     })
       .then(() => {
@@ -640,6 +646,34 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 placeholder="Kosongkan jika tidak ingin mengubah sandi"
               />
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Maksimal Ukuran per File Lampiran (MB)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={maxFileSizeMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
+                placeholder="Contoh: 25"
+                min="1"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Maksimal Total Ukuran File per Pekerjaan (MB)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={maxTaskFilesSizeMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
+                placeholder="Contoh: 100"
+                min="1"
+              />
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
