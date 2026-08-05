@@ -403,12 +403,18 @@ th[style*="cursor: pointer"]:hover, .clickable-hover:hover { color: var(--accent
 
 @media (max-width: 768px) {
   .kanban-board-wrapper {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
     gap: 12px;
+    padding: 4px 4px 12px 4px;
+    height: calc(100vh - 140px);
   }
   .kanban-col {
-    max-height: 300px;
+    flex: 0 0 85vw !important;
+    scroll-snap-align: center;
+    max-height: calc(100vh - 220px) !important;
   }
 }
 
