@@ -1473,7 +1473,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </td>
                     <td className="hide-mobile" style={{ padding: '12px 10px' }}>
                       {(() => {
-                        const badge = getDynamicBadgeStyle('category', task.kategori || 'Umum', '', masterColors);
+                        const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
                         return (
                           <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', ...badge.style }}>
                             {task.kategori || 'Umum'}
