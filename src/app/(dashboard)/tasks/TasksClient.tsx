@@ -1320,12 +1320,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Prioritas {renderSortIcon('prioritas')}
                   </div>
                 </th>
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
+                <th style={{ padding: '12px 10px', width: '120px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '12px 10px' }}>Lampiran</th>
+                <th className="hide-mobile" style={{ padding: '12px 10px', width: '100px' }}>Lampiran</th>
                 <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
@@ -1428,7 +1428,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 10px', minWidth: '150px' }}>
+                    <td style={{ padding: '12px 10px', width: '120px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12px' }}>
                         {(() => {
                           const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
@@ -1450,7 +1450,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </div>
                     </td>
-                    <td className="hide-mobile" style={{ padding: '12px 10px' }}>
+                    <td className="hide-mobile" style={{ padding: '12px 10px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {task.fileUrl ? (
                         <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                           <Paperclip size={14} /> {task.fileName || 'Lampiran'}
