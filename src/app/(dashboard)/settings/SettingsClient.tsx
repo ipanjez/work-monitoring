@@ -548,7 +548,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
             <button
               type="submit"
               className="btn btn-primary"
