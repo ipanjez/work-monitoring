@@ -32,8 +32,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
-  // If already logged in and trying to access signin/forgot/signup page
-  if (session && (pathname === '/auth/signin' || pathname === '/auth/forgot' || pathname === '/auth/signup')) {
+  // If already logged in and trying to access signin/signup page
+  if (session && (pathname === '/auth/signin' || pathname === '/auth/signup')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
