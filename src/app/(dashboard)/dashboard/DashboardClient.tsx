@@ -1188,7 +1188,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
                         {(() => {
-                          const badge = getDynamicBadgeStyle('category', t.kategori || 'Umum', '', masterColors);
+                          const badge = getDynamicBadgeStyle('cat', t.kategori || 'Umum', '', masterColors);
                           return (
                             <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', ...badge.style }}>
                               {t.kategori || 'Umum'}
