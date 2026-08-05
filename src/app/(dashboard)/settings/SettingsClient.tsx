@@ -507,9 +507,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: 0 }}>
               Kosongkan kolom di bawah ini jika Anda tidak ingin mengubah password.
             </p>
-            <Link href={`/auth/forgot?npk=${profileNpk}`} style={{ fontSize: '11px', padding: '6px 12px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
-              <HelpCircle size={14} /> Lupa Password Saat Ini?
-            </Link>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
@@ -551,14 +548,22 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ alignSelf: 'flex-start', marginTop: '8px', padding: '10px 20px' }}
-            disabled={loading}
-          >
-            {loading ? 'Menyimpan...' : 'Perbarui Profil'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ padding: '10px 20px' }}
+              disabled={loading}
+            >
+              {loading ? 'Menyimpan...' : 'Perbarui Profil'}
+            </button>
+            <Link 
+              href={`/auth/forgot?npk=${profileNpk}`} 
+              style={{ fontSize: '12px', padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontWeight: 600, transition: 'all 0.2s' }}
+            >
+              <HelpCircle size={14} /> Lupa Password Saat Ini?
+            </Link>
+          </div>
         </form>
       </div>
 
