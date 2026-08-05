@@ -464,35 +464,70 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               )}
             </div>
  
-            <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-              {onEdit && userRole !== 'SPV' && (
-                <button className="btn btn-secondary" onClick={onEdit}>
-                  <Edit size={16} /> Edit Pekerjaan Ini
-                </button>
-              )}
-              {onDelete && userRole !== 'SPV' && (
-                <button className="btn btn-danger" onClick={onDelete}>
-                  <X size={16} /> Hapus Pekerjaan
-                </button>
-              )}
+            {/* Row 1: Manage Task Actions */}
+            {(onEdit || onDelete) && userRole !== 'SPV' && (
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
+                {onEdit && (
+                  <button className="btn btn-secondary" onClick={onEdit}>
+                    <Edit size={16} /> Edit Pekerjaan Ini
+                  </button>
+                )}
+                {onDelete && (
+                  <button className="btn btn-danger" onClick={onDelete}>
+                    <X size={16} /> Hapus Pekerjaan
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Row 2: Calendar Actions */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: (onEdit || onDelete) && userRole !== 'SPV' ? '4px' : '12px', flexWrap: 'wrap', alignItems: 'center' }}>
               <a
                 href={getGoogleCalendarUrl(task)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >
                 <ExternalLink size={16} /> Tambah ke Google Calendar
               </a>
-              <button className="btn btn-secondary" onClick={() => handleExportICS(task)}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => handleExportICS(task)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              >
                 <CalendarDays size={16} /> Download .ics
               </button>
               {pathname !== '/calendar' && (
                 <button 
                   className="btn" 
-                  style={{ background: 'var(--primary-color)', color: '#ffffff', opacity: 0.9, fontWeight: 500 }}
+                  style={{ 
+                    background: 'transparent', 
+                    color: 'var(--text-secondary)', 
+                    border: '1px solid var(--border-color)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
                   onClick={() => {
                     onClose();
                     router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.borderColor = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.background = 'transparent';
                   }}
                 >
                   <Eye size={15} /> Pergi ke Kalender
