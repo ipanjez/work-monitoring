@@ -12,6 +12,7 @@ export interface ParsedTask {
   startTime: string;
   endTime: string;
   deskripsi: string;
+  lokasi?: string;
 }
 
 function parseDateIndonesian(text: string): Date | null {
@@ -78,7 +79,8 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
         endDate: globalDate,
         startTime: '08:00', // Default
         endTime: '17:00',   // Default
-        deskripsi: ''
+        deskripsi: '',
+        lokasi: ''
       };
       currentDescription = [];
       continue;
@@ -93,14 +95,28 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
         const extractedTime = extractTime(line);
         if (extractedTime) {
           currentTask.startTime = extractedTime;
-          // We can guess end time is +2 hours or end of day, but leave it as default or user edits
           const [h, m] = extractedTime.split(':').map(Number);
           const endH = Math.min(23, h + 2).toString().padStart(2, '0');
           currentTask.endTime = `${endH}:${m.toString().padStart(2, '0')}`;
         }
         currentDescription.push(line); // Also keep in description for context
       } 
-      // Location / Misc Description parsing
+      // Location parsing
+      else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || lowerLine.includes('tempat:') || lowerLine.includes('lokasi:') || lowerLine.includes('ruang:') || lowerLine.includes('link:')) {
+        const cleanLoc = line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
+        if (cleanLoc) {
+          const locLower = cleanLoc.toLowerCase();
+          if (locLower.startsWith('http://') || locLower.startsWith('https://') || locLower.includes('zoom.us') || locLower.includes('meet.google.com') || locLower.includes('teams.live.com') || locLower.includes('teams.microsoft') || locLower.startsWith('online:')) {
+            const cleanLink = cleanLoc.replace(/^online:\s*/i, '').trim();
+            currentTask.lokasi = JSON.stringify({ tipe: 'online', linkZoom: cleanLink, lokasiFisik: '', jam: '' });
+          } else {
+            const cleanPhys = cleanLoc.replace(/^offline:\s*/i, '').trim();
+            currentTask.lokasi = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: cleanPhys, jam: '' });
+          }
+        }
+        currentDescription.push(line);
+      }
+      // Misc Description parsing
       else {
         currentDescription.push(line);
       }

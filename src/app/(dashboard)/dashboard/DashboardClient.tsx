@@ -754,18 +754,35 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       { 'Metrik': 'Rata-rata Progress', 'Nilai': `${avgProgress}%` }
     ];
 
-    const detailData = filteredTasks.map(t => ({
-      'Nama Pekerjaan': t.nama,
-      'PIC': t.pic,
-      'Kategori': t.kategori || 'Umum',
-      'Prioritas': t.prioritas,
-      'Status': t.status,
-      'Progress (%)': t.progress,
-      'Deskripsi': t.deskripsi || '',
-      'Lampiran File': (t as any).fileName || '',
-      'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).startTime ? `, ${(t as any).startTime}` : ''),
-      'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : '')
-    }));
+    const detailData = filteredTasks.map(t => {
+      let lokasiStr = '';
+      if ((t as any).lokasi) {
+        try {
+          const parsedLoc = JSON.parse((t as any).lokasi);
+          if (parsedLoc.tipe === 'online') {
+            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+          } else if (parsedLoc.tipe === 'offline') {
+            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+          }
+        } catch (e) {
+          lokasiStr = (t as any).lokasi;
+        }
+      }
+
+      return {
+        'Nama Pekerjaan': t.nama,
+        'PIC': t.pic,
+        'Kategori': t.kategori || 'Umum',
+        'Prioritas': t.prioritas,
+        'Status': t.status,
+        'Progress (%)': t.progress,
+        'Lokasi Pekerjaan': lokasiStr,
+        'Deskripsi': t.deskripsi || '',
+        'Lampiran File': (t as any).fileName || '',
+        'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).startTime ? `, ${(t as any).startTime}` : ''),
+        'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : '')
+      };
+    });
 
     const wb = XLSX.utils.book_new();
     

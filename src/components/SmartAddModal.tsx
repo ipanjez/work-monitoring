@@ -177,7 +177,39 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Deskripsi / Lokasi</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</label>
+                        <input 
+                          className="input" 
+                          placeholder="Contoh: Ruang Rapat Lt. 2 ATAU Link Zoom (https://...)"
+                          value={task.lokasi ? (() => {
+                            try {
+                              const parsed = JSON.parse(task.lokasi);
+                              return parsed.tipe === 'online' ? (parsed.linkZoom || '') : (parsed.lokasiFisik || '');
+                            } catch (e) {
+                              return task.lokasi;
+                            }
+                          })() : ''} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const lower = val.toLowerCase();
+                            let lokasiJson = '';
+                            if (val.trim()) {
+                              if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft') || lower.startsWith('online:')) {
+                                const clean = val.replace(/^online:\s*/i, '').trim();
+                                lokasiJson = JSON.stringify({ tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' });
+                              } else {
+                                const clean = val.replace(/^offline:\s*/i, '').trim();
+                                lokasiJson = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' });
+                              }
+                            }
+                            updateTask(idx, 'lokasi', lokasiJson);
+                          }} 
+                          style={{ padding: '6px 10px' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Deskripsi</label>
                         <textarea 
                           className="input" 
                           value={task.deskripsi} 
