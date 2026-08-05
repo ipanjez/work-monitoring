@@ -500,19 +500,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Alamat Email (digunakan untuk reset password)
-            </label>
-            <input
-              type="email"
-              className="input"
-              value={profileEmail}
-              onChange={e => setProfileEmail(e.target.value)}
-              placeholder="nama@perusahaan.co.id"
-            />
-          </div>
-
           <div style={{ height: '1px', background: 'var(--border-color)', margin: '8px 0' }} />
 
           <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Ubah Password</h4>
@@ -520,7 +507,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: 0 }}>
               Kosongkan kolom di bawah ini jika Anda tidak ingin mengubah password.
             </p>
-            <Link href="/auth/forgot" style={{ fontSize: '11px', padding: '6px 12px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
+            <Link href={`/auth/forgot?npk=${profileNpk}`} style={{ fontSize: '11px', padding: '6px 12px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
               <HelpCircle size={14} /> Lupa Password Saat Ini?
             </Link>
           </div>

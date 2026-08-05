@@ -131,8 +131,30 @@ export const getDynamicColor = (type: string, value: string): string => {
   if (typeof window !== 'undefined') {
     try {
       const colors = JSON.parse(localStorage.getItem('master_colors') || '{}');
-      return colors[`${type}_${value}`] || '';
+      const customColor = colors[`${type}_${value}`];
+      if (customColor) return customColor;
     } catch { }
+  }
+  
+  // Fallbacks
+  const lowerType = type.toLowerCase();
+  if (lowerType === 'status') {
+    switch (value) {
+      case 'Done': return '#10b981';
+      case 'Review': return '#3b82f6';
+      case 'In Progress': return '#f59e0b';
+      case 'To Do': return '#94a3b8';
+      default: return '#64748b';
+    }
+  }
+  if (lowerType === 'priority' || lowerType === 'prioritas') {
+    switch (value) {
+      case 'Urgent': return '#ef4444';
+      case 'High': return '#f97316';
+      case 'Medium': return '#3b82f6';
+      case 'Low': return '#10b981';
+      default: return '#3b82f6';
+    }
   }
   return '';
 };

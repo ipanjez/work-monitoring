@@ -1,17 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { KeyRound, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
-export default function ForgotPasswordPage() {
+function ForgotContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [npk, setNpk] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
+
+  useEffect(() => {
+    const npkParam = searchParams.get('npk');
+    if (npkParam) {
+      setNpk(npkParam);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +108,7 @@ export default function ForgotPasswordPage() {
                   value={npk}
                   onChange={e => setNpk(e.target.value)}
                   placeholder="Masukkan NPK Anda"
-                  autoFocus
+                  autoFocus={!npk}
                   required
                 />
               </div>
@@ -116,6 +124,7 @@ export default function ForgotPasswordPage() {
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="Masukkan password baru"
                   required
+                  autoFocus={!!npk}
                 />
               </div>
 
@@ -156,5 +165,13 @@ export default function ForgotPasswordPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotContent />
+    </Suspense>
   );
 }

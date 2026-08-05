@@ -187,11 +187,6 @@ export default function Sidebar() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-                </div>
-              )}
-            </div>
 
             <button className={styles.toggleBtn} onClick={toggleSidebar} title={isSidebarCollapsed ? "Buka Sidebar" : "Lipat Sidebar"}>
               {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
