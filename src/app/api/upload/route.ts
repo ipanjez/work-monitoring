@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -8,6 +9,25 @@ export async function POST(req: Request) {
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    }
+
+    // Check max total storage
+    const setting = await prisma.appSetting.findUnique({ where: { key: 'max_total_storage_mb' } });
+    const maxTotalStorageMb = setting ? Number(setting.value) : 5000;
+    const maxTotalStorageBytes = maxTotalStorageMb * 1024 * 1024;
+
+    const totalFileSize = files.reduce((acc, f) => acc + (typeof f !== 'string' ? f.size : 0), 0);
+
+    let usedBytes = 0;
+    let cursor: string | undefined;
+    do {
+      const listResult: any = await list({ cursor });
+      usedBytes += listResult.blobs.reduce((acc: number, b: any) => acc + b.size, 0);
+      cursor = listResult.cursor;
+    } while (cursor);
+
+    if (usedBytes + totalFileSize > maxTotalStorageBytes) {
+      return NextResponse.json({ error: `Kapasitas penyimpanan penuh. Tersisa ${(maxTotalStorageBytes - usedBytes) / (1024 * 1024)} MB.` }, { status: 400 });
     }
 
     const uploadedResults = [];

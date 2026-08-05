@@ -29,11 +29,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('Work Monitoring');
-  const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | string>(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
+  const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
+  const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -76,6 +77,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.dept_name) setDeptName(data.dept_name);
         if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
+        if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
+      })
+      .catch(e => console.error(e));
+
+    // Fetch Storage stats
+    fetch('/api/settings/storage')
+      .then(res => res.json())
+      .then(data => {
+        if (data.usedMb !== undefined) setStorageUsedMb(data.usedMb);
       })
       .catch(e => console.error(e));
 
@@ -320,7 +330,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_icons: masterIcons,
         master_status_progress: masterStatusProgress,
         max_file_size_mb: Number(maxFileSizeMb) || 25,
-        max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100
+        max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
+        max_total_storage_mb: Number(maxTotalStorageMb) || 5000
       })
     })
       .then(() => {
@@ -636,20 +647,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Ubah Password Global (Opsional)
-              </label>
-              <input
-                type="password"
-                className="input"
-                value={globalPassword}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGlobalPassword(e.target.value)}
-                placeholder="Kosongkan jika tidak ingin mengubah sandi"
-              />
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Maksimal Ukuran per File Lampiran (MB)
               </label>
               <input
@@ -674,6 +671,38 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 placeholder="Contoh: 100"
                 min="1"
               />
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Kapasitas Maksimal Storage Keseluruhan Aplikasi (MB)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={maxTotalStorageMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTotalStorageMb(e.target.value)}
+                placeholder="Contoh: 5000"
+                min="1"
+              />
+              
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>
+                  <span>Penyimpanan Terpakai: {storageUsedMb.toFixed(2)} MB</span>
+                  <span>Maks: {maxTotalStorageMb} MB</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
+                    width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
+                    transition: 'width 0.3s'
+                  }} />
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  Sisa kapasitas: {Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB
+                </p>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
