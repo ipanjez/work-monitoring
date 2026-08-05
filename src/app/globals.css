@@ -416,3 +416,15 @@ th[style*="cursor: pointer"]:hover, .clickable-hover:hover { color: var(--accent
   border-color: var(--accent-primary) !important;
   background-color: var(--surface-hover) !important;
 }
+
+@media (max-width: 1024px) {
+  .profile-name-text,
+  .profile-chevron {
+    display: none !important;
+  }
+  .profile-btn {
+    padding: 4px !important;
+    gap: 0 !important;
+  }
+}
+

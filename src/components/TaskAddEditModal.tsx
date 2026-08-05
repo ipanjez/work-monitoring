@@ -118,6 +118,11 @@ export default function TaskAddEditModal({
       if (cloned.lokasi) {
         try {
           cloned.lokasiData = JSON.parse(cloned.lokasi);
+          // If old data has lokasiData.jam but startTime is empty, sync it
+          if (cloned.lokasiData?.jam && !cloned.startTime) {
+            cloned.startTime = cloned.lokasiData.jam;
+            cloned.isAllDay = false;
+          }
         } catch (e) {
           cloned.lokasiData = { tipe: 'offline', lokasiFisik: cloned.lokasi, jam: '' };
         }
@@ -232,7 +237,10 @@ export default function TaskAddEditModal({
       const additionalPicsJson = JSON.stringify((editingTask.additionalPicsList || []).filter(p => p.trim() !== ''));
       const subTasksJson = JSON.stringify(editingTask.subTasksList || []);
       const customRecurrenceSettingsStr = editingTask.customRecurrenceSettings ? JSON.stringify(editingTask.customRecurrenceSettings) : null;
-      const lokasiJson = editingTask.lokasiData?.tipe ? JSON.stringify(editingTask.lokasiData) : null;
+      const updatedLokasiData = editingTask.lokasiData?.tipe
+        ? { ...editingTask.lokasiData, jam: editingTask.isAllDay ? '' : (editingTask.startTime || '') }
+        : null;
+      const lokasiJson = updatedLokasiData ? JSON.stringify(updatedLokasiData) : null;
 
       const { historyLogsJson, commentsJson, ...restEditingTask } = editingTask;
       const payload = {
@@ -504,62 +512,34 @@ export default function TaskAddEditModal({
                 </div>
 
                 {editingTask.lokasiData?.tipe === 'online' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom</label>
-                      <input
-                        type="text"
-                        className="input"
-                        placeholder="https://zoom.us/j/..."
-                        value={editingTask.lokasiData?.linkZoom || ''}
-                        onChange={e => setEditingTask({
-                          ...editingTask,
-                          lokasiData: { ...editingTask.lokasiData, linkZoom: e.target.value } as any
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam (Waktu Bontang / WITA)</label>
-                      <input
-                        type="time"
-                        className="input"
-                        value={editingTask.lokasiData?.jam || ''}
-                        onChange={e => setEditingTask({
-                          ...editingTask,
-                          lokasiData: { ...editingTask.lokasiData, jam: e.target.value } as any
-                        })}
-                      />
-                    </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom</label>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="https://zoom.us/j/..."
+                      value={editingTask.lokasiData?.linkZoom || ''}
+                      onChange={e => setEditingTask({
+                        ...editingTask,
+                        lokasiData: { ...editingTask.lokasiData, linkZoom: e.target.value } as any
+                      })}
+                    />
                   </div>
                 )}
 
                 {editingTask.lokasiData?.tipe === 'offline' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Lokasi Fisik / Tempat</label>
-                      <input
-                        type="text"
-                        className="input"
-                        placeholder="Contoh: R.R Komp TKMR / KPJ"
-                        value={editingTask.lokasiData?.lokasiFisik || ''}
-                        onChange={e => setEditingTask({
-                          ...editingTask,
-                          lokasiData: { ...editingTask.lokasiData, lokasiFisik: e.target.value } as any
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam (Waktu Bontang / WITA)</label>
-                      <input
-                        type="time"
-                        className="input"
-                        value={editingTask.lokasiData?.jam || ''}
-                        onChange={e => setEditingTask({
-                          ...editingTask,
-                          lokasiData: { ...editingTask.lokasiData, jam: e.target.value } as any
-                        })}
-                      />
-                    </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Lokasi Fisik / Tempat</label>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Contoh: R.R Komp TKMR / KPJ"
+                      value={editingTask.lokasiData?.lokasiFisik || ''}
+                      onChange={e => setEditingTask({
+                        ...editingTask,
+                        lokasiData: { ...editingTask.lokasiData, lokasiFisik: e.target.value } as any
+                      })}
+                    />
                   </div>
                 )}
               </div>

@@ -45,8 +45,11 @@ interface TaskDetailModalProps {
   onDelete?: () => void;
 }
 
+import { useSession } from 'next-auth/react';
+
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
-  const userRole: string = 'ADMIN';
+  const { data: session } = useSession();
+  const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
   const router = useRouter();
   const pathname = usePathname();

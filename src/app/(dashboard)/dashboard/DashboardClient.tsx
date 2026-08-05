@@ -32,6 +32,7 @@ import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 ChartJS.register(
   CategoryScale,
@@ -64,6 +65,8 @@ type Task = {
 };
 
 export default function DashboardClient({ tasks }: { tasks: Task[] }) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'MEMBER';
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
@@ -115,7 +118,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   }, []);
 
   const categories = Array.from(new Set(['All', ...tasks.map(t => t.kategori || 'Umum'), ...masterCategories]));
-  const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics]));
+  const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics, ...(session?.user?.name ? [session.user.name] : [])]));
 
   const filteredTasks = tasks.filter(t => {
     const matchCat = selectedCategory === 'All' || (t.kategori || 'Umum') === selectedCategory;

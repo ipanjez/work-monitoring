@@ -28,8 +28,11 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
+import { useSession } from 'next-auth/react';
+
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
-  const userRole: string = 'ADMIN';
+  const { data: session } = useSession();
+  const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
   const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
@@ -76,6 +79,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+  const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -86,6 +90,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         if (data.master_statuses) setMasterStatuses(data.master_statuses);
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
+      })
+      .catch(e => console.error(e));
+
+    fetch('/api/users/pics')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setRegisteredUserNames(data);
       })
       .catch(e => console.error(e));
   }, []);
@@ -168,6 +179,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       } catch (e) { }
     }
   });
+  if (session?.user?.name) {
+    allPicsSet.add(session.user.name);
+  }
   const existingPics = Array.from(allPicsSet);
   const pics = ['All', ...existingPics];
 
@@ -177,7 +191,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     formCategoryOptions.push(editingTask.kategori);
   }
 
-  let formPicOptions = masterPics.length > 0 ? [...masterPics] : Array.from(new Set(tasks.map(t => t.pic).filter(Boolean)));
+  let formPicOptions = Array.from(new Set([
+    ...masterPics,
+    ...registeredUserNames,
+    ...tasks.map(t => t.pic).filter(Boolean)
+  ]));
   if (editingTask?.pic && !formPicOptions.includes(editingTask.pic)) {
     formPicOptions.push(editingTask.pic);
   }
@@ -445,7 +463,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           } catch (e) { }
         }
 
-        if (savedTask.status === 'Done') {
+        if (isNew) {
+          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${savedTask.nama}" telah ditambahkan oleh ${savedTask.pic}.`, 'success');
+        } else if (savedTask.status === 'Done') {
           addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${savedTask.pic}.${detailsText}`, 'success');
         } else if (savedTask.prioritas === 'Urgent') {
           addActivityLog('URGENT_TASK', 'Pekerjaan Urgent', `Pekerjaan "${savedTask.nama}" dengan prioritas Urgent diperbarui oleh ${savedTask.pic}.${detailsText}`, 'warning');

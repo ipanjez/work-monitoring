@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle } from 'lucide-react';
+import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import toast from 'react-hot-toast';
@@ -23,17 +25,20 @@ type Task = {
 };
 
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('Work Monitoring');
   const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
   const [pics, setPics] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
-  
+
   const [masterColors, setMasterColors] = useState<Record<string, string>>({});
   const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
@@ -45,6 +50,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
   // Drag State
   const [draggedIdx, setDraggedIdx] = useState<{ type: string, index: number } | null>(null);
+
+  // Profile State for logged-in user
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileNpk, setProfileNpk] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Fetch initial data
   useEffect(() => {
@@ -61,6 +74,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.dept_name) setDeptName(data.dept_name);
       })
       .catch(e => console.error(e));
+
+    // Fetch user profile
+    fetch('/api/users/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.name) setProfileName(data.name);
+        if (data.email) setProfileEmail(data.email || '');
+        if (data.npk) setProfileNpk(data.npk);
+      })
+      .catch(e => console.error(e));
   }, []);
 
   // Common List Updaters
@@ -74,7 +97,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     if (type === 'priority') key = 'master_priorities';
 
     const setFunc = type === 'cat' ? setCategories : type === 'pic' ? setPics : type === 'status' ? setStatuses : setPriorities;
-    
+
     setFunc(prev => {
       const next = updater(prev as any);
       fetch('/api/settings', {
@@ -86,11 +109,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     });
   };
 
-  const sortList = (type: ListType, dir: 'asc'|'desc') => {
+  const sortList = (type: ListType, dir: 'asc' | 'desc') => {
     updateList(type, prev => [...prev].sort((a, b) => dir === 'asc' ? a.localeCompare(b) : b.localeCompare(a)));
   };
 
-  const transformList = (type: ListType, transform: 'upper'|'lower'|'proper') => {
+  const transformList = (type: ListType, transform: 'upper' | 'lower' | 'proper') => {
     updateList(type, prev => prev.map(s => {
       if (transform === 'upper') return s.toUpperCase();
       if (transform === 'lower') return s.toLowerCase();
@@ -188,23 +211,23 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {list.map((s, idx) => (
-          <span 
-            key={s} 
+          <span
+            key={s}
             draggable
             onDragStart={(e) => handleDragStart(e, type, idx)}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, type, idx)}
             onDragEnd={() => setDraggedIdx(null)}
-            style={{ 
-              display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', 
-              background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'), 
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
+              background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'),
               border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
-              color: masterColors[`${type}_${s}`] ? 'white' : (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)'), cursor: 'grab' 
+              color: masterColors[`${type}_${s}`] ? 'white' : (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)'), cursor: 'grab'
             }}
           >
             {s}
             {type === 'status' && (
-              <input 
+              <input
                 type="number"
                 min="0"
                 max="100"
@@ -219,15 +242,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
-            <input 
-              type="color" 
-              value={masterColors[`${type}_${s}`] || '#ffffff'} 
+            <input
+              type="color"
+              value={masterColors[`${type}_${s}`] || '#ffffff'}
               onChange={(e) => handleColorChange(type, s, e.target.value)}
               style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
               title="Ubah Warna"
             />
-            <button 
-              type="button" onClick={() => handleDelete(type, s)} 
+            <button
+              type="button" onClick={() => handleDelete(type, s)}
               style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
             ><X size={14} /></button>
           </span>
@@ -235,6 +258,45 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
     </>
   );
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName.trim()) {
+      toast.error('Nama wajib diisi!');
+      return;
+    }
+    if (newPassword && newPassword !== confirmPassword) {
+      toast.error('Konfirmasi password baru tidak cocok!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileName,
+          email: profileEmail,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Profil berhasil diperbarui!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error(data.error || 'Gagal memperbarui profil.');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan jaringan.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,12 +307,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_colors', JSON.stringify(masterColors));
     localStorage.setItem('master_icons', JSON.stringify(masterIcons));
     localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
-    
+
     fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        dept_name: deptName, 
+      body: JSON.stringify({
+        dept_name: deptName,
         master_categories: categories,
         master_pics: pics,
         master_statuses: statuses,
@@ -260,14 +322,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_status_progress: masterStatusProgress
       })
     })
-    .then(() => {
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-      window.dispatchEvent(new Event('deptNameChanged'));
-      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
-      toast.success('Pengaturan umum berhasil disimpan!');
-    })
-    .catch(console.error);
+      .then(() => {
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 3000);
+        window.dispatchEvent(new Event('deptNameChanged'));
+        if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
+        toast.success('Pengaturan umum berhasil disimpan!');
+      })
+      .catch(console.error);
   };
 
   const handleBackupDatabase = () => {
@@ -283,16 +345,13 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '850px', margin: '0 auto', width: '100%' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', position: 'sticky', top: '0', zIndex: 10, background: 'var(--bg-color)', padding: '16px 0', borderBottom: '1px solid var(--border-color)', margin: '-24px 0 0 0' }}>
-        <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Pengaturan Aplikasi</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-            Kelola preferensi antarmuka, master opsi dropdown kategori, daftar PIC, dan cadangan data aplikasi.
-          </p>
-        </div>
-        <button onClick={handleSaveSettings} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(66, 133, 244, 0.3)' }}>
-          <Save size={18} /> Simpan Perubahan
-        </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '8px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Pengaturan Aplikasi</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+          {isAdmin
+            ? 'Kelola preferensi antarmuka, master opsi dropdown kategori, daftar PIC, dan cadangan data aplikasi.'
+            : 'Kelola preferensi antarmuka aplikasi Anda.'}
+        </p>
       </div>
 
       {savedSuccess && (
@@ -306,7 +365,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {theme === 'dark' ? <Moon size={20} color="#f59e0b" /> : <Sun size={20} color="#f59e0b" />} Tampilan & Tema
         </h3>
-        
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>Mode Gelap / Terang</span>
@@ -401,70 +460,194 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </div>
       </div>
 
-      {/* Dropdown Master Categories Manager */}
-      <div className="glass" style={{ padding: '24px' }}>
-        {renderListEditor(
-          "Master Dropdown Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
-          <Tag size={20} color="var(--accent-primary)" />
-        )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Kelola pilihan opsi kategori yang muncul otomatis (*auto-suggest*) saat menambah atau mengedit pekerjaan.
-        </p>
-      </div>
-
-      {/* Dropdown Master PIC Manager */}
-      <div className="glass" style={{ padding: '24px' }}>
-        {renderListEditor(
-          "Master Dropdown PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
-          <Users size={20} color="var(--accent-primary)" />
-        )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan.
-        </p>
-      </div>
-
-      <div className="glass" style={{ padding: '24px' }}>
-        {renderListEditor(
-          "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
-          <Tag size={20} color="var(--accent-primary)" />
-        )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
-      </div>
-
-      <div className="glass" style={{ padding: '24px' }}>
-        {renderListEditor(
-          "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
-          <Tag size={20} color="var(--accent-primary)" />
-        )}
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
-      </div>
-
-      {/* General Settings */}
+      {/* Account Settings Card */}
       <div className="glass" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
+          <Shield size={20} color="var(--accent-primary)" /> Pengaturan Akun
         </h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
+          Perbarui informasi profil pribadi dan ubah password Anda.
+        </p>
 
-        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                NPK (ID Pengguna)
+              </label>
+              <input
+                type="text"
+                className="input"
+                value={profileNpk}
+                disabled
+                style={{ background: 'var(--input-bg)', cursor: 'not-allowed', opacity: 0.7 }}
+              />
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                * Hubungi Admin untuk melakukan perubahan NPK
+              </span>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Nama Lengkap
+              </label>
+              <input
+                type="text"
+                className="input"
+                value={profileName}
+                onChange={e => setProfileName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Nama Departemen / Sub-Unit
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Alamat Email (digunakan untuk reset password)
             </label>
-            <input 
-              className="input" 
-              value={deptName}
-              onChange={e => setDeptName(e.target.value)}
-              placeholder="Contoh: Divisi TI & Sistem Informasi"
+            <input
+              type="email"
+              className="input"
+              value={profileEmail}
+              onChange={e => setProfileEmail(e.target.value)}
+              placeholder="nama@perusahaan.co.id"
             />
           </div>
-            
+
+          <div style={{ height: '1px', background: 'var(--border-color)', margin: '8px 0' }} />
+
+          <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Ubah Password</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '16px', flexWrap: 'wrap' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: 0 }}>
+              Kosongkan kolom di bawah ini jika Anda tidak ingin mengubah password.
+            </p>
+            <Link href="/auth/forgot" style={{ fontSize: '11px', padding: '6px 12px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
+              <HelpCircle size={14} /> Lupa Password Saat Ini?
+            </Link>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Password Saat Ini
+              </label>
+              <input
+                type="password"
+                className="input"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                placeholder="Password lama Anda"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Password Baru
+              </label>
+              <input
+                type="password"
+                className="input"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Minimal 6 karakter"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Konfirmasi Password Baru
+              </label>
+              <input
+                type="password"
+                className="input"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Ulangi password baru"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ alignSelf: 'flex-start', marginTop: '8px', padding: '10px 20px' }}
+            disabled={loading}
+          >
+            {loading ? 'Menyimpan...' : 'Perbarui Profil'}
+          </button>
+        </form>
+      </div>
+
+      {/* Dropdown Master Categories Manager */}
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Dropdown Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
+            <Tag size={20} color="var(--accent-primary)" />
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Kelola pilihan opsi kategori yang muncul otomatis (*auto-suggest*) saat menambah atau mengedit pekerjaan.
+          </p>
+        </div>
+      )}
+
+      {/* Dropdown Master PIC Manager */}
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Dropdown PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
+            <Users size={20} color="var(--accent-primary)" />
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan.
+          </p>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
+            <Tag size={20} color="var(--accent-primary)" />
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
+            <Tag size={20} color="var(--accent-primary)" />
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
+        </div>
+      )}
+
+      {/* General Settings */}
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
+          </h3>
+
+          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Nama Departemen / Sub-Unit
+              </label>
+              <input
+                className="input"
+                value={deptName}
+                onChange={e => setDeptName(e.target.value)}
+                placeholder="Contoh: Divisi TI & Sistem Informasi"
+              />
+            </div>
+
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Ubah Password Global (Opsional)
               </label>
-              <input 
+              <input
                 type="password"
-                className="input" 
+                className="input"
                 value={globalPassword}
                 onChange={e => setGlobalPassword(e.target.value)}
                 placeholder="Kosongkan jika tidak ingin mengubah sandi"
@@ -472,11 +655,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>
             </div>
 
-          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-            Simpan Pengaturan
-          </button>
-        </form>
-      </div>
+            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
+              Simpan Pengaturan
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Auto Sync Google Calendar / iCal Feed */}
       <div className="glass" style={{ padding: '24px' }}>
@@ -488,8 +672,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </p>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={() => {
               const feedUrl = `${window.location.origin}/calendar.ics`;
               import('@/utils/clipboard').then(({ copyToClipboard }) => {
@@ -505,19 +689,21 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* Backup & Export Database */}
-      <div className="glass" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Database size={20} color="var(--success)" /> Cadangan & Export Data Database
-        </h3>
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Database size={20} color="var(--success)" /> Cadangan & Export Data Database
+          </h3>
 
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Unduh seluruh salinan data pekerjaan dalam format JSON untuk cadangan (*backup*) aman.
-        </p>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            Unduh seluruh salinan data pekerjaan dalam format JSON untuk cadangan (*backup*) aman.
+          </p>
 
-        <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Download size={16} /> Download Backup Database (.json)
-        </button>
-      </div>
+          <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Download size={16} /> Download Backup Database (.json)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

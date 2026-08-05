@@ -11,8 +11,11 @@ import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSq
 import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
+import { useSession } from 'next-auth/react';
+
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
-  const userRole: string = 'ADMIN';
+  const { data: session } = useSession();
+  const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
   const router = useRouter();
   const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
@@ -44,6 +47,15 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         if (data.master_categories) setFormCategoryOptions(data.master_categories);
         if (data.master_statuses) setMasterStatuses(data.master_statuses);
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
+      })
+      .catch(e => console.error(e));
+
+    fetch('/api/users/pics')
+      .then(res => res.json())
+      .then(names => {
+        if (Array.isArray(names)) {
+          setFormPicOptions(prev => Array.from(new Set([...prev, ...names])));
+        }
       })
       .catch(e => console.error(e));
   }, []);
@@ -499,14 +511,26 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   const subStats = getSubtaskStats(task.subTasksJson);
                   const isDragged = draggedTaskId === task.id;
                   const isDragOverThisCard = dragOverCardId === task.id;
+                  const isOwnTask = (task: any) => {
+                    if (userRole === 'ADMIN') return true;
+                    if (!session?.user?.name) return false;
+                    if (task.pic === session.user.name) return true;
+                    try {
+                      const extra = JSON.parse(task.additionalPics || '[]');
+                      if (Array.isArray(extra) && extra.includes(session.user.name)) return true;
+                    } catch (e) {}
+                    return false;
+                  };
+
+                  const canDrag = userRole !== 'SPV' && isOwnTask(task);
 
                     return (
                       <div
                         key={task.id}
                         className="kanban-card"
-                        draggable={userRole !== 'SPV'}
+                        draggable={canDrag}
                         onDragStart={(e) => {
-                          if (userRole === 'SPV') {
+                          if (!canDrag) {
                             e.preventDefault();
                             return;
                           }
@@ -520,7 +544,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           padding: '8px',
                           borderRadius: '8px',
                           border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                          cursor: userRole === 'SPV' ? 'pointer' : 'grab',
+                          cursor: canDrag ? 'grab' : 'pointer',
                           opacity: isDragged ? 0.5 : 1,
                           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                           display: 'flex',
@@ -534,7 +558,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                         {/* Card Content Top */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
                           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                            {sortBy === 'Manual' && userRole !== 'SPV' && (
+                            {sortBy === 'Manual' && canDrag && (
                               <div className="kanban-sort-arrows" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginRight: '2px' }}>
                                 <ChevronUp
                                   size={12}

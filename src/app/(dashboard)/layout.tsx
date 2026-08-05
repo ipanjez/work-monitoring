@@ -2,6 +2,7 @@
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from '@/components/NotificationBell';
 import GlobalAddButton from '@/components/GlobalAddButton';
+import UserProfileButton from '@/components/UserProfileButton';
 
 import FocusModeToggle from '@/components/FocusModeToggle';
 import { Menu } from 'lucide-react';
@@ -29,8 +30,11 @@ export default function DashboardLayout({
       <main className="main-content">
         {children}
       </main>
-      <NotificationBell />
-      <GlobalAddButton />
+      <div style={{ position: 'fixed', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 9999 }}>
+        <GlobalAddButton />
+        <NotificationBell />
+        <UserProfileButton />
+      </div>
 
       <FocusModeToggle />
     </>

@@ -24,7 +24,7 @@ export default function NotificationBell() {
   }, [isOpen]);
 
   return (
-    <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999 }} ref={panelRef}>
+    <div style={{ position: 'relative' }} ref={panelRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         style={{

@@ -12,7 +12,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
   const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
-    if (pathname === '/login') return;
+    if (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/forgot') return;
 
     let lastActive = Date.now();
 
@@ -40,7 +40,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
 
         // Auto logout due to inactivity
         fetch('/api/auth', { method: 'DELETE' }).then(() => {
-          router.push('/login?reason=timeout');
+          router.push('/auth/signin?reason=timeout');
         });
         return;
       }
@@ -50,7 +50,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
           clearInterval(timer);
           // Logout user because manual session timer ran out
           fetch('/api/auth', { method: 'DELETE' }).then(() => {
-            router.push('/login?reason=timeout');
+            router.push('/auth/signin?reason=timeout');
           });
           return 0;
         }
@@ -72,7 +72,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
     toast.success(`Sesi diperpanjang +${minutes} menit`);
   };
 
-  if (pathname === '/login') return null;
+  if (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/forgot') return null;
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

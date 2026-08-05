@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 type FilterContextType = {
   globalTargetFilter: string;
@@ -16,6 +17,10 @@ type FilterContextType = {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isMember = (user as any)?.role === 'MEMBER';
+
   const [globalTargetFilter, setTargetFilter] = useState('Semua Waktu');
   const [globalPicFilter, setPicFilter] = useState('Semua PIC');
   const [globalCustomStartDate, setCustomStartDate] = useState('');
@@ -31,10 +36,18 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     const storedEnd = localStorage.getItem('globalCustomEndDate');
     
     if (storedTarget) setTargetFilter(storedTarget);
-    if (storedPic) setPicFilter(storedPic);
+    
+    // If the logged-in user is a member, default to their own name first.
+    // Otherwise, default to the stored PIC filter or "Semua PIC".
+    if (isMember && user?.name) {
+      setPicFilter(user.name);
+    } else if (storedPic) {
+      setPicFilter(storedPic);
+    }
+    
     if (storedStart) setCustomStartDate(storedStart);
     if (storedEnd) setCustomEndDate(storedEnd);
-  }, []);
+  }, [isMember, user?.name]);
 
   // Update state and localStorage
   const setGlobalTargetFilter = (val: string) => {

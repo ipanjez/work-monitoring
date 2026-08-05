@@ -18,6 +18,7 @@ import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
+import { useSession } from 'next-auth/react';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -37,6 +38,8 @@ type Task = {
 };
 
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'MEMBER';
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
   const { masterColors } = useMaster();
@@ -67,8 +70,11 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         } catch (e) {}
       }
     });
+    if (session?.user?.name) {
+      pics.add(session.user.name);
+    }
     return Array.from(pics).sort();
-  }, [tasks]);
+  }, [tasks, session?.user?.name]);
 
   // Filtering Logic
   const filteredTasks = useMemo(() => {

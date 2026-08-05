@@ -5,10 +5,12 @@ import { Plus, Zap, Upload, Download } from 'lucide-react';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
 import * as XLSX from 'xlsx';
+import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 
 
 export default function GlobalAddButton() {
+  const { addActivityLog } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null);
@@ -32,6 +34,15 @@ export default function GlobalAddButton() {
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
       })
       .catch(console.error);
+
+    fetch('/api/users/pics')
+      .then(res => res.json())
+      .then(names => {
+        if (Array.isArray(names)) {
+          setMasterPics(prev => Array.from(new Set([...prev, ...names])));
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -48,11 +59,17 @@ export default function GlobalAddButton() {
 
   const handleSaveModal = async (task: any) => {
     try {
-      await fetch('/api/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(task),
       });
+      if (res.ok) {
+        const saved = await res.json();
+        if (addActivityLog) {
+          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${saved.pic}.`, 'success');
+        }
+      }
       setIsAddModalOpen(false);
       toast.success('Pekerjaan berhasil ditambahkan!');
       if (typeof window !== 'undefined') {
@@ -65,11 +82,19 @@ export default function GlobalAddButton() {
 
   const handleSaveSmartModal = async (tasks: any[]) => {
     try {
-      await fetch('/api/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tasks),
       });
+      if (res.ok) {
+        const savedList = await res.json();
+        if (addActivityLog && Array.isArray(savedList)) {
+          savedList.forEach(saved => {
+            addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${saved.pic}.`, 'success');
+          });
+        }
+      }
       setIsSmartModalOpen(false);
       toast.success('Beberapa pekerjaan berhasil ditambahkan!');
       if (typeof window !== 'undefined') {
@@ -231,7 +256,7 @@ export default function GlobalAddButton() {
   };
 
   return (
-    <div style={{ position: 'fixed', top: '20px', right: '75px', zIndex: 9999 }} ref={panelRef}>
+    <div style={{ position: 'relative' }} ref={panelRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         onMouseEnter={() => setIsOpen(true)}
