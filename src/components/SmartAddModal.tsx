@@ -70,10 +70,19 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
         {step === 1 && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px' }}>
-              <p style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--accent-primary)' }} />
-                Salin dan tempelkan (paste) teks agenda / pesan beruntun ke dalam kotak di bawah ini. Sistem akan secara cerdas memisahkannya menjadi beberapa pekerjaan berdasarkan format penomoran (1, 2, 3...) atau tanda hubung (-).
-              </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Panduan Format Teks:</strong> Sistem akan secara otomatis memecah teks menjadi beberapa pekerjaan berdasarkan hal-hal berikut:
+                </p>
+              </div>
+              <ul style={{ margin: '0 0 0 24px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <li><strong>Judul Pekerjaan/Agenda:</strong> Terdeteksi dari format penomoran (1., 2., 3...) atau tanda hubung (-).</li>
+                <li><strong>Tanggal:</strong> Terdeteksi dari tulisan format kalender/tanggal (misal: "Jumat, 7 Agustus 2026"). Tanggal ini akan otomatis menjadi Tanggal Mulai dan Selesai.</li>
+                <li><strong>Jam:</strong> Terdeteksi dari format XX:XX atau mengandung "WITA/WIB". Jika ada dua jam (misal 09:00 - 11:00), maka akan diset sebagai Jam Mulai dan Jam Selesai.</li>
+                <li><strong>Lokasi/Deskripsi:</strong> Teks yang diawali dengan 🏩, 📍, atau 🗒️, atau baris baru di bawah judul agenda akan otomatis diisi sebagai lokasi/deskripsi.</li>
+                <li><strong>PIC:</strong> Terdeteksi jika ada penyebutan nama atau jabatan yang cocok dengan daftar PIC master.</li>
+              </ul>
             </div>
             
             <SmartAddTemplateManager onCopy={(content) => {

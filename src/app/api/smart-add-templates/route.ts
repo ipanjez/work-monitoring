@@ -9,8 +9,8 @@ const SETTING_KEY = 'master_smart_add_templates';
 const defaultTemplates = [
   {
     id: 'default-1',
-    name: 'Template Agenda (Default)',
-    content: `📌AGENDA \n🌟Jumat, 31 Juli 2026\n\n1. Webinar Kesehatan "Fit, Fresh and Flourishing"\n⏰️ : 08.30 WITA\n🏩 : Online Meeting\n\n2. Rapat P2K3...`,
+    name: 'Template Agenda MRK (Default)',
+    content: `📌AGENDA \n🌟Hari, DD MMMM YYYY\n\n1. Agenda 1\n⏰️ : XX:XX WITA\n🏩 : Lokasi Agenda 1\n\n2. Agenda 2\n⏰️ : XX:XX WITA\n🏩 : Lokasi Agenda 2`,
     isDefault: true,
     orderIndex: 0,
     createdAt: new Date().toISOString(),
@@ -20,7 +20,7 @@ const defaultTemplates = [
   },
   {
     id: 'default-2',
-    name: 'Template RMI (Default)',
+    name: 'Template Korporat PKT (Default)',
     content: `Kepada Yth. \n- Direktur Manajemen Risiko\n- SVP TKMR\nPT Pupuk Kalimantan Timur (Persero)\n\nDimohon kehadirannya pada\n📆 : Jumat, 7 Agustus 2026\n⏰️ : 09.00 WIB / 10.00 WITA\n🗒️ : Kick Off Meeting Penilaian Indeks Kematangan Risiko/Risk Maturity Index (RMI) Pupuk Indonesia Group Tahun Buku 2025\n🏩 : Online Meeting\n        \nhttps://pupuk-indonesia.zoom.us/j/6450000645\nMeeting ID: 6450000645 | Passcode: -\n\nAtas perhatiannya kami ucapkan terima kasih.\n\nPT Pupuk Indonesia\nNinis Kesuma Adriani\nDirektur Manajemen Risiko`,
     isDefault: true,
     orderIndex: 1,
