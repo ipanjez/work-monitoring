@@ -17,6 +17,7 @@ export async function GET() {
       master_pics: [],
       master_statuses: [],
       master_priorities: [],
+      master_locations: [],
       master_colors: {},
       master_icons: {},
       master_status_progress: {},
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     }
     const body = await request.json();
     
-    // body expects { master_categories: [...], master_pics: [...], master_statuses: [...], master_priorities: [...] }
+    // body expects { master_categories: [...], master_pics: [...], master_statuses: [...], master_priorities: [...], master_locations: [...] }
     if (body.master_categories) {
       await prisma.appSetting.upsert({
         where: { key: 'master_categories' },
@@ -77,6 +78,14 @@ export async function POST(request: Request) {
         where: { key: 'master_priorities' },
         update: { value: JSON.stringify(body.master_priorities) },
         create: { key: 'master_priorities', value: JSON.stringify(body.master_priorities) }
+      });
+    }
+
+    if (body.master_locations) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_locations' },
+        update: { value: JSON.stringify(body.master_locations) },
+        create: { key: 'master_locations', value: JSON.stringify(body.master_locations) }
       });
     }
 

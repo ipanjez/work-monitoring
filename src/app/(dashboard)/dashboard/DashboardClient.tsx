@@ -815,10 +815,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       { wch: 15 }, // Prioritas
       { wch: 15 }, // Status
       { wch: 15 }, // Progress
+      { wch: 30 }, // Lokasi Pekerjaan
       { wch: 45 }, // Deskripsi
       { wch: 25 }, // Lampiran
-      { wch: 15 }, // Mulai
-      { wch: 15 }, // Tenggat
+      { wch: 20 }, // Mulai
+      { wch: 20 }, // Tenggat
     ];
 
     // Style the headers

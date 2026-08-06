@@ -77,6 +77,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [masterLocations, setMasterLocations] = useState<string[]>([]);
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
@@ -90,6 +91,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         if (data.master_pics) setMasterPics(data.master_pics);
         if (data.master_statuses) setMasterStatuses(data.master_statuses);
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
+        if (data.master_locations) setMasterLocations(data.master_locations);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
       })
       .catch(e => console.error(e));
@@ -534,6 +536,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       configSheet.getColumn('A').values = uniquePics;
       const uniqueCats = formCategoryOptions.length > 0 ? formCategoryOptions : ['Umum'];
       configSheet.getColumn('B').values = uniqueCats;
+      const uniqueLocations = masterLocations.length > 0 ? masterLocations : ['Online: Zoom Meeting', 'Offline: Ruang Rapat Lt. 1'];
+      configSheet.getColumn('C').values = uniqueLocations;
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
 
       // Tentukan Header
@@ -564,8 +568,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         fgColor: { argb: 'FF10B981' }
       };
 
-      // Auto wrap untuk kolom Sub Pekerjaan
+      // Auto wrap untuk kolom Lokasi Pekerjaan & Sub Pekerjaan
       worksheet.getColumn('O').alignment = { wrapText: true, vertical: 'top' };
+      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
@@ -644,6 +649,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           type: 'list',
           allowBlank: true,
           formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
+        };
+
+        // Lokasi Pekerjaan
+        worksheet.getCell(`O${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$C$1:$C$${uniqueLocations.length}`]
         };
       }
 
@@ -1283,11 +1295,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       <div id="task-table-container" className="glass" style={{ padding: '16px', overflow: 'hidden' }}>
         {/* Desktop View Table */}
         <div className="desktop-table-view" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '13px' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
                 {userRole !== 'SPV' && (
-                  <th style={{ padding: '12px 10px', width: '50px', textAlign: 'center' }}>
+                  <th style={{ padding: '8px 4px', width: '35px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
                       checked={processedTasks.length > 0 && selectedTasks.size === processedTasks.length}
@@ -1296,45 +1308,45 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     />
                   </th>
                 )}
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
+                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Pekerjaan {renderSortIcon('nama')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
+                <th className="hide-tablet" style={{ padding: '8px 6px' }}>
                   Deskripsi
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>
+                <th className="hide-tablet" style={{ padding: '8px 6px' }}>
                   Sub Pekerjaan
                 </th>
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
+                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     PIC {renderSortIcon('pic')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('kategori')}>
+                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('kategori')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Kategori {renderSortIcon('kategori')}
                   </div>
                 </th>
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('prioritas')}>
+                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('prioritas')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Prioritas {renderSortIcon('prioritas')}
                   </div>
                 </th>
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
+                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '12px 10px' }}>Lampiran</th>
-                <th style={{ padding: '12px 10px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
+                <th className="hide-mobile" style={{ padding: '8px 6px' }}>Lampiran</th>
+                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '12px 10px' }}>Lokasi</th>
-                <th style={{ padding: '12px 10px', textAlign: 'center', width: '60px' }}>Aksi</th>
+                <th className="hide-tablet" style={{ padding: '8px 6px' }}>Lokasi</th>
+                <th style={{ padding: '8px 4px', textAlign: 'center', width: '40px' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -1346,7 +1358,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 return (
                   <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
                     {userRole !== 'SPV' && (
-                      <td style={{ padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
+                      <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedTasks.has(task.id)}
@@ -1355,13 +1367,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </td>
                     )}
-                    <td style={{ padding: '12px 10px' }}>
+                    <td style={{ padding: '8px 6px' }}>
                       <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setDetailTask(task)}>
                         {task.nama}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
                         {task.repetisi && task.repetisi !== 'Tidak Berulang' && (
-                          <div style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <div style={{ fontSize: '10.5px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <Repeat size={12} /> {formatRecurrenceText(task.repetisi)}
                           </div>
                         )}
@@ -1380,8 +1392,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         <span>Dibuat: {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy, HH:mm') : '-'}</span>
                         <span>Diperbarui: {task.updatedAt ? format(new Date(task.updatedAt), 'dd MMM yyyy, HH:mm') : '-'}</span>
                       </div>
-                    </td>
-                    <td className="hide-tablet" style={{ padding: '12px 10px', maxWidth: '200px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                     </td>
+                     <td className="hide-tablet" style={{ padding: '8px 6px', maxWidth: '130px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       <div style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -1393,7 +1405,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         {task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </div>
                     </td>
-                    <td className="hide-tablet" style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                     <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       {task.subTasksJson ? (() => {
                         try {
                           const st = JSON.parse(task.subTasksJson);
@@ -1403,39 +1415,39 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         } catch (e) { return '-'; }
                       })() : '-'}
                     </td>
-                    <td style={{ padding: '12px 10px', fontWeight: '500' }}>
+                     <td style={{ padding: '8px 6px', fontWeight: '500' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                        <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                        <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '500' }}>
                           {task.pic}
                         </span>
                         {extraPics.length > 0 && extraPics.map((p, i) => (
-                          <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                          <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '500' }}>
                             {p}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="hide-mobile" style={{ padding: '12px 10px' }}>
+                     <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       {(() => {
                         const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
                         return (
-                          <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', ...badge.style }}>
+                           <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', ...badge.style }}>
                             {task.kategori || 'Umum'}
                           </span>
                         );
                       })()}
                     </td>
-                    <td style={{ padding: '12px 10px' }}>
-                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)}>
+                     <td style={{ padding: '8px 6px' }}>
+                       <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors).style, fontSize: '11px' }}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 10px', minWidth: '150px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '12px' }}>
+                     <td style={{ padding: '8px 6px', minWidth: '110px' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
                         {(() => {
                           const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
                           return (
-                            <span className={badge.className} style={{ fontWeight: '600', ...badge.style }}>
+                            <span className={badge.className} style={{ fontWeight: '600', whiteSpace: 'nowrap', ...badge.style }}>
                               {task.status}
                             </span>
                           );
@@ -1452,25 +1464,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </div>
                     </td>
-                    <td className="hide-mobile" style={{ padding: '12px 10px' }}>
+                     <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       {task.fileUrl ? (
-                        <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                         <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                           <Paperclip size={14} /> {task.fileName || 'Lampiran'}
                         </a>
                       ) : '-'}
                       {taskFiles.length > 0 && !task.fileUrl && (
-                        <div style={{ fontSize: '12px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                         <div style={{ fontSize: '11.5px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Paperclip size={14} /> {taskFiles.length} Lampiran
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: '12px 10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                     <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
                       {!task.isAllDay && task.startTime && (
-                        <div style={{ fontSize: '11px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
+                         <div style={{ fontSize: '10.5px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
                       )}
                     </td>
-                    <td className="hide-tablet" style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                     <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       {(() => {
                         if (!task.lokasi) return '-';
                         try {
@@ -1498,7 +1510,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         }
                       })()}
                     </td>
-                    <td style={{ padding: '12px 10px', textAlign: 'center', position: 'relative', width: '60px' }}>
+                     <td style={{ padding: '8px 4px', textAlign: 'center', position: 'relative', width: '40px' }}>
                       <div style={{ display: 'inline-block' }}>
                         <button
                           type="button"

@@ -36,6 +36,7 @@ type Task = {
   startDate: string | Date;
   endDate: string | Date;
   additionalPics?: string | null;
+  lokasi?: string | null;
 };
 
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
@@ -322,6 +323,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         } catch(e) {}
       }
 
+      let lokasiStr = '';
+      if (taskAny.lokasi) {
+        try {
+          const parsedLoc = JSON.parse(taskAny.lokasi);
+          if (parsedLoc.tipe === 'online') {
+            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+          } else if (parsedLoc.tipe === 'offline') {
+            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+          }
+        } catch (e) {
+          lokasiStr = taskAny.lokasi;
+        }
+      }
+
       return {
         'No': idx + 1,
         'Nama Pekerjaan': t.nama,
@@ -338,6 +353,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         'Progress': `${t.progress || 0}%`,
         'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd') + (!(t as any).isAllDay && (t as any).startTime ? ` ${(t as any).startTime}` : ''),
         'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd') + (!(t as any).isAllDay && (t as any).endTime ? ` ${(t as any).endTime}` : ''),
+        'Lokasi Pekerjaan': lokasiStr || '-',
         'Deskripsi': taskAny.deskripsi ? taskAny.deskripsi.replace(/<[^>]+>/g, '') : '-',
         'Sub-Pekerjaan': subTasksStr || '-',
         'Catatan': taskAny.catatan || '-'
@@ -349,7 +365,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     ws['!cols'] = [
       { wch: 5 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, 
       { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
-      { wch: 40 }, { wch: 40 }, { wch: 40 }
+      { wch: 30 }, { wch: 40 }, { wch: 40 }, { wch: 40 }
     ];
 
     const wb = XLSX.utils.book_new();
@@ -368,9 +384,9 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       doc.setFontSize(10);
       doc.text(`Dicetak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
       
-      const tableColumn = ['Pekerjaan', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat', 'PIC'];
+      const tableColumn = ['Pekerjaan', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat', 'PIC', 'Lokasi'];
       const tableRows: any[] = [];
-
+ 
       filteredTasks.forEach(t => {
         const extraPicsStr = (() => {
           try {
@@ -378,6 +394,21 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
             return Array.isArray(arr) && arr.length > 0 ? ` (+${arr.join(', ')})` : '';
           } catch(e) { return ''; }
         })();
+
+        let lokasiStr = '';
+        if (t.lokasi) {
+          try {
+            const parsedLoc = JSON.parse(t.lokasi);
+            if (parsedLoc.tipe === 'online') {
+              lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+            } else if (parsedLoc.tipe === 'offline') {
+              lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+            }
+          } catch (e) {
+            lokasiStr = t.lokasi;
+          }
+        }
+
         const row = [
           t.nama,
           t.kategori || 'Umum',
@@ -385,11 +416,12 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           t.status,
           `${t.progress || 0}%`,
           format(new Date(t.endDate), 'dd MMM yyyy'),
-          `${t.pic}${extraPicsStr}`
+          `${t.pic}${extraPicsStr}`,
+          lokasiStr || '-'
         ];
         tableRows.push(row);
       });
-
+ 
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,

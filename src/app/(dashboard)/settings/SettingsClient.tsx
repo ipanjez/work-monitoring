@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle } from 'lucide-react';
+import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -22,6 +22,7 @@ type Task = {
   filesJson?: string | null;
   startDate: string | Date;
   endDate: string | Date;
+  lokasi?: string | null;
 };
 
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
@@ -38,6 +39,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [pics, setPics] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
   const [priorities, setPriorities] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
 
   const [masterColors, setMasterColors] = useState<Record<string, string>>({});
   const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
@@ -47,6 +49,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [newPicInput, setNewPicInput] = useState('');
   const [newStatusInput, setNewStatusInput] = useState('');
   const [newPriorityInput, setNewPriorityInput] = useState('');
+  const [newLocationInput, setNewLocationInput] = useState('');
 
   // Drag State
   const [draggedIdx, setDraggedIdx] = useState<{ type: string, index: number } | null>(null);
@@ -68,6 +71,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_pics) setPics(data.master_pics);
         if (data.master_statuses) setStatuses(data.master_statuses);
         if (data.master_priorities) setPriorities(data.master_priorities);
+        if (data.master_locations) setLocations(data.master_locations);
         if (data.master_colors) setMasterColors(data.master_colors);
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
@@ -87,7 +91,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   }, []);
 
   // Common List Updaters
-  type ListType = 'cat' | 'pic' | 'status' | 'priority';
+  type ListType = 'cat' | 'pic' | 'status' | 'priority' | 'location';
 
   const updateList = (type: ListType, updater: (prev: string[]) => string[]) => {
     let key = '';
@@ -95,8 +99,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     if (type === 'pic') key = 'master_pics';
     if (type === 'status') key = 'master_statuses';
     if (type === 'priority') key = 'master_priorities';
+    if (type === 'location') key = 'master_locations';
 
-    const setFunc = type === 'cat' ? setCategories : type === 'pic' ? setPics : type === 'status' ? setStatuses : setPriorities;
+    const setFunc = 
+      type === 'cat' ? setCategories : 
+      type === 'pic' ? setPics : 
+      type === 'status' ? setStatuses : 
+      type === 'priority' ? setPriorities :
+      setLocations;
 
     setFunc(prev => {
       const next = updater(prev as any);
@@ -304,6 +314,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_pics', JSON.stringify(pics));
     localStorage.setItem('master_statuses', JSON.stringify(statuses));
     localStorage.setItem('master_priorities', JSON.stringify(priorities));
+    localStorage.setItem('master_locations', JSON.stringify(locations));
     localStorage.setItem('master_colors', JSON.stringify(masterColors));
     localStorage.setItem('master_icons', JSON.stringify(masterIcons));
     localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
@@ -317,6 +328,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_pics: pics,
         master_statuses: statuses,
         master_priorities: priorities,
+        master_locations: locations,
         master_colors: masterColors,
         master_icons: masterIcons,
         master_status_progress: masterStatusProgress
@@ -610,6 +622,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <Tag size={20} color="var(--accent-primary)" />
           )}
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Lokasi Pekerjaan", 'location', locations, newLocationInput, setNewLocationInput,
+            <MapPin size={20} color="var(--accent-primary)" />
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Daftar opsi lokasi pekerjaan default yang disarankan dan tervalidasi.</p>
         </div>
       )}
 

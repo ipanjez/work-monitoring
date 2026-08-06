@@ -300,9 +300,25 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     const extraPics = getAdditionalPics(task);
     const allPicsStr = [task.pic, ...extraPics].join(', ');
     const title = encodeURIComponent(task.nama);
+
+    let lokasiStr = '';
+    if (task.lokasi) {
+      try {
+        const parsedLoc = JSON.parse(task.lokasi);
+        if (parsedLoc.tipe === 'online') {
+          lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+        } else if (parsedLoc.tipe === 'offline') {
+          lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+        }
+      } catch (e) {
+        lokasiStr = task.lokasi;
+      }
+    }
+
     const details = encodeURIComponent(`PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi || '-'}`);
     const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
+    const locationQuery = lokasiStr ? `&location=${encodeURIComponent(lokasiStr)}` : '';
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}${locationQuery}`;
   };
 
   const handleExportICS = (task: Task) => {
@@ -311,11 +327,26 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     const extraPics = getAdditionalPics(task);
     const allPicsStr = [task.pic, ...extraPics].join(', ');
 
+    let lokasiStr = '';
+    if (task.lokasi) {
+      try {
+        const parsedLoc = JSON.parse(task.lokasi);
+        if (parsedLoc.tipe === 'online') {
+          lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+        } else if (parsedLoc.tipe === 'offline') {
+          lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+        }
+      } catch (e) {
+        lokasiStr = task.lokasi;
+      }
+    }
+
     const event: EventAttributes = {
       title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
       description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi || '-'}`,
       start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
       end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
+      ...(lokasiStr ? { location: lokasiStr } : {})
     };
 
     createEvent(event, (error, value) => {

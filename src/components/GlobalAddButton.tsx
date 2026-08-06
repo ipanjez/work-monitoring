@@ -21,6 +21,7 @@ export default function GlobalAddButton() {
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Done']);
   const [masterPriorities, setMasterPriorities] = useState<string[]>(['Low', 'Medium', 'High', 'Critical']);
+  const [masterLocations, setMasterLocations] = useState<string[]>([]);
   
   const panelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +34,7 @@ export default function GlobalAddButton() {
         if (data.master_pics) setMasterPics(data.master_pics);
         if (data.master_statuses) setMasterStatuses(data.master_statuses);
         if (data.master_priorities) setMasterPriorities(data.master_priorities);
+        if (data.master_locations) setMasterLocations(data.master_locations);
       })
       .catch(console.error);
 
@@ -287,6 +289,7 @@ export default function GlobalAddButton() {
       let latestCats = masterCats;
       let latestStatuses = masterStatuses;
       let latestPriorities = masterPriorities;
+      let latestLocations = masterLocations;
       try {
         const settingsRes = await fetch('/api/settings');
         const settingsData = await settingsRes.json();
@@ -294,6 +297,7 @@ export default function GlobalAddButton() {
         if (settingsData.master_categories && settingsData.master_categories.length > 0) latestCats = settingsData.master_categories;
         if (settingsData.master_statuses && settingsData.master_statuses.length > 0) latestStatuses = settingsData.master_statuses;
         if (settingsData.master_priorities && settingsData.master_priorities.length > 0) latestPriorities = settingsData.master_priorities;
+        if (settingsData.master_locations && settingsData.master_locations.length > 0) latestLocations = settingsData.master_locations;
       } catch (e) { console.error('Failed to fetch settings for template', e); }
 
       const ExcelJS = (await import('exceljs')).default;
@@ -305,6 +309,8 @@ export default function GlobalAddButton() {
       configSheet.getColumn('A').values = uniquePics;
       const uniqueCats = latestCats.length > 0 ? latestCats : ['Umum'];
       configSheet.getColumn('B').values = uniqueCats;
+      const uniqueLocations = latestLocations.length > 0 ? latestLocations : ['Online: Zoom Meeting', 'Offline: Ruang Rapat Lt. 1'];
+      configSheet.getColumn('C').values = uniqueLocations;
 
       const worksheet = workbook.addWorksheet('Template Pekerjaan');
 
@@ -336,8 +342,9 @@ export default function GlobalAddButton() {
         fgColor: { argb: 'FF10B981' }
       };
 
-      // Auto wrap untuk kolom Sub Pekerjaan
+      // Auto wrap untuk kolom Lokasi Pekerjaan & Sub Pekerjaan
       worksheet.getColumn('O').alignment = { wrapText: true, vertical: 'top' };
+      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
 
       // Tambahkan Contoh Isian di baris ke-2
       const exampleRow = worksheet.addRow({
@@ -416,6 +423,13 @@ export default function GlobalAddButton() {
           type: 'list',
           allowBlank: true,
           formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
+        };
+
+        // Lokasi Pekerjaan
+        worksheet.getCell(`O${i}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`Config!$C$1:$C$${uniqueLocations.length}`]
         };
       }
 
@@ -519,87 +533,94 @@ export default function GlobalAddButton() {
   };
 
   return (
-    <div style={{ position: 'relative' }} ref={panelRef}>
+    <div 
+      style={{ position: 'relative', zIndex: 1000 }} 
+      ref={panelRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsOpen(true)}
         style={{
           width: '45px', height: '45px', borderRadius: '50%', background: 'var(--surface-color)', 
           border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', position: 'relative', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          cursor: 'pointer', position: 'relative', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          transition: 'all 0.2s ease'
         }}
       >
-        <Plus size={20} color="var(--text-primary)" />
+        <Plus size={20} color="var(--text-primary)" style={{ transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
       </button>
 
-      {isOpen && (
-        <div 
-          onMouseLeave={() => setIsOpen(false)}
-          style={{
-          position: 'absolute', top: '55px', right: '0', width: '220px', background: 'var(--surface-color)',
+      <div 
+        style={{
+          position: 'absolute', top: '45px', right: '0', width: '220px', background: 'var(--surface-color)',
           border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-          overflow: 'hidden', display: 'flex', flexDirection: 'column'
-        }}>
-          <button 
-            onClick={() => {
-              const today = new Date().toISOString().split('T')[0];
-              setTaskToEdit({
-                nama: '',
-                deskripsi: '',
-                pic: 'Unassigned',
-                kategori: 'Umum',
-                prioritas: 'Medium',
-                status: 'To Do',
-                repetisi: 'Tidak Berulang',
-                filesList: [],
-                additionalPicsList: [],
-                subTasksList: [],
-                isAllDay: false,
-                startTime: '',
-                endTime: '',
-                startDate: today,
-                endDate: today,
-                isCustomCategory: false,
-                isCustomPic: false,
-              });
-              setIsOpen(false);
-              setIsAddModalOpen(true);
-            }}
-            style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%' }}
-            onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-            onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
-          >
-            <Plus size={16} /> Tambah Pekerjaan Biasa
-          </button>
-          <button 
-            onClick={() => { setIsOpen(false); setIsSmartModalOpen(true); }}
-            style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%' }}
-            onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-            onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
-          >
-            <Zap size={16} /> Tambah Cepat
-          </button>
-          
-          <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
-          
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%' }}
-            onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-            onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
-          >
-            <Upload size={16} /> Import Excel
-          </button>
-          <button 
-            onClick={handleDownloadTemplate}
-            style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%' }}
-            onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-            onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
-          >
-            <Download size={16} /> Template Excel
-          </button>
-        </div>
-      )}
+          overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? 'translateY(0)' : 'translateY(-10px)',
+          pointerEvents: isOpen ? 'auto' : 'none',
+          transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <button 
+          onClick={() => {
+            const today = new Date().toISOString().split('T')[0];
+            setTaskToEdit({
+              nama: '',
+              deskripsi: '',
+              pic: 'Unassigned',
+              kategori: 'Umum',
+              prioritas: 'Medium',
+              status: 'To Do',
+              repetisi: 'Tidak Berulang',
+              filesList: [],
+              additionalPicsList: [],
+              subTasksList: [],
+              isAllDay: false,
+              startTime: '',
+              endTime: '',
+              startDate: today,
+              endDate: today,
+              isCustomCategory: false,
+              isCustomPic: false,
+            });
+            setIsOpen(false);
+            setIsAddModalOpen(true);
+          }}
+          style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%', transition: 'background 0.2s ease' }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
+        >
+          <Plus size={16} /> Tambah Pekerjaan Biasa
+        </button>
+        <button 
+          onClick={() => { setIsOpen(false); setIsSmartModalOpen(true); }}
+          style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%', transition: 'background 0.2s ease' }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
+        >
+          <Zap size={16} /> Tambah Cepat
+        </button>
+        
+        <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
+        
+        <button 
+          onClick={() => fileInputRef.current?.click()}
+          style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%', transition: 'background 0.2s ease' }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
+        >
+          <Upload size={16} /> Import Excel
+        </button>
+        <button 
+          onClick={handleDownloadTemplate}
+          style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'var(--text-primary)', fontSize: '14px', width: '100%', transition: 'background 0.2s ease' }}
+          onMouseOver={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseOut={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.background = 'transparent'}
+        >
+          <Download size={16} /> Template Excel
+        </button>
+      </div>
 
       {/* Modals rendered outside of dropdown so they don't get unmounted/clipped */}
       <TaskAddEditModal

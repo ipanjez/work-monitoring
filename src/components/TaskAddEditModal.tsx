@@ -77,6 +77,7 @@ export default function TaskAddEditModal({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
+  const [masterLocations, setMasterLocations] = useState<string[]>([]);
 
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +91,9 @@ export default function TaskAddEditModal({
         if (data.master_status_progress) {
           setMasterProgressMap(data.master_status_progress);
           localStorage.setItem('master_status_progress', JSON.stringify(data.master_status_progress));
+        }
+        if (data.master_locations) {
+          setMasterLocations(data.master_locations);
         }
       }).catch(() => { });
     }
@@ -518,12 +522,22 @@ export default function TaskAddEditModal({
                       type="text"
                       className="input"
                       placeholder="https://zoom.us/j/..."
+                      list="online-locations-list"
                       value={editingTask.lokasiData?.linkZoom || ''}
                       onChange={e => setEditingTask({
                         ...editingTask,
                         lokasiData: { ...editingTask.lokasiData, linkZoom: e.target.value } as any
                       })}
                     />
+                    <datalist id="online-locations-list">
+                      {masterLocations
+                        .filter(loc => loc.toLowerCase().startsWith('online:') || loc.toLowerCase().startsWith('http://') || loc.toLowerCase().startsWith('https://'))
+                        .map(loc => loc.replace(/^online:\s*/i, '').trim())
+                        .filter(Boolean)
+                        .map((loc, idx) => (
+                          <option key={idx} value={loc} />
+                        ))}
+                    </datalist>
                   </div>
                 )}
 
@@ -534,12 +548,21 @@ export default function TaskAddEditModal({
                       type="text"
                       className="input"
                       placeholder="Contoh: R.R Komp TKMR / KPJ"
+                      list="offline-locations-list"
                       value={editingTask.lokasiData?.lokasiFisik || ''}
                       onChange={e => setEditingTask({
                         ...editingTask,
                         lokasiData: { ...editingTask.lokasiData, lokasiFisik: e.target.value } as any
                       })}
                     />
+                    <datalist id="offline-locations-list">
+                      {masterLocations
+                        .map(loc => loc.replace(/^offline:\s*/i, '').replace(/^online:\s*/i, '').trim())
+                        .filter(Boolean)
+                        .map((loc, idx) => (
+                          <option key={idx} value={loc} />
+                        ))}
+                    </datalist>
                   </div>
                 )}
               </div>
