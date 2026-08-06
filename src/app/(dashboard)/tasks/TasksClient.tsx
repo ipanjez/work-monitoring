@@ -1431,14 +1431,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       {(() => {
                         const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
                         return (
-                           <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', ...badge.style }}>
+                           <span className={badge.className} style={Object.assign({ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }, badge.style)}>
                             {task.kategori || 'Umum'}
                           </span>
                         );
                       })()}
                     </td>
                      <td style={{ padding: '8px 6px' }}>
-                       <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)} style={{ ...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors).style, fontSize: '11px' }}>
+                       <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)} style={Object.assign({ fontSize: '11px' }, getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors).style)}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
@@ -1664,7 +1664,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                       <span style={{ fontWeight: 600 }}>Kategori:</span>
-                      <span className={badgeCat.className} style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', ...badgeCat.style }}>
+                      <span className={badgeCat.className} style={Object.assign({ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }, badgeCat.style)}>
                         {task.kategori || 'Umum'}
                       </span>
                     </div>
