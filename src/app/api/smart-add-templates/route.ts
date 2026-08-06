@@ -41,6 +41,16 @@ export async function GET() {
     if (setting) {
       try {
         templates = JSON.parse(setting.value);
+        // Force update default templates in case their name/content changed in code
+        templates = templates.map((tpl: any) => {
+          if (tpl.isDefault) {
+            const defTpl = defaultTemplates.find(d => d.id === tpl.id);
+            if (defTpl) {
+              return { ...tpl, name: defTpl.name, content: defTpl.content };
+            }
+          }
+          return tpl;
+        });
       } catch (e) {
         templates = [...defaultTemplates];
       }
