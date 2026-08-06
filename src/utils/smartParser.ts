@@ -26,14 +26,27 @@ function parseDateIndonesian(text: string): Date | null {
   return null;
 }
 
-function extractTime(line: string): string {
-  // Matches HH:MM or HH.MM (e.g. 08.30, 08:30)
-  const timeMatch = line.match(/(\d{1,2})[:.](\d{2})/);
-  if (timeMatch) {
-    const hours = timeMatch[1].padStart(2, '0');
-    return `${hours}:${timeMatch[2]}`;
+function extractTimes(line: string): { start: string, end: string | null } {
+  // Matches HH:MM or HH.MM
+  const matches = [...line.matchAll(/(\d{1,2})[:.](\d{2})/g)];
+  if (matches.length > 0) {
+    const startH = matches[0][1].padStart(2, '0');
+    const startM = matches[0][2];
+    const start = `${startH}:${startM}`;
+    
+    let end = null;
+    if (matches.length > 1) {
+      const separator = line.substring(matches[0].index! + matches[0][0].length, matches[1].index!).trim();
+      // If the separator is likely a range indicator
+      if (/^(-|s\/d|sampai|s\.d|to|s\.d\.)$/i.test(separator)) {
+        const endH = matches[1][1].padStart(2, '0');
+        const endM = matches[1][2];
+        end = `${endH}:${endM}`;
+      }
+    }
+    return { start, end };
   }
-  return '';
+  return { start: '', end: null };
 }
 
 export function parseAgendaText(rawText: string): ParsedTask[] {
@@ -61,7 +74,7 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
   };
 
   const isNewTaskLine = (line: string) => {
-    return /^\d+[\.\)]\s/.test(line) || /^[•\-\*]\s/.test(line);
+    return /^\d+[\.\)]\s/.test(line) || /^[•\-\*]\s/.test(line) || line.startsWith('🗒️');
   };
 
   for (let i = 0; i < lines.length; i++) {
@@ -71,7 +84,10 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
     if (isNewTaskLine(line)) {
       saveCurrentTask();
       
-      const name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
+      let name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
+      if (line.startsWith('🗒️')) {
+        name = line.replace(/^🗒️\s*[:\-]?\s*/, '').trim();
+      }
       currentTask = {
         nama: name,
         pic: '',
@@ -92,12 +108,16 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
       
       // Time parsing
       if (lowerLine.includes('⏰') || lowerLine.includes('waktu') || lowerLine.includes('jam') || lowerLine.includes('pukul')) {
-        const extractedTime = extractTime(line);
-        if (extractedTime) {
-          currentTask.startTime = extractedTime;
-          const [h, m] = extractedTime.split(':').map(Number);
-          const endH = Math.min(23, h + 2).toString().padStart(2, '0');
-          currentTask.endTime = `${endH}:${m.toString().padStart(2, '0')}`;
+        const { start, end } = extractTimes(line);
+        if (start) {
+          currentTask.startTime = start;
+          if (end) {
+            currentTask.endTime = end;
+          } else {
+            const [h, m] = start.split(':').map(Number);
+            const endH = Math.min(23, h + 2).toString().padStart(2, '0');
+            currentTask.endTime = `${endH}:${m.toString().padStart(2, '0')}`;
+          }
         }
         currentDescription.push(line); // Also keep in description for context
       } 
