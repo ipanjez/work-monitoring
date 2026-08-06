@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Zap, Save, CheckCircle, Edit2, AlertCircle } from 'lucide-react';
 import { parseAgendaText, ParsedTask } from '@/utils/smartParser';
 import { format } from 'date-fns';
+import SmartAddTemplateManager from './SmartAddTemplateManager';
 
 interface SmartAddModalProps {
   isOpen: boolean;
@@ -75,18 +76,14 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
               </p>
             </div>
             
+            <SmartAddTemplateManager onCopy={(content) => {
+              setRawText(prev => prev ? prev + '\n\n' + content : content);
+            }} />
+            
             <textarea
               className="input"
               style={{ flex: 1, minHeight: '300px', resize: 'vertical', fontFamily: 'monospace' }}
-              placeholder={`Contoh:
-📌AGENDA 
-🌟Jumat, 31 Juli 2026
-
-1. Webinar Kesehatan "Fit, Fresh and Flourishing"
-⏰️ : 08.30 WITA
-🏩 : Online Meeting
-
-2. Rapat P2K3...`}
+              placeholder={`Ketik atau salin teks agenda ke sini...`}
               value={rawText}
               onChange={e => setRawText(e.target.value)}
             />
