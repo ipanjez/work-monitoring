@@ -7,6 +7,7 @@ export type FileItem = {
   uploadedAt?: string;
   deletedAt?: string;
   isDeleted?: boolean;
+  size?: number;
 };
 
 export type LogItem = {
@@ -171,10 +172,28 @@ export const getDynamicIconName = (type: string, value: string): string => {
 
 export const getDynamicBadgeStyle = (type: string, value: string, defaultClass: string = '', passedMasterColors?: Record<string, string>) => {
   let color = passedMasterColors ? passedMasterColors[`${type}_${value}`] : getDynamicColor(type, value);
-  if (color) {
-    return { style: { backgroundColor: color, color: '#fff' }, className: 'badge' };
+  
+  if (color && color !== '#ffffff' && color !== '#ffffff00' && color !== '#fff') {
+    // Ensure we only use the base 7-character hex if a 9-character hex was previously saved
+    const baseColor = color.length === 9 ? color.substring(0, 7) : color;
+    return { 
+      style: { 
+        backgroundColor: `color-mix(in srgb, ${baseColor} 15%, transparent)`,
+        color: baseColor,
+        border: `1px solid ${baseColor}`
+      }, 
+      className: 'badge' 
+    };
   }
-  return { className: defaultClass || 'badge badge-medium', style: {} };
+  
+  return { 
+    style: { 
+      backgroundColor: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)',
+      color: 'var(--accent-primary)',
+      border: '1px solid var(--accent-primary)'
+    }, 
+    className: 'badge' 
+  };
 };
 
 export const getPriorityBadgeClass = (p?: string | null) => {

@@ -59,6 +59,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
 
   useEffect(() => {
     if (task) {
@@ -67,6 +69,18 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const savedAuthor = localStorage.getItem('commentAuthor');
       if (savedAuthor) setCommentAuthor(savedAuthor);
     }
+    
+    const loadSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.max_file_size_mb) setMaxFileSizeMb(Number(data.max_file_size_mb));
+        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(Number(data.max_task_files_size_mb));
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    loadSettings();
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
@@ -90,16 +104,17 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !commentAuthor.trim()) {
+    const finalAuthor = session?.user?.name || commentAuthor;
+    if (!newComment.trim() || !finalAuthor.trim()) {
       toast.error('Nama dan komentar tidak boleh kosong');
       return;
     }
-
-    localStorage.setItem('commentAuthor', commentAuthor.trim());
+    
+    localStorage.setItem('commentAuthor', finalAuthor.trim());
 
     const comment: CommentItem = {
       id: Date.now().toString(),
-      author: commentAuthor.trim(),
+      author: finalAuthor.trim(),
       text: newComment.trim(),
       createdAt: new Date().toISOString()
     };
@@ -128,7 +143,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
       toast.success('Komentar berhasil ditambahkan');
-      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${commentAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
+      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${finalAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
@@ -172,7 +187,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
+            <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC:</span>
                 <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -269,7 +284,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
               <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <History size={16} color="var(--accent-primary)" /> Log Informasi & Riwayat Perubahan
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
+              <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
                 <div>
                   <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -366,16 +381,23 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
             {/* Multiple Files Detail Display */}
             {getTaskFiles(task).length > 0 && (
               <div>
-                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  File Lampiran ({getTaskFiles(task).length} File)
-                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    File Lampiran ({getTaskFiles(task).length} File, Maks {maxFileSizeMb} MB/file)
+                  </h4>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                    Total terpakai: {(getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                  </span>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {getTaskFiles(task).map((f, idx) => (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
                           <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
-                          <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit' }}>{f.name}</span>
+                          <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.name}>
+                            {f.name} {f.size ? `(${(f.size / (1024*1024)).toFixed(2)} MB)` : ''}
+                          </span>
                         </div>
                         {!f.isDeleted && (
                           <button
@@ -438,9 +460,9 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                     type="text"
                     className="input"
                     placeholder="Nama Anda"
-                    value={commentAuthor}
-                    onChange={e => setCommentAuthor(e.target.value)}
-                    style={{ fontSize: '13px', padding: '8px 12px' }}
+                    value={session?.user?.name || commentAuthor}
+                    readOnly
+                    style={{ fontSize: '13px', padding: '8px 12px', background: 'var(--surface-color)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
                   />
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <textarea
@@ -454,7 +476,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                     <button
                       className="btn btn-primary"
                       onClick={handleAddComment}
-                      disabled={isSubmittingComment || !newComment.trim() || !commentAuthor.trim()}
+                      disabled={isSubmittingComment || !newComment.trim() || !(session?.user?.name || commentAuthor).trim()}
                       style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Send size={16} />

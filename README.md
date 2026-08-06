@@ -29,13 +29,12 @@ Ikuti langkah-langkah mudah berikut untuk menjalankan proyek ini di perangkat at
    git clone https://github.com/ipanjez/work-monitoring.git
    ```
 2. **Instal Dependensi:** 
-   Masuk ke folder `dashboard-app` dan jalankan instalasi:
+   Jalankan instalasi di dalam root direktori:
    ```bash
-   cd dashboard-app
    npm install
    ```
 3. **Konfigurasi Lingkungan:**
-   Buat file `.env` di *root folder* `dashboard-app` dengan isi kredensial *database* SQLite Anda, misalnya:
+   Buat file `.env` di *root folder* dengan isi kredensial *database* SQLite Anda, misalnya:
    ```env
    DATABASE_URL="file:./dev.db"
    ```

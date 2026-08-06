@@ -165,7 +165,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               className="glass" 
               style={{ 
                 padding: '20px', 
-                border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                border: isSelected ? `2px solid ${getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)'}` : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
@@ -176,7 +176,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   width: '48px', 
                   height: '48px', 
                   borderRadius: '50%', 
-                  background: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.backgroundColor || 'var(--accent-primary)', 
+                  background: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)', 
                   color: 'white', 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -196,17 +196,17 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Penyelesaian Tugas</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>{rate}%</span>
+                  <span style={{ fontWeight: 'bold', color: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)' }}>{rate}%</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: `${rate}%`, backgroundColor: rate === 100 ? 'var(--success)' : 'var(--accent-primary)' }} />
+                  <div className="progress-bar" style={{ width: `${rate}%`, backgroundColor: rate === 100 ? 'var(--success)' : (getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)') }} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
-                {(masterStatuses.length > 0 ? masterStatuses.slice(0, 4) : ['Done', 'Review', 'In Progress', 'To Do']).map((statusName, idx) => {
-                  const defaultColors = ['var(--success)', '#3b82f6', 'var(--warning)', 'var(--accent-primary)'];
-                  const color = defaultColors[idx % defaultColors.length];
+                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stat.statusCounts)).map((statusName) => {
+                  const color = masterColors[`status_${statusName}`] ? masterColors[`status_${statusName}`].substring(0,7) : 'var(--text-primary)';
+                  if (!stat.statusCounts[statusName]) return null; // Only show statuses that have count > 0 for this PIC
                   return (
                     <div key={statusName}>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={statusName}>{statusName}</span>
@@ -257,7 +257,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                         {t.prioritas || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px' }}>{t.status} ({t.progress || 0}%)</td>
+                    <td style={{ padding: '12px' }}>
+                      <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
+                        {t.status}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '6px' }}>({t.progress || 0}%)</span>
+                    </td>
                     <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>

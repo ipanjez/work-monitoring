@@ -30,9 +30,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('Work Monitoring');
-  const [globalPassword, setGlobalPassword] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | string>(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
+  const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
+  const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -61,6 +64,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
+
+  const PRESET_COLORS = [
+    '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', 
+    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', 
+    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', 
+    '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
+  ];
 
   // Fetch initial data
   useEffect(() => {
@@ -76,6 +87,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.dept_name) setDeptName(data.dept_name);
+        if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
+        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
+        if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
+      })
+      .catch(e => console.error(e));
+
+    // Fetch Storage stats
+    fetch('/api/settings/storage')
+      .then(res => res.json())
+      .then(data => {
+        if (data.usedMb !== undefined) setStorageUsedMb(data.usedMb);
       })
       .catch(e => console.error(e));
 
@@ -108,7 +130,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       type === 'priority' ? setPriorities :
       setLocations;
 
-    setFunc(prev => {
+    (setFunc as React.Dispatch<React.SetStateAction<string[]>>)((prev: string[]) => {
       const next = updater(prev as any);
       fetch('/api/settings', {
         method: 'POST',
@@ -224,15 +246,36 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           <span
             key={s}
             draggable
-            onDragStart={(e) => handleDragStart(e, type, idx)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, type, idx)}
+            onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
+            onDragOver={(e: React.DragEvent) => handleDragOver(e)}
+            onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
             onDragEnd={() => setDraggedIdx(null)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
-              background: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--surface-color)'),
-              border: '1px solid var(--border-color)', fontSize: '13px', fontWeight: 500,
-              color: masterColors[`${type}_${s}`] ? 'white' : (draggedIdx?.type === type && draggedIdx.index === idx ? 'white' : 'var(--text-primary)'), cursor: 'grab'
+              background: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c !== '#ffffff') {
+                  const base = c.length === 9 ? c.substring(0, 7) : c;
+                  return `color-mix(in srgb, ${base} 15%, transparent)`;
+                }
+                return draggedIdx?.type === type && draggedIdx.index === idx ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)' : 'var(--surface-color)';
+              })(),
+              border: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c !== '#ffffff') {
+                  const base = c.length === 9 ? c.substring(0, 7) : c;
+                  return `1px solid ${base}`;
+                }
+                return draggedIdx?.type === type && draggedIdx.index === idx ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)';
+              })(),
+              fontSize: '13px', fontWeight: 500,
+              color: (() => {
+                const c = masterColors[`${type}_${s}`];
+                if (c && c !== '#ffffff') {
+                  return c.length === 9 ? c.substring(0, 7) : c;
+                }
+                return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
+              })(), cursor: 'grab', position: 'relative'
             }}
           >
             {s}
@@ -241,30 +284,55 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="number"
                 min="0"
                 max="100"
-                placeholder="%"
-                value={masterStatusProgress[s] ?? ''}
-                onChange={(e) => handleProgressChange(s, parseInt(e.target.value) || 0)}
-                style={{
-                  width: '40px', padding: '2px 4px', fontSize: '12px', borderRadius: '4px',
-                  border: '1px solid var(--border-color)', background: 'var(--surface-color)',
-                  color: 'var(--text-primary)', marginLeft: '4px'
-                }}
+                value={masterStatusProgress[s] ?? 0}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(s, Number(e.target.value))}
+                style={{ width: '40px', padding: '2px 4px', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
-            <input
-              type="color"
-              value={masterColors[`${type}_${s}`] || '#ffffff'}
-              onChange={(e) => handleColorChange(type, s, e.target.value)}
-              style={{ width: '20px', height: '20px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '50%' }}
-              title="Ubah Warna"
+            <button
+              type="button"
+              onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
+              style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '4px' }}
+              title="Pilih Warna Template"
             />
+            {activeColorPicker === `${type}_${s}` && (
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', width: '140px', display: 'flex', flexWrap: 'wrap', gap: '6px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', marginTop: '8px' }}>
+                {PRESET_COLORS.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      handleColorChange(type, s, c);
+                      setActiveColorPicker(null);
+                    }}
+                    style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: masterColors[`${type}_${s}`] === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: '2px' }}
+                    title={c}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleColorChange(type, s, '#ffffff');
+                    setActiveColorPicker(null);
+                  }}
+                  style={{ width: '100%', marginTop: '4px', padding: '6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  Gunakan Default Aksen
+                </button>
+              </div>
+            )}
             <button
               type="button" onClick={() => handleDelete(type, s)}
               style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
             ><X size={14} /></button>
           </span>
         ))}
+      </div>
+      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+        <button type="button" className="btn btn-primary" onClick={handleSaveSettings} disabled={loading}>
+          {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+        </button>
       </div>
     </>
   );
@@ -331,7 +399,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_locations: locations,
         master_colors: masterColors,
         master_icons: masterIcons,
-        master_status_progress: masterStatusProgress
+        master_status_progress: masterStatusProgress,
+        max_file_size_mb: Number(maxFileSizeMb) || 25,
+        max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
+        max_total_storage_mb: Number(maxTotalStorageMb) || 5000
       })
     })
       .then(() => {
@@ -406,6 +477,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               { id: 'purple', color: '#a855f7', label: 'Ungu' },
               { id: 'green', color: '#10b981', label: 'Hijau' },
               { id: 'orange', color: '#f97316', label: 'Oranye' },
+              { id: 'red', color: '#ef4444', label: 'Merah' },
+              { id: 'teal', color: '#14b8a6', label: 'Teal' },
             ].map(ac => (
               <button
                 key={ac.id}
@@ -470,6 +543,35 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <Maximize size={16} /> Aktifkan Mode Fokus
           </button>
         </div>
+
+        {/* Theme Preview Card */}
+        <div style={{ marginTop: '32px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Pratinjau Tema & Warna</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
+            </div>
+          </div>
+          <div style={{ padding: density === 'compact' ? '16px' : '32px', background: 'var(--bg-color)', transition: 'padding 0.3s' }}>
+            <div className="glass" style={{ padding: density === 'compact' ? '16px' : '24px', display: 'flex', flexDirection: 'column', gap: density === 'compact' ? '12px' : '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Kartu Contoh Pekerjaan</h4>
+                <span className="badge" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' }}>
+                  In Progress (50%)
+                </span>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: density === 'compact' ? 1.4 : 1.6 }}>
+                Ini adalah simulasi bagaimana teks, kartu, dan tombol akan terlihat di seluruh aplikasi dengan kombinasi tema ({theme === 'dark' ? 'Gelap' : 'Terang'}) dan warna aksen pilihan Anda.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button className="btn btn-primary">Tombol Utama</button>
+                <button className="btn btn-secondary">Tombol Sekunder</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Account Settings Card */}
@@ -482,7 +584,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </p>
 
         <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
+          <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 NPK (ID Pengguna)
@@ -506,7 +608,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="text"
                 className="input"
                 value={profileName}
-                onChange={e => setProfileName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfileName(e.target.value)}
                 required
               />
             </div>
@@ -521,7 +623,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
+          <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Password Saat Ini
@@ -530,7 +632,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
                 placeholder="Password lama Anda"
               />
             </div>
@@ -542,7 +644,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
                 placeholder="Minimal 6 karakter"
               />
             </div>
@@ -554,7 +656,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="password"
                 className="input"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 placeholder="Ulangi password baru"
               />
             </div>
@@ -650,23 +752,69 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <input
                 className="input"
                 value={deptName}
-                onChange={e => setDeptName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeptName(e.target.value)}
                 placeholder="Contoh: Divisi TI & Sistem Informasi"
               />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Ubah Password Global (Opsional)
+                Maksimal Ukuran per File Lampiran (MB)
               </label>
               <input
-                type="password"
+                type="number"
                 className="input"
-                value={globalPassword}
-                onChange={e => setGlobalPassword(e.target.value)}
-                placeholder="Kosongkan jika tidak ingin mengubah sandi"
+                value={maxFileSizeMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
+                placeholder="Contoh: 25"
+                min="1"
               />
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Password baru akan menimpa password environment bawaan.</p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Maksimal Total Ukuran File per Pekerjaan (MB)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={maxTaskFilesSizeMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
+                placeholder="Contoh: 100"
+                min="1"
+              />
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Kapasitas Maksimal Storage Keseluruhan Aplikasi (MB)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={maxTotalStorageMb}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTotalStorageMb(e.target.value)}
+                placeholder="Contoh: 5000"
+                min="1"
+              />
+              
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>
+                  <span>Penyimpanan Terpakai: {storageUsedMb.toFixed(2)} MB</span>
+                  <span>Maks: {maxTotalStorageMb} MB</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
+                    width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
+                    transition: 'width 0.3s'
+                  }} />
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                  Sisa kapasitas: {Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB
+                </p>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>

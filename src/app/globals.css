@@ -68,6 +68,14 @@
   --accent-primary: #f97316;
   --accent-hover: #ea580c;
 }
+[data-accent="red"] {
+  --accent-primary: #ef4444;
+  --accent-hover: #dc2626;
+}
+[data-accent="teal"] {
+  --accent-primary: #14b8a6;
+  --accent-hover: #0d9488;
+}
 
 * {
   box-sizing: border-box;
@@ -455,6 +463,50 @@ th[style*="cursor: pointer"]:hover, .clickable-hover:hover { color: var(--accent
     border-radius: 50% !important;
     justify-content: center !important;
     gap: 0 !important;
+  }
+  
+  /* Generic Responsive Modals */
+  .modal-overlay {
+    padding: 10px !important;
+  }
+  
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 95vh !important;
+    border-radius: 12px !important;
+  }
+  
+  .modal-body {
+    padding: 16px !important;
+  }
+  
+  /* Responsive Grids */
+  .grid-3-col {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .grid-2-col {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Action Bar fixes */
+  .action-bar-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .action-bar-mobile > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+  
+  .table-responsive-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

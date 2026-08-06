@@ -21,7 +21,9 @@ export async function GET() {
       master_colors: {},
       master_icons: {},
       master_status_progress: {},
-      dept_name: 'Work Monitoring'
+      dept_name: 'Work Monitoring',
+      max_file_size_mb: 25,
+      max_task_files_size_mb: 100
     };
 
     settings.forEach(setting => {
@@ -32,11 +34,14 @@ export async function GET() {
           const parsed = JSON.parse(setting.value);
           if (Array.isArray(parsed)) {
             if (parsed.length > 0) defaultData[setting.key] = parsed;
-          } else if (parsed && typeof parsed === 'object') {
+          } else if (parsed !== null && parsed !== undefined && typeof parsed === 'object') {
+            defaultData[setting.key] = parsed;
+          } else {
             defaultData[setting.key] = parsed;
           }
         } catch (e) {
-          // ignore parse error
+          // If parse fails, assign raw value (useful for primitives that aren't valid JSON)
+          defaultData[setting.key] = setting.value;
         }
       }
     });
@@ -126,6 +131,22 @@ export async function POST(request: Request) {
         where: { key: 'dept_name' },
         update: { value: body.dept_name },
         create: { key: 'dept_name', value: body.dept_name }
+      });
+    }
+
+    if (body.max_file_size_mb !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'max_file_size_mb' },
+        update: { value: String(body.max_file_size_mb) },
+        create: { key: 'max_file_size_mb', value: String(body.max_file_size_mb) }
+      });
+    }
+
+    if (body.max_task_files_size_mb !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'max_task_files_size_mb' },
+        update: { value: String(body.max_task_files_size_mb) },
+        create: { key: 'max_task_files_size_mb', value: String(body.max_task_files_size_mb) }
       });
     }
 
