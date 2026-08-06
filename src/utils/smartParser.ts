@@ -63,11 +63,21 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
   }
 
   const tasks: ParsedTask[] = [];
-  let currentTask: Partial<ParsedTask> | null = null;
+  let currentTask: Partial<ParsedTask> = {
+    nama: 'Pekerjaan Baru',
+    pic: '',
+    startDate: globalDate,
+    endDate: globalDate,
+    startTime: '08:00',
+    endTime: '17:00',
+    deskripsi: '',
+    lokasi: ''
+  };
   let currentDescription: string[] = [];
+  let isFirstTaskNameFound = false;
 
   const saveCurrentTask = () => {
-    if (currentTask && currentTask.nama) {
+    if (currentTask && (isFirstTaskNameFound || currentDescription.length > 0)) {
       currentTask.deskripsi = currentDescription.join('\n').trim();
       tasks.push(currentTask as ParsedTask);
     }
@@ -79,67 +89,78 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const lowerLine = line.toLowerCase();
 
-    // Check if line looks like the start of a new task (e.g., "1. Webinar..." or "- Rapat...")
+    // Check if line looks like the start of a new task
     if (isNewTaskLine(line)) {
-      saveCurrentTask();
-      
       let name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
       if (line.startsWith('🗒️')) {
         name = line.replace(/^🗒️\s*[:\-]?\s*/, '').trim();
       }
-      currentTask = {
-        nama: name,
-        pic: '',
-        startDate: globalDate,
-        endDate: globalDate,
-        startTime: '08:00', // Default
-        endTime: '17:00',   // Default
-        deskripsi: '',
-        lokasi: ''
-      };
-      currentDescription = [];
+      
+      if (!isFirstTaskNameFound) {
+        currentTask.nama = name;
+        isFirstTaskNameFound = true;
+      } else {
+        saveCurrentTask();
+        currentTask = {
+          nama: name,
+          pic: '',
+          startDate: globalDate,
+          endDate: globalDate,
+          startTime: '08:00',
+          endTime: '17:00',
+          deskripsi: '',
+          lokasi: ''
+        };
+        currentDescription = [];
+      }
       continue;
     }
 
-    // If we are currently parsing a task
-    if (currentTask) {
-      const lowerLine = line.toLowerCase();
-      
-      // Time parsing
-      if (lowerLine.includes('⏰') || lowerLine.includes('waktu') || lowerLine.includes('jam') || lowerLine.includes('pukul')) {
-        const { start, end } = extractTimes(line);
-        if (start) {
-          currentTask.startTime = start;
-          if (end) {
-            currentTask.endTime = end;
-          } else {
-            const [h, m] = start.split(':').map(Number);
-            const endH = Math.min(23, h + 2).toString().padStart(2, '0');
-            currentTask.endTime = `${endH}:${m.toString().padStart(2, '0')}`;
-          }
+    // Date parsing
+    const parsedDate = parseDateIndonesian(line);
+    if (parsedDate) {
+      currentTask.startDate = parsedDate;
+      currentTask.endDate = parsedDate;
+      globalDate = parsedDate; // update fallback for subsequent tasks
+      currentDescription.push(line);
+      continue;
+    }
+
+    // Time parsing
+    if (lowerLine.includes('⏰') || lowerLine.includes('waktu') || lowerLine.includes('jam') || lowerLine.includes('pukul')) {
+      const { start, end } = extractTimes(line);
+      if (start) {
+        currentTask.startTime = start;
+        if (end) {
+          currentTask.endTime = end;
+        } else {
+          const [h, m] = start.split(':').map(Number);
+          const endH = Math.min(23, h + 2).toString().padStart(2, '0');
+          currentTask.endTime = `${endH}:${m.toString().padStart(2, '0')}`;
         }
-        currentDescription.push(line); // Also keep in description for context
-      } 
-      // Location parsing
-      else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || lowerLine.includes('tempat:') || lowerLine.includes('lokasi:') || lowerLine.includes('ruang:') || lowerLine.includes('link:')) {
-        const cleanLoc = line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
-        if (cleanLoc) {
-          const locLower = cleanLoc.toLowerCase();
-          if (locLower.startsWith('http://') || locLower.startsWith('https://') || locLower.includes('zoom.us') || locLower.includes('meet.google.com') || locLower.includes('teams.live.com') || locLower.includes('teams.microsoft') || locLower.startsWith('online:')) {
-            const cleanLink = cleanLoc.replace(/^online:\s*/i, '').trim();
-            currentTask.lokasi = JSON.stringify({ tipe: 'online', linkZoom: cleanLink, lokasiFisik: '', jam: '' });
-          } else {
-            const cleanPhys = cleanLoc.replace(/^offline:\s*/i, '').trim();
-            currentTask.lokasi = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: cleanPhys, jam: '' });
-          }
+      }
+      currentDescription.push(line); // Also keep in description for context
+    } 
+    // Location parsing
+    else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || lowerLine.includes('tempat:') || lowerLine.includes('lokasi:') || lowerLine.includes('ruang:') || lowerLine.includes('link:')) {
+      const cleanLoc = line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
+      if (cleanLoc) {
+        const locLower = cleanLoc.toLowerCase();
+        if (locLower.startsWith('http://') || locLower.startsWith('https://') || locLower.includes('zoom.us') || locLower.includes('meet.google.com') || locLower.includes('teams.live.com') || locLower.includes('teams.microsoft') || locLower.startsWith('online:')) {
+          const cleanLink = cleanLoc.replace(/^online:\s*/i, '').trim();
+          currentTask.lokasi = JSON.stringify({ tipe: 'online', linkZoom: cleanLink, lokasiFisik: '', jam: '' });
+        } else {
+          const cleanPhys = cleanLoc.replace(/^offline:\s*/i, '').trim();
+          currentTask.lokasi = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: cleanPhys, jam: '' });
         }
-        currentDescription.push(line);
       }
-      // Misc Description parsing
-      else {
-        currentDescription.push(line);
-      }
+      currentDescription.push(line);
+    }
+    // Misc Description parsing
+    else {
+      currentDescription.push(line);
     }
   }
 
