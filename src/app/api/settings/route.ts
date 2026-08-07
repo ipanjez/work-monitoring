@@ -23,6 +23,9 @@ export async function GET() {
       master_status_progress: {},
       master_pic_avatars: {},
       dept_name: 'Work Monitoring',
+      app_name: 'DeptMonitor',
+      app_subtitle: 'MRK',
+      app_logo: '',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100
     };
@@ -140,6 +143,30 @@ export async function POST(request: Request) {
         where: { key: 'dept_name' },
         update: { value: body.dept_name },
         create: { key: 'dept_name', value: body.dept_name }
+      });
+    }
+
+    if (body.app_name !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'app_name' },
+        update: { value: body.app_name },
+        create: { key: 'app_name', value: body.app_name }
+      });
+    }
+
+    if (body.app_subtitle !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'app_subtitle' },
+        update: { value: body.app_subtitle },
+        create: { key: 'app_subtitle', value: body.app_subtitle }
+      });
+    }
+
+    if (body.app_logo !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'app_logo' },
+        update: { value: body.app_logo },
+        create: { key: 'app_logo', value: body.app_logo }
       });
     }
 

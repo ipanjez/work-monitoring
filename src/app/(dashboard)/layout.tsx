@@ -11,6 +11,7 @@ import { Menu } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
+import { useMaster } from '@/context/MasterContext';
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { toggleMobileMenu } = useTheme();
+  const { appName } = useMaster();
   const router = useRouter();
   useEffect(() => {
     const handleRefresh = () => router.refresh();
@@ -33,7 +35,7 @@ export default function DashboardLayout({
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <Menu size={24} />
           </button>
-          <div style={{ fontWeight: 'bold', fontSize: '18px' }}>DeptMonitor</div>
+          <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{appName}</div>
         </div>
       </div>
       <Sidebar />
