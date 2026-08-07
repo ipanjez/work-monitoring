@@ -57,6 +57,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Drag State
   const [draggedIdx, setDraggedIdx] = useState<{ type: string, index: number } | null>(null);
 
+  // Edit State
+  const [editingItem, setEditingItem] = useState<{ type: ListType, oldVal: string } | null>(null);
+  const [editInputValue, setEditInputValue] = useState('');
+
   // Profile State for logged-in user
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
@@ -218,6 +222,68 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
+  const handleRename = async (type: ListType, oldVal: string, newVal: string) => {
+    if (!newVal.trim() || newVal.trim() === oldVal) {
+      setEditingItem(null);
+      return;
+    }
+    
+    // Optimistic UI update
+    const setFunc = 
+      type === 'cat' ? setCategories : 
+      type === 'pic' ? setPics : 
+      type === 'status' ? setStatuses : 
+      type === 'priority' ? setPriorities :
+      setLocations;
+    
+    (setFunc as React.Dispatch<React.SetStateAction<string[]>>)(prev => {
+      const arr = [...prev];
+      const index = arr.indexOf(oldVal);
+      if (index !== -1) arr[index] = newVal.trim();
+      return arr;
+    });
+
+    // Color UI Update
+    const oldColorKey = `${type}_${oldVal}`;
+    const newColorKey = `${type}_${newVal.trim()}`;
+    if (masterColors[oldColorKey]) {
+      setMasterColors(prev => {
+        const next = { ...prev };
+        next[newColorKey] = next[oldColorKey];
+        delete next[oldColorKey];
+        return next;
+      });
+    }
+
+    if (type === 'status' && masterStatusProgress[oldVal] !== undefined) {
+      setMasterStatusProgress(prev => {
+        const next = { ...prev };
+        next[newVal.trim()] = next[oldVal];
+        delete next[oldVal];
+        return next;
+      });
+    }
+
+    setEditingItem(null);
+    const loadingToast = toast.loading('Memperbarui nama di semua pekerjaan...');
+
+    try {
+      const res = await fetch('/api/settings/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listType: type, oldValue: oldVal, newValue: newVal.trim() })
+      });
+      if (res.ok) {
+        toast.success('Berhasil mengubah master data', { id: loadingToast });
+        if (addActivityLog) addActivityLog('EDIT_MASTER', `Edit Master ${type}`, `Mengubah item "${oldVal}" menjadi "${newVal.trim()}" di master ${type}`, 'info');
+      } else {
+        toast.error('Gagal memperbarui', { id: loadingToast });
+      }
+    } catch (e) {
+      toast.error('Terjadi kesalahan', { id: loadingToast });
+    }
+  };
+
   const handleColorChange = (type: ListType, val: string, color: string) => {
     const newColors = { ...masterColors, [`${type}_${val}`]: color };
     setMasterColors(newColors);
@@ -245,7 +311,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         {list.map((s, idx) => (
           <span
             key={s}
-            draggable
+            draggable={editingItem?.type !== type || editingItem?.oldVal !== s}
             onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
             onDragOver={(e: React.DragEvent) => handleDragOver(e)}
             onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
@@ -275,10 +341,30 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   return c.length === 9 ? c.substring(0, 7) : c;
                 }
                 return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
-              })(), cursor: 'grab', position: 'relative'
+              })(), cursor: editingItem?.type === type && editingItem?.oldVal === s ? 'default' : 'grab', position: 'relative'
             }}
           >
-            {s}
+            {editingItem?.type === type && editingItem?.oldVal === s ? (
+              <input
+                type="text"
+                autoFocus
+                value={editInputValue}
+                onChange={e => setEditInputValue(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRename(type, s, editInputValue);
+                  } else if (e.key === 'Escape') {
+                    setEditingItem(null);
+                  }
+                }}
+                onBlur={() => handleRename(type, s, editInputValue)}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px', fontWeight: 500, width: `${Math.max(editInputValue.length * 8, 50)}px` }}
+              />
+            ) : (
+              <>{s}</>
+            )}
+            
             {type === 'status' && (
               <input
                 type="number"
@@ -290,12 +376,33 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
-            <button
-              type="button"
-              onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
-              style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '4px' }}
-              title="Pilih Warna Template"
-            />
+            
+            {editingItem?.type !== type || editingItem?.oldVal !== s ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
+                  style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '4px' }}
+                  title="Pilih Warna Template"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingItem({ type, oldVal: s });
+                    setEditInputValue(s);
+                  }}
+                  style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex' }}
+                  title="Edit"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  type="button" onClick={() => handleDelete(type, s)}
+                  style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
+                ><X size={14} /></button>
+              </>
+            ) : null}
+
             {activeColorPicker === `${type}_${s}` && (
               <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', width: '140px', display: 'flex', flexWrap: 'wrap', gap: '6px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', marginTop: '8px' }}>
                 {PRESET_COLORS.map(c => (
@@ -322,10 +429,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 </button>
               </div>
             )}
-            <button
-              type="button" onClick={() => handleDelete(type, s)}
-              style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
-            ><X size={14} /></button>
           </span>
         ))}
       </div>
