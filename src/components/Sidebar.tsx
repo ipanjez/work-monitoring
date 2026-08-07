@@ -18,7 +18,7 @@ import { useSession, signOut } from 'next-auth/react';
 export default function Sidebar() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
-  const { masterColors } = useMaster();
+  const { masterColors, appName, appSubtitle, appLogo } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -37,7 +37,6 @@ export default function Sidebar() {
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [deptName, setDeptName] = useState('Work Monitoring');
   const [stats, setStats] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -60,9 +59,6 @@ export default function Sidebar() {
           if (data.master_statuses) {
             setMasterStatuses(data.master_statuses);
           }
-          if (data.dept_name) {
-            setDeptName(data.dept_name);
-          }
           if (data.master_colors) {
             localStorage.setItem('master_colors', JSON.stringify(data.master_colors));
           }
@@ -73,10 +69,8 @@ export default function Sidebar() {
     loadData();
     loadSettings();
     window.addEventListener('tasksUpdated', loadData);
-    window.addEventListener('deptNameChanged', loadSettings);
     return () => {
       window.removeEventListener('tasksUpdated', loadData);
-      window.removeEventListener('deptNameChanged', loadSettings);
     };
   }, [pathname]);
 
@@ -178,13 +172,17 @@ export default function Sidebar() {
         <div>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
-              <div style={{ padding: '8px', background: 'var(--accent-primary)', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                <CheckSquare size={22} />
+              <div style={{ padding: '8px', background: 'var(--accent-primary)', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', flexShrink: 0, width: '38px', height: '38px', justifyContent: 'center' }}>
+                {appLogo ? (
+                  <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }} />
+                ) : (
+                  <CheckSquare size={22} />
+                )}
               </div>
               {!isSidebarCollapsed && (
-                <div>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', display: 'block', lineHeight: 1.2 }}>DeptMonitor</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 400 }}>{deptName}</span>
+                <div style={{ overflow: 'hidden' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', display: 'block', lineHeight: 1.2, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{appName}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 400, display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{appSubtitle}</span>
                 </div>
               )}
             </div>

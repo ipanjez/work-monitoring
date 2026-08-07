@@ -10,6 +10,7 @@ interface AvatarCropperModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (croppedImageBase64: string) => void;
+  title?: string;
 }
 
 const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> => {
@@ -46,7 +47,7 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> 
   return canvas.toDataURL('image/jpeg', 0.8); // Compress slightly
 };
 
-export default function AvatarCropperModal({ isOpen, onClose, onSave }: AvatarCropperModalProps) {
+export default function AvatarCropperModal({ isOpen, onClose, onSave, title = "Sesuaikan Foto Profil" }: AvatarCropperModalProps) {
   const [image, setImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -91,14 +92,19 @@ export default function AvatarCropperModal({ isOpen, onClose, onSave }: AvatarCr
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    setImage(null);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div className="modal-content" style={{ maxWidth: '400px', width: '100%', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--modal-bg, var(--surface-color))', border: '1px solid var(--border-color)', borderRadius: '20px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Unggah Foto Profil</h2>
-          <button onClick={() => { onClose(); setImage(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>{title}</h2>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
             <X size={20} />
           </button>
         </div>

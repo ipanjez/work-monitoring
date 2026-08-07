@@ -65,17 +65,17 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('master_pic_avatars', JSON.stringify(data.master_pic_avatars));
           changed = true;
         }
-        if (data.app_name) {
+        if (data.app_name !== undefined) {
           setAppName(data.app_name);
           localStorage.setItem('app_name', data.app_name);
           changed = true;
         }
-        if (data.app_subtitle) {
+        if (data.app_subtitle !== undefined) {
           setAppSubtitle(data.app_subtitle);
           localStorage.setItem('app_subtitle', data.app_subtitle);
           changed = true;
         }
-        if (data.app_logo) {
+        if (data.app_logo !== undefined) {
           setAppLogo(data.app_logo);
           localStorage.setItem('app_logo', data.app_logo);
           changed = true;
@@ -97,13 +97,25 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'app_logo' && e.newValue) setAppLogo(e.newValue);
       } catch (err) {}
     };
+    
+    // Non-StorageEvent version for internal dispatches
+    const handleMasterUpdated = () => {
+        setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
+        setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
+        setAppLogo(localStorage.getItem('app_logo') || '');
+        try {
+            setMasterColors(JSON.parse(localStorage.getItem('master_colors') || '{}'));
+            setMasterIcons(JSON.parse(localStorage.getItem('master_icons') || '{}'));
+            setMasterPicAvatars(JSON.parse(localStorage.getItem('master_pic_avatars') || '{}'));
+        } catch(e) {}
+    }
 
     window.addEventListener('storage', handleStorage);
-    window.addEventListener('masterUpdated', handleStorage);
+    window.addEventListener('masterUpdated', handleMasterUpdated);
 
     return () => {
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('masterUpdated', handleStorage);
+      window.removeEventListener('masterUpdated', handleMasterUpdated);
     };
   }, []);
 

@@ -31,7 +31,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
-  const [deptName, setDeptName] = useState('Work Monitoring');
+  const [deptName, setDeptName] = useState('MRK');
+  const [appName, setAppName] = useState('DeptMonitor');
+  const [appLogo, setAppLogo] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | string>(25);
@@ -66,6 +68,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   
   // Avatar Cropper State
   const [activePicForAvatar, setActivePicForAvatar] = useState<string | null>(null);
+  const [isAppLogoCropperOpen, setIsAppLogoCropperOpen] = useState(false);
 
   // Profile State for logged-in user
   const [profileName, setProfileName] = useState('');
@@ -98,6 +101,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
         if (data.dept_name) setDeptName(data.dept_name);
+        if (data.app_name) setAppName(data.app_name);
+        if (data.app_subtitle) setDeptName(data.app_subtitle);
+        if (data.app_logo) setAppLogo(data.app_logo);
         if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
@@ -543,6 +549,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         dept_name: deptName,
+        app_name: appName,
+        app_subtitle: deptName,
+        app_logo: appLogo,
         master_categories: categories,
         master_pics: pics,
         master_statuses: statuses,
@@ -591,6 +600,56 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       {savedSuccess && (
         <div style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '10px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
           <Check size={18} /> Pengaturan berhasil disimpan!
+        </div>
+      )}
+
+      {/* Identitas Aplikasi Card */}
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Layout size={20} color="var(--accent-primary)" /> Identitas Aplikasi
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Aplikasi</label>
+              <input 
+                type="text" 
+                value={appName} 
+                onChange={e => setAppName(e.target.value)}
+                className="input-field" 
+                placeholder="DeptMonitor"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Subjudul / Departemen</label>
+              <input 
+                type="text" 
+                value={deptName} 
+                onChange={e => setDeptName(e.target.value)}
+                className="input-field" 
+                placeholder="MRK"
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '24px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Logo Aplikasi</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {appLogo ? <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Layout size={24} color="var(--text-secondary)" />}
+              </div>
+              <button className="btn btn-secondary" onClick={() => setIsAppLogoCropperOpen(true)}>
+                <Camera size={16} /> Ubah Logo
+              </button>
+              {appLogo && (
+                <button className="btn btn-danger" onClick={() => setAppLogo('')} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
+                  Hapus
+                </button>
+              )}
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Gunakan gambar persegi (rasio 1:1) berukuran minimal 128x128 pixel untuk hasil terbaik.</p>
+          </div>
         </div>
       )}
 
@@ -1022,6 +1081,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         isOpen={!!activePicForAvatar}
         onClose={() => setActivePicForAvatar(null)}
         onSave={handleAvatarSave}
+      />
+
+      <AvatarCropperModal
+        isOpen={isAppLogoCropperOpen}
+        onClose={() => setIsAppLogoCropperOpen(false)}
+        onSave={(base64) => {
+          setAppLogo(base64);
+          setIsAppLogoCropperOpen(false);
+        }}
+        title="Ubah Logo Aplikasi"
       />
     </div>
   );
