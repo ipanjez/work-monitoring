@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 import { X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
