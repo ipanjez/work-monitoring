@@ -62,8 +62,8 @@ export const picAvatarXAxisPlugin = {
     const labels: string[] = chart.data.labels || [];
     const radius = avatarSize / 2;
 
-    // Y position: place circles below the chart area
-    const yCenter = xScale.bottom + radius + 6;
+    // Y position: place circles inside the padded area below the chart
+    const yCenter = chart.chartArea.bottom + radius + 10;
 
     labels.forEach((label: string, index: number) => {
       const xCenter = xScale.getPixelForValue(index);
@@ -123,7 +123,7 @@ export function getPicAvatarXAxisConfig(avatarSize: number = 28) {
       display: false, // hide the default text labels
     },
     afterFit(axis: any) {
-      axis.paddingBottom = avatarSize + 14; // space for the avatar circles
+      axis.paddingBottom = Math.max(44, avatarSize + 16); // space for the avatar circles
     },
   };
 }
