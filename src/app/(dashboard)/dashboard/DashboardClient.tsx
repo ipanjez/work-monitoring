@@ -924,28 +924,31 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
           <button 
             className="btn" 
             onClick={handleExportExcelSummary}
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
+            title="Export Excel"
+            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
           >
-            <Download size={16} /> Export Excel
+            <Download size={16} /> <span className="hide-mobile">Excel</span>
           </button>
           <button 
             className="btn" 
             onClick={handleExportPDF} 
             disabled={isExportingPdf}
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
+            title="Export PDF"
+            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
           >
-            <FileText size={16} /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
+            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
           </button>
           <button 
             className="btn" 
             onClick={handleCopyImage}
-            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)' }}
+            title="Copy Image"
+            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
           >
-            <Copy size={16} /> Copy Image
+            <Copy size={16} /> <span className="hide-mobile">Copy</span>
           </button>
         </div>
       </div>

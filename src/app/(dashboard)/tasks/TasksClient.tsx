@@ -1021,6 +1021,27 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
+  const handleCopyImage = async () => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const element = document.getElementById('task-table-container');
+      if (!element) return;
+      
+      const canvas = await html2canvas(element, { scale: 2 });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          toast.success('Gambar berhasil disalin ke clipboard');
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Copy Image error:', err);
+      toast.error('Gagal menyalin gambar');
+    }
+  };
+
   const handleExportAllICS = () => {
     if (processedTasks.length === 0) return;
 
@@ -1139,21 +1160,32 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             </div>
           )}
 
-          <button
-            className="btn"
-            onClick={handleExportExcel}
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
-          >
-            <Download size={16} /> Export Excel
-          </button>
-
-          <button
-            className="btn"
-            onClick={handleExportPDF}
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.2)' }}
-          >
-            <FileText size={16} /> Export PDF
-          </button>
+          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+            <button
+              className="btn"
+              onClick={handleExportExcel}
+              title="Export Excel"
+              style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
+            >
+              <Download size={16} /> <span className="hide-mobile">Excel</span>
+            </button>
+            <button
+              className="btn"
+              onClick={handleExportPDF}
+              title="Export PDF"
+              style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              <FileText size={16} /> <span className="hide-mobile">PDF</span>
+            </button>
+            <button
+              className="btn"
+              onClick={handleCopyImage}
+              title="Copy Image"
+              style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+            >
+              <Copy size={16} /> <span className="hide-mobile">Copy</span>
+            </button>
+          </div>
 
           <button
             className="btn btn-secondary"

@@ -525,15 +525,31 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleCopyImage}>
-            <Copy size={16} /> Copy Image
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', marginLeft: 'auto' }}>
+          <button 
+            className="btn" 
+            onClick={handleExportFullReport}
+            title="Export XLSX"
+            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            <FileSpreadsheet size={16} /> <span className="hide-mobile">XLSX</span>
           </button>
-          <button className="btn" style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} onClick={handleExportPDF} disabled={isExportingPdf}>
-            <FileText size={16} color="#ef4444" /> {isExportingPdf ? 'Mengekspor...' : 'Export PDF'}
+          <button 
+            className="btn" 
+            onClick={handleExportPDF} 
+            disabled={isExportingPdf}
+            title="Export PDF"
+            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
+          >
+            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
           </button>
-          <button className="btn btn-primary" onClick={handleExportFullReport} style={{ whiteSpace: 'nowrap' }}>
-            <FileSpreadsheet size={16} /> Export XLSX
+          <button 
+            className="btn" 
+            onClick={handleCopyImage}
+            title="Copy Image"
+            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <Copy size={16} /> <span className="hide-mobile">Copy</span>
           </button>
         </div>
       </div>
