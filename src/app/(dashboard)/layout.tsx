@@ -2,6 +2,7 @@
 import Sidebar from "@/components/Sidebar";
 import NotificationBell from '@/components/NotificationBell';
 import GlobalAddButton from '@/components/GlobalAddButton';
+import CopyAgendaButton from '@/components/CopyAgendaButton';
 import RealTimeClock from '@/components/RealTimeClock';
 import UserProfileButton from '@/components/UserProfileButton';
 
@@ -41,6 +42,7 @@ export default function DashboardLayout({
       </main>
       <div className="header-actions-container">
         <RealTimeClock />
+        <CopyAgendaButton />
         <GlobalAddButton />
         <NotificationBell />
         <UserProfileButton />
