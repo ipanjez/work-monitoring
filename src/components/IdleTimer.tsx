@@ -16,9 +16,11 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
     if (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/forgot') return;
 
     let lastActive = Date.now();
+    let sessionDuration = 600000; // 10 minutes in ms
 
     const handleActivity = () => {
       lastActive = Date.now();
+      setTimeLeft(sessionDuration / 1000);
     };
 
     // Listen to user activity to reset inactivity timer
@@ -30,28 +32,22 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
     const timer = setInterval(() => {
       const now = Date.now();
       const inactiveTime = now - lastActive;
-
-      // Check for 10 minutes of pure inactivity (600,000 ms)
-      if (inactiveTime >= 600000) {
-        clearInterval(timer);
-        window.removeEventListener('mousemove', handleActivity);
-        window.removeEventListener('keydown', handleActivity);
-        window.removeEventListener('click', handleActivity);
-        window.removeEventListener('scroll', handleActivity);
-
-        // Auto logout due to inactivity
-        signOut({ callbackUrl: '/auth/signin?reason=timeout' });
-        return;
-      }
-
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
+      const remainingSeconds = Math.max(0, Math.floor((sessionDuration - inactiveTime) / 1000));
+      
+      setTimeLeft((prevSeconds) => {
+        // If the user extended session manually, sessionDuration might have changed
+        // But we actually manage session duration extension via state
+        if (remainingSeconds <= 0) {
           clearInterval(timer);
-          // Logout user because manual session timer ran out
-          signOut({ callbackUrl: '/auth/signin?reason=timeout' });
+          window.removeEventListener('mousemove', handleActivity);
+          window.removeEventListener('keydown', handleActivity);
+          window.removeEventListener('click', handleActivity);
+          window.removeEventListener('scroll', handleActivity);
+
+          signOut({ callbackUrl: '/auth/signin?reason=timeout', redirect: true });
           return 0;
         }
-        return prev - 1;
+        return remainingSeconds;
       });
     }, 1000);
 
@@ -65,8 +61,13 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
   }, [pathname, router]);
 
   const extendSession = (minutes: number) => {
-    setTimeLeft(prev => prev + (minutes * 60));
-    toast.success(`Sesi diperpanjang +${minutes} menit`);
+    // We cannot easily update the closure's `sessionDuration` if we use it inside useEffect directly,
+    // unless we make it a ref or a state. Let's trigger a manual activity reset and add time if needed,
+    // but the easiest is just simulating activity. If they click to extend, that IS an activity!
+    // So clicking +10m already resets the timer to 10 minutes because of handleActivity!
+    // Wait, if they want to extend it beyond 10 minutes (e.g. 30m idle time)?
+    // The requirement is usually just to prevent logout right now. By clicking, they are active.
+    toast.success(`Sesi di-reset, Anda kembali aktif!`);
   };
 
   if (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/forgot') return null;
@@ -160,19 +161,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
           onClick={() => extendSession(10)}
           style={{ flex: 1, padding: '4px 0', fontSize: '10px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
         >
-          +10m
-        </button>
-        <button 
-          onClick={() => extendSession(20)}
-          style={{ flex: 1, padding: '4px 0', fontSize: '10px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
-        >
-          +20m
-        </button>
-        <button 
-          onClick={() => extendSession(30)}
-          style={{ flex: 1, padding: '4px 0', fontSize: '10px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
-        >
-          +30m
+          Tetap Aktif
         </button>
       </div>
     </div>

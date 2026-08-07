@@ -52,7 +52,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
 
