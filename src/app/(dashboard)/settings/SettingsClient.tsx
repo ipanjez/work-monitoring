@@ -650,6 +650,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Gunakan gambar persegi (rasio 1:1) berukuran minimal 128x128 pixel untuk hasil terbaik.</p>
           </div>
+
+          <button onClick={handleSaveSettings} className="btn btn-primary" style={{ marginTop: '24px' }}>
+            Simpan Identitas Aplikasi
+          </button>
         </div>
       )}
 
