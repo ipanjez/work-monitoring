@@ -32,6 +32,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
+  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
+  const [masterCategories, setMasterCategories] = useState<string[]>([]);
   
   useEffect(() => {
     setLocalTasks(initialTasks);
@@ -47,6 +49,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           }
           if (data.master_statuses) {
             setMasterStatuses(data.master_statuses);
+          }
+          if (data.master_priorities) {
+            setMasterPriorities(data.master_priorities);
+          }
+          if (data.master_categories) {
+            setMasterCategories(data.master_categories);
           }
         })
         .catch(e => console.error(e));
@@ -319,10 +327,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       </div>
       {/* Header Controls */}
       <UniversalFilterBar 
-        categories={[]} 
+        categories={masterCategories.length > 0 ? masterCategories : undefined} 
         pics={masterPics} 
-        statuses={masterStatuses.length > 0 ? masterStatuses : []} 
-        priorities={[]} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

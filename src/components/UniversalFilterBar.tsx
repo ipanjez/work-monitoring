@@ -4,17 +4,17 @@ import { Search, Filter } from 'lucide-react';
 import { useFilter } from '@/context/FilterContext';
 
 interface UniversalFilterBarProps {
-  categories: string[];
-  pics: string[];
+  categories?: string[];
+  pics?: string[];
   statuses?: string[];
   priorities?: string[];
 }
 
 export default function UniversalFilterBar({ 
-  categories, 
-  pics, 
-  statuses = ['To Do', 'In Progress', 'Review', 'Done'], 
-  priorities = ['Low', 'Medium', 'High', 'Urgent'] 
+  categories = [], 
+  pics = [], 
+  statuses = [], 
+  priorities = [] 
 }: UniversalFilterBarProps) {
   const { 
     globalSearchQuery, setGlobalSearchQuery,

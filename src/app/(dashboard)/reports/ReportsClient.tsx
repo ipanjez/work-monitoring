@@ -458,10 +458,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Global Filters Synchronized */}
       <UniversalFilterBar 
-        categories={allCategories} 
+        categories={masterCats.length > 0 ? masterCats : allCategories} 
         pics={allPics} 
-        statuses={[]} 
-        priorities={[]} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
