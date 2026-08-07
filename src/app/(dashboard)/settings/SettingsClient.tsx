@@ -310,6 +310,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ master_pic_avatars: next })
+        }).then(() => {
+          // Update localStorage and notify MasterContext
+          localStorage.setItem('master_pic_avatars', JSON.stringify(next));
+          window.dispatchEvent(new Event('masterUpdated'));
+          toast.success('Foto profil berhasil disimpan');
         });
         return next;
       });

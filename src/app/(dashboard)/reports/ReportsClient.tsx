@@ -20,6 +20,7 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useTheme } from '@/context/ThemeContext';
 import { exportToRichExcel } from '@/utils/excelExport';
+import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
 import { getDynamicColor, getTaskExportRow } from '@/utils/taskUtils';
@@ -209,11 +210,12 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     ...barOptions,
     scales: {
       ...barOptions.scales,
-      x: { stacked: true, ...barOptions.scales.x },
+      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.paddingBottom = 38; } },
       y: { stacked: true, ...barOptions.scales.y }
     },
     plugins: {
       ...barOptions.plugins,
+      picAvatarXAxis: { avatars: masterPicAvatars, masterColors, size: 28 },
       tooltip: {
         enabled: false,
         external: function (context: any) {
@@ -655,8 +657,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
         <div className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Beban Kerja per PIC (Top 10)</h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={picWorkloadData} options={picBarOptions} />
+          <div style={{ height: '300px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+            <Bar data={picWorkloadData} options={picBarOptions} plugins={[picAvatarXAxisPlugin]} />
           </div>
         </div>
 

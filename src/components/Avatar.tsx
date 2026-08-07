@@ -20,7 +20,7 @@ export default function Avatar({ name, src, size = 32, className = '', masterCol
         alt={name} 
         title={name}
         className={`rounded-full object-cover ${className}`}
-        style={{ width: defaultSize, height: defaultSize, flexShrink: 0 }}
+        style={{ width: defaultSize, height: defaultSize, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
       />
     );
   }
@@ -50,8 +50,16 @@ export default function Avatar({ name, src, size = 32, className = '', masterCol
       style={{ 
         width: defaultSize, 
         height: defaultSize, 
+        borderRadius: '50%',
         backgroundColor: bgColor,
         fontSize: Math.max(10, size / 2.5),
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        letterSpacing: '0.02em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: 700,
         flexShrink: 0
       }}
     >

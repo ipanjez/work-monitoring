@@ -26,6 +26,7 @@ import { format, subDays, startOfWeek, endOfWeek, parseISO, startOfDay } from 'd
 import { id } from 'date-fns/locale';
 import { getTaskLocationString, getDynamicBadgeStyle, getTaskExportRow, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
+import { picAvatarXAxisPlugin, getPicAvatarXAxisConfig } from '@/utils/chartAvatarPlugin';
 import { useTheme } from '@/context/ThemeContext';
 import Avatar from '@/components/Avatar';
 import FilePreviewModal from '@/components/FilePreviewModal';
@@ -611,6 +612,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     maintainAspectRatio: false,
     plugins: { 
       legend: { display: true, position: 'top' as const, labels: { color: textColor, boxWidth: 12 } },
+      picAvatarXAxis: { avatars: masterPicAvatars, masterColors, size: 28 },
       tooltip: {
         enabled: false,
         external: function (context: any) {
@@ -695,7 +697,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
       y: { stacked: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { stacked: true, ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } }
+      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.paddingBottom = 38; } }
     },
     onHover: (event: any, elements: any[]) => {
       if (event.native && event.native.target) {
@@ -1023,8 +1025,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
-              <div style={{ height: '240px', position: 'relative', minWidth: Math.max(100, picLabels.length * 40) + 'px', margin: '0 auto' }}>
-                <Bar data={picData} options={picOptions} />
+              <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
+                <Bar data={picData} options={picOptions} plugins={[picAvatarXAxisPlugin]} />
               </div>
             </div>
           </div>
