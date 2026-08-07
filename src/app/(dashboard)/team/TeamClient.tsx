@@ -9,12 +9,14 @@ import Link from 'next/link';
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 import { useMaster } from '@/context/MasterContext';
+import { useFilter } from '@/context/FilterContext';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { masterColors } = useMaster();
+  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -57,7 +59,55 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     picStatsMap[pic] = { total: 0, urgent: 0, tasks: [], statusCounts: {} };
   });
 
-  localTasks.forEach(t => {
+  const filteredTasks = localTasks.filter(t => {
+    // Filter PIC
+    if (globalPicFilter !== 'Semua PIC') {
+      let isMatch = false;
+      if (t.pic === globalPicFilter) isMatch = true;
+      if (t.additionalPics) {
+        try {
+          const arr = JSON.parse(t.additionalPics);
+          if (Array.isArray(arr) && arr.includes(globalPicFilter)) isMatch = true;
+        } catch (e) {}
+      }
+      if (!isMatch) return false;
+    }
+
+    // Filter Tanggal
+    const taskEnd = new Date(t.endDate).getTime();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let startBoundary = today.getTime();
+    let endBoundary = today.getTime() + 86400000 - 1;
+
+    if (globalTargetFilter === 'Minggu Ini') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(new Date(today).setDate(diff));
+      startBoundary = monday.getTime();
+      endBoundary = startBoundary + (7 * 86400000) - 1;
+    } else if (globalTargetFilter === 'Bulan Ini') {
+      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+      startBoundary = new Date(globalCustomStartDate).getTime();
+      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
+    }
+
+    let matchesTarget = false;
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+      matchesTarget = true;
+    } else {
+      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
+         matchesTarget = true;
+      }
+    }
+    
+    return matchesTarget;
+  });
+
+  filteredTasks.forEach(t => {
     let picNames = [t.pic || 'Unassigned'];
     if (t.additionalPics) {
       try {
@@ -144,7 +194,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   };
 
   const handleExportExcel = () => {
-    const exportData = localTasks.map(t => {
+    const exportData = filteredTasks.map(t => {
       let extraPics = [];
       if (t.additionalPics) {
         try {
