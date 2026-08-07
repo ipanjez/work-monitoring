@@ -15,13 +15,14 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
+import Avatar from '@/components/Avatar';
 
 import { useSession } from 'next-auth/react';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  const { masterColors } = useMaster();
+  const { masterColors, masterPicAvatars } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { 
@@ -717,24 +718,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           )}
 
                         </div>
-                      <div 
-                        title={task.pic}
-                        style={{ 
-                          width: '24px', 
-                          height: '24px', 
-                          borderRadius: '50%', 
-                          backgroundColor: getDynamicBadgeStyle('pic', task.pic, '', masterColors).style?.backgroundColor || 'var(--accent-primary)', 
-                          color: 'white', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '10px', 
-                          fontWeight: 'bold',
-                          flexShrink: 0
-                        }}
-                      >
-                        {task.pic.substring(0, 2).toUpperCase()}
-                      </div>
+                      <Avatar 
+                        name={task.pic} 
+                        src={masterPicAvatars?.[task.pic]} 
+                        size={24} 
+                        masterColors={masterColors} 
+                      />
                       </div>
                     </div>
                   );

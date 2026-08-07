@@ -27,6 +27,7 @@ import { id } from 'date-fns/locale';
 import { getTaskLocationString, getDynamicBadgeStyle, getTaskExportRow, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useTheme } from '@/context/ThemeContext';
+import Avatar from '@/components/Avatar';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -87,6 +88,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [masterColors, setMasterColors] = useState<Record<string, string>>({});
+  const [masterPicAvatars, setMasterPicAvatars] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadMasterData = () => {
@@ -107,6 +109,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
           }
           if (data.master_colors) {
             setMasterColors(data.master_colors);
+          }
+          if (data.master_pic_avatars) {
+            setMasterPicAvatars(data.master_pic_avatars);
           }
         })
         .catch(e => console.error(e));
@@ -604,7 +609,89 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const picOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: true, position: 'top' as const, labels: { color: textColor, boxWidth: 12 } } },
+    plugins: { 
+      legend: { display: true, position: 'top' as const, labels: { color: textColor, boxWidth: 12 } },
+      tooltip: {
+        enabled: false,
+        external: function (context: any) {
+          let tooltipEl = document.getElementById('chartjs-tooltip');
+          if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'chartjs-tooltip';
+            tooltipEl.innerHTML = '<table></table>';
+            document.body.appendChild(tooltipEl);
+          }
+
+          const tooltipModel = context.tooltip;
+          if (tooltipModel.opacity === 0) {
+            tooltipEl.style.opacity = '0';
+            return;
+          }
+
+          tooltipEl.classList.remove('above', 'below', 'no-transform');
+          if (tooltipModel.yAlign) {
+            tooltipEl.classList.add(tooltipModel.yAlign);
+          } else {
+            tooltipEl.classList.add('no-transform');
+          }
+
+          function getBody(bodyItem: any) {
+            return bodyItem.lines;
+          }
+
+          if (tooltipModel.body) {
+            const titleLines = tooltipModel.title || [];
+            const bodyLines = tooltipModel.body.map(getBody);
+            
+            const picName = titleLines[0] || '';
+            const avatarSrc = masterPicAvatars?.[picName];
+            
+            let innerHtml = '<thead>';
+
+            if (avatarSrc) {
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><img src="${avatarSrc}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"/> <span>${picName}</span></div></th></tr>`;
+            } else {
+               const c = masterColors[`pic_${picName}`] || 'var(--accent-primary)';
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: ${c}; color: white; display: flex; align-items:center; justify-content:center; font-size: 10px;">${picName.substring(0,2).toUpperCase()}</div> <span>${picName}</span></div></th></tr>`;
+            }
+            
+            innerHtml += '</thead><tbody>';
+
+            bodyLines.forEach(function (body: any, i: number) {
+              const colors = tooltipModel.labelColors[i];
+              let style = 'background:' + colors.backgroundColor;
+              style += '; border-color:' + colors.borderColor;
+              style += '; border-width: 2px';
+              const span = '<span style="' + style + '; display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:50%;"></span>';
+              innerHtml += '<tr><td style="padding-top:4px;">' + span + body + '</td></tr>';
+            });
+            innerHtml += '</tbody>';
+
+            let tableRoot = tooltipEl.querySelector('table');
+            if (tableRoot) tableRoot.innerHTML = innerHtml;
+          }
+
+          const position = context.chart.canvas.getBoundingClientRect();
+
+          tooltipEl.style.opacity = '1';
+          tooltipEl.style.position = 'absolute';
+          tooltipEl.style.left = position.left + window.scrollX + tooltipModel.caretX + 'px';
+          tooltipEl.style.top = position.top + window.scrollY + tooltipModel.caretY + 'px';
+          tooltipEl.style.font = tooltipModel.options.bodyFont.string;
+          tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
+          tooltipEl.style.pointerEvents = 'none';
+          tooltipEl.style.background = 'var(--surface-color)';
+          tooltipEl.style.border = '1px solid var(--border-color)';
+          tooltipEl.style.borderRadius = '8px';
+          tooltipEl.style.color = 'var(--text-primary)';
+          tooltipEl.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+          tooltipEl.style.zIndex = '9999';
+          tooltipEl.style.transition = 'all 0.1s ease';
+          tooltipEl.style.transform = 'translate(-50%, -100%)';
+          tooltipEl.style.marginTop = '-8px';
+        }
+      }
+    },
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
       y: { stacked: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
@@ -979,18 +1066,20 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                 <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '10px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>{t.nama}</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>PIC:</span>
-                      <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                        {t.pic}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Avatar name={t.pic} src={masterPicAvatars?.[t.pic]} size={16} masterColors={masterColors} />
+                        <span style={{ fontSize: '11px', fontWeight: '500' }}>{t.pic}</span>
+                      </div>
                       {t.additionalPics && (() => {
                         try {
                           const arr = JSON.parse(t.additionalPics);
                           return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
-                            <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                              {p}
-                            </span>
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Avatar name={p} src={masterPicAvatars?.[p]} size={16} masterColors={masterColors} />
+                              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p}</span>
+                            </div>
                           )) : null;
                         } catch(e) { return null; }
                       })()}
@@ -1089,17 +1178,19 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <span {...getDynamicBadgeStyle('pic', t.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', t.pic, '', masterColors).style, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
-                            <User size={12} color="currentColor" /> {t.pic}
-                          </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Avatar name={t.pic} src={masterPicAvatars?.[t.pic]} size={20} masterColors={masterColors} />
+                            <span style={{ fontSize: '12px', fontWeight: '500' }}>{t.pic}</span>
+                          </div>
                           {t.additionalPics && (() => {
                             try {
                               const arr = JSON.parse(t.additionalPics);
                               return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
-                                <span key={idx} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
-                                  {p}
-                                </span>
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
+                                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{p}</span>
+                                </div>
                               )) : null;
                             } catch(e) { return null; }
                           })()}

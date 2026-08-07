@@ -21,6 +21,7 @@ export async function GET() {
       master_colors: {},
       master_icons: {},
       master_status_progress: {},
+      master_pic_avatars: {},
       dept_name: 'Work Monitoring',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100
@@ -99,6 +100,14 @@ export async function POST(request: Request) {
         where: { key: 'master_pics' },
         update: { value: JSON.stringify(body.master_pics) },
         create: { key: 'master_pics', value: JSON.stringify(body.master_pics) }
+      });
+    }
+
+    if (body.master_pic_avatars) {
+      await prisma.appSetting.upsert({
+        where: { key: 'master_pic_avatars' },
+        update: { value: JSON.stringify(body.master_pic_avatars) },
+        create: { key: 'master_pic_avatars', value: JSON.stringify(body.master_pic_avatars) }
       });
     }
 

@@ -22,6 +22,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { exportToRichExcel } from '@/utils/excelExport';
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
+import Avatar from '@/components/Avatar';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
 import BulkEditModal from '@/components/BulkEditModal';
@@ -37,7 +38,7 @@ import { useSession } from 'next-auth/react';
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  const { masterColors } = useMaster();
+  const { masterColors, masterPicAvatars } = useMaster();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -1071,14 +1072,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       })() : '-'}
                     </td>
                      <td style={{ padding: '8px 6px', fontWeight: '500' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                        <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '500' }}>
-                          {task.pic}
-                        </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Avatar name={task.pic} src={masterPicAvatars?.[task.pic]} size={20} masterColors={masterColors} />
+                          <span style={{ fontSize: '12px', fontWeight: '600' }}>{task.pic}</span>
+                        </div>
                         {extraPics.length > 0 && extraPics.map((p, i) => (
-                          <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: '500' }}>
-                            {p}
-                          </span>
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p}</span>
+                          </div>
                         ))}
                       </div>
                     </td>

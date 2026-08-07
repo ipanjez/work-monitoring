@@ -47,7 +47,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
-  const { masterColors } = useMaster();
+  const { masterColors, masterPicAvatars } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   
@@ -204,6 +204,95 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       x: { ticks: { color: theme === 'dark' ? '#cbd5e1' : '#475569' }, grid: { display: false } }
     }
   };
+
+  const picBarOptions = {
+    ...barOptions,
+    scales: {
+      ...barOptions.scales,
+      x: { stacked: true, ...barOptions.scales.x },
+      y: { stacked: true, ...barOptions.scales.y }
+    },
+    plugins: {
+      ...barOptions.plugins,
+      tooltip: {
+        enabled: false,
+        external: function (context: any) {
+          let tooltipEl = document.getElementById('chartjs-tooltip-reports');
+          if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'chartjs-tooltip-reports';
+            tooltipEl.innerHTML = '<table></table>';
+            document.body.appendChild(tooltipEl);
+          }
+
+          const tooltipModel = context.tooltip;
+          if (tooltipModel.opacity === 0) {
+            tooltipEl.style.opacity = '0';
+            return;
+          }
+
+          tooltipEl.classList.remove('above', 'below', 'no-transform');
+          if (tooltipModel.yAlign) {
+            tooltipEl.classList.add(tooltipModel.yAlign);
+          } else {
+            tooltipEl.classList.add('no-transform');
+          }
+
+          if (tooltipModel.body) {
+            const titleLines = tooltipModel.title || [];
+            const bodyLines = tooltipModel.body.map((b: any) => b.lines);
+            
+            const picName = titleLines[0] || '';
+            const avatarSrc = masterPicAvatars?.[picName];
+            
+            let innerHtml = '<thead>';
+
+            if (avatarSrc) {
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><img src="${avatarSrc}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"/> <span>${picName}</span></div></th></tr>`;
+            } else {
+               const c = masterColors[`pic_${picName}`] || 'var(--accent-primary)';
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: ${c}; color: white; display: flex; align-items:center; justify-content:center; font-size: 10px;">${picName.substring(0,2).toUpperCase()}</div> <span>${picName}</span></div></th></tr>`;
+            }
+            
+            innerHtml += '</thead><tbody>';
+
+            bodyLines.forEach(function (body: any, i: number) {
+              const colors = tooltipModel.labelColors[i];
+              let style = 'background:' + colors.backgroundColor;
+              style += '; border-color:' + colors.borderColor;
+              style += '; border-width: 2px';
+              const span = '<span style="' + style + '; display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:50%;"></span>';
+              innerHtml += '<tr><td style="padding-top:4px;">' + span + body + '</td></tr>';
+            });
+            innerHtml += '</tbody>';
+
+            let tableRoot = tooltipEl.querySelector('table');
+            if (tableRoot) tableRoot.innerHTML = innerHtml;
+          }
+
+          const position = context.chart.canvas.getBoundingClientRect();
+
+          tooltipEl.style.opacity = '1';
+          tooltipEl.style.position = 'absolute';
+          tooltipEl.style.left = position.left + window.scrollX + tooltipModel.caretX + 'px';
+          tooltipEl.style.top = position.top + window.scrollY + tooltipModel.caretY + 'px';
+          tooltipEl.style.font = tooltipModel.options.bodyFont.string;
+          tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
+          tooltipEl.style.pointerEvents = 'none';
+          tooltipEl.style.background = 'var(--surface-color)';
+          tooltipEl.style.border = '1px solid var(--border-color)';
+          tooltipEl.style.borderRadius = '8px';
+          tooltipEl.style.color = 'var(--text-primary)';
+          tooltipEl.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+          tooltipEl.style.zIndex = '9999';
+          tooltipEl.style.transition = 'all 0.1s ease';
+          tooltipEl.style.transform = 'translate(-50%, -100%)';
+          tooltipEl.style.marginTop = '-8px';
+        }
+      }
+    }
+  };
+
 
   // 1. Status Pekerjaan (Doughnut)
   const statusData = {
@@ -567,7 +656,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         <div className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Beban Kerja per PIC (Top 10)</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={picWorkloadData} options={{ ...barOptions, scales: { ...barOptions.scales, x: { stacked: true }, y: { stacked: true } } }} />
+            <Bar data={picWorkloadData} options={picBarOptions} />
           </div>
         </div>
 

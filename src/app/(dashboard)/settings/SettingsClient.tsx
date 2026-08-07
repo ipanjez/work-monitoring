@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil } from 'lucide-react';
+import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import toast from 'react-hot-toast';
+import AvatarCropperModal from '@/components/AvatarCropperModal';
+import Avatar from '@/components/Avatar';
 type Task = {
   id: number;
   nama: string;
@@ -47,6 +49,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [masterColors, setMasterColors] = useState<Record<string, string>>({});
   const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
+  const [masterPicAvatars, setMasterPicAvatars] = useState<Record<string, string>>({});
 
   const [newCatInput, setNewCatInput] = useState('');
   const [newPicInput, setNewPicInput] = useState('');
@@ -60,6 +63,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Edit State
   const [editingItem, setEditingItem] = useState<{ type: ListType, oldVal: string } | null>(null);
   const [editInputValue, setEditInputValue] = useState('');
+  
+  // Avatar Cropper State
+  const [activePicForAvatar, setActivePicForAvatar] = useState<string | null>(null);
 
   // Profile State for logged-in user
   const [profileName, setProfileName] = useState('');
@@ -90,6 +96,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_colors) setMasterColors(data.master_colors);
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
+        if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
         if (data.dept_name) setDeptName(data.dept_name);
         if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
@@ -294,6 +301,21 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     setMasterStatusProgress(newProgress);
   };
 
+  const handleAvatarSave = (base64Image: string) => {
+    if (activePicForAvatar) {
+      setMasterPicAvatars(prev => {
+        const next = { ...prev, [activePicForAvatar]: base64Image };
+        // Save to backend immediately
+        fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ master_pic_avatars: next })
+        });
+        return next;
+      });
+    }
+  };
+
   const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode) => (
     <>
       <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -379,10 +401,26 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             
             {editingItem?.type !== type || editingItem?.oldVal !== s ? (
               <>
+                {type === 'pic' && (
+                  <button
+                    type="button"
+                    onClick={() => setActivePicForAvatar(s)}
+                    style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex', marginLeft: '4px' }}
+                    title="Ubah Foto Profil PIC"
+                  >
+                    {masterPicAvatars[s] ? (
+                       <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
+                         <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                       </div>
+                    ) : (
+                       <Camera size={14} />
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
-                  style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '4px' }}
+                  style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: type === 'pic' ? '4px' : '4px' }}
                   title="Pilih Warna Template"
                 />
                 <button
@@ -969,6 +1007,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           </button>
         </div>
       )}
+      
+      <AvatarCropperModal 
+        isOpen={!!activePicForAvatar}
+        onClose={() => setActivePicForAvatar(null)}
+        onSave={handleAvatarSave}
+      />
     </div>
   );
 }

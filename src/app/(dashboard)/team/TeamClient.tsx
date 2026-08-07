@@ -17,9 +17,10 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import Avatar from '@/components/Avatar';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
-  const { masterColors } = useMaster();
+  const { masterColors, masterPicAvatars } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery
@@ -388,20 +389,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               onClick={() => setSelectedPic(isSelected ? null : picName)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '50%', 
-                  background: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)', 
-                  color: 'white', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '18px'
-                }}>
-                  {picName.charAt(0).toUpperCase()}
-                </div>
+                <Avatar
+                  name={picName}
+                  src={masterPicAvatars?.[picName]}
+                  size={48}
+                  masterColors={masterColors}
+                />
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{picName}</h3>
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Person In Charge</span>
