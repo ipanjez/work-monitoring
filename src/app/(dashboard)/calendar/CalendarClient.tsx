@@ -38,14 +38,20 @@ import { expandTasksForCalendar } from '@/utils/recurrenceUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { masterColors } = useMaster();
   const { 
-    globalPicFilter,
-    globalTargetFilter,
-    globalCustomStartDate,
-    globalCustomEndDate
+    globalTargetFilter, setGlobalTargetFilter, 
+    globalPicFilter, setGlobalPicFilter, 
+    globalCustomStartDate, setGlobalCustomStartDate, 
+    globalCustomEndDate, setGlobalCustomEndDate,
+    globalSearchQuery: searchQuery,
+    globalFilterStatus: filterStatus,
+    globalFilterPriority: filterPriority,
+    globalFilterCategory: filterCategory
   } = useFilter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -65,8 +71,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   // Search & Filter State
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [activeFilter, setActiveFilter] = useState<string>('All');
 
   // Interactive Copyable Error Modal State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,10 +91,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   }, [initialTasks]);
 
   useEffect(() => {
-    const searchFromUrl = searchParams.get('search');
-    if (searchFromUrl !== null) {
-      setSearchQuery(searchFromUrl);
-    }
+    // Search query from URL is now handled globally, or can be synced if needed
   }, [searchParams]);
 
   useEffect(() => {
@@ -129,9 +130,9 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                           (task.kategori && task.kategori.toLowerCase().includes(searchQuery.toLowerCase()));
     
     let matchesFilter = true;
-    if (activeFilter !== 'All') {
-      matchesFilter = task.prioritas === activeFilter || task.status === activeFilter;
-    }
+    if (filterStatus !== 'All' && task.status !== filterStatus) matchesFilter = false;
+    if (filterPriority !== 'All' && task.prioritas !== filterPriority) matchesFilter = false;
+    if (filterCategory !== 'All' && task.kategori !== filterCategory) matchesFilter = false;
 
     const matchesPic = globalPicFilter === 'Semua PIC' || task.pic === globalPicFilter || getAdditionalPics(task).includes(globalPicFilter);
 
@@ -465,99 +466,20 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       </datalist>
 
       {/* Search & Interactive Filter Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        {/* Real-time Calendar Search */}
-        <div style={{ position: 'relative', minWidth: '240px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input
-            className="input"
-            style={{ paddingLeft: '40px' }}
-            placeholder="Cari kalender pekerjaan, PIC..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
+      <UniversalFilterBar 
+        categories={allCategoryOptions} 
+        pics={existingPics} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      />
 
-          {/* Interactive Legend Filter Pill Buttons */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={() => setActiveFilter('All')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '12px', 
-              borderRadius: '20px', 
-              background: activeFilter === 'All' ? 'var(--accent-primary)' : 'var(--surface-color)', 
-              color: activeFilter === 'All' ? 'white' : 'var(--text-secondary)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer'
-            }}
-          >
-            Semua ({tasks.length})
-          </button>
-          
-          {[...masterPriorities, ...masterStatuses].map(filterValue => {
-            const isStatus = masterStatuses.includes(filterValue);
-            const dynamicStyle = getDynamicBadgeStyle(isStatus ? 'status' : 'priority', filterValue, '', masterColors);
-            const color = dynamicStyle.style?.color || 'var(--accent-primary)';
-            const bgColor = dynamicStyle.style?.backgroundColor || 'var(--surface-color)';
-            
-            return (
-              <button 
-                key={filterValue}
-                type="button" 
-                className="btn" 
-                onClick={() => setActiveFilter(activeFilter === filterValue ? 'All' : filterValue)}
-                style={{ 
-                  padding: '6px 12px', 
-                  fontSize: '12px', 
-                  borderRadius: '20px', 
-                  background: activeFilter === filterValue ? bgColor : 'var(--surface-color)',
-                  color: activeFilter === filterValue ? color : bgColor,
-                  border: `1px solid ${bgColor}`,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: activeFilter === filterValue ? color : bgColor }} /> 
-                {filterValue}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-            <button 
-              className="btn" 
-              onClick={handleExportExcel}
-              title="Export Excel"
-              style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
-            >
-              <Download size={16} /> <span className="hide-mobile">Excel</span>
-            </button>
-            <button 
-              className="btn" 
-              onClick={handleExportPDF} 
-              disabled={isExportingPdf}
-              title="Export PDF"
-              style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
-            >
-              <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
-            </button>
-            <button 
-              className="btn" 
-              onClick={handleCopyImage}
-              title="Copy Image"
-              style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-            >
-              <Copy size={16} /> <span className="hide-mobile">Copy</span>
-            </button>
-          </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+        <UniversalActionBar 
+          onExportExcel={handleExportExcel}
+          onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
+          onCopyImage={handleCopyImage}
+        >
           <button 
             className="btn btn-secondary" 
             onClick={() => {
@@ -573,7 +495,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           <button className="btn btn-primary" onClick={() => handleSelectSlot({ start: new Date(), end: new Date() })} style={{ fontSize: '13px' }}>
             <Plus size={16} /> Tambah Pekerjaan
           </button>
-        </div>
+        </UniversalActionBar>
       </div>
 
       {/* Main Controlled Calendar Component */}

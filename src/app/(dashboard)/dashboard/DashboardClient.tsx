@@ -31,6 +31,8 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FileViewer from '@/components/FileViewer';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { motion } from 'framer-motion';
@@ -824,82 +826,20 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       transition={{ duration: 0.4 }}
     >
       {/* Header Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Filter size={16} color="var(--text-secondary)" />
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Kategori:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 12px' }} value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-          </div>
+      <UniversalFilterBar 
+        categories={['Umum', ...categories]} 
+        pics={pics} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={16} color="var(--text-secondary)" />
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Pilih PIC:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 12px', fontWeight: 600 }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
-              <option value="Semua PIC">Semua PIC</option>
-              {pics.filter(p => p !== 'All').map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={16} color="var(--text-secondary)" />
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Waktu:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 12px' }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
-              <option value="Hari Ini">Hari Ini</option>
-              <option value="Minggu Ini">Minggu Ini</option>
-              <option value="Bulan Ini">Bulan Ini</option>
-              <option value="Semua Waktu">Semua Waktu</option>
-              <option value="Custom">Custom...</option>
-            </select>
-            {globalTargetFilter === 'Custom' && (
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <input 
-                  type="date" 
-                  value={globalCustomStartDate}
-                  onChange={(e) => setGlobalCustomStartDate(e.target.value)}
-                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-                <span style={{ color: 'var(--text-secondary)' }}>-</span>
-                <input 
-                  type="date" 
-                  value={globalCustomEndDate}
-                  onChange={(e) => setGlobalCustomEndDate(e.target.value)}
-                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <button 
-            className="btn" 
-            onClick={handleExportExcelSummary}
-            title="Export Excel"
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
-          >
-            <Download size={16} /> <span className="hide-mobile">Excel</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleExportPDF} 
-            disabled={isExportingPdf}
-            title="Export PDF"
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
-          >
-            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleCopyImage}
-            title="Copy Image"
-            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <Copy size={16} /> <span className="hide-mobile">Copy</span>
-          </button>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+        <UniversalActionBar 
+          onExportExcel={handleExportExcelSummary}
+          onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
+          onCopyImage={handleCopyImage}
+        />
       </div>
 
       {/* Main Report Container for PDF export and image copy */}

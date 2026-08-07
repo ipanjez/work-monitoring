@@ -12,9 +12,11 @@ import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getH
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import TaskAddEditModal from '@/components/TaskAddEditModal';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { masterColors } = useMaster();
@@ -314,33 +316,22 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
             Direktori personil penanggung jawab (PIC) serta pemantauan produktivitas & beban kerja tim.
           </p>
         </div>
-        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', marginTop: '48px' }}>
-          <button 
-            className="btn" 
-            onClick={handleExportExcel}
-            title="Export Excel"
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
-          >
-            <Download size={16} /> <span className="hide-mobile">Excel</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleExportPDF} 
-            disabled={isExportingPdf}
-            title="Export PDF"
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
-          >
-            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleCopyImage}
-            title="Copy Image"
-            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <Copy size={16} /> <span className="hide-mobile">Copy</span>
-          </button>
-        </div>
+      </div>
+      {/* Header Controls */}
+      <UniversalFilterBar 
+        categories={[]} 
+        pics={masterPics} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : []} 
+        priorities={[]} 
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+        <UniversalActionBar 
+          onExportExcel={handleExportExcel}
+          onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
+          onCopyImage={handleCopyImage}
+        />
       </div>
 
       {/* Team Cards Grid */}

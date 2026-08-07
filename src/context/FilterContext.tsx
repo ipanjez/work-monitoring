@@ -12,6 +12,14 @@ type FilterContextType = {
   setGlobalCustomStartDate: (date: string) => void;
   globalCustomEndDate: string;
   setGlobalCustomEndDate: (date: string) => void;
+  globalSearchQuery: string;
+  setGlobalSearchQuery: (query: string) => void;
+  globalFilterStatus: string;
+  setGlobalFilterStatus: (status: string) => void;
+  globalFilterPriority: string;
+  setGlobalFilterPriority: (priority: string) => void;
+  globalFilterCategory: string;
+  setGlobalFilterCategory: (category: string) => void;
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -25,6 +33,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [globalPicFilter, setPicFilter] = useState('Semua PIC');
   const [globalCustomStartDate, setCustomStartDate] = useState('');
   const [globalCustomEndDate, setCustomEndDate] = useState('');
+  const [globalSearchQuery, setSearchQuery] = useState('');
+  const [globalFilterStatus, setFilterStatus] = useState('All');
+  const [globalFilterPriority, setFilterPriority] = useState('All');
+  const [globalFilterCategory, setFilterCategory] = useState('All');
   const [isMounted, setIsMounted] = useState(false);
 
   // Initialize from localStorage on mount
@@ -34,6 +46,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     const storedPic = localStorage.getItem('globalPicFilter');
     const storedStart = localStorage.getItem('globalCustomStartDate');
     const storedEnd = localStorage.getItem('globalCustomEndDate');
+    const storedSearch = localStorage.getItem('globalSearchQuery');
+    const storedStatus = localStorage.getItem('globalFilterStatus');
+    const storedPriority = localStorage.getItem('globalFilterPriority');
+    const storedCategory = localStorage.getItem('globalFilterCategory');
     
     if (storedTarget) setTargetFilter(storedTarget);
     
@@ -47,6 +63,10 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     
     if (storedStart) setCustomStartDate(storedStart);
     if (storedEnd) setCustomEndDate(storedEnd);
+    if (storedSearch) setSearchQuery(storedSearch);
+    if (storedStatus) setFilterStatus(storedStatus);
+    if (storedPriority) setFilterPriority(storedPriority);
+    if (storedCategory) setFilterCategory(storedCategory);
   }, [isMember, user?.name]);
 
   // Update state and localStorage
@@ -70,6 +90,26 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('globalCustomEndDate', val);
   };
 
+  const setGlobalSearchQuery = (val: string) => {
+    setSearchQuery(val);
+    localStorage.setItem('globalSearchQuery', val);
+  };
+
+  const setGlobalFilterStatus = (val: string) => {
+    setFilterStatus(val);
+    localStorage.setItem('globalFilterStatus', val);
+  };
+
+  const setGlobalFilterPriority = (val: string) => {
+    setFilterPriority(val);
+    localStorage.setItem('globalFilterPriority', val);
+  };
+
+  const setGlobalFilterCategory = (val: string) => {
+    setFilterCategory(val);
+    localStorage.setItem('globalFilterCategory', val);
+  };
+
   return (
     <FilterContext.Provider value={{
       globalTargetFilter,
@@ -79,7 +119,15 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       globalCustomStartDate,
       setGlobalCustomStartDate,
       globalCustomEndDate,
-      setGlobalCustomEndDate
+      setGlobalCustomEndDate,
+      globalSearchQuery,
+      setGlobalSearchQuery,
+      globalFilterStatus,
+      setGlobalFilterStatus,
+      globalFilterPriority,
+      setGlobalFilterPriority,
+      globalFilterCategory,
+      setGlobalFilterCategory
     }}>
       {children}
     </FilterContext.Provider>

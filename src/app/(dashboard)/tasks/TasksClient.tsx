@@ -27,6 +27,8 @@ import SmartAddModal from '@/components/SmartAddModal';
 import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
@@ -36,7 +38,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -47,10 +48,17 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const searchParams = useSearchParams();
 
   // Search & Filter State (Initialized from URL if present)
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || 'All');
-  const [filterPriority, setFilterPriority] = useState(searchParams.get('prioritas') || 'All');
-  const [filterCategory, setFilterCategory] = useState(searchParams.get('kategori') || 'All');
+  // Search & Filter State (Initialized from URL if present)
+  const { 
+    globalTargetFilter, setGlobalTargetFilter, 
+    globalPicFilter, setGlobalPicFilter, 
+    globalCustomStartDate, setGlobalCustomStartDate, 
+    globalCustomEndDate, setGlobalCustomEndDate,
+    globalSearchQuery: searchQuery,
+    globalFilterStatus: filterStatus,
+    globalFilterPriority: filterPriority,
+    globalFilterCategory: filterCategory
+  } = useFilter();
 
   // Sorting State
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -870,222 +878,29 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         ))}
       </datalist>
 
-      {/* Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        {userRole !== 'SPV' ? (
-          <div style={{ position: 'relative' }}>
-            <button 
-              className="btn btn-primary" 
-              onClick={() => setIsAddDropdownOpen(!isAddDropdownOpen)}
-              style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
-            >
-              <Plus size={18} /> Tambah Pekerjaan
-            </button>
+      {/* Action Bar & Filter Bar */}
+      <UniversalFilterBar 
+        categories={['Umum', ...masterCats]} 
+        pics={existingPics} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      />
 
-            <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
-
-            {isAddDropdownOpen && (
-              <>
-                <div 
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
-                  onClick={() => setIsAddDropdownOpen(false)}
-                />
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, marginTop: '8px', zIndex: 100,
-                  background: 'var(--surface-color)', borderRadius: '12px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
-                  width: '260px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px'
-                }}>
-                  <div 
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-                    onClick={() => { setIsAddDropdownOpen(false); handleOpenAddModal(); }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Plus size={16} color="var(--accent-primary)" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Manual</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Isi form lengkap secara manual</div>
-                    </div>
-                  </div>
-
-                  <div 
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-                    onClick={() => { setIsAddDropdownOpen(false); setIsSmartModalOpen(true); }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #f59e0b 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Zap size={16} color="#f59e0b" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Cepat (Smart)</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Tambah cepat berbasis teks / AI</div>
-                    </div>
-                  </div>
-
-                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
-
-                  <div 
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-                    onClick={() => { setIsAddDropdownOpen(false); handleDownloadTemplate(); }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #3b82f6 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Download size={16} color="#3b82f6" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Unduh Template Excel</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Download format excel untuk import</div>
-                    </div>
-                  </div>
-
-                  <div 
-                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-                    onClick={() => { setIsAddDropdownOpen(false); fileInputRef.current?.click(); }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #10b981 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Upload size={16} color="#10b981" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Import dari Excel</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Unggah data pekerjaan sekaligus</div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div />
-        )}
-
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-
-
-          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-            <button
-              className="btn"
-              onClick={handleExportExcel}
-              title="Export Excel"
-              style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
-            >
-              <Download size={16} /> <span className="hide-mobile">Excel</span>
-            </button>
-            <button
-              className="btn"
-              onClick={handleExportPDF}
-              title="Export PDF"
-              style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-            >
-              <FileText size={16} /> <span className="hide-mobile">PDF</span>
-            </button>
-            <button
-              className="btn"
-              onClick={handleCopyImage}
-              title="Copy Image"
-              style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-            >
-              <Copy size={16} /> <span className="hide-mobile">Copy</span>
-            </button>
-          </div>
-
-          <button
-            className="btn btn-secondary"
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+        <UniversalActionBar 
+          onExportExcel={handleExportExcel}
+          onExportPDF={handleExportPDF}
+          onCopyImage={handleCopyImage}
+        >
+          <button 
+            className="btn" 
             onClick={handleExportAllICS}
             title="Download .ics untuk semua pekerjaan"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600 }}
+            style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginRight: '12px' }}
           >
-            <CalendarDays size={16} /> Export Semua .ics
+            <CalendarDays size={18} /> <span className="hide-mobile">Export .ics</span>
           </button>
-        </div>
-      </div>
-
-
-
-      {/* Filter and Search Bar */}
-      <div className="glass" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 240px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input
-            className="input"
-            style={{ paddingLeft: '40px' }}
-            placeholder="Cari pekerjaan, PIC, atau deskripsi..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Status:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option value="All">Semua</option>
-              <option value="To Do">To Do</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Prioritas:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
-              <option value="All">Semua</option>
-              <option value="Urgent">Urgent</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Kategori:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-              {categoriesFilter.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Waktu:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
-              <option value="Hari Ini">Hari Ini</option>
-              <option value="Minggu Ini">Minggu Ini</option>
-              <option value="Bulan Ini">Bulan Ini</option>
-              <option value="Semua Waktu">Semua Waktu</option>
-              <option value="Custom">Custom...</option>
-            </select>
-            {globalTargetFilter === 'Custom' && (
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <input
-                  type="date"
-                  value={globalCustomStartDate}
-                  onChange={(e) => setGlobalCustomStartDate(e.target.value)}
-                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-                <span style={{ color: 'var(--text-secondary)' }}>-</span>
-                <input
-                  type="date"
-                  value={globalCustomEndDate}
-                  onChange={(e) => setGlobalCustomEndDate(e.target.value)}
-                  style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>PIC:</span>
-            <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
-              <option value="Semua PIC">Semua PIC</option>
-              {pics.filter(p => p !== 'All').map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-        </div>
+        </UniversalActionBar>
       </div>
 
       {/* Main Table with Sortable Columns */}

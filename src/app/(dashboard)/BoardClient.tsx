@@ -11,6 +11,8 @@ import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { useFilter } from '@/context/FilterContext';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 
@@ -22,7 +24,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { masterColors } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { globalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { 
+    globalTargetFilter, setGlobalTargetFilter, 
+    globalPicFilter, setGlobalPicFilter, 
+    globalCustomStartDate, setGlobalCustomStartDate, 
+    globalCustomEndDate, setGlobalCustomEndDate,
+    globalSearchQuery: searchQuery,
+    globalFilterCategory: filterCategory
+  } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -40,8 +49,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
 
 
   useEffect(() => {
@@ -518,65 +525,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
   return (
     <div className="board-container">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <Search size={14} color="var(--text-secondary)" />
-          <input
-            type="text"
-            placeholder="Cari Tugas..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-primary)', width: '120px' }}
-          />
-        </div>
+      <UniversalFilterBar 
+        categories={formCategoryOptions} 
+        pics={formPicOptions} 
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <Filter size={14} color="var(--text-secondary)" />
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>PIC:</span>
-          <select
-            id="filter-pic"
-            value={globalPicFilter}
-            onChange={e => setGlobalPicFilter(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-primary)',
-              fontSize: '13px',
-              fontWeight: 500,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="Semua PIC" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Semua PIC</option>
-            {formPicOptions.map(p => (
-              <option key={p} value={p} style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>{p}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <Filter size={14} color="var(--text-secondary)" />
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Kategori:</span>
-          <select
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-primary)',
-              fontSize: '13px',
-              fontWeight: 500,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="All" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Semua Kategori</option>
-            {formCategoryOptions
-              .filter((v, i, a) => a.indexOf(v) === i)
-              .map(c => <option key={c} value={c} style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>{c}</option>)}
-          </select>
-        </div>
-
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <ArrowUpDown size={14} color="var(--text-secondary)" />
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
@@ -600,33 +556,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           </select>
         </div>
 
-        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <button 
-            className="btn" 
-            onClick={handleExportExcel}
-            title="Export Excel"
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
-          >
-            <Download size={16} /> <span className="hide-mobile">Excel</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleExportPDF} 
-            disabled={isExportingPdf}
-            title="Export PDF"
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
-          >
-            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleCopyImage}
-            title="Copy Image"
-            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <Copy size={16} /> <span className="hide-mobile">Copy</span>
-          </button>
-        </div>
+        <UniversalActionBar 
+          onExportExcel={handleExportExcel}
+          onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
+          onCopyImage={handleCopyImage}
+        />
       </div>
 
       <div id="kanban-board-container" className="kanban-board-wrapper">

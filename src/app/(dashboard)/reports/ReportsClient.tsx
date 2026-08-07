@@ -16,6 +16,8 @@ import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
+import UniversalFilterBar from '@/components/UniversalFilterBar';
+import UniversalActionBar from '@/components/UniversalActionBar';
 import { useTheme } from '@/context/ThemeContext';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
@@ -64,16 +66,14 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       .catch(err => console.error("Failed to load master settings", err));
   }, []);
   
-  // Use global filters
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
     globalPicFilter, setGlobalPicFilter, 
     globalCustomStartDate, setGlobalCustomStartDate,
-    globalCustomEndDate, setGlobalCustomEndDate
+    globalCustomEndDate, setGlobalCustomEndDate,
+    globalFilterCategory: reportCategoryFilter,
+    setGlobalFilterCategory: setReportCategoryFilter
   } = useFilter();
-
-  // Local Category Filter just for Reports if needed, or we just rely on PIC and Target
-  const [reportCategoryFilter, setReportCategoryFilter] = useState('Semua Kategori');
 
   // Extract unique categories and PICs from all tasks for the dropdowns
   const allCategories = useMemo(() => Array.from(new Set(tasks.map((t: Task) => t.kategori || 'Umum'))).sort(), [tasks]);
@@ -457,73 +457,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* Global Filters Synchronized */}
-      <div className="glass" style={{ padding: '16px 24px', borderRadius: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Filter size={16} color="var(--text-secondary)" />
-          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Filter Laporan:</span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Waktu:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalTargetFilter} onChange={(e: any) => setGlobalTargetFilter(e.target.value)}>
-            <option value="Hari Ini">Hari Ini</option>
-            <option value="Minggu Ini">Minggu Ini</option>
-            <option value="Bulan Ini">Bulan Ini</option>
-            <option value="Semua Waktu">Semua Waktu</option>
-            <option value="Custom">Custom...</option>
-          </select>
-          {globalTargetFilter === 'Custom' && (
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <input type="date" value={globalCustomStartDate} onChange={(e) => setGlobalCustomStartDate(e.target.value)} style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
-              <span style={{ color: 'var(--text-secondary)' }}>-</span>
-              <input type="date" value={globalCustomEndDate} onChange={(e) => setGlobalCustomEndDate(e.target.value)} style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }} />
-            </div>
-          )}
-        </div>
+      <UniversalFilterBar 
+        categories={allCategories} 
+        pics={allPics} 
+        statuses={[]} 
+        priorities={[]} 
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>PIC:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={globalPicFilter} onChange={(e: any) => setGlobalPicFilter(e.target.value)}>
-            <option value="Semua PIC">Semua PIC</option>
-            {allPics.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Kategori:</span>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px' }} value={reportCategoryFilter} onChange={(e: any) => setReportCategoryFilter(e.target.value)}>
-            <option value="Semua Kategori">Semua Kategori</option>
-            {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', marginLeft: 'auto' }}>
-          <button 
-            className="btn" 
-            onClick={handleExportFullReport}
-            title="Export XLSX"
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, whiteSpace: 'nowrap' }}
-          >
-            <FileSpreadsheet size={16} /> <span className="hide-mobile">XLSX</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleExportPDF} 
-            disabled={isExportingPdf}
-            title="Export PDF"
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
-          >
-            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
-          </button>
-          <button 
-            className="btn" 
-            onClick={handleCopyImage}
-            title="Copy Image"
-            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <Copy size={16} /> <span className="hide-mobile">Copy</span>
-          </button>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+        <UniversalActionBar 
+          onExportExcel={handleExportFullReport}
+          onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
+          onCopyImage={handleCopyImage}
+        />
       </div>
 
       {/* Summary KPI Cards */}
