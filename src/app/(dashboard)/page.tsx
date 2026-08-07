@@ -7,7 +7,10 @@ export default async function BoardPage() {
   let tasks: any[] = [];
   try {
     tasks = await prisma.task.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { orderIndex: 'asc' },
+        { id: 'desc' }
+      ]
     });
   } catch (error) {
     console.error("Failed to fetch tasks", error);

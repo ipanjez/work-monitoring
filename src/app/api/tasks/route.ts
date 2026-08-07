@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const tasks = await prisma.task.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { orderIndex: 'asc' },
+        { id: 'desc' }
+      ],
     });
     return NextResponse.json(tasks);
   } catch (error: any) {
