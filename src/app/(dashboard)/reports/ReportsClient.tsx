@@ -1,6 +1,6 @@
 'use client';
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter, Copy, FileText, FileSpreadsheet
 } from 'lucide-react';
@@ -17,9 +17,10 @@ import html2canvas from 'html2canvas';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import { useTheme } from '@/context/ThemeContext';
+import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
-import { getDynamicColor } from '@/utils/taskUtils';
+import { getDynamicColor, getTaskExportRow } from '@/utils/taskUtils';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -308,70 +309,31 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }]
   };
 
-  const handleExportFullReport = () => {
-    const reportData = filteredTasks.map((t: Task, idx: number) => {
-      let subTasksStr = '';
-      // Cannot easily use t.subTasksJson since it's not in the Task type locally, wait, I can add it to the type above or cast.
-      // Let's assume t has it or we can cast as any.
-      const taskAny = t as any;
-      if (taskAny.subTasksJson) {
-        try {
-          const subTasks = JSON.parse(taskAny.subTasksJson);
-          if (Array.isArray(subTasks) && subTasks.length > 0) {
-            subTasksStr = subTasks.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
-          }
-        } catch(e) {}
+  const handleExportFullReport = async () => {
+    toast.loading('Mengekspor Laporan Kinerja...', { id: 'export-excel-report' });
+    try {
+      const success = await exportToRichExcel(
+        filteredTasks,
+        {
+          pics: allPics,
+          categories: masterCats,
+          locations: [],
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-report' });
+        addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja Excel (${filteredTasks.length} pekerjaan)`, 'success');
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel-report' });
       }
-
-      let lokasiStr = '';
-      if (taskAny.lokasi) {
-        try {
-          const parsedLoc = JSON.parse(taskAny.lokasi);
-          if (parsedLoc.tipe === 'online') {
-            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-          } else if (parsedLoc.tipe === 'offline') {
-            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-          }
-        } catch (e) {
-          lokasiStr = taskAny.lokasi;
-        }
-      }
-
-      return {
-        'No': idx + 1,
-        'Nama Pekerjaan': t.nama,
-        'PIC Utama': t.pic,
-        'PIC Tambahan': (() => {
-          try {
-            const arr = JSON.parse(t.additionalPics || '[]');
-            return Array.isArray(arr) ? arr.join(', ') : '';
-          } catch(e) { return ''; }
-        })(),
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas || 'Medium',
-        'Status': t.status,
-        'Progress': `${t.progress || 0}%`,
-        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd') + (!(t as any).isAllDay && (t as any).startTime ? ` ${(t as any).startTime}` : ''),
-        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd') + (!(t as any).isAllDay && (t as any).endTime ? ` ${(t as any).endTime}` : ''),
-        'Lokasi Pekerjaan': lokasiStr || '-',
-        'Deskripsi': taskAny.deskripsi ? taskAny.deskripsi.replace(/<[^>]+>/g, '') : '-',
-        'Sub-Pekerjaan': subTasksStr || '-',
-        'Catatan': taskAny.catatan || '-'
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(reportData);
-    
-    ws['!cols'] = [
-      { wch: 5 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, 
-      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
-      { wch: 30 }, { wch: 40 }, { wch: 40 }, { wch: 40 }
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Kinerja');
-    XLSX.writeFile(wb, `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja Excel (${filteredTasks.length} pekerjaan)`, 'success');
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel-report' });
+    }
   };
 
   const handleExportPDF = () => {

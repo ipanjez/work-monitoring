@@ -22,8 +22,10 @@ import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { format, startOfDay } from 'date-fns';
-import { getDynamicBadgeStyle, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
+import { format, subDays, startOfWeek, endOfWeek, parseISO, startOfDay } from 'date-fns';
+import { id } from 'date-fns/locale';
+import { getTaskLocationString, getDynamicBadgeStyle, getTaskExportRow, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
+import { exportToRichExcel } from '@/utils/excelExport';
 import { useTheme } from '@/context/ThemeContext';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -751,93 +753,32 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   };
 
 
-  const handleExportExcelSummary = () => {
-    if (addActivityLog) {
-      addActivityLog('EXPORT_EXCEL', 'Export Laporan', 'Mengekspor data pekerjaan ke format Excel', 'info');
-    }
 
-    const summaryData = [
-      { 'Metrik': 'Total Pekerjaan', 'Nilai': total },
-      ...Object.entries(statusCounts).map(([s, c]) => ({ 'Metrik': `Status: ${s}`, 'Nilai': c })),
-      { 'Metrik': 'Rata-rata Progress', 'Nilai': `${avgProgress}%` }
-    ];
 
-    const detailData = filteredTasks.map(t => {
-      let lokasiStr = '';
-      if ((t as any).lokasi) {
-        try {
-          const parsedLoc = JSON.parse((t as any).lokasi);
-          if (parsedLoc.tipe === 'online') {
-            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-          } else if (parsedLoc.tipe === 'offline') {
-            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-          }
-        } catch (e) {
-          lokasiStr = (t as any).lokasi;
-        }
+  const handleExportExcelSummary = async () => {
+    toast.loading('Mengekspor Ringkasan...', { id: 'export-excel-dash' });
+    try {
+      const success = await exportToRichExcel(
+        filteredTasks,
+        {
+          pics: masterPics,
+          categories: masterCategories,
+          locations: [],
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        `Ringkasan_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-dash' });
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel-dash' });
       }
-
-      return {
-        'Nama Pekerjaan': t.nama,
-        'PIC': t.pic,
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas,
-        'Status': t.status,
-        'Progress (%)': t.progress,
-        'Lokasi Pekerjaan': lokasiStr,
-        'Deskripsi': t.deskripsi || '',
-        'Lampiran File': (t as any).fileName || '',
-        'Tanggal Mulai': format(new Date(t.startDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).startTime ? `, ${(t as any).startTime}` : ''),
-        'Tenggat Waktu': format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : '')
-      };
-    });
-
-    const wb = XLSX.utils.book_new();
-    
-    // Add title rows for summary
-    const wsSummary = XLSX.utils.aoa_to_sheet([
-      ['LAPORAN RINGKASAN PEKERJAAN'],
-      [`Diekstrak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`],
-      [],
-      ['Metrik', 'Nilai']
-    ]);
-    XLSX.utils.sheet_add_json(wsSummary, summaryData, { origin: 'A5', skipHeader: true });
-
-    // Add title rows for detail
-    const wsDetail = XLSX.utils.aoa_to_sheet([
-      ['DETAIL DAFTAR PEKERJAAN'],
-      [`Diekstrak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`],
-      [],
-      Object.keys(detailData[0] || {})
-    ]);
-    if (detailData.length > 0) {
-      XLSX.utils.sheet_add_json(wsDetail, detailData, { origin: 'A5', skipHeader: true });
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel-dash' });
     }
-
-    // Set Column Widths for neatness
-    wsSummary['!cols'] = [{ wch: 30 }, { wch: 20 }];
-    wsDetail['!cols'] = [
-      { wch: 35 }, // Nama
-      { wch: 20 }, // PIC
-      { wch: 20 }, // Kategori
-      { wch: 15 }, // Prioritas
-      { wch: 15 }, // Status
-      { wch: 15 }, // Progress
-      { wch: 30 }, // Lokasi Pekerjaan
-      { wch: 45 }, // Deskripsi
-      { wch: 25 }, // Lampiran
-      { wch: 20 }, // Mulai
-      { wch: 20 }, // Tenggat
-    ];
-
-    // Style the headers
-    const boldStyle = { font: { bold: true } };
-    wsSummary['A1'] = { t: 's', v: 'LAPORAN RINGKASAN PEKERJAAN', s: { font: { bold: true, sz: 14 } } };
-    wsDetail['A1'] = { t: 's', v: 'DETAIL DAFTAR PEKERJAAN', s: { font: { bold: true, sz: 14 } } };
-
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
-    XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail Pekerjaan');
-    XLSX.writeFile(wb, `Laporan_Dashboard_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const urgentTasks = filteredTasks.filter(t => (t.prioritas === 'Urgent' || t.prioritas === 'High') && t.status !== 'Done').slice(0, 5);

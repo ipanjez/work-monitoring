@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Save, CheckCircle, Edit2, AlertCircle } from 'lucide-react';
+import { X, Zap, Save, CheckCircle, Edit2, AlertCircle, Copy } from 'lucide-react';
 import { parseAgendaText, ParsedTask } from '@/utils/smartParser';
 import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import SmartAddTemplateManager from './SmartAddTemplateManager';
 
 interface SmartAddModalProps {
@@ -45,6 +46,31 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
     setRawText('');
     setParsedTasks([]);
     onClose();
+  };
+
+  const handleCopyTask = (task: ParsedTask) => {
+    const lines = [
+      `Judul: ${task.nama}`,
+      `Tanggal: ${format(task.startDate, 'dd MMM yyyy')}`,
+      `Waktu: ${task.startTime} - ${task.endTime}`,
+    ];
+    
+    if (task.lokasi) {
+      try {
+        const parsedLoc = JSON.parse(task.lokasi);
+        if (parsedLoc.tipe === 'online') lines.push(`Lokasi: Online (${parsedLoc.linkZoom || '-'})`);
+        else lines.push(`Lokasi: Offline (${parsedLoc.lokasiFisik || '-'})`);
+      } catch (e) {
+        lines.push(`Lokasi: ${task.lokasi}`);
+      }
+    }
+    
+    if (task.deskripsi) {
+      lines.push(`\nDeskripsi:\n${task.deskripsi}`);
+    }
+
+    navigator.clipboard.writeText(lines.join('\n'));
+    toast.success('Pekerjaan berhasil disalin');
   };
 
   return (
@@ -123,7 +149,17 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                   <div key={idx} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Nama Pekerjaan</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Nama Pekerjaan</label>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleCopyTask(task)}
+                            title="Salin Detail Pekerjaan"
+                          >
+                            <Copy size={14} /> Salin
+                          </button>
+                        </div>
                         <input 
                           className="input" 
                           value={task.nama} 

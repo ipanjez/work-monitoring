@@ -249,6 +249,38 @@ export const getTaskLocationString = (task: any) => {
   }
 };
 
+export const getTaskExportRow = (task: any) => {
+  let subPekerjaanStr = '';
+  if (task.subTasksJson) {
+    try {
+      const parsed = JSON.parse(task.subTasksJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        subPekerjaanStr = parsed.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
+      }
+    } catch (e) { }
+  }
+
+  const extraPics = getAdditionalPics(task);
+
+  return {
+    'Nama Pekerjaan': task.nama,
+    'PIC Utama': task.pic,
+    'PIC Tambahan': extraPics.join(', '),
+    'Kategori': task.kategori || 'Umum',
+    'Prioritas': task.prioritas || 'Medium',
+    'Status': task.status,
+    'Sepanjang Hari': task.isAllDay ? 'Ya' : 'Tidak',
+    'Jam Mulai': task.startTime || '',
+    'Jam Selesai': task.endTime || '',
+    'Tanggal Mulai': task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
+    'Tenggat Waktu': task.endDate ? format(new Date(task.endDate), 'yyyy-MM-dd') : '',
+    'Repetisi': task.repetisi || 'Tidak Berulang',
+    'Deskripsi': task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '',
+    'Catatan': task.catatan || '',
+    'Lokasi Pekerjaan': getTaskLocationString(task),
+    'Sub Pekerjaan': subPekerjaanStr,
+  };
+};
 
 export const getGoogleCalendarUrl = (task: Task) => {
   const extraPics = getAdditionalPics(task);

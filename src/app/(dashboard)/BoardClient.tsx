@@ -7,11 +7,12 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
-import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, ChevronUp, ChevronDown, Download, FileText, Copy } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft, CheckSquare, MessageSquare, History, FileText, Download, Filter, ArrowUpDown, Copy, ChevronUp, ChevronDown, Paperclip } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { useFilter } from '@/context/FilterContext';
-import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
+import { exportToRichExcel } from '@/utils/excelExport';
+import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 
 import { useSession } from 'next-auth/react';
 
@@ -377,59 +378,30 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     return 0;
   });
 
-  const handleExportExcel = () => {
-    const exportData = filteredTasks.map(t => {
-      let subPekerjaanStr = '';
-      if (t.subTasksJson) {
-        try {
-          const parsed = JSON.parse(t.subTasksJson);
-          if (Array.isArray(parsed)) {
-            subPekerjaanStr = parsed.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
-          }
-        } catch (e) { }
+  const handleExportExcel = async () => {
+    toast.loading('Mengekspor Board Pekerjaan...', { id: 'export-excel-board' });
+    try {
+      const success = await exportToRichExcel(
+        filteredTasks,
+        {
+          pics: formPicOptions,
+          categories: formCategoryOptions,
+          locations: [], // BoardClient doesn't fetch masterLocations currently
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        `Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-board' });
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel-board' });
       }
-
-      let lokasiStr = '';
-      if (t.lokasi) {
-        try {
-          const parsedLoc = JSON.parse(t.lokasi);
-          if (parsedLoc.tipe === 'online') {
-            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-          } else if (parsedLoc.tipe === 'offline') {
-            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-          }
-        } catch (e) {
-          lokasiStr = t.lokasi;
-        }
-      }
-
-      let extraPics = [];
-      if (t.additionalPics) {
-        try {
-          const arr = JSON.parse(t.additionalPics);
-          if (Array.isArray(arr)) extraPics = arr;
-        } catch(e){}
-      }
-
-      return {
-        'Nama Pekerjaan': t.nama,
-        'PIC Utama': t.pic,
-        'PIC Tambahan': extraPics.join(', '),
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas || 'Medium',
-        'Status': t.status,
-        'Progress (%)': t.progress || 0,
-        'Tanggal Mulai': t.startDate ? format(new Date(t.startDate), 'yyyy-MM-dd') : '',
-        'Tenggat Waktu': t.endDate ? format(new Date(t.endDate), 'yyyy-MM-dd') : '',
-        'Lokasi Pekerjaan': lokasiStr,
-        'Sub Pekerjaan': subPekerjaanStr,
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Board Pekerjaan');
-    XLSX.writeFile(wb, `Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel-board' });
+    }
   };
 
   const handleExportPDF = async () => {

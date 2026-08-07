@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
+import { exportToRichExcel } from '@/utils/excelExport';
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
@@ -525,236 +526,28 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   };
 
   const handleDownloadTemplate = async () => {
+    toast.loading('Membuat template Excel...', { id: 'download-template' });
     try {
-      const ExcelJS = (await import('exceljs')).default;
-
-      const workbook = new ExcelJS.Workbook();
-
-      // Buat sheet konfigurasi tersembunyi untuk referensi dropdown panjang
-      const configSheet = workbook.addWorksheet('Config', { state: 'hidden' });
-      const uniquePics = existingPics.length > 0 ? existingPics : ['Unassigned'];
-      configSheet.getColumn('A').values = uniquePics;
-      const uniqueCats = formCategoryOptions.length > 0 ? formCategoryOptions : ['Umum'];
-      configSheet.getColumn('B').values = uniqueCats;
-      const uniqueLocations = masterLocations.length > 0 ? masterLocations : ['Online: Zoom Meeting', 'Offline: Ruang Rapat Lt. 1'];
-      configSheet.getColumn('C').values = uniqueLocations;
-      const worksheet = workbook.addWorksheet('Template Pekerjaan');
-
-      // Tentukan Header
-      worksheet.columns = [
-        { header: 'Nama Pekerjaan', key: 'nama', width: 35 },
-        { header: 'PIC Utama', key: 'pic', width: 25 },
-        { header: 'PIC Tambahan', key: 'picTambahan', width: 30 },
-        { header: 'Kategori', key: 'kategori', width: 20 },
-        { header: 'Prioritas', key: 'prioritas', width: 15 },
-        { header: 'Status', key: 'status', width: 15 },
-        { header: 'Sepanjang Hari', key: 'isAllDay', width: 16 },
-        { header: 'Jam Mulai', key: 'startTime', width: 12 },
-        { header: 'Jam Selesai', key: 'endTime', width: 12 },
-        { header: 'Tanggal Mulai', key: 'startDate', width: 15 },
-        { header: 'Tenggat Waktu', key: 'endDate', width: 15 },
-        { header: 'Repetisi', key: 'repetisi', width: 18 },
-        { header: 'Deskripsi', key: 'deskripsi', width: 40 },
-        { header: 'Catatan', key: 'catatan', width: 40 },
-        { header: 'Lokasi Pekerjaan', key: 'lokasi', width: 30 },
-        { header: 'Sub Pekerjaan', key: 'subPekerjaan', width: 50 },
-      ];
-
-      // Beri warna pada header
-      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      worksheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF10B981' }
-      };
-
-      // Auto wrap untuk kolom Lokasi Pekerjaan & Sub Pekerjaan
-      worksheet.getColumn('O').alignment = { wrapText: true, vertical: 'top' };
-      worksheet.getColumn('P').alignment = { wrapText: true, vertical: 'top' };
-
-      // Tambahkan Contoh Isian di baris ke-2
-      const exampleRow = worksheet.addRow({
-        nama: 'Contoh Pekerjaan A (Jangan dihapus)',
-        pic: uniquePics[0] || 'Unassigned',
-        picTambahan: 'PIC Lain 1, PIC Lain 2',
-        kategori: uniqueCats[0] || 'Umum',
-        prioritas: 'High',
-        status: 'In Progress',
-        isAllDay: 'Tidak',
-        startTime: '08:00',
-        endTime: '17:00',
-        startDate: format(new Date(), 'yyyy-MM-dd'),
-        endDate: format(new Date(), 'yyyy-MM-dd'),
-        repetisi: 'Tidak Berulang',
-        deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
-        lokasi: 'Online: https://zoom.us/j/12345678',
-        catatan: 'Contoh catatan',
-        subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
-      });
-      // Beri warna latar abu-abu muda untuk baris contoh
-      exampleRow.eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF3F4F6' }
-        };
-        cell.font = { italic: true, color: { argb: 'FF4B5563' } };
-      });
-
-      // Set kolom Jam Mulai & Jam Selesai sebagai text agar Excel tidak auto-convert
-      for (let i = 2; i <= 1000; i++) {
-        worksheet.getCell(`I${i}`).numFmt = '@';
-        worksheet.getCell(`J${i}`).numFmt = '@';
+      const success = await exportToRichExcel(
+        [],
+        {
+          pics: existingPics,
+          categories: formCategoryOptions,
+          locations: masterLocations,
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        'Template_Import_Pekerjaan.xlsx',
+        true
+      );
+      if (success) {
+        toast.success('Template berhasil diunduh', { id: 'download-template' });
+      } else {
+        toast.error('Gagal membuat template', { id: 'download-template' });
       }
-
-      // Tambahkan Data Validation untuk 1000 baris pertama
-      for (let i = 2; i <= 1000; i++) {
-        // PIC Utama (Ambil dari hidden sheet agar tidak kena limit 255 karakter)
-        worksheet.getCell(`B${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`Config!$A$1:$A$${uniquePics.length}`]
-        };
-
-        // Kategori
-        worksheet.getCell(`D${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`Config!$B$1:$B$${uniqueCats.length}`]
-        };
-
-        // Prioritas
-        worksheet.getCell(`E${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`"${(masterPriorities.length > 0 ? masterPriorities : ['Low', 'Medium', 'High', 'Urgent']).join(',')}"`]
-        };
-
-        // Status
-        worksheet.getCell(`F${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`"${(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done']).join(',')}"`]
-        };
-
-        // Sepanjang Hari (Ya/Tidak)
-        worksheet.getCell(`G${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: ['"Ya,Tidak"']
-        };
-
-        // Repetisi
-        worksheet.getCell(`L${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: ['"Tidak Berulang,Harian,Mingguan,Bulanan"']
-        };
-
-        // Lokasi Pekerjaan
-        worksheet.getCell(`O${i}`).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: [`Config!$C$1:$C$${uniqueLocations.length}`]
-        };
-      }
-
-      // === Sheet Panduan ===
-      const guideSheet = workbook.addWorksheet('Panduan');
-      guideSheet.columns = [
-        { header: '', key: 'kolom', width: 25 },
-        { header: '', key: 'penjelasan', width: 60 },
-        { header: '', key: 'contoh', width: 35 },
-        { header: '', key: 'wajib', width: 12 },
-      ];
-
-      // Title
-      guideSheet.mergeCells('A1:D1');
-      const titleCell = guideSheet.getCell('A1');
-      titleCell.value = 'PANDUAN PENGISIAN TEMPLATE IMPORT PEKERJAAN';
-      titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      guideSheet.getRow(1).height = 30;
-
-      // Table Header
-      const headerRow = guideSheet.getRow(3);
-      headerRow.values = ['Nama Kolom', 'Penjelasan', 'Contoh Isian', 'Wajib?'];
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
-
-      const guideData = [
-        ['Nama Pekerjaan', 'Nama atau judul pekerjaan yang akan dilakukan', 'Membuat Laporan Bulanan', 'Ya'],
-        ['PIC Utama', 'Penanggung jawab utama pekerjaan (pilih dari dropdown)', 'Ahmad Fajar', 'Ya'],
-        ['PIC Tambahan', 'Penanggung jawab tambahan, pisahkan dengan koma', 'Budi, Sari', 'Tidak'],
-        ['Kategori', 'Kategori/jenis pekerjaan sesuai master pengaturan', 'Umum', 'Tidak'],
-        ['Prioritas', 'Tingkat prioritas pekerjaan (pilih dari dropdown)', 'High', 'Tidak'],
-        ['Status', 'Status progres pekerjaan saat ini (pilih dari dropdown)', 'In Progress', 'Tidak'],
-        ['Sepanjang Hari', 'Apakah pekerjaan berlangsung seharian? Ya = tanpa jam, Tidak = pakai jam', 'Tidak', 'Tidak'],
-        ['Jam Mulai', 'Jam mulai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '08:00', 'Tidak'],
-        ['Jam Selesai', 'Jam selesai pekerjaan dalam format 24 jam (HH:mm). Diisi jika Sepanjang Hari = Tidak', '17:00', 'Tidak'],
-        ['Tanggal Mulai', 'Tanggal dimulainya pekerjaan dalam format YYYY-MM-DD', '2026-08-01', 'Tidak'],
-        ['Tenggat Waktu', 'Batas waktu penyelesaian pekerjaan dalam format YYYY-MM-DD', '2026-08-15', 'Tidak'],
-        ['Repetisi', 'Pengulangan pekerjaan (pilih dari dropdown)', 'Tidak Berulang', 'Tidak'],
-        ['Deskripsi', 'Penjelasan detail mengenai pekerjaan. Gunakan Alt+Enter untuk baris baru', 'Membuat laporan keuangan Q3', 'Tidak'],
-        ['Lokasi Pekerjaan', 'Lokasi/Tempat pekerjaan. Gunakan awalan "Online:" untuk URL zoom/meet, atau tulis langsung untuk alamat fisik', 'Online: https://zoom.us/j/12345678\nOffline: Ruang Rapat Lt. 2', 'Tidak'],
-        ['Catatan', 'Catatan tambahan terkait pekerjaan', 'Perlu koordinasi dengan tim finance', 'Tidak'],
-        ['Sub Pekerjaan', 'Daftar sub-tugas dengan format [Status] Nama. Pisahkan dengan Enter (Alt+Enter di Excel)', '[Done] Kumpulkan data\n[To Do] Analisis', 'Tidak'],
-      ];
-      guideData.forEach((row, idx) => {
-        const r = guideSheet.getRow(4 + idx);
-        r.values = row;
-        r.getCell(1).font = { bold: true };
-        if (idx % 2 === 0) {
-          r.eachCell(c => {
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
-          });
-        }
-      });
-
-      // Tips section
-      const tipsStartRow = 4 + guideData.length + 2;
-      guideSheet.mergeCells(`A${tipsStartRow}:D${tipsStartRow}`);
-      const tipsTitle = guideSheet.getCell(`A${tipsStartRow}`);
-      tipsTitle.value = 'TIPS PENTING';
-      tipsTitle.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-      tipsTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
-
-      const tips = [
-        '1. Baris contoh (baris ke-2 di sheet Template) wajib dibiarkan, mulai isi data asli dari baris ke-3 dan seterusnya.',
-        '2. Kolom dengan dropdown (PIC, Prioritas, Status, dll) sudah disediakan pilihan otomatis.',
-        '3. Format tanggal wajib menggunakan YYYY-MM-DD (contoh: 2026-08-01).',
-        '4. Format jam menggunakan HH:mm 24 jam (contoh: 08:00, 13:30, 17:00).',
-        '5. Jika Sepanjang Hari = "Ya", kolom Jam Mulai dan Jam Selesai akan diabaikan.',
-        '6. Untuk Sub Pekerjaan, gunakan format: [Status] Nama Sub Pekerjaan.',
-        '7. Status yang valid untuk Sub Pekerjaan sesuai dengan Master Status yang sudah diatur.',
-        '8. PIC Tambahan dipisahkan dengan tanda koma (,).',
-        '9. Gunakan Alt+Enter untuk membuat baris baru di dalam satu sel Excel.',
-      ];
-      tips.forEach((tip, idx) => {
-        const r = guideSheet.getRow(tipsStartRow + 1 + idx);
-        guideSheet.mergeCells(`A${tipsStartRow + 1 + idx}:D${tipsStartRow + 1 + idx}`);
-        r.getCell(1).value = tip;
-        r.getCell(1).font = { size: 11 };
-      });
-
-      // Set all columns alignment
-      guideSheet.getColumn(2).alignment = { wrapText: true, vertical: 'top' };
-      guideSheet.getColumn(3).alignment = { wrapText: true, vertical: 'top' };
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Template_Import_Pekerjaan.xlsx';
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Template berhasil diunduh!');
-    } catch (err) {
-      console.error('Error generating template:', err);
-      toast.error('Gagal membuat template Excel.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal membuat template', { id: 'download-template' });
     }
   };
 
@@ -931,59 +724,31 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     reader.readAsBinaryString(file);
   };
 
-  const handleExportExcel = () => {
-    const exportData = processedTasks.map(t => {
-      let subPekerjaanStr = '';
-      if (t.subTasksJson) {
-        try {
-          const parsed: SubTask[] = JSON.parse(t.subTasksJson);
-          if (Array.isArray(parsed)) {
-            subPekerjaanStr = parsed.map(st => `[${st.status}] ${st.text}`).join('\n');
-          }
-        } catch (e) { }
+
+  const handleExportExcel = async () => {
+    toast.loading('Mengekspor daftar pekerjaan...', { id: 'export-excel' });
+    try {
+      const success = await exportToRichExcel(
+        processedTasks,
+        {
+          pics: existingPics,
+          categories: formCategoryOptions,
+          locations: masterLocations,
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        `Daftar_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel' });
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel' });
       }
-
-      let lokasiStr = '';
-      if (t.lokasi) {
-        try {
-          const parsedLoc = JSON.parse(t.lokasi);
-          if (parsedLoc.tipe === 'online') {
-            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-          } else if (parsedLoc.tipe === 'offline') {
-            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-          }
-        } catch (e) {
-          lokasiStr = t.lokasi;
-        }
-      }
-
-      return {
-        'Nama Pekerjaan': t.nama,
-        'PIC Utama': t.pic,
-        'PIC Tambahan': getAdditionalPics(t).join(', '),
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas || 'Medium',
-        'Status': t.status,
-        'Progress (%)': t.progress || 0,
-        'Sepanjang Hari': t.isAllDay ? 'Ya' : 'Tidak',
-        'Jam Mulai': t.startTime || '',
-        'Tanggal Mulai': format(new Date(t.startDate), 'yyyy-MM-dd'),
-        'Jam Selesai': t.endTime || '',
-        'Tenggat Waktu': format(new Date(t.endDate), 'yyyy-MM-dd'),
-        'Repetisi': formatRecurrenceText(t.repetisi),
-        'Lokasi Pekerjaan': lokasiStr,
-        'Sub Pekerjaan': subPekerjaanStr,
-        'Diedit (kali)': t.editCount || 0,
-        'Terakhir Diedit': t.lastEditedAt ? format(new Date(t.lastEditedAt), 'yyyy-MM-dd HH:mm') : '-',
-        'Deskripsi': t.deskripsi ? t.deskripsi.replace(/<[^>]*>?/gm, '') : '',
-        'Catatan': t.catatan || ''
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Daftar Pekerjaan');
-    XLSX.writeFile(wb, `Daftar_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel' });
+    }
   };
 
   const handleExportPDF = async () => {

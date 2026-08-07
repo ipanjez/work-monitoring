@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays, Download, FileText, Copy, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, getTaskExportRow } from '@/utils/taskUtils';
+import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -134,7 +136,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     });
   });
 
-  const picList = Object.keys(picStatsMap);
+  let picList = Object.keys(picStatsMap);
+  if (globalPicFilter !== 'Semua PIC') {
+    picList = picList.filter(p => p === globalPicFilter || (picStatsMap[p] && picStatsMap[p].total > 0));
+  }
 
 
   const handleSaveEdit = async () => {
@@ -193,33 +198,30 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     }
   };
 
-  const handleExportExcel = () => {
-    const exportData = filteredTasks.map(t => {
-      let extraPics = [];
-      if (t.additionalPics) {
-        try {
-          const arr = JSON.parse(t.additionalPics);
-          if (Array.isArray(arr)) extraPics = arr;
-        } catch(e){}
+  const handleExportExcel = async () => {
+    toast.loading('Mengekspor Manajemen Tim...', { id: 'export-excel-team' });
+    try {
+      const success = await exportToRichExcel(
+        filteredTasks,
+        {
+          pics: masterPics,
+          categories: [],
+          locations: [],
+          priorities: [],
+          statuses: masterStatuses
+        },
+        `Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-team' });
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel-team' });
       }
-
-      return {
-        'Nama Pekerjaan': t.nama,
-        'PIC Utama': t.pic,
-        'PIC Tambahan': extraPics.join(', '),
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas || 'Medium',
-        'Status': t.status,
-        'Progress (%)': t.progress || 0,
-        'Tanggal Mulai': t.startDate ? format(new Date(t.startDate), 'yyyy-MM-dd') : '',
-        'Tenggat Waktu': t.endDate ? format(new Date(t.endDate), 'yyyy-MM-dd') : '',
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Manajemen Tim');
-    XLSX.writeFile(wb, `Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel-team' });
+    }
   };
 
   const handleExportPDF = async () => {
@@ -312,7 +314,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
             Direktori personil penanggung jawab (PIC) serta pemantauan produktivitas & beban kerja tim.
           </p>
         </div>
-        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', marginTop: '48px' }}>
           <button 
             className="btn" 
             onClick={handleExportExcel}

@@ -5,9 +5,10 @@ import { copyToClipboard } from '@/utils/clipboard';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, View, EventProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { getTaskComments } from '@/utils/taskUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-override.css';
 import { 
@@ -31,7 +32,8 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText, getTaskExportRow } from '@/utils/taskUtils';
+import { exportToRichExcel } from '@/utils/excelExport';
 import { expandTasksForCalendar } from '@/utils/recurrenceUtils';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
@@ -267,59 +269,30 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     setIsEditModalOpen(true);
   };
 
-  const handleExportExcel = () => {
-    const exportData = filteredTasks.map(t => {
-      let subPekerjaanStr = '';
-      if (t.subTasksJson) {
-        try {
-          const parsed = JSON.parse(t.subTasksJson);
-          if (Array.isArray(parsed)) {
-            subPekerjaanStr = parsed.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
-          }
-        } catch (e) { }
+  const handleExportExcel = async () => {
+    toast.loading('Mengekspor Kalender Pekerjaan...', { id: 'export-excel-cal' });
+    try {
+      const success = await exportToRichExcel(
+        filteredTasks,
+        {
+          pics: masterPics,
+          categories: masterCats,
+          locations: [],
+          priorities: masterPriorities,
+          statuses: masterStatuses
+        },
+        `Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
+        false
+      );
+      if (success) {
+        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-cal' });
+      } else {
+        toast.error('Gagal mengekspor Excel', { id: 'export-excel-cal' });
       }
-
-      let lokasiStr = '';
-      if (t.lokasi) {
-        try {
-          const parsedLoc = JSON.parse(t.lokasi);
-          if (parsedLoc.tipe === 'online') {
-            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-          } else if (parsedLoc.tipe === 'offline') {
-            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-          }
-        } catch (e) {
-          lokasiStr = t.lokasi;
-        }
-      }
-
-      let extraPics = [];
-      if (t.additionalPics) {
-        try {
-          const arr = JSON.parse(t.additionalPics);
-          if (Array.isArray(arr)) extraPics = arr;
-        } catch(e){}
-      }
-
-      return {
-        'Nama Pekerjaan': t.nama,
-        'PIC Utama': t.pic,
-        'PIC Tambahan': extraPics.join(', '),
-        'Kategori': t.kategori || 'Umum',
-        'Prioritas': t.prioritas || 'Medium',
-        'Status': t.status,
-        'Progress (%)': t.progress || 0,
-        'Tanggal Mulai': t.startDate ? format(new Date(t.startDate), 'yyyy-MM-dd') : '',
-        'Tenggat Waktu': t.endDate ? format(new Date(t.endDate), 'yyyy-MM-dd') : '',
-        'Lokasi Pekerjaan': lokasiStr,
-        'Sub Pekerjaan': subPekerjaanStr,
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Kalender Pekerjaan');
-    XLSX.writeFile(wb, `Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    } catch (error) {
+      console.error('Excel Export error:', error);
+      toast.error('Gagal mengekspor Excel', { id: 'export-excel-cal' });
+    }
   };
 
   const handleExportPDF = async () => {
@@ -605,7 +578,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
       {/* Main Controlled Calendar Component */}
       <div id="calendar-container" className="glass" style={{ padding: '24px 28px', minHeight: '820px', display: 'flex', flexDirection: 'column' }}>
-        <Calendar
+        <BigCalendar
           localizer={localizer}
           events={events}
           selectable={true}
