@@ -8,13 +8,17 @@ interface UniversalFilterBarProps {
   pics?: string[];
   statuses?: string[];
   priorities?: string[];
+  filteredCount?: number;
+  totalCount?: number;
 }
 
 export default function UniversalFilterBar({ 
   categories = [], 
   pics = [], 
   statuses = [], 
-  priorities = [] 
+  priorities = [],
+  filteredCount,
+  totalCount
 }: UniversalFilterBarProps) {
   const { 
     globalSearchQuery, setGlobalSearchQuery,
@@ -100,6 +104,14 @@ export default function UniversalFilterBar({
             {pics.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
+
+        {filteredCount !== undefined && totalCount !== undefined && (
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px', borderLeft: '1px solid var(--border-color)', marginLeft: '4px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+              Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{filteredCount}</strong> dari {totalCount} data
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

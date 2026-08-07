@@ -471,6 +471,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         pics={existingPics} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+        filteredCount={filteredTasks.length}
+        totalCount={tasks.length}
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>

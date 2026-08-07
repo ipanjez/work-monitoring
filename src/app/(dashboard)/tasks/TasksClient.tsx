@@ -884,6 +884,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         pics={existingPics} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+        filteredCount={processedTasks.length}
+        totalCount={tasks.length}
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

@@ -331,6 +331,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         pics={masterPics} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+        filteredCount={filteredTasks.length}
+        totalCount={localTasks.length}
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

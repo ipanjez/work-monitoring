@@ -462,6 +462,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         pics={allPics} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+        filteredCount={filteredTasks.length}
+        totalCount={tasks.length}
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>

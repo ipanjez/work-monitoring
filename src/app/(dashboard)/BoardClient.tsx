@@ -530,6 +530,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         pics={formPicOptions} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+        filteredCount={filteredTasks.length}
+        totalCount={tasks.length}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
