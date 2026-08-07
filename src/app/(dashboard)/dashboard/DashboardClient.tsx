@@ -65,7 +65,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     globalPicFilter, setGlobalPicFilter, 
     globalCustomStartDate, setGlobalCustomStartDate, 
     globalCustomEndDate, setGlobalCustomEndDate,
-    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery
+    globalFilterStatus, setGlobalFilterStatus, 
+    globalFilterPriority, setGlobalFilterPriority, 
+    globalFilterCategory, setGlobalFilterCategory, 
+    globalSearchQuery
   } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -602,7 +605,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       if (elements.length > 0) {
         const index = elements[0].index;
         const statusMap = ['Done', 'In Progress', 'To Do'];
-        router.push(`/tasks?status=${encodeURIComponent(statusMap[index])}`);
+        setGlobalFilterStatus(statusMap[index]);
+        router.push(`/tasks`);
       }
     }
   };
@@ -728,7 +732,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedPriority = priorityData.labels[index];
-        router.push(`/tasks?prioritas=${encodeURIComponent(selectedPriority)}`);
+        setGlobalFilterPriority(selectedPriority);
+        router.push(`/tasks`);
       }
     }
   };
@@ -751,7 +756,8 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedCat = categoryData.labels[index];
-        router.push(`/tasks?kategori=${encodeURIComponent(selectedCat)}`);
+        setGlobalFilterCategory(selectedCat);
+        router.push(`/tasks`);
       }
     }
   };
