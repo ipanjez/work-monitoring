@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays } from 'lucide-react';
+import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays, Download, FileText, Copy, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -21,6 +22,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [editForm, setEditForm] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -141,14 +143,134 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     }
   };
 
+  const handleExportExcel = () => {
+    const exportData = localTasks.map(t => {
+      let extraPics = [];
+      if (t.additionalPics) {
+        try {
+          const arr = JSON.parse(t.additionalPics);
+          if (Array.isArray(arr)) extraPics = arr;
+        } catch(e){}
+      }
+
+      return {
+        'Nama Pekerjaan': t.nama,
+        'PIC Utama': t.pic,
+        'PIC Tambahan': extraPics.join(', '),
+        'Kategori': t.kategori || 'Umum',
+        'Prioritas': t.prioritas || 'Medium',
+        'Status': t.status,
+        'Progress (%)': t.progress || 0,
+        'Tanggal Mulai': t.startDate ? format(new Date(t.startDate), 'yyyy-MM-dd') : '',
+        'Tenggat Waktu': t.endDate ? format(new Date(t.endDate), 'yyyy-MM-dd') : '',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Manajemen Tim');
+    XLSX.writeFile(wb, `Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExportingPdf(true);
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const element = document.getElementById('team-container');
+      if (!element) {
+        setIsExportingPdf(false);
+        return;
+      }
+
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const imgWidth = 297;
+      const pageHeight = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      setIsExportingPdf(false);
+    } catch (err) {
+      console.error('PDF Export error:', err);
+      setIsExportingPdf(false);
+      window.print();
+    }
+  };
+
+  const handleCopyImage = async () => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const element = document.getElementById('team-container');
+      if (!element) return;
+      
+      const canvas = await html2canvas(element, { scale: 2 });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          import('react-hot-toast').then(({ default: toast }) => toast.success('Gambar tim disalin ke clipboard'));
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Copy Image error:', err);
+      import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar'));
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div id="team-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Manajemen Tim & PIC</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-          Direktori personil penanggung jawab (PIC) serta pemantauan produktivitas & beban kerja tim.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Manajemen Tim & PIC</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
+            Direktori personil penanggung jawab (PIC) serta pemantauan produktivitas & beban kerja tim.
+          </p>
+        </div>
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+          <button 
+            className="btn" 
+            onClick={handleExportExcel}
+            title="Export Excel"
+            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
+          >
+            <Download size={16} /> <span className="hide-mobile">Excel</span>
+          </button>
+          <button 
+            className="btn" 
+            onClick={handleExportPDF} 
+            disabled={isExportingPdf}
+            title="Export PDF"
+            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
+          >
+            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
+          </button>
+          <button 
+            className="btn" 
+            onClick={handleCopyImage}
+            title="Copy Image"
+            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <Copy size={16} /> <span className="hide-mobile">Copy</span>
+          </button>
+        </div>
       </div>
 
       {/* Team Cards Grid */}
