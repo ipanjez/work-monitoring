@@ -7,7 +7,9 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
-import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, MessageSquare, ArrowUpDown, Search, Filter, History, CheckSquare, ChevronUp, ChevronDown, Download, FileText, Copy } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import { useFilter } from '@/context/FilterContext';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle } from '@/utils/taskUtils';
 
@@ -22,6 +24,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { globalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -312,6 +315,123 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setIsEditOpen(true);
   };
 
+  const handleExportExcel = () => {
+    const exportData = tasks.map(t => {
+      let subPekerjaanStr = '';
+      if (t.subTasksJson) {
+        try {
+          const parsed = JSON.parse(t.subTasksJson);
+          if (Array.isArray(parsed)) {
+            subPekerjaanStr = parsed.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
+          }
+        } catch (e) { }
+      }
+
+      let lokasiStr = '';
+      if (t.lokasi) {
+        try {
+          const parsedLoc = JSON.parse(t.lokasi);
+          if (parsedLoc.tipe === 'online') {
+            lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
+          } else if (parsedLoc.tipe === 'offline') {
+            lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
+          }
+        } catch (e) {
+          lokasiStr = t.lokasi;
+        }
+      }
+
+      let extraPics = [];
+      if (t.additionalPics) {
+        try {
+          const arr = JSON.parse(t.additionalPics);
+          if (Array.isArray(arr)) extraPics = arr;
+        } catch(e){}
+      }
+
+      return {
+        'Nama Pekerjaan': t.nama,
+        'PIC Utama': t.pic,
+        'PIC Tambahan': extraPics.join(', '),
+        'Kategori': t.kategori || 'Umum',
+        'Prioritas': t.prioritas || 'Medium',
+        'Status': t.status,
+        'Progress (%)': t.progress || 0,
+        'Tanggal Mulai': t.startDate ? format(new Date(t.startDate), 'yyyy-MM-dd') : '',
+        'Tenggat Waktu': t.endDate ? format(new Date(t.endDate), 'yyyy-MM-dd') : '',
+        'Lokasi Pekerjaan': lokasiStr,
+        'Sub Pekerjaan': subPekerjaanStr,
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Board Pekerjaan');
+    XLSX.writeFile(wb, `Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExportingPdf(true);
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const element = document.getElementById('kanban-board-container');
+      if (!element) {
+        setIsExportingPdf(false);
+        return;
+      }
+
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const imgWidth = 297;
+      const pageHeight = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      setIsExportingPdf(false);
+    } catch (err) {
+      console.error('PDF Export error:', err);
+      setIsExportingPdf(false);
+      window.print();
+    }
+  };
+
+  const handleCopyImage = async () => {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const element = document.getElementById('kanban-board-container');
+      if (!element) return;
+      
+      const canvas = await html2canvas(element, { scale: 2 });
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          toast.success('Gambar board disalin ke clipboard');
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Copy Image error:', err);
+      toast.error('Gagal menyalin gambar');
+    }
+  };
+
   const getSubtaskStats = (subTasksJson: string | null) => {
     if (!subTasksJson) return null;
     try {
@@ -418,9 +538,37 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             <option value="Abjad" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Abjad (Nama)</option>
           </select>
         </div>
+
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+          <button 
+            className="btn" 
+            onClick={handleExportExcel}
+            title="Export Excel"
+            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
+          >
+            <Download size={16} /> <span className="hide-mobile">Excel</span>
+          </button>
+          <button 
+            className="btn" 
+            onClick={handleExportPDF} 
+            disabled={isExportingPdf}
+            title="Export PDF"
+            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: isExportingPdf ? 0.7 : 1 }}
+          >
+            <FileText size={16} /> <span className="hide-mobile">{isExportingPdf ? '...' : 'PDF'}</span>
+          </button>
+          <button 
+            className="btn" 
+            onClick={handleCopyImage}
+            title="Copy Image"
+            style={{ backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <Copy size={16} /> <span className="hide-mobile">Copy</span>
+          </button>
+        </div>
       </div>
 
-      <div className="kanban-board-wrapper">
+      <div id="kanban-board-container" className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
           let columnTasks = tasks.filter((t: any) => {
             if (t.status !== col) return false;
