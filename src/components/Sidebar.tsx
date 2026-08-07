@@ -80,11 +80,12 @@ export default function Sidebar() {
     };
   }, [pathname]);
 
-  const picList = Array.from(new Set([
+  const extraPics = Array.from(new Set([
     ...allTasks.map((t: any) => t.pic).filter(Boolean),
-    ...masterPics,
     ...(session?.user?.name ? [session.user.name] : [])
-  ]));
+  ])).filter((p: any) => !masterPics.includes(p)).sort();
+
+  const picList = [...masterPics, ...extraPics];
 
   useEffect(() => {
     let tempStats: Record<string, number> = {};
