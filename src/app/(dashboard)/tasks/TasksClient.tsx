@@ -63,13 +63,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | 'jadwal' | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
 
   // Interactive Copyable Error Modal State
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showExcelInfo, setShowExcelInfo] = useState(false);
 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
@@ -873,74 +873,100 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         {userRole !== 'SPV' ? (
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn btn-primary" onClick={handleOpenAddModal} title="Tambah Pekerjaan Baru" style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Plus size={18} />
+          <div style={{ position: 'relative' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => setIsAddDropdownOpen(!isAddDropdownOpen)}
+              style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
+            >
+              <Plus size={18} /> Tambah Pekerjaan
             </button>
-            <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setIsSmartModalOpen(true)} title="Tambah Cepat (Smart Add)">
-              <Zap size={18} />
-            </button>
+
+            <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
+
+            {isAddDropdownOpen && (
+              <>
+                <div 
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
+                  onClick={() => setIsAddDropdownOpen(false)}
+                />
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, marginTop: '8px', zIndex: 100,
+                  background: 'var(--surface-color)', borderRadius: '12px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
+                  width: '260px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px'
+                }}>
+                  <div 
+                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+                    onClick={() => { setIsAddDropdownOpen(false); handleOpenAddModal(); }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Plus size={16} color="var(--accent-primary)" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Manual</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Isi form lengkap secara manual</div>
+                    </div>
+                  </div>
+
+                  <div 
+                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+                    onClick={() => { setIsAddDropdownOpen(false); setIsSmartModalOpen(true); }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #f59e0b 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Zap size={16} color="#f59e0b" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Cepat (Smart)</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Tambah cepat berbasis teks / AI</div>
+                    </div>
+                  </div>
+
+                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
+
+                  <div 
+                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+                    onClick={() => { setIsAddDropdownOpen(false); handleDownloadTemplate(); }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #3b82f6 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Download size={16} color="#3b82f6" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Unduh Template Excel</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Download format excel untuk import</div>
+                    </div>
+                  </div>
+
+                  <div 
+                    style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+                    onClick={() => { setIsAddDropdownOpen(false); fileInputRef.current?.click(); }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #10b981 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Upload size={16} color="#10b981" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Import dari Excel</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Unggah data pekerjaan sekaligus</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div />
         )}
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {/* Excel Actions */}
-          {userRole !== 'SPV' && (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ position: 'relative' }}>
-                <button
-                  className="btn"
-                  onClick={() => setShowExcelInfo(!showExcelInfo)}
-                  title="Informasi Template Excel"
-                  style={{ padding: '10px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Info size={16} />
-                </button>
-                {showExcelInfo && (
-                  <div style={{
-                    position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100,
-                    background: 'var(--surface-color)', padding: '16px', borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
-                    width: '300px', fontSize: '13px', color: 'var(--text-primary)'
-                  }}>
-                    <h4 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={16} color="var(--accent-primary)" /> Panduan Excel
-                    </h4>
-                    <p style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                      Gunakan template ini untuk menambahkan banyak pekerjaan sekaligus.
-                    </p>
-                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
-                      <li>Kolom <b>Kategori, Prioritas, Status</b> dan <b>PIC</b> sudah terhubung (dropdown) dengan pengaturan dinamis (Master Data) Anda.</li>
-                      <li>Kolom <b>Sub Pekerjaan</b> dapat diisi banyak baris di 1 sel dengan format <code>[Status] Nama</code> (gunakan Alt+Enter).</li>
-                      <li>Jangan mengubah header pada template agar impor berhasil.</li>
-                    </ul>
-                    <button className="btn btn-primary" style={{ width: '100%', marginTop: '12px' }} onClick={() => setShowExcelInfo(false)}>Tutup</button>
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                <button
-                  className="btn"
-                  onClick={handleDownloadTemplate}
-                  title="Unduh Template Excel"
-                  style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Download size={16} />
-                </button>
-                <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
-                <button
-                  className="btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Import Excel"
-                  style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Upload size={16} />
-                </button>
-              </div>
-            </div>
-          )}
+
 
           <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <button
