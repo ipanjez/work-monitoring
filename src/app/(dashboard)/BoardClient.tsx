@@ -447,23 +447,29 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
+      const originalStyle = element.style.cssText;
+      element.style.width = 'max-content';
+      element.style.height = 'max-content';
+      element.style.overflow = 'visible';
+
       const canvas = await html2canvas(element, { 
-        scale: 2, 
+        scale: 1, 
         useCORS: true, 
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
+        backgroundColor: '#ffffff'
       });
+
+      element.style.cssText = originalStyle;
+      
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new jsPDF({
-        orientation: width > height ? 'l' : 'p',
+        orientation: canvasWidth > canvasHeight ? 'l' : 'p',
         unit: 'px',
-        format: [width, height]
+        format: [canvasWidth, canvasHeight]
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+      pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
       pdf.save(`Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
       
       setIsExportingPdf(false);
@@ -483,15 +489,18 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
+      const originalStyle = element.style.cssText;
+      element.style.width = 'max-content';
+      element.style.height = 'max-content';
+      element.style.overflow = 'visible';
+
       const canvas = await html2canvas(element, { 
-        scale: 2, 
+        scale: 1, 
         useCORS: true, 
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
+        backgroundColor: '#ffffff'
       });
+
+      element.style.cssText = originalStyle;
       
       canvas.toBlob(async (blob) => {
         if (blob) {
