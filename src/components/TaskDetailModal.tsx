@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
 
@@ -154,6 +154,48 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     }
   };
 
+  const handleCopyTaskDetails = async () => {
+    try {
+      let extraPics = '';
+      const pics = getAdditionalPics(task!);
+      if (pics.length > 0) {
+        extraPics = `, ${pics.join(', ')}`;
+      }
+
+      let location = '-';
+      if (task!.lokasi) {
+        try {
+          const loc = JSON.parse(task!.lokasi);
+          if (loc.tipe === 'online') {
+            location = `Online: ${loc.linkZoom || ''}`;
+          } else if (loc.tipe === 'offline') {
+            location = `Offline: ${loc.lokasiFisik || ''}`;
+          }
+        } catch(e) { location = task!.lokasi; }
+      }
+
+      const textToCopy = `*Detail Pekerjaan:*
+Judul: ${task!.nama}
+PIC: ${task!.pic}${extraPics}
+Kategori: ${task!.kategori || 'Umum'}
+Status: ${task!.status} (${task!.progress || 0}%)
+Prioritas: ${task!.prioritas || 'Medium'}
+Tanggal Mulai: ${format(new Date(task!.startDate), 'dd MMM yyyy')}${!task!.isAllDay && task!.startTime ? ` Jam ${task!.startTime}` : ''}
+Tenggat Waktu: ${format(new Date(task!.endDate), 'dd MMM yyyy')}${!task!.isAllDay && task!.endTime ? ` Jam ${task!.endTime}` : ''}
+Lokasi: ${location}
+
+*Deskripsi:*
+${task!.deskripsi || '-'}`;
+
+      await navigator.clipboard.writeText(textToCopy);
+      toast.success('Detail pekerjaan berhasil disalin!');
+      if (addActivityLog) addActivityLog('COPY_TASK', 'Salin Pekerjaan', `Menyalin detail pekerjaan "${task!.nama}"`, 'info');
+    } catch (e) {
+      toast.error('Gagal menyalin detail pekerjaan.');
+      console.error(e);
+    }
+  };
+
   if (!task) return null;
 
   return (
@@ -177,7 +219,17 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
                   </span>
                 );
               })()}
-              <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={handleCopyTaskDetails}
+                  title="Salin Detail Pekerjaan ke Teks"
+                >
+                  <Copy size={16} />
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
