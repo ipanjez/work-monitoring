@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { Clock, AlertTriangle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -39,9 +40,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
         window.removeEventListener('scroll', handleActivity);
 
         // Auto logout due to inactivity
-        fetch('/api/auth', { method: 'DELETE' }).then(() => {
-          router.push('/auth/signin?reason=timeout');
-        });
+        signOut({ callbackUrl: '/auth/signin?reason=timeout' });
         return;
       }
 
@@ -49,9 +48,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
         if (prev <= 1) {
           clearInterval(timer);
           // Logout user because manual session timer ran out
-          fetch('/api/auth', { method: 'DELETE' }).then(() => {
-            router.push('/auth/signin?reason=timeout');
-          });
+          signOut({ callbackUrl: '/auth/signin?reason=timeout' });
           return 0;
         }
         return prev - 1;
