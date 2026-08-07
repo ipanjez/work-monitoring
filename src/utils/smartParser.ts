@@ -50,7 +50,9 @@ function extractTimes(line: string): { start: string, end: string | null } {
 }
 
 export function parseAgendaText(rawText: string): ParsedTask[] {
-  const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  // Pre-process rawText to handle single-line PDF pastes by inserting newlines before key fields
+  const processedText = rawText.replace(/(Hari\/Tanggal|Waktu|Tempat|Agenda)\s*:/gi, '\n$1 :');
+  const lines = processedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   let globalDate = new Date(); // Fallback to today
   
   // Try to find a global date in the first few lines
@@ -84,7 +86,7 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
   };
 
   const isNewTaskLine = (line: string) => {
-    return /^\d+[\.\)]\s/.test(line) || /^[•\-\*]\s/.test(line) || line.startsWith('🗒️');
+    return /^\d+[\.\)]\s/.test(line) || line.startsWith('🗒️') || /^agenda\s*:/i.test(line);
   };
 
   for (let i = 0; i < lines.length; i++) {
@@ -96,6 +98,8 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
       let name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
       if (line.startsWith('🗒️')) {
         name = line.replace(/^🗒️\s*[:\-]?\s*/, '').trim();
+      } else if (/^agenda\s*:/i.test(line)) {
+        name = line.replace(/^agenda\s*[:\-]?\s*/i, '').trim();
       }
       
       if (!isFirstTaskNameFound) {
@@ -144,7 +148,7 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
       currentDescription.push(line); // Also keep in description for context
     } 
     // Location parsing
-    else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || lowerLine.includes('tempat:') || lowerLine.includes('lokasi:') || lowerLine.includes('ruang:') || lowerLine.includes('link:')) {
+    else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || /tempat\s*:/i.test(line) || /lokasi\s*:/i.test(line) || /ruang\s*:/i.test(line) || /link\s*:/i.test(line)) {
       const cleanLoc = line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
       if (cleanLoc) {
         const locLower = cleanLoc.toLowerCase();

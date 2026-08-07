@@ -77,10 +77,10 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                 </p>
               </div>
               <ul style={{ margin: '0 0 0 24px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <li><strong>Judul Pekerjaan/Agenda:</strong> Terdeteksi dari format penomoran (1., 2., 3...), tanda hubung (-), atau ikon 🗒️.</li>
-                <li><strong>Tanggal:</strong> Terdeteksi dari tulisan format kalender/tanggal (misal: "Jumat, 7 Agustus 2026"). Tanggal ini akan otomatis menjadi Tanggal Mulai dan Selesai.</li>
-                <li><strong>Jam:</strong> Terdeteksi dari ikon ⏰ atau format XX:XX. Jika ada dua jam yang dihubungkan dengan tanda '-' (misal 09:00 - 11:00), maka akan diset sebagai Jam Mulai dan Jam Selesai.</li>
-                <li><strong>Lokasi/Deskripsi:</strong> Teks yang mengandung ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
+                <li><strong>Judul Pekerjaan/Agenda:</strong> Terdeteksi dari format penomoran (1., 2., 3...), kata "Agenda :", atau ikon 🗒️.</li>
+                <li><strong>Tanggal:</strong> Terdeteksi dari tulisan "Hari/Tanggal :" atau format kalender (misal: "Jumat, 7 Agustus 2026"). Tanggal ini otomatis menjadi Tanggal Mulai dan Selesai.</li>
+                <li><strong>Jam:</strong> Terdeteksi dari kata "Waktu :", ikon ⏰, atau format XX:XX. Jika ada dua jam yang dihubungkan (misal 09:00 - 11:00), diset sebagai Jam Mulai dan Selesai.</li>
+                <li><strong>Lokasi/Deskripsi:</strong> Teks dari kata "Tempat :", ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
                 <li><strong>PIC:</strong> Terdeteksi jika ada penyebutan nama atau jabatan yang cocok dengan daftar PIC master.</li>
               </ul>
             </div>
