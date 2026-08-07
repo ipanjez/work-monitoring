@@ -494,9 +494,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           >
             <CalendarDays size={16} color="#4285F4" /> Salin URL Feed Kalender
           </button>
-          <button className="btn btn-primary" onClick={() => handleSelectSlot({ start: new Date(), end: new Date() })} style={{ fontSize: '13px' }}>
-            <Plus size={16} /> Tambah Pekerjaan
-          </button>
         </UniversalActionBar>
       </div>
 
