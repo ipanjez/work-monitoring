@@ -333,16 +333,14 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={filteredTasks.length}
         totalCount={localTasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+      >
         <UniversalActionBar 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
         />
-      </div>
+      </UniversalFilterBar>
 
       {/* Team Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>

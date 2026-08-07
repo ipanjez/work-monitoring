@@ -464,16 +464,14 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+      >
         <UniversalActionBar 
           onExportExcel={handleExportFullReport}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
         />
-      </div>
+      </UniversalFilterBar>
 
       {/* Summary KPI Cards */}
       <motion.div 

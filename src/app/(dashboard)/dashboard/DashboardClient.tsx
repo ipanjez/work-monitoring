@@ -833,16 +833,14 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+      >
         <UniversalActionBar 
           onExportExcel={handleExportExcelSummary}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
         />
-      </div>
+      </UniversalFilterBar>
 
       {/* Main Report Container for PDF export and image copy */}
       <div id="dashboard-report-container" ref={dashboardRef}>

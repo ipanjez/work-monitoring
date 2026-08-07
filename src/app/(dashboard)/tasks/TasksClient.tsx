@@ -896,7 +896,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             className="btn" 
             onClick={handleExportAllICS}
             title="Export .ics untuk semua pekerjaan"
-            style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.2)' }}
+            style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
           >
             <CalendarDays size={18} />
           </button>

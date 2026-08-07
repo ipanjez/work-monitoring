@@ -20,7 +20,6 @@ export default function UniversalActionBar({
   return (
     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-        {children}
         {onExportExcel && (
           <button 
             className="btn" 
@@ -52,6 +51,7 @@ export default function UniversalActionBar({
             <Copy size={18} />
           </button>
         )}
+        {children}
       </div>
     </div>
   );

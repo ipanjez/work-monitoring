@@ -48,7 +48,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [formCategoryOptions, setFormCategoryOptions] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'Manual' | 'Deadline' | 'Prioritas' | 'Abjad'>('Manual');
+
 
 
   useEffect(() => {
@@ -135,10 +135,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setDragOverColumn(null);
     setDragOverCardId(null);
 
-    if (sortBy !== 'Manual') {
-      setSortBy('Manual');
-      toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
-    }
 
     const taskIdStr = e.dataTransfer.getData('text/plain');
     const taskId = parseInt(taskIdStr, 10);
@@ -220,10 +216,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setDragOverColumn(null);
     setDragOverCardId(null);
 
-    if (sortBy !== 'Manual') {
-      setSortBy('Manual');
-      toast('Berubah ke mode urutan manual', { icon: 'ℹ️' });
-    }
+
 
     const taskIdStr = e.dataTransfer.getData('text/plain');
     const taskId = parseInt(taskIdStr, 10);
@@ -372,17 +365,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
     return matchSearch && matchCategory && matchPic && matchDate;
   }).sort((a, b) => {
-    if (sortBy === 'Manual') {
-      if (a.orderIndex === b.orderIndex) return b.id - a.id; 
-      return (a.orderIndex || 0) - (b.orderIndex || 0);
-    } else if (sortBy === 'Deadline') {
-      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-    } else if (sortBy === 'Prioritas') {
-      return getPriorityWeight(b.prioritas) - getPriorityWeight(a.prioritas);
-    } else if (sortBy === 'Abjad') {
-      return a.nama.localeCompare(b.nama);
-    }
-    return 0;
+    if (a.orderIndex === b.orderIndex) return b.id - a.id; 
+    return (a.orderIndex || 0) - (b.orderIndex || 0);
   });
 
   const handleExportExcel = async () => {
@@ -532,39 +516,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <ArrowUpDown size={14} color="var(--text-secondary)" />
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-primary)',
-              fontSize: '13px',
-              fontWeight: 500,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="Manual" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Urutan Manual</option>
-            <option value="Deadline" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Tenggat Waktu</option>
-            <option value="Prioritas" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Prioritas</option>
-            <option value="Abjad" style={{ background: 'var(--bg-color)', color: 'var(--text-primary)' }}>Abjad (Nama)</option>
-          </select>
-        </div>
-
+      >
         <UniversalActionBar 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
         />
-      </div>
+      </UniversalFilterBar>
 
       <div id="kanban-board-container" className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
@@ -667,7 +626,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       {/* Card Content Top */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                          {sortBy === 'Manual' && canDrag && (
+                          {canDrag && (
                             <div className="kanban-sort-arrows" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginRight: '2px' }}>
                               <ChevronUp
                                 size={12}

@@ -39,7 +39,7 @@ export default function UniversalFilterBar({
   } : {};
 
   return (
-    <div className="glass" style={{ padding: '12px 16px', marginBottom: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', borderRadius: '12px' }}>
+    <div className="glass" style={{ padding: '12px 16px', marginBottom: '24px', display: 'flex', gap: '12px', flexWrap: 'nowrap', alignItems: 'center', borderRadius: '12px', overflowX: 'auto' }}>
       <div style={{ position: 'relative', flex: '1 1 150px', minWidth: '150px' }}>
         <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
         <input
@@ -51,7 +51,7 @@ export default function UniversalFilterBar({
         />
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterStatus !== 'All') }} value={globalFilterStatus} onChange={e => setGlobalFilterStatus(e.target.value)}>
             <option value="All">Semua Status</option>
