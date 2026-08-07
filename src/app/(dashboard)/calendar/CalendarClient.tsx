@@ -1,5 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
+import { useFilter } from '@/context/FilterContext';
 import { copyToClipboard } from '@/utils/clipboard';
 
 import { useState, useRef, useEffect } from 'react';
@@ -36,13 +37,13 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
+  const { masterColors } = useMaster();
   const { 
-    masterColors,
     globalPicFilter,
     globalTargetFilter,
     globalCustomStartDate,
     globalCustomEndDate
-  } = useMaster();
+  } = useFilter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
