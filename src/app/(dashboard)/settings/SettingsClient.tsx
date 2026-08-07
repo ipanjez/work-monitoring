@@ -404,12 +404,13 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 {type === 'pic' && (
                   <button
                     type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
                       setActivePicForAvatar(s);
                     }}
-                    style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex', marginLeft: '4px' }}
+                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '4px', zIndex: 2 }}
                     title="Ubah Foto Profil PIC"
                   >
                     {masterPicAvatars[s] ? (
