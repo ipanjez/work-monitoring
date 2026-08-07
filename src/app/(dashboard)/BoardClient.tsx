@@ -30,7 +30,9 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     globalCustomStartDate, setGlobalCustomStartDate, 
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
-    globalFilterCategory: filterCategory
+    globalFilterCategory: filterCategory,
+    globalFilterStatus,
+    globalFilterPriority
   } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -363,7 +365,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       }
     }
 
-    return matchSearch && matchCategory && matchPic && matchDate;
+    const matchStatus = globalFilterStatus === 'All' || t.status === globalFilterStatus;
+    const matchPriority = globalFilterPriority === 'All' || (t.prioritas || 'Medium') === globalFilterPriority;
+
+    return matchSearch && matchCategory && matchPic && matchDate && matchStatus && matchPriority;
   }).sort((a, b) => {
     if (a.orderIndex === b.orderIndex) return b.id - a.id; 
     return (a.orderIndex || 0) - (b.orderIndex || 0);
