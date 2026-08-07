@@ -7,7 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [actionFilter, setActionFilter] = useState<string>('all_actions');
@@ -70,14 +70,24 @@ export default function NotificationBell() {
       >
         <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.02)' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Notifikasi Pembaruan</h3>
-          {notifications.length > 0 && (
-            <button 
-              onClick={clearAll}
-              style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <Trash2 size={12} /> Hapus Semua
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {unreadCount > 0 && (
+              <button 
+                onClick={markAllAsRead}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <CheckCircle size={12} /> Tandai Dibaca
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button 
+                onClick={clearAll}
+                style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Trash2 size={12} /> Hapus Semua
+              </button>
+            )}
+          </div>
         </div>
         
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
