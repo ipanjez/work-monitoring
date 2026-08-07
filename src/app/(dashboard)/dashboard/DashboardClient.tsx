@@ -58,7 +58,13 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
-  const { globalTargetFilter, setGlobalTargetFilter, globalPicFilter, setGlobalPicFilter, globalCustomStartDate, setGlobalCustomStartDate, globalCustomEndDate, setGlobalCustomEndDate } = useFilter();
+  const { 
+    globalTargetFilter, setGlobalTargetFilter, 
+    globalPicFilter, setGlobalPicFilter, 
+    globalCustomStartDate, setGlobalCustomStartDate, 
+    globalCustomEndDate, setGlobalCustomEndDate,
+    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery
+  } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -212,7 +218,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
   const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics, ...(session?.user?.name ? [session.user.name] : [])]));
 
   const filteredTasks = tasks.filter(t => {
-    const matchCat = selectedCategory === 'All' || (t.kategori || 'Umum') === selectedCategory;
+    // 1. Category Filter
+    const matchCat = globalFilterCategory === 'All' || (t.kategori || 'Umum') === globalFilterCategory;
+    
+    // 2. PIC Filter
     const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
       t.additionalPics ? (() => {
         try {
@@ -222,6 +231,25 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       })() : false
     );
     
+    // 3. Status Filter
+    const matchStatus = globalFilterStatus === 'All' || t.status === globalFilterStatus;
+
+    // 4. Priority Filter
+    const matchPriority = globalFilterPriority === 'All' || (t.prioritas || 'Medium') === globalFilterPriority;
+
+    // 5. Search Filter
+    let matchSearch = true;
+    if (globalSearchQuery) {
+      const query = globalSearchQuery.toLowerCase();
+      const extraPics = t.additionalPics ? (() => {
+        try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
+      })() : '';
+      matchSearch = t.nama.toLowerCase().includes(query) ||
+        t.pic.toLowerCase().includes(query) ||
+        extraPics.toLowerCase().includes(query);
+    }
+
+    // 6. Date Filter
     const taskEnd = new Date(t.endDate).getTime();
     const taskStart = new Date(t.startDate).getTime();
     const now = new Date();
@@ -248,12 +276,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
       matchDate = true;
     } else {
-      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
-         matchDate = true;
-      }
+      matchDate = taskEnd >= startBoundary && taskEnd <= endBoundary;
     }
     
-    return matchCat && matchPic && matchDate;
+    return matchCat && matchPic && matchStatus && matchPriority && matchSearch && matchDate;
   });
 
   const total = filteredTasks.length;

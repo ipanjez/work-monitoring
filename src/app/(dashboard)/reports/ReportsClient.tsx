@@ -72,7 +72,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
     globalFilterCategory: reportCategoryFilter,
-    setGlobalFilterCategory: setReportCategoryFilter
+    setGlobalFilterCategory: setReportCategoryFilter,
+    globalFilterStatus,
+    globalFilterPriority,
+    globalSearchQuery
   } = useFilter();
 
   // Extract unique categories and PICs from all tasks for the dropdowns
@@ -141,13 +144,37 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
       // 3. Category Filter
       let matchCat = true;
-      if (reportCategoryFilter !== 'Semua Kategori') {
+      if (reportCategoryFilter !== 'All') {
         matchCat = (t.kategori || 'Umum') === reportCategoryFilter;
       }
+      
+      // 4. Status Filter
+      let matchStatus = true;
+      if (globalFilterStatus !== 'All') {
+        matchStatus = t.status === globalFilterStatus;
+      }
 
-      return matchTime && matchPic && matchCat;
+      // 5. Priority Filter
+      let matchPriority = true;
+      if (globalFilterPriority !== 'All') {
+        matchPriority = (t.prioritas || 'Medium') === globalFilterPriority;
+      }
+
+      // 6. Search Filter
+      let matchSearch = true;
+      if (globalSearchQuery) {
+        const query = globalSearchQuery.toLowerCase();
+        const extraPics = t.additionalPics ? (() => {
+          try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
+        })() : '';
+        matchSearch = t.nama.toLowerCase().includes(query) ||
+          t.pic.toLowerCase().includes(query) ||
+          extraPics.toLowerCase().includes(query);
+      }
+
+      return matchTime && matchPic && matchCat && matchStatus && matchPriority && matchSearch;
     });
-  }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter]);
+  }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter, globalFilterStatus, globalFilterPriority, globalSearchQuery]);
 
   const totalTasks = filteredTasks.length;
   

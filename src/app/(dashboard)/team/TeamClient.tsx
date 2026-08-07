@@ -20,7 +20,10 @@ import UniversalActionBar from '@/components/UniversalActionBar';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { masterColors } = useMaster();
-  const { globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate } = useFilter();
+  const { 
+    globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
+    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery
+  } = useFilter();
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -115,8 +118,30 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
          matchesTarget = true;
       }
     }
-    
-    return matchesTarget;
+    if (!matchesTarget) return false;
+
+    // Status Filter
+    if (globalFilterStatus !== 'All' && t.status !== globalFilterStatus) return false;
+
+    // Priority Filter
+    if (globalFilterPriority !== 'All' && (t.prioritas || 'Medium') !== globalFilterPriority) return false;
+
+    // Category Filter
+    if (globalFilterCategory !== 'All' && (t.kategori || 'Umum') !== globalFilterCategory) return false;
+
+    // Search Filter
+    if (globalSearchQuery) {
+      const query = globalSearchQuery.toLowerCase();
+      const extraPics = t.additionalPics ? (() => {
+        try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
+      })() : '';
+      const matchesSearch = t.nama.toLowerCase().includes(query) ||
+        t.pic.toLowerCase().includes(query) ||
+        extraPics.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    return true;
   });
 
   filteredTasks.forEach(t => {
