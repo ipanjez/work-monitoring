@@ -443,10 +443,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     if (!reportsRef.current) return;
     try {
       addActivityLog?.('Export', 'Copy Image', 'Menyalin gambar laporan kinerja ke clipboard', 'info');
-      const canvas = await html2canvas(reportsRef.current, {
+      
+      const element = reportsRef.current;
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc'
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
       });
       canvas.toBlob(async (blob) => {
         if (blob) {
@@ -454,9 +463,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': blob })
             ]);
-            // using window.alert if toast is not imported, or just let ActivityLog handle it
+            import('react-hot-toast').then(({ default: toast }) => toast.success('Gambar laporan disalin ke clipboard'));
           } catch (err) {
             console.error('Clipboard write error:', err);
+            import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar, izin ditolak.'));
           }
         }
       });

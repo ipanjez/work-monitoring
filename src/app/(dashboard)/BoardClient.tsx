@@ -315,8 +315,70 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setIsEditOpen(true);
   };
 
+  const filteredTasks = tasks.filter((t: any) => {
+    const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
+
+    const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
+      t.additionalPics ? (() => {
+        try {
+          const arr = JSON.parse(t.additionalPics);
+          return Array.isArray(arr) && arr.includes(globalPicFilter);
+        } catch (e) { return false; }
+      })() : false
+    );
+
+    const taskEnd = new Date(t.endDate).getTime();
+    const taskStart = new Date(t.startDate).getTime();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let startBoundary = today.getTime();
+    let endBoundary = today.getTime() + 86400000 - 1;
+
+    if (globalTargetFilter === 'Minggu Ini') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(new Date(today).setDate(diff));
+      startBoundary = monday.getTime();
+      endBoundary = startBoundary + (7 * 86400000) - 1;
+    } else if (globalTargetFilter === 'Bulan Ini') {
+      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+      startBoundary = new Date(globalCustomStartDate).getTime();
+      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
+    }
+
+    let matchDate = false;
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+      matchDate = true;
+    } else {
+      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
+        matchDate = true;
+      }
+    }
+
+    return matchSearch && matchCategory && matchPic && matchDate;
+  }).sort((a, b) => {
+    if (sortBy === 'Manual') {
+      if (a.orderIndex === b.orderIndex) return b.id - a.id; 
+      return (a.orderIndex || 0) - (b.orderIndex || 0);
+    } else if (sortBy === 'Deadline') {
+      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+    } else if (sortBy === 'Prioritas') {
+      return getPriorityWeight(b.prioritas) - getPriorityWeight(a.prioritas);
+    } else if (sortBy === 'Abjad') {
+      return a.nama.localeCompare(b.nama);
+    }
+    return 0;
+  });
+
   const handleExportExcel = () => {
-    const exportData = tasks.map(t => {
+    const exportData = filteredTasks.map(t => {
       let subPekerjaanStr = '';
       if (t.subTasksJson) {
         try {
@@ -382,32 +444,33 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         return;
       }
 
-      const canvas = await html2canvas(element, { scale: 2 });
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
+      });
       const imgData = canvas.toDataURL('image/png');
 
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      const imgWidth = 297;
-      const pageHeight = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
+      const pdf = new jsPDF({
+        orientation: width > height ? 'l' : 'p',
+        unit: 'px',
+        format: [width, height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
       pdf.save(`Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
       setIsExportingPdf(false);
     } catch (err) {
       console.error('PDF Export error:', err);
       setIsExportingPdf(false);
-      window.print();
+      toast.error('Gagal mengekspor PDF');
     }
   };
 
@@ -417,13 +480,30 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       const element = document.getElementById('kanban-board-container');
       if (!element) return;
       
-      const canvas = await html2canvas(element, { scale: 2 });
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
+      });
+      
       canvas.toBlob(async (blob) => {
         if (blob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]);
-          toast.success('Gambar board disalin ke clipboard');
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            toast.success('Gambar board disalin ke clipboard');
+          } catch(err) {
+            console.error(err);
+            toast.error('Gagal menyalin gambar, izin ditolak.');
+          }
         }
       }, 'image/png');
     } catch (err) {
@@ -570,72 +650,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
       <div id="kanban-board-container" className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
-          let columnTasks = tasks.filter((t: any) => {
-            if (t.status !== col) return false;
-
-            const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
-
-            const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
-
-            const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
-              t.additionalPics ? (() => {
-                try {
-                  const arr = JSON.parse(t.additionalPics);
-                  return Array.isArray(arr) && arr.includes(globalPicFilter);
-                } catch (e) { return false; }
-              })() : false
-            );
-
-            const taskEnd = new Date(t.endDate).getTime();
-            const taskStart = new Date(t.startDate).getTime();
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-            let startBoundary = today.getTime();
-            let endBoundary = today.getTime() + 86400000 - 1;
-
-            if (globalTargetFilter === 'Minggu Ini') {
-              const day = today.getDay();
-              const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-              const monday = new Date(new Date(today).setDate(diff));
-              startBoundary = monday.getTime();
-              endBoundary = startBoundary + (7 * 86400000) - 1;
-            } else if (globalTargetFilter === 'Bulan Ini') {
-              startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-              endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-            } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
-              startBoundary = new Date(globalCustomStartDate).getTime();
-              endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-            }
-
-            let matchDate = false;
-            if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-              matchDate = true;
-            } else {
-              if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
-                matchDate = true;
-              }
-            }
-
-            return matchSearch && matchCategory && matchPic && matchDate;
-          });
-
-          // Sort tasks
-          columnTasks = columnTasks.sort((a, b) => {
-            if (sortBy === 'Manual') {
-              if (a.orderIndex === b.orderIndex) return b.id - a.id; // Newest on top if same order
-              return (a.orderIndex || 0) - (b.orderIndex || 0);
-            } else if (sortBy === 'Deadline') {
-              return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-            } else if (sortBy === 'Prioritas') {
-              return getPriorityWeight(b.prioritas || '') - getPriorityWeight(a.prioritas || '');
-            } else if (sortBy === 'Abjad') {
-              return a.nama.localeCompare(b.nama);
-            }
-            return 0;
-          });
+          let columnTasks = filteredTasks.filter((t: any) => t.status === col);
 
           const isDragOverCol = dragOverColumn === col;
 

@@ -334,32 +334,33 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         return;
       }
 
-      const canvas = await html2canvas(element, { scale: 2 });
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
+      });
       const imgData = canvas.toDataURL('image/png');
 
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      const imgWidth = 297;
-      const pageHeight = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
+      const pdf = new jsPDF({
+        orientation: width > height ? 'l' : 'p',
+        unit: 'px',
+        format: [width, height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
       pdf.save(`Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
       setIsExportingPdf(false);
     } catch (err) {
       console.error('PDF Export error:', err);
       setIsExportingPdf(false);
-      window.print();
+      toast.error('Gagal mengekspor PDF');
     }
   };
 
@@ -369,13 +370,30 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       const element = document.getElementById('calendar-container');
       if (!element) return;
       
-      const canvas = await html2canvas(element, { scale: 2 });
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
+      });
+      
       canvas.toBlob(async (blob) => {
         if (blob) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]);
-          toast.success('Gambar kalender disalin ke clipboard');
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            toast.success('Gambar kalender disalin ke clipboard');
+          } catch(err) {
+            console.error(err);
+            toast.error('Gagal menyalin gambar, izin ditolak.');
+          }
         }
       }, 'image/png');
     } catch (err) {

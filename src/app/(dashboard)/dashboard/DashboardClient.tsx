@@ -718,10 +718,18 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       if (addActivityLog) {
         addActivityLog('COPY_DASHBOARD', 'Salin Dashboard', 'Menyalin gambar dashboard ke clipboard', 'info');
       }
-      const canvas = await html2canvas(dashboardRef.current, {
+      const element = dashboardRef.current;
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc'
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc',
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height
       });
       canvas.toBlob(async (blob) => {
         if (blob) {
@@ -729,10 +737,10 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             await navigator.clipboard.write([
               new ClipboardItem({ 'image/png': blob })
             ]);
-            toast.success('Dashboard berhasil disalin sebagai gambar!');
+            import('react-hot-toast').then(({ default: toast }) => toast.success('Dashboard berhasil disalin sebagai gambar!'));
           } catch (err) {
             console.error('Clipboard write error:', err);
-            toast.error('Gagal menyalin gambar. Pastikan browser memberikan izin.');
+            import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar. Pastikan browser memberikan izin.'));
           }
         }
       });
