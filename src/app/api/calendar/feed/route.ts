@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createEvents, EventAttributes } from 'ics';
+import { getTaskDatesForExport, getTaskLocationString } from '@/utils/taskUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +12,7 @@ export async function GET() {
     });
 
     const events: EventAttributes[] = tasks.map((task) => {
-      const start = new Date(task.startDate);
-      const end = new Date(task.endDate);
+      const { startY, startMo, startD, startH, startM, endY, endMo, endD, endH, endM } = getTaskDatesForExport(task);
       const updated = new Date(task.updatedAt || task.createdAt || Date.now());
       
       let extraPicsStr = '';
@@ -23,12 +23,15 @@ export async function GET() {
         } catch (e) {}
       }
 
+      const locStr = getTaskLocationString(task);
+
       return {
         uid: `task-${task.id}@deptmonitor.local`,
         title: `[${task.kategori || 'Umum'}] ${task.nama}`,
         description: `PIC: ${task.pic}${extraPicsStr}\nStatus: ${task.status} (${task.progress || 0}%)\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${task.repetisi || 'Tidak Berulang'}\nDeskripsi: ${task.deskripsi || '-'}`,
-        start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 8, 0],
-        end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
+        start: [startY, startMo + 1, startD, startH, startM],
+        end: [endY, endMo + 1, endD, endH, endM],
+        location: locStr || undefined,
         productId: 'DeptMonitor/CalendarFeed',
         sequence: task.editCount || 0,
         lastModified: [updated.getFullYear(), updated.getMonth() + 1, updated.getDate(), updated.getHours(), updated.getMinutes()],

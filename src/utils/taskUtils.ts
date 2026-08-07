@@ -208,6 +208,48 @@ export const getPriorityBadgeClass = (p?: string | null) => {
   }
 };
 
+export const getTaskDatesForExport = (task: any) => {
+  const start = new Date(task.startDate);
+  const end = new Date(task.endDate);
+
+  let startH = 9, startM = 0;
+  let endH = 17, endM = 0;
+
+  if (task.startTime) {
+    const [h, m] = task.startTime.split(':').map(Number);
+    if (!isNaN(h)) startH = h;
+    if (!isNaN(m)) startM = m;
+  }
+  
+  if (task.endTime) {
+    const [h, m] = task.endTime.split(':').map(Number);
+    if (!isNaN(h)) endH = h;
+    if (!isNaN(m)) endM = m;
+  } else if (task.startTime) {
+    endH = Math.min(23, startH + 1);
+    endM = startM;
+  }
+
+  // Create local dates
+  const localStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), startH, startM);
+  const localEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate(), endH, endM);
+  
+  return { localStart, localEnd, startH, startM, endH, endM, startY: start.getFullYear(), startMo: start.getMonth(), startD: start.getDate(), endY: end.getFullYear(), endMo: end.getMonth(), endD: end.getDate() };
+};
+
+export const getTaskLocationString = (task: any) => {
+  if (!task.lokasi) return '';
+  try {
+    const parsed = JSON.parse(task.lokasi);
+    if (parsed.tipe === 'online' && parsed.linkZoom) return parsed.linkZoom;
+    if (parsed.tipe === 'offline' && parsed.lokasiFisik) return parsed.lokasiFisik;
+    return parsed.lokasiFisik || parsed.linkZoom || task.lokasi;
+  } catch (e) {
+    return task.lokasi;
+  }
+};
+
+
 export const getGoogleCalendarUrl = (task: Task) => {
   const extraPics = getAdditionalPics(task);
   const allPicsStr = [task.pic, ...extraPics].join(', ');
@@ -230,8 +272,12 @@ export const getGoogleCalendarUrl = (task: Task) => {
     `PIC: ${allPicsStr}\nKategori: ${task.kategori || 'Umum'}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nStatus: ${task.status}\n\nDeskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`
   );
 
-  const dates = `${new Date(task.startDate).toISOString().replace(/-|:|\.\d+/g, '')}/${new Date(task.endDate).toISOString().replace(/-|:|\.\d+/g, '')}`;
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}`;
+  const { localStart, localEnd } = getTaskDatesForExport(task);
+  const dates = `${localStart.toISOString().replace(/-|:|\.\d+/g, '')}/${localEnd.toISOString().replace(/-|:|\.\d+/g, '')}`;
+  const locStr = getTaskLocationString(task);
+  const locationQuery = locStr ? `&location=${encodeURIComponent(locStr)}` : '';
+  
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${dates}${locationQuery}`;
 };
 
 export const handleExportICS = (task: Task) => {
@@ -253,11 +299,15 @@ export const handleExportICS = (task: Task) => {
   const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
   const fileStr = task.fileUrl ? `\n\nLampiran:\n${task.fileUrl}` : '';
 
+  const { startY, startMo, startD, startH, startM, endY, endMo, endD, endH, endM } = getTaskDatesForExport(task);
+  const locStr = getTaskLocationString(task);
+
   const event: EventAttributes = {
     title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
     description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`,
-    start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
-    end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
+    start: [startY, startMo + 1, startD, startH, startM],
+    end: [endY, endMo + 1, endD, endH, endM],
+    location: locStr || undefined,
   };
 
   createEvent(event, (error, value) => {
