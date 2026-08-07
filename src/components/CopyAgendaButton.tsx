@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, addDays, isSameDay, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -52,7 +52,7 @@ export default function CopyAgendaButton() {
           copiedText += '\n\n';
         }
 
-        copiedText += `📌AGENDA \n🌟Hari, ${format(targetDate, 'dd MMMM yyyy', { locale: id })}\n\n`;
+        copiedText += `📌AGENDA \n🌟 ${format(targetDate, 'EEEE, dd MMMM yyyy', { locale: id })}\n\n`;
 
         if (filteredTasks.length === 0) {
           copiedText += 'Tidak ada agenda\n\n';
@@ -89,46 +89,45 @@ export default function CopyAgendaButton() {
         }}
         title="Copy Agenda"
       >
-        <Copy size={20} color="var(--text-primary)" style={{ transform: isOpen ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.2s ease' }} />
+        <Share2 size={20} color="var(--text-primary)" style={{ transform: isOpen ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.2s ease' }} />
       </button>
 
       {isOpen && (
         <div style={{ right: 0, top: '55px', position: 'absolute', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', minWidth: '220px', zIndex: 1000 }}>
           <div 
-            style={{ padding: '10px', cursor: 'pointer', borderRadius: '8px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+            style={{ padding: '10px', cursor: 'pointer', borderRadius: '8px', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'background 0.2s' }}
             onClick={() => handleCopy(1)}
             onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
+            <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>Agenda Hari Ini</span>
             <Copy size={16} color="var(--text-secondary)" />
-            <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>Copy Agenda Hari Ini</span>
           </div>
           
           <div 
-            style={{ padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'background 0.2s' }}
+            style={{ padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'background 0.2s' }}
             onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Copy size={16} color="var(--text-secondary)" />
-              <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>Copy Agenda X Hari</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', paddingLeft: '24px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>Agenda</span>
               <input 
                 type="number" 
                 min="1"
                 value={customDays} 
                 onChange={(e) => setCustomDays(parseInt(e.target.value) || 1)}
-                style={{ width: '60px', padding: '6px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
+                style={{ width: '50px', padding: '4px', textAlign: 'center', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', outline: 'none' }}
                 onClick={(e) => e.stopPropagation()}
               />
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleCopy(customDays); }}
-                style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'var(--accent-primary)', color: 'white', border: 'none', cursor: 'pointer', flex: 1, fontSize: '13px', fontWeight: 600 }}
-              >
-                Copy
-              </button>
+              <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>Hari</span>
             </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleCopy(customDays); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+              title="Copy Agenda"
+            >
+              <Copy size={16} color="var(--text-secondary)" style={{ transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-primary)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'} />
+            </button>
           </div>
         </div>
       )}
