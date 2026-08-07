@@ -19,9 +19,8 @@ export default function UniversalActionBar({
 }: UniversalActionBarProps) {
   return (
     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      {children}
-      
       <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+        {children}
         {onExportExcel && (
           <button 
             className="btn" 

@@ -473,9 +473,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+      >
         <UniversalActionBar 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
@@ -483,19 +481,20 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           onCopyImage={handleCopyImage}
         >
           <button 
-            className="btn btn-secondary" 
+            className="btn" 
             onClick={() => {
               const feedUrl = `${window.location.origin}/calendar.ics`;
               copyToClipboard(feedUrl);
               toast.success('URL Kalender berhasil disalin ke clipboard!');
               alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars' (Kalender Lain)\n3. Pilih 'From URL' (Dari URL)\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
             }}
-            title="Salin URL Feed iCal untuk Auto Sinkronisasi ke Google Calendar / Outlook"
+            title="Salin URL Feed iCal untuk Auto Sinkronisasi"
+            style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.2)' }}
           >
-            <CalendarDays size={16} color="#4285F4" /> Salin URL Feed Kalender
+            <CalendarDays size={18} />
           </button>
         </UniversalActionBar>
-      </div>
+      </UniversalFilterBar>
 
       {/* Main Controlled Calendar Component */}
       <div id="calendar-container" className="glass" style={{ padding: '24px 28px', minHeight: '820px', display: 'flex', flexDirection: 'column' }}>

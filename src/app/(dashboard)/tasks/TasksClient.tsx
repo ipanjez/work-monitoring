@@ -886,9 +886,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
         filteredCount={processedTasks.length}
         totalCount={tasks.length}
-      />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+      >
         <UniversalActionBar 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
@@ -897,21 +895,17 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           <button 
             className="btn" 
             onClick={handleExportAllICS}
-            title="Download .ics untuk semua pekerjaan"
-            style={{ backgroundColor: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginRight: '12px' }}
+            title="Export .ics untuk semua pekerjaan"
+            style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.2)' }}
           >
-            <CalendarDays size={18} /> <span className="hide-mobile">Export .ics</span>
+            <CalendarDays size={18} />
           </button>
         </UniversalActionBar>
-      </div>
+      </UniversalFilterBar>
 
       {/* Main Table with Sortable Columns */}
 
 
-
-      <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, backgroundColor: 'var(--surface-color)', padding: '10px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'inline-block' }}>
-        Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{processedTasks.length}</strong> pekerjaan sesuai filter dari total <strong style={{ color: 'var(--text-primary)' }}>{tasks.length}</strong> data terdaftar.
-      </div>
 
       <AnimatePresence>
         {selectedTasks.size > 0 && (

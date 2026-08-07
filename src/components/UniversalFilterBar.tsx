@@ -10,6 +10,7 @@ interface UniversalFilterBarProps {
   priorities?: string[];
   filteredCount?: number;
   totalCount?: number;
+  children?: React.ReactNode;
 }
 
 export default function UniversalFilterBar({ 
@@ -18,7 +19,8 @@ export default function UniversalFilterBar({
   statuses = [], 
   priorities = [],
   filteredCount,
-  totalCount
+  totalCount,
+  children
 }: UniversalFilterBarProps) {
   const { 
     globalSearchQuery, setGlobalSearchQuery,
@@ -108,6 +110,12 @@ export default function UniversalFilterBar({
           </div>
         )}
       </div>
+
+      {children && (
+        <div style={{ marginLeft: 'auto', display: 'flex' }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
