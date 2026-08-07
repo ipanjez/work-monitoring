@@ -36,7 +36,13 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
-  const { masterColors } = useMaster();
+  const { 
+    masterColors,
+    globalPicFilter,
+    globalTargetFilter,
+    globalCustomStartDate,
+    globalCustomEndDate
+  } = useMaster();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
@@ -122,7 +128,41 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       matchesFilter = task.prioritas === activeFilter || task.status === activeFilter;
     }
 
-    return matchesSearch && matchesFilter;
+    const matchesPic = globalPicFilter === 'Semua PIC' || task.pic === globalPicFilter || getAdditionalPics(task).includes(globalPicFilter);
+
+    // Target Waktu Filter
+    const start = new Date(task.startDate).getTime();
+    const end = new Date(task.endDate).getTime();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let startBoundary = today.getTime();
+    let endBoundary = today.getTime() + 86400000 - 1;
+
+    if (globalTargetFilter === 'Minggu Ini') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(new Date(today).setDate(diff));
+      startBoundary = monday.getTime();
+      endBoundary = startBoundary + (7 * 86400000) - 1;
+    } else if (globalTargetFilter === 'Bulan Ini') {
+      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+      startBoundary = new Date(globalCustomStartDate).getTime();
+      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
+    }
+
+    let matchesTarget = false;
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+      matchesTarget = true;
+    } else {
+      if (end >= startBoundary && end <= endBoundary) {
+         matchesTarget = true;
+      }
+    }
+
+    return matchesSearch && matchesFilter && matchesPic && matchesTarget;
   });
 
   // Expand recurring tasks
