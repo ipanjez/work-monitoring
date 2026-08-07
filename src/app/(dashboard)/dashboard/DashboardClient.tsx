@@ -701,7 +701,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     animation: { duration: 1500, easing: 'easeOutQuart' as const },
     scales: {
       y: { stacked: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.paddingBottom = 44; } }
+      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.height += 40; } }
     },
     onHover: (event: any, elements: any[]) => {
       if (event.native && event.native.target) {

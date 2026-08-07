@@ -210,7 +210,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     ...barOptions,
     scales: {
       ...barOptions.scales,
-      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.paddingBottom = 44; } },
+      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.height += 40; } },
       y: { stacked: true, ...barOptions.scales.y }
     },
     plugins: {

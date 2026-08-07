@@ -63,7 +63,7 @@ export const picAvatarXAxisPlugin = {
     const radius = avatarSize / 2;
 
     // Y position: place circles inside the padded area below the chart
-    const yCenter = chart.chartArea.bottom + radius + 10;
+    const yCenter = chart.chartArea.bottom + radius + 5;
 
     labels.forEach((label: string, index: number) => {
       const xCenter = xScale.getPixelForValue(index);
