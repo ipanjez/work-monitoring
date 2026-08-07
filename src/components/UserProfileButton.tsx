@@ -4,9 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useMaster } from '@/context/MasterContext';
+import Avatar from '@/components/Avatar';
 
 export default function UserProfileButton() {
   const { data: session } = useSession();
+  const { masterPicAvatars, masterColors } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -26,13 +29,7 @@ export default function UserProfileButton() {
 
   const name = session.user.name || 'User';
   
-  const getInitials = (n: string) => {
-    const parts = n.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return parts[0].substring(0, 2).toUpperCase();
-  };
+
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/auth/signin' });
@@ -72,23 +69,12 @@ export default function UserProfileButton() {
         }}
       >
         {/* Avatar Circle */}
-        <div
-          style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
-            background: 'var(--accent-primary)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '13px',
-            fontWeight: 700,
-            letterSpacing: '0.5px',
-          }}
-        >
-          {getInitials(name)}
-        </div>
+        <Avatar 
+          name={name}
+          src={masterPicAvatars[name]}
+          size={34}
+          masterColors={masterColors}
+        />
 
         {/* User Name */}
         <span
