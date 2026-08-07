@@ -1071,11 +1071,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         {userRole !== 'SPV' ? (
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn btn-primary" onClick={handleOpenAddModal}>
-              <Plus size={18} /> Tambah Pekerjaan Baru
+            <button className="btn btn-primary" onClick={handleOpenAddModal} title="Tambah Pekerjaan Baru" style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={18} />
             </button>
-            <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff' }} onClick={() => setIsSmartModalOpen(true)}>
-              <Zap size={18} /> Tambah Cepat (Smart Add)
+            <button className="btn" style={{ background: 'var(--accent-primary)', color: '#fff', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setIsSmartModalOpen(true)} title="Tambah Cepat (Smart Add)">
+              <Zap size={18} />
             </button>
           </div>
         ) : (
@@ -1117,21 +1117,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   </div>
                 )}
               </div>
-              <button
-                className="btn"
-                onClick={handleDownloadTemplate}
-                style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)', whiteSpace: 'nowrap' }}
-              >
-                <Download size={16} /> <span className="hide-mobile">Template Excel</span>
-              </button>
-              <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
-              <button
-                className="btn"
-                onClick={() => fileInputRef.current?.click()}
-                style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)', whiteSpace: 'nowrap' }}
-              >
-                <Upload size={16} /> <span className="hide-mobile">Import Excel</span>
-              </button>
+              <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                <button
+                  className="btn"
+                  onClick={handleDownloadTemplate}
+                  title="Unduh Template Excel"
+                  style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Download size={16} />
+                </button>
+                <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
+                <button
+                  className="btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Import Excel"
+                  style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Upload size={16} />
+                </button>
+              </div>
             </div>
           )}
 
