@@ -1,7 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
 import { copyToClipboard } from '@/utils/clipboard';
-import { getGoogleCalendarUrl, handleExportICS } from '@/utils/taskUtils';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
