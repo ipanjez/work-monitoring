@@ -32,7 +32,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     globalCustomStartDate, setGlobalCustomStartDate, 
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
-    globalFilterCategory: categoryFilter,
+    globalFilterCategory: filterCategory,
     globalFilterStatus,
     globalFilterPriority,
     globalSearchExactMatch,
