@@ -575,14 +575,62 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       .catch(console.error);
   };
 
-  const handleBackupDatabase = () => {
-    const dataStr = JSON.stringify(tasks, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+  const handleBackupDatabase = async () => {
+    try {
+      const res = await fetch('/api/database');
+      if (!res.ok) throw new Error('Gagal mengambil backup');
+      const data = await res.json();
+      
+      const dataStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      toast.success('Backup berhasil diunduh');
+    } catch (err) {
+      toast.error('Gagal mengunduh backup');
+    }
+  };
+
+  const handleRestoreDatabase = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!confirm('PERINGATAN: Mengimpor database akan MENIMPA/MENGHAPUS seluruh data pekerjaan dan pengaturan yang ada saat ini. Pastikan Anda sudah membackup data Anda. Anda yakin ingin melanjutkan?')) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        const res = await fetch('/api/database', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          toast.success('Database berhasil dipulihkan!');
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          const err = await res.json();
+          toast.error(err.error || 'Gagal memulihkan database');
+        }
+      } catch (err) {
+        toast.error('File JSON tidak valid atau rusak');
+      } finally {
+        setLoading(false);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -1072,12 +1120,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           </h3>
 
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            Unduh seluruh salinan data pekerjaan dalam format JSON untuk cadangan (*backup*) aman.
+            Unduh seluruh salinan data pekerjaan dan pengaturan dalam format JSON untuk cadangan (*backup*) aman, atau pulihkan dari cadangan sebelumnya.
           </p>
 
-          <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Download size={16} /> Download Backup Database (.json)
-          </button>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Download size={16} /> Download Backup (.json)
+            </button>
+            <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore Database'}
+            </button>
+          </div>
         </div>
       )}
       
