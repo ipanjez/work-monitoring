@@ -709,15 +709,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '24px' }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Layout size={16} color="var(--accent-primary)" /> Kerapatan Tampilan (Display Density)
             </span>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sesuaikan jarak dan kepadatan elemen (spasi baris).</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', background: 'var(--input-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <div style={{ flexShrink: 0, display: 'flex', gap: '8px', background: 'var(--input-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
             <button
               onClick={() => setDensity('comfortable')}
               style={{
@@ -745,15 +745,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
         <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '24px' }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Maximize size={16} color="var(--accent-primary)" /> Mode Fokus (Zen Mode)
             </span>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sembunyikan menu samping untuk layar penuh. Berguna saat presentasi.</span>
           </div>
 
-          <button className="btn btn-primary" onClick={toggleFocusMode} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button className="btn btn-primary" onClick={toggleFocusMode} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Maximize size={16} /> Aktifkan Mode Fokus
           </button>
         </div>
