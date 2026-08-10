@@ -6,7 +6,7 @@ import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } fro
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Task, FileItem, SubTask } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, handleMarkdownShortcut } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
@@ -779,6 +779,11 @@ export default function TaskAddEditModal({
                                 el.style.height = el.scrollHeight + 'px';
                               }
                             }}
+                            onKeyDown={(e) => handleMarkdownShortcut(e, subTask.text, (v) => {
+                              const updated = [...(editingTask.subTasksList || [])];
+                              updated[idx].text = v;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            })}
                             onChange={e => {
                               const updated = [...(editingTask.subTasksList || [])];
                               updated[idx].text = e.target.value;

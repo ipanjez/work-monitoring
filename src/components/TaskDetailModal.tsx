@@ -11,29 +11,20 @@ import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
-  const [expanded, setExpanded] = useState(false);
   if (!logs || logs.length === 0) return null;
-  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 3, 0));
 
   return (
-    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
-      {visibleLogs.map((log: any, lidx: number) => (
-        <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-          <span style={{ color: 'var(--text-primary)' }}>- {log.status}</span>
-        </div>
-      ))}
-      {logs.length > 3 && (
-        <button
-          type="button"
-          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Tampilkan Lebih Sedikit' : `Tampilkan ${logs.length - 3} Log Lainnya...`}
-        </button>
-      )}
-    </div>
+    <details style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+      <summary style={{ fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '4px 0' }}>{title} ({logs.length})</summary>
+      <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)', marginTop: '4px', marginLeft: '4px' }}>
+        {logs.map((log: any, lidx: number) => (
+          <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+            <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>- {log.status}</span>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 };
 

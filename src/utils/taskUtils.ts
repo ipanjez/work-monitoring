@@ -408,7 +408,8 @@ export const formatDescription = (htmlOrText: string): string => {
   content = content
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/~~(.+?)~~/g, '<del>$1</del>');
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')
+    .replace(/__(.+?)__/g, '<u>$1</u>');
 
   // Safe HTML parsing to replace URLs in text nodes only
   if (typeof window !== 'undefined' && window.DOMParser) {
@@ -434,10 +435,50 @@ export const formatDescription = (htmlOrText: string): string => {
       }
       return doc.body.innerHTML;
     } catch (e) {
-      console.error("Error parsing description HTML", e);
+      console.error('Safe HTML parsing failed', e);
+      return content;
     }
   }
+  
+  return content;
+};
 
-  // Fallback for SSR or if DOMParser fails (basic regex that might double-linkify but prevents crashing)
-  return content.replace(/(^|[^="'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">$2</a>');
+export const handleMarkdownShortcut = (
+  e: React.KeyboardEvent<HTMLTextAreaElement>,
+  value: string,
+  onChange: (newValue: string) => void
+) => {
+  const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const ctrl = isMac ? e.metaKey : e.ctrlKey;
+  if (!ctrl) return;
+  
+  let prefix = '';
+  let suffix = '';
+  
+  if (e.key === 'b') {
+    prefix = '**'; suffix = '**';
+  } else if (e.key === 'i') {
+    prefix = '*'; suffix = '*';
+  } else if (e.key === 'u') {
+    prefix = '__'; suffix = '__';
+  } else if (e.key.toLowerCase() === 'x' && e.shiftKey) {
+    prefix = '~~'; suffix = '~~';
+  } else {
+    return;
+  }
+  
+  e.preventDefault();
+  const target = e.target as HTMLTextAreaElement;
+  const start = target.selectionStart;
+  const end = target.selectionEnd;
+  const selectedText = value.substring(start, end);
+  
+  const newValue = value.substring(0, start) + prefix + selectedText + suffix + value.substring(end);
+  onChange(newValue);
+  
+  // Set cursor position back after state update
+  setTimeout(() => {
+    target.focus();
+    target.setSelectionRange(start + prefix.length, end + prefix.length);
+  }, 0);
 };
