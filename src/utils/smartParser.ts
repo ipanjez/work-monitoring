@@ -18,14 +18,45 @@ export interface ParsedTask {
   additionalPics?: string;
 }
 
-function parseDateIndonesian(text: string): Date | null {
-  const dateMatch = text.match(/(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i);
-  if (dateMatch) {
-    const [_, day, monthId, year] = dateMatch;
-    const monthEn = INDONESIAN_MONTHS[monthId.toLowerCase()] || monthId;
-    const dateObj = new Date(`${day} ${monthEn} ${year}`);
-    if (!isNaN(dateObj.getTime())) return dateObj;
+function parseDateIndonesianRange(text: string): { startDate: Date, endDate: Date } | null {
+  const m = "(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)";
+  const sep = "(?:s\\.?\\s*d\\.?|-|sampai|s/d)";
+  
+  const r1 = new RegExp(`(\\d{1,2})\\s+${m}\\s+(\\d{4})\\s*${sep}\\s*(\\d{1,2})\\s+${m}\\s+(\\d{4})`, 'i');
+  const r2 = new RegExp(`(\\d{1,2})\\s+${m}\\s*${sep}\\s*(\\d{1,2})\\s+${m}\\s+(\\d{4})`, 'i');
+  const r3 = new RegExp(`(\\d{1,2})\\s*${sep}\\s*(\\d{1,2})\\s+${m}\\s+(\\d{4})`, 'i');
+  const r4 = new RegExp(`(\\d{1,2})\\s+${m}\\s+(\\d{4})`, 'i');
+
+  let match = text.match(r1);
+  if (match) {
+    const d1 = new Date(`${match[1]} ${INDONESIAN_MONTHS[match[2].toLowerCase()]} ${match[3]}`);
+    const d2 = new Date(`${match[4]} ${INDONESIAN_MONTHS[match[5].toLowerCase()]} ${match[6]}`);
+    if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) return { startDate: d1, endDate: d2 };
   }
+
+  match = text.match(r2);
+  if (match) {
+    const year = match[5];
+    const d1 = new Date(`${match[1]} ${INDONESIAN_MONTHS[match[2].toLowerCase()]} ${year}`);
+    const d2 = new Date(`${match[3]} ${INDONESIAN_MONTHS[match[4].toLowerCase()]} ${year}`);
+    if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) return { startDate: d1, endDate: d2 };
+  }
+
+  match = text.match(r3);
+  if (match) {
+    const month = INDONESIAN_MONTHS[match[3].toLowerCase()];
+    const year = match[4];
+    const d1 = new Date(`${match[1]} ${month} ${year}`);
+    const d2 = new Date(`${match[2]} ${month} ${year}`);
+    if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) return { startDate: d1, endDate: d2 };
+  }
+
+  match = text.match(r4);
+  if (match) {
+    const d1 = new Date(`${match[1]} ${INDONESIAN_MONTHS[match[2].toLowerCase()]} ${match[3]}`);
+    if (!isNaN(d1.getTime())) return { startDate: d1, endDate: d1 };
+  }
+  
   return null;
 }
 
@@ -56,13 +87,15 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
   // Pre-process rawText to handle single-line PDF pastes by inserting newlines before key fields
   const processedText = rawText.replace(/(Hari\/Tanggal|Waktu|Tempat|Agenda)\s*:/gi, '\n$1 :');
   const lines = processedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  let globalDate = new Date(); // Fallback to today
+  let globalStartDate = new Date(); // Fallback to today
+  let globalEndDate = new Date(); // Fallback to today
   
   // Try to find a global date in the first few lines
   for (let i = 0; i < Math.min(5, lines.length); i++) {
-    const parsed = parseDateIndonesian(lines[i]);
+    const parsed = parseDateIndonesianRange(lines[i]);
     if (parsed) {
-      globalDate = parsed;
+      globalStartDate = parsed.startDate;
+      globalEndDate = parsed.endDate;
       break;
     }
   }
@@ -71,8 +104,8 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
   let currentTask: Partial<ParsedTask> = {
     nama: 'Pekerjaan Baru',
     pic: '',
-    startDate: globalDate,
-    endDate: globalDate,
+    startDate: globalStartDate,
+    endDate: globalEndDate,
     startTime: '08:00',
     endTime: '17:00',
     deskripsi: '',
@@ -113,8 +146,8 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
         currentTask = {
           nama: name,
           pic: '',
-          startDate: globalDate,
-          endDate: globalDate,
+          startDate: globalStartDate,
+          endDate: globalEndDate,
           startTime: '08:00',
           endTime: '17:00',
           deskripsi: '',
@@ -125,12 +158,13 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
       continue;
     }
 
-    // Date parsing
-    const parsedDate = parseDateIndonesian(line);
+    // Date range parsing
+    const parsedDate = parseDateIndonesianRange(line);
     if (parsedDate) {
-      currentTask.startDate = parsedDate;
-      currentTask.endDate = parsedDate;
-      globalDate = parsedDate; // update fallback for subsequent tasks
+      currentTask.startDate = parsedDate.startDate;
+      currentTask.endDate = parsedDate.endDate;
+      globalStartDate = parsedDate.startDate;
+      globalEndDate = parsedDate.endDate;
       currentDescription.push(line);
       continue;
     }

@@ -106,7 +106,7 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
               </div>
               <ul style={{ margin: '0 0 0 24px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <li><strong>Judul Pekerjaan/Agenda:</strong> Terdeteksi dari format penomoran (1., 2., 3...), kata "Agenda :", atau ikon 🗒️.</li>
-                <li><strong>Tanggal:</strong> Terdeteksi dari tulisan "Hari/Tanggal :" atau format kalender (misal: "Jumat, 7 Agustus 2026"). Tanggal ini otomatis menjadi Tanggal Mulai dan Selesai.</li>
+                <li><strong>Tanggal:</strong> Terdeteksi otomatis dari tulisan "Hari/Tanggal :" atau format tanggal. Bisa mendeteksi dua rentang tanggal (misal: "10 s.d. 13 Agustus 2026" atau "1 Januari 2026 - 2 Februari 2026"). Jika hanya 1 tanggal, Tanggal Mulai dan Tenggat Waktu otomatis disamakan.</li>
                 <li><strong>Jam:</strong> Terdeteksi dari kata "Waktu :", ikon ⏰, atau format XX:XX. Jika ada dua jam yang dihubungkan (misal 09:00 - 11:00), diset sebagai Jam Mulai dan Selesai.</li>
                 <li><strong>Lokasi/Deskripsi:</strong> Teks dari kata "Tempat :", ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
                 <li><strong>PIC/Kategori/Prioritas:</strong> Terdeteksi otomatis dari penyebutan di teks. Sebutkan beberapa nama PIC sekaligus untuk mengisi PIC Utama dan Tambahan (misal: Budi, Siti). Gunakan format "Prioritas: High" atau "Kategori: Umum" untuk prioritas dan kategori.</li>
@@ -226,9 +226,9 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
                         <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tanggal</label>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tanggal Mulai</label>
                           <input 
                             type="date" 
                             className="input" 
@@ -238,11 +238,26 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                               if (val) {
                                 const d = new Date(val + 'T00:00:00');
                                 updateTask(idx, 'startDate', d);
+                              } else {
+                                updateTask(idx, 'startDate', new Date(NaN));
+                              }
+                            }} 
+                            style={{ padding: '6px 10px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tenggat Waktu</label>
+                          <input 
+                            type="date" 
+                            className="input" 
+                            value={task.endDate && !isNaN(task.endDate.getTime()) ? format(task.endDate, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val) {
+                                const d = new Date(val + 'T00:00:00');
                                 updateTask(idx, 'endDate', d);
                               } else {
-                                const d = new Date(NaN);
-                                updateTask(idx, 'startDate', d);
-                                updateTask(idx, 'endDate', d);
+                                updateTask(idx, 'endDate', new Date(NaN));
                               }
                             }} 
                             style={{ padding: '6px 10px' }}
