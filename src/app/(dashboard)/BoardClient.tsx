@@ -40,6 +40,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [colSorts, setColSorts] = useState<Record<string, string>>({});
 
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -534,6 +535,15 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       <div id="kanban-board-container" className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
           let columnTasks = filteredTasks.filter((t: any) => t.status === col);
+          const sortType = colSorts[col] || 'default';
+          
+          if (sortType === 'endDate') {
+            columnTasks.sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+          } else if (sortType === 'priority') {
+            columnTasks.sort((a: any, b: any) => getPriorityWeight(b.prioritas || 'Medium') - getPriorityWeight(a.prioritas || 'Medium'));
+          } else if (sortType === 'nama') {
+            columnTasks.sort((a: any, b: any) => a.nama.localeCompare(b.nama));
+          }
 
           const isDragOverCol = dragOverColumn === col;
 
@@ -577,6 +587,19 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     {columnTasks.length}
                   </span>
                 </div>
+                
+                <select 
+                  className="input"
+                  style={{ padding: '2px 4px', fontSize: '11px', width: 'auto', minWidth: '70px', borderRadius: '4px', backgroundColor: 'var(--background)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  value={colSorts[col] || 'default'}
+                  onChange={(e) => setColSorts({...colSorts, [col]: e.target.value})}
+                  title="Urutkan"
+                >
+                  <option value="default">Urutan Default</option>
+                  <option value="endDate">Tenggat Waktu</option>
+                  <option value="priority">Prioritas</option>
+                  <option value="nama">Nama A-Z</option>
+                </select>
 
               </div>
 
