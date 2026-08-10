@@ -582,7 +582,10 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                 const dayOfWeek = getDay(d);
                 const isRed = isHoliday || dayOfWeek === 0 || dayOfWeek === 6;
                 return (
-                  <div style={{ padding: '4px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+                  <div 
+                    title={isHoliday ? isHoliday : (isRed ? 'Akhir Pekan' : undefined)}
+                    style={{ padding: '4px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', cursor: isRed ? 'help' : 'default' }}
+                  >
                     <span style={{ color: isRed ? '#dc2626' : 'inherit', fontWeight: isRed ? '600' : 'normal', fontSize: '14px' }}>
                       {label}
                     </span>

@@ -16,10 +16,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.npk || !credentials?.password) return null;
 
-        if (credentials.npk === 'admin') {
-           return { id: "mock-id-123", name: "Mock Admin", email: "mock@example.com", npk: "admin", role: "ADMIN" };
-        }
-
         const user = await prisma.user.findUnique({
           where: { npk: credentials.npk.trim() },
         });

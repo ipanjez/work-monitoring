@@ -42,10 +42,8 @@ export default function GuidePage() {
             </li>
           </ul>
           
-          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-              [Ilustrasi Halaman Login & Reset Password]
-            </div>
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <img src="/guides/login_demo.png" alt="Ilustrasi Login" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '800px' }} />
           </div>
         </>
       )
@@ -76,10 +74,8 @@ export default function GuidePage() {
             </li>
           </ul>
 
-          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-              [Ilustrasi Filter Dashboard & Grafik]
-            </div>
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <img src="/guides/dashboard_demo.png" alt="Ilustrasi Dashboard" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '800px' }} />
           </div>
         </>
       )
@@ -110,10 +106,8 @@ export default function GuidePage() {
             </li>
           </ul>
 
-          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-              [Ilustrasi Animasi Drag & Drop Kanban Board]
-            </div>
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <img src="/guides/kanban_demo.png" alt="Ilustrasi Kanban Board" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '800px' }} />
           </div>
         </>
       )
@@ -148,10 +142,8 @@ export default function GuidePage() {
             </li>
           </ul>
 
-          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
-            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-              [Ilustrasi Pengisian Sub-Tugas dan Edit Massal]
-            </div>
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <img src="/guides/task_list_demo.png" alt="Ilustrasi Daftar Pekerjaan" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '800px' }} />
           </div>
         </>
       )
@@ -185,6 +177,10 @@ export default function GuidePage() {
               <span style={{ color: 'var(--text-primary)' }}><strong>Backup & Restore Utuh:</strong> Anda bisa mengunduh file cadangan (*backup*) berformat JSON. File ini menyimpan tidak hanya Pekerjaan, melainkan seluruh Master Pengaturan. Gunakan tombol "Restore" untuk memulihkan seluruh data dalam 1 klik.</span>
             </li>
           </ul>
+
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <img src="/guides/settings_demo.png" alt="Ilustrasi Settings" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '800px' }} />
+          </div>
         </>
       )
     },
@@ -278,14 +274,10 @@ export default function GuidePage() {
           }
 
           .print-img-placeholder {
-            border: 1px solid #ccc;
-            background: #f3f4f6;
-            padding: 40px;
-            text-align: center;
-            color: #6b7280;
             margin-top: 16px;
             border-radius: 8px;
-            font-style: italic;
+            overflow: hidden;
+            border: 1px solid #ccc;
           }
         }
 
@@ -419,7 +411,6 @@ export default function GuidePage() {
           <div key={sec.id} className="print-section">
             <h2>{sec.title}</h2>
             
-            {/* Merender isi content (React elements diparse standar CSS oleh browser untuk print) */}
             <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
               {sec.id === 'auth' && (
                 <>
@@ -429,7 +420,7 @@ export default function GuidePage() {
                     <li className="print-list-item"><strong>Lupa Password:</strong> Di halaman Login, klik tombol "Lupa Password?". Anda akan diminta memasukkan NPK. Permintaan reset password akan dikirimkan dan menunggu persetujuan Administrator (Status "PENDING").</li>
                     <li className="print-list-item"><strong>Profil Pengguna:</strong> Anda dapat mengubah nama, email, avatar, dan password kapan saja melalui menu Profil di pojok kanan atas.</li>
                   </ul>
-                  <div className="print-img-placeholder">[Visual: Form Login & Halaman Reset Password]</div>
+                  <div className="print-img-placeholder"><img src="/guides/login_demo.png" alt="Login" style={{ width: '100%', display: 'block' }} /></div>
                 </>
               )}
 
@@ -441,7 +432,7 @@ export default function GuidePage() {
                     <li className="print-list-item"><strong>Filter Global:</strong> Filter data yang ditampilkan di Dashboard berdasarkan <strong>Waktu</strong>, <strong>PIC</strong>, dan <strong>Kategori</strong> untuk menganalisis data secara spesifik.</li>
                     <li className="print-list-item"><strong>Grafik Tren & Distribusi:</strong> Terdapat grafik bar untuk penyelesaian bulanan (Tren Penyelesaian Tugas) dan grafik donat untuk distribusi beban kerja per PIC (Distribusi PIC).</li>
                   </ul>
-                  <div className="print-img-placeholder">[Visual: Tampilan Analitik Dashboard dan Interaksi Filter]</div>
+                  <div className="print-img-placeholder"><img src="/guides/dashboard_demo.png" alt="Dashboard" style={{ width: '100%', display: 'block' }} /></div>
                 </>
               )}
 
@@ -453,7 +444,7 @@ export default function GuidePage() {
                     <li className="print-list-item"><strong>Pengurutan Kustom (Sort By):</strong> Tiap kolom Kanban memiliki opsi pengurutan (Sort By) untuk menyusun kartu berdasarkan "Terbaru", "Prioritas", atau "Tenggat Waktu Terdekat".</li>
                     <li className="print-list-item"><strong>Tampilan Kartu Dinamis:</strong> Setiap kartu akan menampilkan indikator warna prioritas, foto avatar PIC (jika ada), tenggat waktu, serta label progress bar sub-tugas.</li>
                   </ul>
-                  <div className="print-img-placeholder">[Visual: Peragaan Seret-dan-Lepas (Drag & Drop) di Papan Kanban]</div>
+                  <div className="print-img-placeholder"><img src="/guides/kanban_demo.png" alt="Kanban" style={{ width: '100%', display: 'block' }} /></div>
                 </>
               )}
 
@@ -466,7 +457,7 @@ export default function GuidePage() {
                     <li className="print-list-item"><strong>Log Perubahan (History):</strong> Aplikasi secara otomatis merekam jejak (Audit Trail) kapan sebuah pekerjaan dibuat, diedit, atau dipindahkan, beserta nama penggunanya.</li>
                     <li className="print-list-item"><strong>Ekspor Excel Berwarna:</strong> Daftar pekerjaan dapat diekspor ke Excel dengan format warna sel (berdasarkan Status/Prioritas) yang sudah disesuaikan secara otomatis.</li>
                   </ul>
-                  <div className="print-img-placeholder">[Visual: Pengisian Sub-Tugas Detail & Fungsi Edit Massal (Bulk Edit)]</div>
+                  <div className="print-img-placeholder"><img src="/guides/task_list_demo.png" alt="Task List" style={{ width: '100%', display: 'block' }} /></div>
                 </>
               )}
 
@@ -479,7 +470,7 @@ export default function GuidePage() {
                     <li className="print-list-item"><strong>Mode Fokus (Zen Mode):</strong> Sembunyikan sidebar navigasi agar layar terlihat penuh. Sangat berguna untuk presentasi atau saat dijalankan di layar beresolusi kecil/HP.</li>
                     <li className="print-list-item"><strong>Backup & Restore Utuh:</strong> Anda bisa mengunduh file cadangan (*backup*) berformat JSON. File ini menyimpan tidak hanya Pekerjaan, melainkan seluruh Master Pengaturan. Gunakan tombol "Restore" untuk memulihkan seluruh data dalam 1 klik.</li>
                   </ul>
-                  <div className="print-img-placeholder">[Visual: Menu Pengaturan Master dan Mekanisme Backup Database]</div>
+                  <div className="print-img-placeholder"><img src="/guides/settings_demo.png" alt="Settings" style={{ width: '100%', display: 'block' }} /></div>
                 </>
               )}
             </div>

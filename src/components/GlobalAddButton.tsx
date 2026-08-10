@@ -388,7 +388,7 @@ export default function GlobalAddButton() {
         deskripsi: 'Gunakan Alt+Enter untuk baris baru di dalam sel.',
         lokasi: 'Online: https://zoom.us/j/12345678',
         catatan: 'Contoh catatan',
-        subPekerjaan: '[Done] Mengumpulkan data\n[In Progress] Menganalisis data\n[To Do] Membuat laporan akhir',
+        subPekerjaan: '[Done] Mengumpulkan data | PIC: Putri | Tenggat: 2026-08-15\n[In Progress] Menganalisis data | PIC: Budi | Tenggat: 2026-08-20\n[To Do] Membuat laporan akhir',
       });
       // Beri warna latar abu-abu muda untuk baris contoh
       exampleRow.eachCell((cell) => {
