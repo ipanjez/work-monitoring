@@ -404,6 +404,12 @@ export const formatDescription = (htmlOrText: string): string => {
     content = content.replace(/\n/g, '<br />');
   }
 
+  // Basic Markdown Parsing
+  content = content
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>');
+
   // Safe HTML parsing to replace URLs in text nodes only
   if (typeof window !== 'undefined' && window.DOMParser) {
     try {

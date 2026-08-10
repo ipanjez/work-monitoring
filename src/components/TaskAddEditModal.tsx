@@ -770,9 +770,15 @@ export default function TaskAddEditModal({
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <textarea
                             className="input"
-                            style={{ flex: 1, resize: 'vertical', minHeight: '60px' }}
+                            style={{ flex: 1, resize: 'none', minHeight: '60px', overflow: 'hidden' }}
                             placeholder="Deskripsi Sub Pekerjaan..."
                             value={subTask.text}
+                            ref={(el) => {
+                              if (el) {
+                                el.style.height = 'auto';
+                                el.style.height = el.scrollHeight + 'px';
+                              }
+                            }}
                             onChange={e => {
                               const updated = [...(editingTask.subTasksList || [])];
                               updated[idx].text = e.target.value;

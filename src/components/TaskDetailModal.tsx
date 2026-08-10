@@ -422,7 +422,7 @@ ${task!.deskripsi || '-'}`;
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
+                            <div style={{ fontWeight: 500, fontSize: '14px', wordBreak: 'break-word', whiteSpace: 'normal' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
                             {(subTask.pic || subTask.tenggatWaktu) && (
                               <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
                                 {subTask.pic && (
