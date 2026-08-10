@@ -757,7 +757,7 @@ export default function TaskAddEditModal({
                         id: Date.now().toString(),
                         text: '',
                         status: formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do',
-                        pic: formPicOptions.length > 0 ? formPicOptions[0] : '',
+                        pic: formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''),
                         logs: []
                       };
                       setEditingTask({
@@ -791,7 +791,7 @@ export default function TaskAddEditModal({
                               <select
                                 className="input"
                                 style={{ width: '100%', fontSize: '13px' }}
-                                value={subTask.pic || (formPicOptions.length > 0 ? formPicOptions[0] : '')}
+                                value={subTask.pic || (formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''))}
                                 onChange={e => {
                                   const updated = [...(editingTask.subTasksList || [])];
                                   updated[idx].pic = e.target.value;
