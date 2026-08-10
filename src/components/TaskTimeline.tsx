@@ -87,8 +87,19 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     }
   });
 
-  // Sort chronologically
-  events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const typeOrder = {
+    start: 1,
+    today: 2,
+    subtask: 3,
+    end: 4
+  };
+
+  // Sort chronologically and by type priority
+  events.sort((a, b) => {
+    const timeDiff = a.date.getTime() - b.date.getTime();
+    if (timeDiff !== 0) return timeDiff;
+    return typeOrder[a.type] - typeOrder[b.type];
+  });
 
   const statusCounts = subTasks.reduce((acc, st) => {
     acc[st.status] = (acc[st.status] || 0) + 1;
