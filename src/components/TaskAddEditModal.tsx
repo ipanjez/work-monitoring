@@ -315,7 +315,7 @@ export default function TaskAddEditModal({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     Penanggung Jawab (PIC Utama & Tambahan) *
-                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
+                    <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
                   </label>
                   <button
                     type="button"
@@ -371,7 +371,7 @@ export default function TaskAddEditModal({
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Kategori *
-                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
+                    <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
                   </label>
                   <select
                     className="input"
@@ -386,7 +386,7 @@ export default function TaskAddEditModal({
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Status
-                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
+                    <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
                   </label>
                   <select className="input" value={editingTask.status || (formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do')} onChange={e => {
                     const newStatus = e.target.value;
@@ -404,7 +404,7 @@ export default function TaskAddEditModal({
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Prioritas
-                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
+                    <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
                   </label>
                   <select className="input" value={editingTask.prioritas || 'Medium'} onChange={e => setEditingTask({ ...editingTask, prioritas: e.target.value })}>
                     {(formPriorityOptions.length > 0 ? formPriorityOptions : ['Low', 'Medium', 'High', 'Urgent']).map(opt => (
