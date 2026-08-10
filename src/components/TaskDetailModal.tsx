@@ -388,7 +388,7 @@ ${task!.deskripsi || '-'}`;
               <div>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Deskripsi</h4>
                 <div 
-                  style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', overflowX: 'auto', whiteSpace: 'pre-wrap' }}
+                  style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', overflowX: 'auto', maxHeight: '150px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}
                   dangerouslySetInnerHTML={{ __html: formatDescription(task.deskripsi) }}
                 />
               </div>
@@ -431,7 +431,7 @@ ${task!.deskripsi || '-'}`;
                       {statusSummary ? `(${statusSummary})` : ''}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
                     {subTasks.map(subTask => (
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>

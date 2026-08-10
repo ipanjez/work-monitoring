@@ -24,6 +24,7 @@ interface TimelineEvent {
 
 export default function TaskTimeline({ startDate, endDate, subTasks, masterColors, mainPic }: TaskTimelineProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
 
   if (!startDate) return null;
 
@@ -120,7 +121,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         {statusSummary ? `(${statusSummary})` : ''}
       </div>
       
-      <div style={{ position: 'relative', margin: '0 auto', width: '100%', maxWidth: '600px' }}>
+      <div style={{ position: 'relative', margin: '0 auto', width: '100%', maxWidth: '600px', maxHeight: isTimelineExpanded ? 'none' : '300px', overflowY: 'hidden', transition: 'max-height 0.3s ease-in-out' }}>
         {/* Central Vertical Line */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '10px', bottom: '10px', width: '2px', background: 'var(--border-color)' }} />
 
@@ -245,7 +246,24 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
             </div>
           );
         })}
+
+        {/* Gradient Overlay for collapsed state */}
+        {!isTimelineExpanded && events.length > 4 && (
+           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom, transparent, var(--surface-color))', pointerEvents: 'none' }} />
+        )}
       </div>
+
+      {events.length > 4 && (
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <button 
+            className="btn btn-secondary" 
+            style={{ fontSize: '11px', padding: '6px 16px', borderRadius: '16px' }}
+            onClick={() => setIsTimelineExpanded(!isTimelineExpanded)}
+          >
+            {isTimelineExpanded ? 'Tutup Alur Timeline' : 'Tampilkan Seluruh Timeline'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
