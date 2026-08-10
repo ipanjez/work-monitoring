@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
+import TaskTimeline from './TaskTimeline';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   if (!logs || logs.length === 0) return null;
@@ -228,6 +229,13 @@ ${task!.deskripsi || '-'}`;
               </button>
             </div>
           </div>
+
+          <TaskTimeline 
+            startDate={task.startDate} 
+            endDate={task.endDate || task.startDate} 
+            subTasks={task.subTasksJson ? JSON.parse(task.subTasksJson) : []} 
+            masterColors={masterColors} 
+          />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
             <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
