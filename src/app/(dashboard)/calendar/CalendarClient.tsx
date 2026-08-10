@@ -88,6 +88,51 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
+  const [fetchedYears, setFetchedYears] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const year = date.getFullYear();
+    if (fetchedYears.has(year)) return;
+
+    const fetchHolidays = async () => {
+      try {
+        const res = await fetch(`https://dayoffapi.vercel.app/api?year=${year}`);
+        if (res.ok) {
+          const data = await res.json();
+          const newHols: Record<string, string> = {};
+          data.forEach((h: any) => {
+            newHols[h.tanggal] = h.keterangan;
+          });
+          setHolidays(prev => ({ ...prev, ...newHols }));
+          setFetchedYears(prev => new Set(prev).add(year));
+        }
+      } catch (err) {
+        console.error('Failed to fetch holidays', err);
+      }
+    };
+
+    fetchHolidays();
+  }, [date]);
+
+  const customDayPropGetter = (d: Date) => {
+    const dateStr = format(d, 'yyyy-MM-dd');
+    const dayOfWeek = getDay(d);
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const holidayName = holidays[dateStr];
+
+    if (holidayName || isWeekend) {
+      return {
+        className: 'holiday-cell',
+        style: {
+          backgroundColor: 'var(--danger-light, rgba(239, 68, 68, 0.08))',
+        },
+        title: holidayName || (dayOfWeek === 0 ? 'Minggu' : 'Sabtu')
+      };
+    }
+    return {};
+  };
+
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
@@ -511,6 +556,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           onNavigate={setDate}
           style={{ height: '780px', color: 'var(--text-primary)' }}
           eventPropGetter={eventStyleGetter}
+          dayPropGetter={customDayPropGetter}
           culture="id"
           messages={{
             next: "Selanjutnya",
