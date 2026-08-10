@@ -234,7 +234,8 @@ ${task!.deskripsi || '-'}`;
             startDate={task.startDate} 
             endDate={task.endDate || task.startDate} 
             subTasks={task.subTasksJson ? JSON.parse(task.subTasksJson) : []} 
-            masterColors={masterColors} 
+            masterColors={masterColors}
+            mainPic={task.pic}
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>

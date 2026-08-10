@@ -8,6 +8,7 @@ interface TaskTimelineProps {
   endDate?: string | Date;
   subTasks: SubTask[];
   masterColors?: any;
+  mainPic?: string;
 }
 
 interface TimelineEvent {
@@ -20,7 +21,7 @@ interface TimelineEvent {
   pic?: string;
 }
 
-export default function TaskTimeline({ startDate, endDate, subTasks, masterColors }: TaskTimelineProps) {
+export default function TaskTimeline({ startDate, endDate, subTasks, masterColors, mainPic }: TaskTimelineProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (!startDate) return null;
@@ -81,7 +82,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         title: st.text,
         status: st.status,
         color: getStatusColor(st.status),
-        pic: st.pic
+        pic: st.pic || mainPic
       });
     }
   });
@@ -155,7 +156,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                       {!isSpecial && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
                           {ev.pic && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <User size={10} /> {ev.pic}
                             </span>
                           )}
@@ -217,7 +218,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                             </span>
                           )}
                           {ev.pic && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <User size={10} /> {ev.pic}
                             </span>
                           )}
