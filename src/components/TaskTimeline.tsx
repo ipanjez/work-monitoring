@@ -59,13 +59,17 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     return '#3b82f6';
   };
 
+  const minTimelineWidth = Math.max(100, subTasksWithDates.length * 8) + '%';
+  const containerMinWidth = Math.max(600, subTasksWithDates.length * 60) + 'px';
+
   return (
     <div style={{ padding: '24px 16px 40px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', position: 'relative' }}>
-      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '32px' }}>Timeline & S-Curve Pekerjaan</h4>
+      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '32px' }}>Timeline Pekerjaan</h4>
       
-      <div style={{ position: 'relative', height: '6px', background: 'var(--border-color)', borderRadius: '4px', margin: '0 8px' }}>
-        
-        {/* Progress Bar (Today) */}
+      <div style={{ overflowX: 'auto', paddingBottom: '32px', paddingTop: '16px', margin: '0 -8px', padding: '16px 24px 32px 24px' }} className="custom-scrollbar">
+        <div style={{ minWidth: containerMinWidth, position: 'relative', height: '6px', background: 'var(--border-color)', borderRadius: '4px' }}>
+          
+          {/* Progress Bar (Today) */}
         <div 
           style={{ 
             position: 'absolute', 
@@ -136,8 +140,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
               <div style={{
                 position: 'absolute',
                 bottom: '24px',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                ...(st.position < 15 ? { left: '-10px', transform: 'none' } : st.position > 85 ? { right: '-10px', transform: 'none' } : { left: '50%', transform: 'translateX(-50%)' }),
                 background: 'var(--modal-bg)',
                 border: '1px solid var(--border-color)',
                 padding: '8px 12px',
@@ -161,6 +164,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
             )}
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
