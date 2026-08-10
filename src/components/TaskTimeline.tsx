@@ -66,7 +66,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     <div style={{ padding: '24px 16px 40px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', position: 'relative' }}>
       <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '32px' }}>Timeline Pekerjaan</h4>
       
-      <div style={{ overflowX: 'auto', paddingBottom: '32px', paddingTop: '16px', margin: '0 -8px', padding: '16px 24px 32px 24px' }} className="custom-scrollbar">
+      <div style={{ overflowX: 'auto', paddingBottom: '32px', paddingTop: '70px', margin: '0 -8px', paddingLeft: '24px', paddingRight: '24px' }} className="custom-scrollbar">
         <div style={{ minWidth: containerMinWidth, position: 'relative', height: '6px', background: 'var(--border-color)', borderRadius: '4px' }}>
           
           {/* Progress Bar (Today) */}
@@ -92,18 +92,20 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         </div>
 
         {/* End Point */}
-        <div style={{ position: 'absolute', left: '100%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: todayProgress >= 100 ? 'var(--accent-primary)' : 'var(--bg-color)', border: '2px solid var(--accent-primary)', zIndex: 2 }} />
-          <span style={{ position: 'absolute', top: '16px', fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-            {format(end, 'dd MMM')}
-          </span>
-        </div>
+        {totalDays > 0 && (
+          <div style={{ position: 'absolute', left: '100%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: todayProgress >= 100 ? 'var(--accent-primary)' : 'var(--bg-color)', border: '2px solid var(--accent-primary)', zIndex: 2 }} />
+            <span style={{ position: 'absolute', top: '16px', fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              {format(end, 'dd MMM')}
+            </span>
+          </div>
+        )}
 
         {/* Today Marker */}
         {todayProgress >= 0 && todayProgress <= 100 && (
           <div style={{ position: 'absolute', left: `${todayProgress}%`, top: '50%', transform: 'translate(-50%, -50%)', zIndex: 3 }}>
             <div style={{ width: '2px', height: '20px', background: 'var(--accent-primary)', margin: '0 auto' }} />
-            <span style={{ position: 'absolute', top: '18px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', fontWeight: 'bold', color: 'var(--accent-primary)', whiteSpace: 'nowrap' }}>
+            <span style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', fontWeight: 'bold', color: 'var(--accent-primary)', whiteSpace: 'nowrap' }}>
               Hari Ini
             </span>
           </div>
@@ -140,7 +142,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
               <div style={{
                 position: 'absolute',
                 bottom: '24px',
-                ...(st.position < 15 ? { left: '-10px', transform: 'none' } : st.position > 85 ? { right: '-10px', transform: 'none' } : { left: '50%', transform: 'translateX(-50%)' }),
+                ...(st.position < 15 ? { left: '0', transform: 'none' } : st.position > 85 ? { right: '0', left: 'auto', transform: 'none' } : { left: '50%', transform: 'translateX(-50%)' }),
                 background: 'var(--modal-bg)',
                 border: '1px solid var(--border-color)',
                 padding: '8px 12px',
