@@ -787,19 +787,63 @@ export default function TaskAddEditModal({
                             dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
                           />
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1, minWidth: '150px' }}>
-                              <select
-                                className="input"
-                                style={{ width: '100%', fontSize: '13px' }}
-                                value={subTask.pic || (formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''))}
-                                onChange={e => {
-                                  const updated = [...(editingTask.subTasksList || [])];
-                                  updated[idx].pic = e.target.value;
-                                  setEditingTask({ ...editingTask, subTasksList: updated });
-                                }}
-                              >
-                                {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
-                              </select>
+                            <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <select
+                                  className="input"
+                                  style={{ width: '100%', fontSize: '13px' }}
+                                  value={subTask.pic || (formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''))}
+                                  onChange={e => {
+                                    const updated = [...(editingTask.subTasksList || [])];
+                                    updated[idx].pic = e.target.value;
+                                    setEditingTask({ ...editingTask, subTasksList: updated });
+                                  }}
+                                >
+                                  {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                </select>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ padding: '0 8px' }}
+                                  title="Tambah PIC"
+                                  onClick={() => {
+                                    const updated = [...(editingTask.subTasksList || [])];
+                                    if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
+                                    updated[idx].additionalPics!.push(formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''));
+                                    setEditingTask({ ...editingTask, subTasksList: updated });
+                                  }}
+                                >
+                                  <UserPlus size={14} />
+                                </button>
+                              </div>
+                              {subTask.additionalPics?.map((p, pIdx) => (
+                                <div key={pIdx} style={{ display: 'flex', gap: '4px' }}>
+                                  <select
+                                    className="input"
+                                    style={{ width: '100%', fontSize: '13px' }}
+                                    value={p}
+                                    onChange={e => {
+                                      const updated = [...(editingTask.subTasksList || [])];
+                                      updated[idx].additionalPics![pIdx] = e.target.value;
+                                      setEditingTask({ ...editingTask, subTasksList: updated });
+                                    }}
+                                  >
+                                    {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0 8px', color: 'var(--error-color)' }}
+                                    onClick={() => {
+                                      const updated = [...(editingTask.subTasksList || [])];
+                                      updated[idx].additionalPics!.splice(pIdx, 1);
+                                      setEditingTask({ ...editingTask, subTasksList: updated });
+                                    }}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                             <div style={{ flex: 1, minWidth: '150px' }}>
                               <input

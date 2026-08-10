@@ -28,6 +28,7 @@ export type SubTask = {
   text: string;
   status: string;
   pic?: string;
+  additionalPics?: string[];
   tenggatWaktu?: string;
   logs: SubTaskLog[];
 };

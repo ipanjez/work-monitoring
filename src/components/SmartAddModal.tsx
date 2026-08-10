@@ -117,13 +117,21 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
               setRawText(prev => prev ? prev + '\n\n' + content : content);
             }} />
             
-            <textarea
-              className="input"
-              style={{ flex: 1, minHeight: '300px', resize: 'vertical', fontFamily: 'monospace' }}
-              placeholder={`Ketik atau salin teks agenda ke sini...`}
-              value={rawText}
-              onChange={e => setRawText(e.target.value)}
-            />
+            <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Konten Pekerjaan</span>
+                <span title="Bisa menggunakan shortcut keyboard saat mengetik di dalam kotak:&#10;• Ctrl+B (Tebal / Bold)&#10;• Ctrl+I (Miring / Italic)&#10;• Ctrl+U (Garis Bawah / Underline)&#10;• Ctrl+Shift+X (Coret / Strikethrough)&#10;Atau ketik manual sintaksnya seperti **tebal** atau *miring*." style={{ display: 'inline-flex', color: 'var(--accent-primary)', cursor: 'help', fontSize: '12px', alignItems: 'center', gap: '4px' }}>
+                  <AlertCircle size={14} /> Format Teks
+                </span>
+              </div>
+              <textarea
+                className="input"
+                style={{ flex: 1, minHeight: '300px', resize: 'vertical', fontFamily: 'monospace' }}
+                placeholder={`Ketik atau salin teks agenda ke sini...`}
+                value={rawText}
+                onChange={e => setRawText(e.target.value)}
+              />
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button className="btn btn-secondary" onClick={handleCancel}>Batal</button>

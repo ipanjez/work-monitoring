@@ -19,6 +19,7 @@ interface TimelineEvent {
   status?: string;
   color: string;
   pic?: string;
+  additionalPics?: string[];
 }
 
 export default function TaskTimeline({ startDate, endDate, subTasks, masterColors, mainPic }: TaskTimelineProps) {
@@ -82,7 +83,8 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         title: st.text,
         status: st.status,
         color: getStatusColor(st.status),
-        pic: st.pic || mainPic
+        pic: st.pic || mainPic,
+        additionalPics: st.additionalPics
       });
     }
   });
@@ -165,12 +167,12 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                         {isSpecial ? ev.title : null}
                       </div>
                       {!isSpecial && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                          {ev.pic && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <User size={10} /> {ev.pic}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <User size={10} /> {p}
                             </span>
-                          )}
+                          ))}
                           {ev.status && (
                             <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
                               {ev.status}
@@ -222,17 +224,17 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                         {isSpecial ? ev.title : null}
                       </div>
                       {!isSpecial && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                           {ev.status && (
                             <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
                               {ev.status}
                             </span>
                           )}
-                          {ev.pic && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <User size={10} /> {ev.pic}
+                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <User size={10} /> {p}
                             </span>
-                          )}
+                          ))}
                         </div>
                       )}
                     </div>
