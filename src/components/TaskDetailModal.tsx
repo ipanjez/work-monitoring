@@ -413,15 +413,29 @@ ${task!.deskripsi || '-'}`;
 
               if (subTasks.length === 0) return null;
 
+              const statusCounts = subTasks.reduce((acc, st) => {
+                acc[st.status] = (acc[st.status] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>);
+              
+              const statusSummary = Object.entries(statusCounts)
+                .map(([status, count]) => `${count} ${status}`)
+                .join(', ');
+
               return (
                 <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
-                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>Sub Pekerjaan</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>Sub Pekerjaan</h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {statusSummary ? `(${statusSummary})` : ''}
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {subTasks.map(subTask => (
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div style={{ fontWeight: 500, fontSize: '14px', wordBreak: 'break-word', whiteSpace: 'normal' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
                             {(subTask.pic || subTask.tenggatWaktu) && (
                               <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
                                 {subTask.pic && (
