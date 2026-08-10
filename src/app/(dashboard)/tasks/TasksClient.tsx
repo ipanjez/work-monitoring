@@ -475,14 +475,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           } catch (e) { }
         }
 
+        const currentUser = (session?.user as any)?.name || 'Sistem';
         if (isNew) {
-          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${savedTask.nama}" telah ditambahkan oleh ${savedTask.pic}.`, 'success');
+          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${savedTask.nama}" telah ditambahkan oleh ${currentUser}.`, 'success');
         } else if (savedTask.status === 'Done') {
-          addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${savedTask.pic}.${detailsText}`, 'success');
+          addActivityLog('COMPLETE_TASK', 'Pekerjaan Selesai', `Pekerjaan "${savedTask.nama}" telah diselesaikan oleh ${currentUser}.${detailsText}`, 'success');
         } else if (savedTask.prioritas === 'Urgent') {
-          addActivityLog('URGENT_TASK', 'Pekerjaan Urgent', `Pekerjaan "${savedTask.nama}" dengan prioritas Urgent diperbarui oleh ${savedTask.pic}.${detailsText}`, 'warning');
+          addActivityLog('URGENT_TASK', 'Pekerjaan Urgent', `Pekerjaan "${savedTask.nama}" dengan prioritas Urgent diperbarui oleh ${currentUser}.${detailsText}`, 'warning');
         } else {
-          addActivityLog('UPDATE_TASK', 'Pekerjaan Diperbarui', `Pekerjaan "${savedTask.nama}" diperbarui oleh ${savedTask.pic}.${detailsText}`, 'info');
+          addActivityLog('UPDATE_TASK', 'Pekerjaan Diperbarui', `Pekerjaan "${savedTask.nama}" diperbarui oleh ${currentUser}.${detailsText}`, 'info');
         }
       }
 

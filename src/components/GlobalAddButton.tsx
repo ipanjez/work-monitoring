@@ -8,9 +8,11 @@ import * as XLSX from 'xlsx';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
 
 
 export default function GlobalAddButton() {
+  const { data: session } = useSession();
   const { addActivityLog } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -70,7 +72,8 @@ export default function GlobalAddButton() {
       if (res.ok) {
         const saved = await res.json();
         if (addActivityLog) {
-          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${saved.pic}.`, 'success');
+          const currentUser = (session?.user as any)?.name || 'Sistem';
+          addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${currentUser}.`, 'success');
         }
       }
       setIsAddModalOpen(false);
@@ -93,8 +96,9 @@ export default function GlobalAddButton() {
       if (res.ok) {
         const savedList = await res.json();
         if (addActivityLog && Array.isArray(savedList)) {
+          const currentUser = (session?.user as any)?.name || 'Sistem';
           savedList.forEach(saved => {
-            addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${saved.pic}.`, 'success');
+            addActivityLog('CREATE_TASK', 'Pekerjaan Baru', `Pekerjaan "${saved.nama}" telah ditambahkan oleh ${currentUser}.`, 'success');
           });
         }
       }
