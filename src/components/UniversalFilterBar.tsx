@@ -27,6 +27,7 @@ export default function UniversalFilterBar({
     globalFilterStatus, setGlobalFilterStatus,
     globalFilterPriority, setGlobalFilterPriority,
     globalFilterCategory, setGlobalFilterCategory,
+    globalSearchExactMatch, setGlobalSearchExactMatch,
     globalTargetFilter, setGlobalTargetFilter,
     globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
@@ -44,11 +45,36 @@ export default function UniversalFilterBar({
         <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
         <input
           className="input"
-          style={{ paddingLeft: '36px', width: '100%', paddingRight: '12px', fontSize: '13px', ...getActiveStyle(globalSearchQuery !== '') }}
+          style={{ paddingLeft: '36px', width: '100%', paddingRight: '50px', fontSize: '13px', ...getActiveStyle(globalSearchQuery !== '') }}
           placeholder="Pencarian..."
           value={globalSearchQuery}
           onChange={e => setGlobalSearchQuery(e.target.value)}
         />
+        <button 
+          title={globalSearchExactMatch ? "Pencarian Kata Persis (Aktif)" : "Pencarian Kata Persis (Nonaktif)"}
+          onClick={() => setGlobalSearchExactMatch(!globalSearchExactMatch)}
+          style={{
+            position: 'absolute',
+            right: '4px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: globalSearchExactMatch ? 'var(--accent-primary)' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 6px',
+            borderRadius: '6px',
+            fontSize: '10px',
+            fontWeight: 700,
+            color: globalSearchExactMatch ? 'white' : 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: '0.2s',
+            zIndex: 10
+          }}
+        >
+          Exact
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', alignItems: 'center' }}>

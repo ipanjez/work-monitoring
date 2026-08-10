@@ -17,13 +17,14 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { checkSearchMatch } from '@/utils/searchUtils';
 import Avatar from '@/components/Avatar';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { masterColors, masterPicAvatars } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
-    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery
+    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
   } = useFilter();
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
@@ -132,14 +133,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
     // Search Filter
     if (globalSearchQuery) {
-      const query = globalSearchQuery.toLowerCase();
-      const extraPics = t.additionalPics ? (() => {
-        try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
-      })() : '';
-      const matchesSearch = t.nama.toLowerCase().includes(query) ||
-        t.pic.toLowerCase().includes(query) ||
-        extraPics.toLowerCase().includes(query);
-      if (!matchesSearch) return false;
+      if (!checkSearchMatch(t, globalSearchQuery, globalSearchExactMatch)) return false;
     }
 
     return true;

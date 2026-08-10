@@ -20,6 +20,8 @@ type FilterContextType = {
   setGlobalFilterPriority: (priority: string) => void;
   globalFilterCategory: string;
   setGlobalFilterCategory: (category: string) => void;
+  globalSearchExactMatch: boolean;
+  setGlobalSearchExactMatch: (exactMatch: boolean) => void;
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -37,6 +39,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [globalFilterStatus, setFilterStatus] = useState('All');
   const [globalFilterPriority, setFilterPriority] = useState('All');
   const [globalFilterCategory, setFilterCategory] = useState('All');
+  const [globalSearchExactMatch, setGlobalSearchExactMatchState] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   // Initialize from localStorage on mount
@@ -50,6 +53,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     const storedStatus = localStorage.getItem('globalFilterStatus');
     const storedPriority = localStorage.getItem('globalFilterPriority');
     const storedCategory = localStorage.getItem('globalFilterCategory');
+    const storedExactMatch = localStorage.getItem('globalSearchExactMatch');
     
     if (storedTarget) setTargetFilter(storedTarget);
     
@@ -67,6 +71,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     if (storedStatus) setFilterStatus(storedStatus);
     if (storedPriority) setFilterPriority(storedPriority);
     if (storedCategory) setFilterCategory(storedCategory);
+    if (storedExactMatch) setGlobalSearchExactMatchState(storedExactMatch === 'true');
   }, [isMember, user?.name]);
 
   // Update state and localStorage
@@ -110,6 +115,11 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('globalFilterCategory', val);
   };
 
+  const setGlobalSearchExactMatch = (val: boolean) => {
+    setGlobalSearchExactMatchState(val);
+    localStorage.setItem('globalSearchExactMatch', val ? 'true' : 'false');
+  };
+
   return (
     <FilterContext.Provider value={{
       globalTargetFilter,
@@ -127,7 +137,9 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       globalFilterPriority,
       setGlobalFilterPriority,
       globalFilterCategory,
-      setGlobalFilterCategory
+      setGlobalFilterCategory,
+      globalSearchExactMatch,
+      setGlobalSearchExactMatch
     }}>
       {children}
     </FilterContext.Provider>

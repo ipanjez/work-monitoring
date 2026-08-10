@@ -18,6 +18,7 @@ import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { checkSearchMatch } from '@/utils/searchUtils';
 import { useTheme } from '@/context/ThemeContext';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
@@ -76,7 +77,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     setGlobalFilterCategory: setReportCategoryFilter,
     globalFilterStatus,
     globalFilterPriority,
-    globalSearchQuery
+    globalSearchQuery,
+    globalSearchExactMatch
   } = useFilter();
 
   // Extract unique categories and PICs from all tasks for the dropdowns
@@ -162,20 +164,11 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       }
 
       // 6. Search Filter
-      let matchSearch = true;
-      if (globalSearchQuery) {
-        const query = globalSearchQuery.toLowerCase();
-        const extraPics = t.additionalPics ? (() => {
-          try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
-        })() : '';
-        matchSearch = t.nama.toLowerCase().includes(query) ||
-          t.pic.toLowerCase().includes(query) ||
-          extraPics.toLowerCase().includes(query);
-      }
+      let matchSearch = checkSearchMatch(t, globalSearchQuery, globalSearchExactMatch);
 
       return matchTime && matchPic && matchCat && matchStatus && matchPriority && matchSearch;
     });
-  }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter, globalFilterStatus, globalFilterPriority, globalSearchQuery]);
+  }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter, globalFilterStatus, globalFilterPriority, globalSearchQuery, globalSearchExactMatch]);
 
   const totalTasks = filteredTasks.length;
   

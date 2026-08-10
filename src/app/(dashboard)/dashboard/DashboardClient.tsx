@@ -33,6 +33,7 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FileViewer from '@/components/FileViewer';
+import { checkSearchMatch } from '@/utils/searchUtils';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useFilter } from '@/context/FilterContext';
@@ -68,7 +69,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     globalFilterStatus, setGlobalFilterStatus, 
     globalFilterPriority, setGlobalFilterPriority, 
     globalFilterCategory, setGlobalFilterCategory, 
-    globalSearchQuery
+    globalSearchQuery, globalSearchExactMatch
   } = useFilter();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -247,16 +248,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     const matchPriority = globalFilterPriority === 'All' || (t.prioritas || 'Medium') === globalFilterPriority;
 
     // 5. Search Filter
-    let matchSearch = true;
-    if (globalSearchQuery) {
-      const query = globalSearchQuery.toLowerCase();
-      const extraPics = t.additionalPics ? (() => {
-        try { return JSON.parse(t.additionalPics).join(' '); } catch (e) { return ''; }
-      })() : '';
-      matchSearch = t.nama.toLowerCase().includes(query) ||
-        t.pic.toLowerCase().includes(query) ||
-        extraPics.toLowerCase().includes(query);
-    }
+    let matchSearch = checkSearchMatch(t, globalSearchQuery, globalSearchExactMatch);
 
     // 6. Date Filter
     const taskEnd = new Date(t.endDate).getTime();

@@ -25,6 +25,7 @@ import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getH
 import Avatar from '@/components/Avatar';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
+import { checkSearchMatch } from '@/utils/searchUtils';
 import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
@@ -58,7 +59,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     globalSearchQuery: searchQuery,
     globalFilterStatus: filterStatus,
     globalFilterPriority: filterPriority,
-    globalFilterCategory: filterCategory
+    globalFilterCategory: filterCategory,
+    globalSearchExactMatch
   } = useFilter();
 
   // Sorting State
@@ -230,10 +232,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // Filter & Sort Tasks
   const processedTasks = tasks.filter(t => {
     const extraPics = getAdditionalPics(t).join(' ');
-    const matchesSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      extraPics.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
     const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
     const matchesPriority = filterPriority === 'All' || (t.prioritas || 'Medium') === filterPriority;
     const matchesCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;

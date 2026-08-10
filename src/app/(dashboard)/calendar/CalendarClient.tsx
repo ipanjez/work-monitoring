@@ -2,6 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
 import { copyToClipboard } from '@/utils/clipboard';
+import { checkSearchMatch } from '@/utils/searchUtils';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -51,7 +52,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     globalSearchQuery: searchQuery,
     globalFilterStatus: filterStatus,
     globalFilterPriority: filterPriority,
-    globalFilterCategory: filterCategory
+    globalFilterCategory: filterCategory,
+    globalSearchExactMatch
   } = useFilter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -124,10 +126,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   // Filter Tasks for Calendar
   const filteredTasks = tasks.filter(task => {
     const extraPics = getAdditionalPics(task).join(' ');
-    const matchesSearch = task.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          extraPics.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (task.kategori && task.kategori.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = checkSearchMatch(task, searchQuery, globalSearchExactMatch);
     
     let matchesFilter = true;
     if (filterStatus !== 'All' && task.status !== filterStatus) matchesFilter = false;

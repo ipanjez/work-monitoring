@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { useFilter } from '@/context/FilterContext';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { checkSearchMatch } from '@/utils/searchUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
@@ -31,9 +32,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     globalCustomStartDate, setGlobalCustomStartDate, 
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
-    globalFilterCategory: filterCategory,
+    globalFilterCategory: categoryFilter,
     globalFilterStatus,
-    globalFilterPriority
+    globalFilterPriority,
+    globalSearchExactMatch,
   } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -320,9 +322,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   const filteredTasks = tasks.filter((t: any) => {
-    const matchSearch = t.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.pic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.deskripsi && t.deskripsi.toLowerCase().includes(searchQuery.toLowerCase()));
+    let matchSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
 
     const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
 
