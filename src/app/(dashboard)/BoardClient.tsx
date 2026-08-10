@@ -284,7 +284,11 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
     if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
       try {
-        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        while (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        customRecurrenceSettings = parsed;
         repetisiValue = 'Custom';
       } catch (e) { }
     }
@@ -309,6 +313,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setSelectedTask({
       ...task,
       repetisi: repetisiValue,
+      customRecurrenceSettings,
       startDate: task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       endDate: task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       isCustomCategory: false,

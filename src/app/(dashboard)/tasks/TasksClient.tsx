@@ -330,7 +330,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
     if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
       try {
-        customRecurrenceSettings = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        while (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        customRecurrenceSettings = parsed;
         repetisiValue = 'Custom';
       } catch (e) { }
     }
@@ -351,6 +355,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       startTime: task.startTime || '',
       endTime: task.endTime || '',
       repetisi: repetisiValue,
+      customRecurrenceSettings,
       startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
       endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
       isCustomCategory: false,
@@ -417,6 +422,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         subTasksJson: processedSubTasks.length > 0 ? JSON.stringify(processedSubTasks) : null,
         additionalPics: filteredExtraPics.length > 0 ? JSON.stringify(filteredExtraPics) : null,
       };
+      
+      delete finalPayload.customRecurrenceSettings;
 
       const saveRes = await fetch(url, {
         method,

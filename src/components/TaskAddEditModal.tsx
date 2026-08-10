@@ -6,7 +6,7 @@ import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } fro
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Task, FileItem, SubTask, handleMarkdownShortcut } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
@@ -257,7 +257,6 @@ export default function TaskAddEditModal({
       const filesJson = JSON.stringify(editingTask.filesList || []);
       const additionalPicsJson = JSON.stringify((editingTask.additionalPicsList || []).filter(p => p.trim() !== ''));
       const subTasksJson = JSON.stringify(editingTask.subTasksList || []);
-      const customRecurrenceSettingsStr = editingTask.customRecurrenceSettings ? JSON.stringify(editingTask.customRecurrenceSettings) : null;
       const updatedLokasiData = editingTask.lokasiData?.tipe
         ? { ...editingTask.lokasiData, jam: editingTask.isAllDay ? '' : (editingTask.startTime || '') }
         : null;
@@ -269,7 +268,7 @@ export default function TaskAddEditModal({
         filesJson,
         additionalPics: additionalPicsJson,
         subTasksJson,
-        customRecurrenceSettings: customRecurrenceSettingsStr,
+        customRecurrenceSettings: editingTask.customRecurrenceSettings,
         lokasi: lokasiJson
       };
 
