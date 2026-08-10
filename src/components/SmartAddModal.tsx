@@ -232,11 +232,18 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                           <input 
                             type="date" 
                             className="input" 
-                            value={format(task.startDate, 'yyyy-MM-dd')}
+                            value={task.startDate && !isNaN(task.startDate.getTime()) ? format(task.startDate, 'yyyy-MM-dd') : ''}
                             onChange={(e) => {
-                              const d = new Date(e.target.value);
-                              updateTask(idx, 'startDate', d);
-                              updateTask(idx, 'endDate', d);
+                              const val = e.target.value;
+                              if (val) {
+                                const d = new Date(val + 'T00:00:00');
+                                updateTask(idx, 'startDate', d);
+                                updateTask(idx, 'endDate', d);
+                              } else {
+                                const d = new Date(NaN);
+                                updateTask(idx, 'startDate', d);
+                                updateTask(idx, 'endDate', d);
+                              }
                             }} 
                             style={{ padding: '6px 10px' }}
                           />
