@@ -1164,7 +1164,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
                             onClick={(e) => {
                                e.stopPropagation();
-                               setPreviewFile({ name: task.fileName || 'Lampiran', url: task.fileUrl!, size: 0, type: 'url' });
+                               setPreviewFile({ name: task.fileName || 'Lampiran', url: task.fileUrl!, size: 0 });
                             }}
                           >
                             <Paperclip size={14} /> {task.fileName || 'Lampiran'}
