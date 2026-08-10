@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
 
@@ -410,11 +410,27 @@ ${task!.deskripsi || '-'}`;
                     {subTasks.map(subTask => (
                       <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                          <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontWeight: 500, fontSize: '14px' }}>{subTask.text}</span>
+                            {(subTask.pic || subTask.tenggatWaktu) && (
+                              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                {subTask.pic && (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <User size={12} /> {subTask.pic}
+                                  </span>
+                                )}
+                                {subTask.tenggatWaktu && (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <CalendarDays size={12} /> {format(new Date(subTask.tenggatWaktu), 'dd MMM yyyy')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           {(() => {
                             const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
                             return (
-                              <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, ...badge.style }}>
+                              <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
                                 {subTask.status}
                               </span>
                             );

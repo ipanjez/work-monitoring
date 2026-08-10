@@ -27,6 +27,8 @@ export type SubTask = {
   id: string;
   text: string;
   status: string;
+  pic?: string;
+  tenggatWaktu?: string;
   logs: SubTaskLog[];
 };
 
@@ -255,7 +257,12 @@ export const getTaskExportRow = (task: any) => {
     try {
       const parsed = JSON.parse(task.subTasksJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        subPekerjaanStr = parsed.map((st: any) => `[${st.status}] ${st.text}`).join('\n');
+        subPekerjaanStr = parsed.map((st: any) => {
+          let str = `[${st.status}] ${st.text}`;
+          if (st.pic) str += ` | PIC: ${st.pic}`;
+          if (st.tenggatWaktu) str += ` | Tenggat: ${st.tenggatWaktu}`;
+          return str;
+        }).join('\n');
       }
     } catch (e) { }
   }

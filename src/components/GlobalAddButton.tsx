@@ -219,12 +219,33 @@ export default function GlobalAddButton() {
                 } else if (match) {
                    text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
                 }
-                return {
-                   id: Math.random().toString(36).substring(2, 9),
-                   text,
-                   status,
-                   logs: [{ status, timestamp: new Date().toISOString() }]
-                };
+                 let pic: string | undefined = undefined;
+                 let tenggatWaktu: string | undefined = undefined;
+
+                 // Parse extra fields like | PIC: Name | Tenggat: 2026-08-15
+                 const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
+                 const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
+
+                 if (picMatch) {
+                   pic = picMatch[1].trim();
+                   text = text.replace(picMatch[0], '').trim();
+                 }
+                 if (tenggatMatch) {
+                   tenggatWaktu = tenggatMatch[1].trim();
+                   text = text.replace(tenggatMatch[0], '').trim();
+                 }
+
+                 // Remove any trailing or leading pipe characters left over
+                 text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
+
+                 return {
+                    id: Math.random().toString(36).substring(2, 9),
+                    text,
+                    status,
+                    ...(pic ? { pic } : {}),
+                    ...(tenggatWaktu ? { tenggatWaktu } : {}),
+                    logs: [{ status, timestamp: new Date().toISOString() }]
+                 };
              });
              if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }

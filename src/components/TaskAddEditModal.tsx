@@ -754,17 +754,49 @@ export default function TaskAddEditModal({
                   {editingTask.subTasksList?.map((subTask, idx) => (
                     <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                        <textarea
-                          className="input"
-                          style={{ flex: 1, resize: 'vertical', minHeight: '60px' }}
-                          placeholder="Deskripsi Sub Pekerjaan..."
-                          value={subTask.text}
-                          onChange={e => {
-                            const updated = [...(editingTask.subTasksList || [])];
-                            updated[idx].text = e.target.value;
-                            setEditingTask({ ...editingTask, subTasksList: updated });
-                          }}
-                        />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <textarea
+                            className="input"
+                            style={{ flex: 1, resize: 'vertical', minHeight: '60px' }}
+                            placeholder="Deskripsi Sub Pekerjaan..."
+                            value={subTask.text}
+                            onChange={e => {
+                              const updated = [...(editingTask.subTasksList || [])];
+                              updated[idx].text = e.target.value;
+                              setEditingTask({ ...editingTask, subTasksList: updated });
+                            }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '150px' }}>
+                              <select
+                                className="input"
+                                style={{ width: '100%', fontSize: '13px' }}
+                                value={subTask.pic || ''}
+                                onChange={e => {
+                                  const updated = [...(editingTask.subTasksList || [])];
+                                  updated[idx].pic = e.target.value;
+                                  setEditingTask({ ...editingTask, subTasksList: updated });
+                                }}
+                              >
+                                <option value="">Tanpa PIC Khusus</option>
+                                {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: 1, minWidth: '150px' }}>
+                              <input
+                                type="date"
+                                className="input"
+                                style={{ width: '100%', fontSize: '13px' }}
+                                value={subTask.tenggatWaktu || ''}
+                                onChange={e => {
+                                  const updated = [...(editingTask.subTasksList || [])];
+                                  updated[idx].tenggatWaktu = e.target.value;
+                                  setEditingTask({ ...editingTask, subTasksList: updated });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <select
                             className="input"
