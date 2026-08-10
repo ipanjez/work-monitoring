@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 
 export type NotificationItem = {
   id: number;
@@ -28,6 +29,11 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const { data: session, status } = useSession();
+  const userId = (session?.user as any)?.id || session?.user?.email || 'guest';
+  
+  const storageKey = `dashboard_notifications_${userId}`;
+  const clearedAtKey = `dashboard_notifications_cleared_at_${userId}`;
   
   // Use refs to avoid stale closures in setInterval and to prevent side-effects in render
   const notificationsRef = useRef<NotificationItem[]>([]);
@@ -38,26 +44,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     notificationsRef.current = notifications;
   }, [notifications]);
 
-  // Load local state on mount
+  // Load local state on mount or user change
   useEffect(() => {
-    const saved = localStorage.getItem('dashboard_notifications');
+    if (status === 'loading') return;
+    
+    const saved = localStorage.getItem(storageKey);
+    let initialNotifs: NotificationItem[] = [];
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        setNotifications(parsed);
-      } catch (e) { }
+        initialNotifs = JSON.parse(saved);
+      } catch (e) {}
     }
+    setNotifications(initialNotifs);
+    notificationsRef.current = initialNotifs;
     // Set initial check time to now so we don't get flooded with old notifications on first load
     lastCheckTimeRef.current = new Date();
-  }, []);
+  }, [userId, status, storageKey]);
 
   // Save to local storage whenever notifications change
   useEffect(() => {
-    localStorage.setItem('dashboard_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    if (status === 'loading') return;
+    localStorage.setItem(storageKey, JSON.stringify(notifications));
+  }, [notifications, userId, status, storageKey]);
 
   // Polling logic for activities
   useEffect(() => {
+    if (status === 'loading') return;
+    
     let isMounted = true;
 
     const fetchActivities = async () => {
@@ -134,7 +147,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (res.ok) {
           const activities = await res.json();
           
-          const clearedAtStr = localStorage.getItem('dashboard_notifications_cleared_at');
+          const clearedAtStr = localStorage.getItem(clearedAtKey);
           const clearedAt = clearedAtStr ? new Date(clearedAtStr).getTime() : 0;
           
           const initialNotifs = activities
@@ -167,7 +180,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, []); // Empty dependency array, safe because we use refs for mutable state
+  }, [userId, status, clearedAtKey]); // Depend on user changes
 
   const markAsRead = (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
@@ -179,7 +192,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const clearAll = () => {
     setNotifications([]);
-    localStorage.setItem('dashboard_notifications_cleared_at', new Date().toISOString());
+    localStorage.setItem(clearedAtKey, new Date().toISOString());
   };
 
   const addActivityLog = async (action: string, title: string, message: string, type: 'info'|'success'|'warning'|'danger' = 'info') => {

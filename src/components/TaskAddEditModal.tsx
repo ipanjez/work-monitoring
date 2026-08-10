@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -73,7 +73,6 @@ export default function TaskAddEditModal({
 }: TaskAddEditModalProps) {
   const router = useRouter();
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);
-  const [customAdditionalPics, setCustomAdditionalPics] = useState<number[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
@@ -161,14 +160,13 @@ export default function TaskAddEditModal({
     setEditingTask({ ...editingTask, additionalPicsList: updated });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !editingTask) return;
-
+  const processFiles = async (files: FileList) => {
+    if (!files || files.length === 0 || !editingTask) return;
     setUploadingFile(true);
     toast.loading('Mengunggah file...', { id: 'upload' });
 
     try {
-      const filesArr = Array.from(e.target.files);
+      const filesArr = Array.from(files);
       const newFiles: FileItem[] = [];
 
       for (const file of filesArr) {
@@ -197,9 +195,12 @@ export default function TaskAddEditModal({
       }
 
       if (newFiles.length > 0) {
-        setEditingTask({
-          ...editingTask,
-          filesList: [...(editingTask.filesList || []), ...newFiles]
+        setEditingTask((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            filesList: [...(prev.filesList || []), ...newFiles]
+          };
         });
         toast.success(`${newFiles.length} File berhasil diunggah!`, { id: 'upload' });
       } else {
@@ -213,6 +214,19 @@ export default function TaskAddEditModal({
       setUploadingFile(false);
       if (attachmentInputRef.current) attachmentInputRef.current.value = '';
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) processFiles(e.target.files);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files) processFiles(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   const handleRemoveFileFromEdit = (idx: number) => {
@@ -299,8 +313,9 @@ export default function TaskAddEditModal({
               {/* Main PIC & Dynamic Multi-PIC Section */}
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     Penanggung Jawab (PIC Utama & Tambahan) *
+                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
                   </label>
                   <button
                     type="button"
@@ -315,95 +330,34 @@ export default function TaskAddEditModal({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>PIC Utama *</span>
-                    {!editingTask.isCustomPic ? (
-                      <select
-                        className="input"
-                        value={editingTask.pic || ''}
-                        onChange={e => {
-                          if (e.target.value === '__custom__') {
-                            setEditingTask({ ...editingTask, pic: '', isCustomPic: true });
-                          } else {
-                            setEditingTask({ ...editingTask, pic: e.target.value });
-                          }
-                        }}
-                      >
-                        <option value="">-- Pilih PIC Utama --</option>
-                        {formPicOptions.map((p, idx) => (
-                          <option key={idx} value={p}>{p}</option>
-                        ))}
-                        <option value="__custom__">+ Ketik Nama PIC Baru...</option>
-                      </select>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input
-                          className="input"
-                          placeholder="Nama PIC Utama Baru..."
-                          value={editingTask.pic || ''}
-                          onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })}
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ padding: '6px' }}
-                          onClick={() => setEditingTask({ ...editingTask, isCustomPic: false })}
-                          title="Kembali ke Dropdown PIC"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
+                    <select
+                      className="input"
+                      value={editingTask.pic || ''}
+                      onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })}
+                    >
+                      <option value="">-- Pilih PIC Utama --</option>
+                      {formPicOptions.map((p, idx) => (
+                        <option key={idx} value={p}>{p}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {editingTask.additionalPicsList && editingTask.additionalPicsList.map((extraPic, idx) => (
                     <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {(!customAdditionalPics.includes(idx)) ? (
-                        <select
-                          className="input"
-                          value={extraPic}
-                          onChange={e => {
-                            if (e.target.value === '__custom__') {
-                              setCustomAdditionalPics([...customAdditionalPics, idx]);
-                              handleUpdateAdditionalPic(idx, '');
-                            } else {
-                              handleUpdateAdditionalPic(idx, e.target.value);
-                            }
-                          }}
-                        >
-                          <option value="">-- Pilih PIC Tambahan --</option>
-                          {formPicOptions.map((p, i) => (
-                            <option key={i} value={p}>{p}</option>
-                          ))}
-                          <option value="__custom__">+ Ketik Nama PIC Baru...</option>
-                        </select>
-                      ) : (
-                        <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
-                          <input
-                            className="input"
-                            placeholder={`Nama PIC Tambahan ${idx + 1}...`}
-                            value={extraPic}
-                            onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ padding: '6px' }}
-                            onClick={() => {
-                              setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx));
-                              handleUpdateAdditionalPic(idx, '');
-                            }}
-                            title="Kembali ke Dropdown PIC"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      )}
+                      <select
+                        className="input"
+                        value={extraPic}
+                        onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
+                      >
+                        <option value="">-- Pilih PIC Tambahan --</option>
+                        {formPicOptions.map((p, i) => (
+                          <option key={i} value={p}>{p}</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
                         style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
-                        onClick={() => {
-                          handleRemoveAdditionalPic(idx);
-                          setCustomAdditionalPics(customAdditionalPics.filter(i => i !== idx).map(i => i > idx ? i - 1 : i));
-                        }}
+                        onClick={() => handleRemoveAdditionalPic(idx)}
                       >
                         <X size={16} />
                       </button>
@@ -415,49 +369,24 @@ export default function TaskAddEditModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 {/* Explicit Dropdown Select for Category */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Kategori *
+                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
                   </label>
-                  {!editingTask.isCustomCategory ? (
-                    <select
-                      className="input"
-                      value={editingTask.kategori || 'Umum'}
-                      onChange={e => {
-                        if (e.target.value === '__custom__') {
-                          setEditingTask({ ...editingTask, kategori: '', isCustomCategory: true });
-                        } else {
-                          setEditingTask({ ...editingTask, kategori: e.target.value });
-                        }
-                      }}
-                    >
-                      {formCategoryOptions.map((cat, idx) => (
-                        <option key={idx} value={cat}>{cat}</option>
-                      ))}
-                      <option value="__custom__">+ Ketik Kategori Baru...</option>
-                    </select>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <input
-                        className="input"
-                        placeholder="Nama Kategori Baru..."
-                        value={editingTask.kategori || ''}
-                        onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '6px' }}
-                        onClick={() => setEditingTask({ ...editingTask, kategori: 'Umum', isCustomCategory: false })}
-                        title="Kembali ke Pilihan Dropdown"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  )}
+                  <select
+                    className="input"
+                    value={editingTask.kategori || 'Umum'}
+                    onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
+                  >
+                    {formCategoryOptions.map((cat, idx) => (
+                      <option key={idx} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Status
+                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
                   </label>
                   <select className="input" value={editingTask.status || (formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do')} onChange={e => {
                     const newStatus = e.target.value;
@@ -473,8 +402,9 @@ export default function TaskAddEditModal({
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
                     Prioritas
+                    <Info size={14} style={{ color: 'var(--accent-primary)' }} title="Update pilihannya pada master pengaturan" />
                   </label>
                   <select className="input" value={editingTask.prioritas || 'Medium'} onChange={e => setEditingTask({ ...editingTask, prioritas: e.target.value })}>
                     {(formPriorityOptions.length > 0 ? formPriorityOptions : ['Low', 'Medium', 'High', 'Urgent']).map(opt => (
@@ -935,15 +865,32 @@ export default function TaskAddEditModal({
                   onChange={handleFileUpload}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
+                  <div 
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    style={{
+                      border: '2px dashed var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      textAlign: 'center',
+                      background: 'var(--surface-color)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
                     onClick={() => attachmentInputRef.current?.click()}
-                    disabled={uploadingFile}
-                    style={{ alignSelf: 'flex-start' }}
                   >
-                    <Paperclip size={16} /> {uploadingFile ? 'Mengunggah...' : '+ Unggah File Lampiran (Bisa >1)'}
-                  </button>
+                    <Paperclip size={24} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>
+                      Klik untuk Unggah atau Tarik & Letakkan File di Sini
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Mendukung banyak file sekaligus (Maksimal 25MB per file)
+                    </span>
+                    {uploadingFile && <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>Mengunggah...</span>}
+                  </div>
 
                   {editingTask.filesList && editingTask.filesList.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
