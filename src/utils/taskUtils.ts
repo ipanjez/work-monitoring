@@ -260,7 +260,10 @@ export const getTaskExportRow = (task: any) => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         subPekerjaanStr = parsed.map((st: any) => {
           let str = `[${st.status}] ${st.text}`;
-          if (st.pic) str += ` | PIC: ${st.pic}`;
+          const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
+          if (allPics.length > 0) {
+            str += ` | PIC: ${allPics.join(', ')}`;
+          }
           if (st.tenggatWaktu) str += ` | Tenggat: ${st.tenggatWaktu}`;
           return str;
         }).join('\n');

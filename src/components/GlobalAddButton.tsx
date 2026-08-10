@@ -220,14 +220,22 @@ export default function GlobalAddButton() {
                    text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
                 }
                  let pic: string | undefined = undefined;
+                 let additionalPics: string[] | undefined = undefined;
                  let tenggatWaktu: string | undefined = undefined;
 
-                 // Parse extra fields like | PIC: Name | Tenggat: 2026-08-15
+                 // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
                  const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
                  const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
 
                  if (picMatch) {
-                   pic = picMatch[1].trim();
+                   const picRaw = picMatch[1].trim();
+                   const picParts = picRaw.split(',').map(s => s.trim()).filter(Boolean);
+                   if (picParts.length > 0) {
+                     pic = picParts[0];
+                     if (picParts.length > 1) {
+                       additionalPics = picParts.slice(1);
+                     }
+                   }
                    text = text.replace(picMatch[0], '').trim();
                  }
                  if (tenggatMatch) {
@@ -243,6 +251,7 @@ export default function GlobalAddButton() {
                     text,
                     status,
                     ...(pic ? { pic } : {}),
+                    ...(additionalPics ? { additionalPics } : {}),
                     ...(tenggatWaktu ? { tenggatWaktu } : {}),
                     logs: [{ status, timestamp: new Date().toISOString() }]
                  };
