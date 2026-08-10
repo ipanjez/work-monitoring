@@ -574,6 +574,28 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           style={{ height: '780px', color: 'var(--text-primary)' }}
           eventPropGetter={eventStyleGetter}
           dayPropGetter={customDayPropGetter}
+          components={{
+            month: {
+              dateHeader: ({ date: d, label }) => {
+                const dateStr = format(d, 'yyyy-MM-dd');
+                const isHoliday = holidays[dateStr];
+                const dayOfWeek = getDay(d);
+                const isRed = isHoliday || dayOfWeek === 0 || dayOfWeek === 6;
+                return (
+                  <div style={{ padding: '4px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+                    <span style={{ color: isRed ? '#dc2626' : 'inherit', fontWeight: isRed ? '600' : 'normal', fontSize: '14px' }}>
+                      {label}
+                    </span>
+                    {isHoliday && (
+                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold', marginTop: '2px', lineHeight: '1.2', maxWidth: '100px', wordWrap: 'break-word', textAlign: 'right' }}>
+                        {isHoliday}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+            }
+          }}
           culture="id"
           messages={{
             next: "Selanjutnya",
