@@ -6,10 +6,10 @@ interface TaskTimelineProps {
   startDate?: string | Date;
   endDate?: string | Date;
   subTasks: SubTask[];
-  masterColors?: any[];
+  masterColors?: any;
 }
 
-export default function TaskTimeline({ startDate, endDate, subTasks, masterColors = [] }: TaskTimelineProps) {
+export default function TaskTimeline({ startDate, endDate, subTasks, masterColors }: TaskTimelineProps) {
   const [hoveredItem, setHoveredItem] = useState<any | null>(null);
 
   if (!startDate || !endDate) return null;
@@ -45,6 +45,14 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     });
 
   const getStatusColor = (status: string) => {
+    if (masterColors) {
+      const key = `status_${status}`;
+      const c = masterColors[key];
+      if (c && c !== '#ffffff' && c !== '#ffffff00' && c !== '#fff') {
+        return c.length === 9 ? c.substring(0, 7) : c;
+      }
+    }
+    
     if (status === 'Done') return '#10b981';
     if (status === 'In Progress') return '#f59e0b';
     if (status === 'To Do' || status === 'Pending') return '#ef4444';
