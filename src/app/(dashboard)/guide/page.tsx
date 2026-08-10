@@ -3,15 +3,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  BookOpen, LayoutDashboard, ListTodo, FileText, CheckCircle2, 
-  Users, Shield, CalendarDays, Kanban, Download, Upload, 
-  ChevronDown, Settings, AlertCircle, FileSpreadsheet, PlayCircle, Eye, EyeOff, BarChart3
+  BookOpen, LayoutDashboard, ListTodo, CheckCircle2, 
+  Users, CalendarDays, Kanban, Download, 
+  ChevronDown, Settings, AlertCircle, PlayCircle, Eye, EyeOff, BarChart3, KeyRound, Printer
 } from 'lucide-react';
-import 'driver.js/dist/driver.css';
 
 export default function GuidePage() {
-  const [activeAccordion, setActiveAccordion] = useState<string | null>('monitoring-board');
-  const [useHighlight, setUseHighlight] = useState(true);
+  const [activeAccordion, setActiveAccordion] = useState<string | null>('auth');
 
   const toggleAccordion = (id: string) => {
     setActiveAccordion(activeAccordion === id ? null : id);
@@ -19,30 +17,36 @@ export default function GuidePage() {
 
   const sections = [
     {
-      id: 'monitoring-board',
-      icon: <Kanban size={24} />,
-      color: '#f59e0b',
-      bg: 'rgba(245, 158, 11, 0.1)',
-      title: '1. Monitoring Board',
+      id: 'auth',
+      icon: <KeyRound size={24} />,
+      color: '#8b5cf6',
+      bg: 'rgba(139, 92, 246, 0.1)',
+      title: '1. Login & Manajemen Akun',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Visualisasi pekerjaan dalam bentuk papan Kanban per departemen. Sangat cocok untuk rapat stand-up dan memantau perpindahan status pekerjaan.
+            Aplikasi menggunakan sistem autentikasi berbasis NPK (Nomor Pokok Karyawan) atau Email.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Drag and Drop Status:</strong> Pindahkan kartu pekerjaan dari satu kolom status ke kolom lainnya hanya dengan menggeser (drag & drop) kartu tersebut. Status akan otomatis diperbarui.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Login Default:</strong> Jika Anda baru pertama kali menggunakan aplikasi atau akun Anda direset, Anda dapat login menggunakan kredensial default yang telah diberikan oleh Administrator.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Urutkan Kartu Manual (Drag per Card):</strong> Di dalam satu kolom, Anda bisa mengurutkan prioritas pekerjaan dengan menarik (drag) kartu ke atas atau ke bawah secara manual.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Lupa Password:</strong> Di halaman Login, klik tombol "Lupa Password?". Anda akan diminta memasukkan NPK. Permintaan reset password akan dikirimkan dan menunggu persetujuan Administrator (Status "PENDING").</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Dinamis:</strong> Board ini dilengkapi dengan fitur pencarian dan Filter (berdasarkan kategori atau urutan Abjad/Tenggat Waktu) sehingga Anda bisa menampilkan Kanban khusus yang relevan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Profil Pengguna:</strong> Anda dapat mengubah nama, email, avatar, dan password kapan saja melalui menu Profil di pojok kanan atas.</span>
             </li>
           </ul>
+          
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+              [Ilustrasi Halaman Login & Reset Password]
+            </div>
+          </div>
         </>
       )
     },
@@ -51,22 +55,66 @@ export default function GuidePage() {
       icon: <LayoutDashboard size={24} />,
       color: '#3b82f6',
       bg: 'rgba(59, 130, 246, 0.1)',
-      title: '2. Dashboard',
+      title: '2. Dashboard & Analitik',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Dashboard adalah pusat kendali analitik Anda. Di sini Anda dapat melihat ringkasan metrik kinerja secara real-time.
+            Dashboard adalah pusat informasi yang memberikan ringkasan seluruh metrik dan kinerja secara visual.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Global:</strong> Gunakan menu filter (Kategori, PIC, Waktu) untuk menyaring seluruh data pada dashboard secara instan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Statistik Kinerja (KPI):</strong> Lihat total pekerjaan, tugas selesai, dan tugas tertunda. Indikator persentase menunjukkan perbandingan performa bulan ini dengan bulan lalu.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Notifikasi & Aktivitas (Baru):</strong> Ikon lonceng notifikasi di pojok kanan atas untuk memantau semua perubahan. Anda kini dapat memfilter berdasarkan status baca atau aksi spesifik (seperti 'Pekerjaan Diperbarui').</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Filter Global:</strong> Filter data yang ditampilkan di Dashboard berdasarkan <strong>Waktu</strong>, <strong>PIC</strong>, dan <strong>Kategori</strong> untuk menganalisis data secara spesifik.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Grafik Tren & Distribusi:</strong> Terdapat grafik bar untuk penyelesaian bulanan (Tren Penyelesaian Tugas) dan grafik donat untuk distribusi beban kerja per PIC (Distribusi PIC).</span>
             </li>
           </ul>
+
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+              [Ilustrasi Filter Dashboard & Grafik]
+            </div>
+          </div>
+        </>
+      )
+    },
+    {
+      id: 'monitoring-board',
+      icon: <Kanban size={24} />,
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.1)',
+      title: '3. Monitoring Board (Kanban)',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+            Visualisasi pekerjaan dalam bentuk papan Kanban. Sangat cocok untuk rapat koordinasi dan melacak pergerakan progres (To Do 👉 In Progress 👉 Done).
+          </p>
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Drag and Drop Status:</strong> Pindahkan tugas dari satu tahap ke tahap lainnya cukup dengan menggeser kartu. Jika dipindah ke kolom "Selesai", progress otomatis menjadi 100%.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Pengurutan Kustom (Sort By):</strong> Tiap kolom Kanban memiliki opsi pengurutan (Sort By) untuk menyusun kartu berdasarkan "Terbaru", "Prioritas", atau "Tenggat Waktu Terdekat".</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Tampilan Kartu Dinamis:</strong> Setiap kartu akan menampilkan indikator warna prioritas, foto avatar PIC (jika ada), tenggat waktu, serta label progress bar sub-tugas.</span>
+            </li>
+          </ul>
+
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+              [Ilustrasi Animasi Drag & Drop Kanban Board]
+            </div>
+          </div>
         </>
       )
     },
@@ -75,94 +123,36 @@ export default function GuidePage() {
       icon: <ListTodo size={24} />,
       color: '#10b981',
       bg: 'rgba(16, 185, 129, 0.1)',
-      title: '3. Daftar Pekerjaan (Task List)',
+      title: '4. Daftar Pekerjaan & Sub-Tugas',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Modul utama untuk mengelola pekerjaan secara tabular (tabel). Cocok untuk melihat data dalam jumlah banyak dan melakukan aksi massal.
+            Daftar Pekerjaan menampilkan tabel detail untuk setiap tugas. Ideal untuk pengelolaan massal dan melihat detail spesifik dari setiap data.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Massal (Bulk Edit) Lanjutan (Baru):</strong> Centang beberapa tugas sekaligus dan ubah status, kategori, PIC, deskripsi, atau bahkan <strong>Jadwal & Waktu</strong> secara bersamaan.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Sub-Tugas (Checklist):</strong> Di dalam detail pekerjaan, Anda dapat memecah tugas besar menjadi bagian kecil (Sub-Tugas). Setiap sub-tugas memiliki penanggung jawab (PIC) dan tenggat waktu (Tgl Mulai & Tgl Selesai) secara terpisah.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Sub-Pekerjaan & Komentar:</strong> Pecah pekerjaan besar menjadi to-do list kecil. Tambahkan komentar dengan log riwayat lengkap.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Massal (Bulk Edit):</strong> Centang beberapa baris sekaligus, lalu klik "Edit Terpilih" untuk mengubah PIC, Status, Kategori, atau Jadwal & Waktu untuk banyak pekerjaan dalam 1 klik.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Pekerjaan Berulang (Repetisi) (Baru):</strong> Tugas berulang harian, mingguan, atau bulanan dihitung secara akurat dalam kalender tanpa membuat tumpukan peristiwa tak terhingga.</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Log Perubahan (History):</strong> Aplikasi secara otomatis merekam jejak (Audit Trail) kapan sebuah pekerjaan dibuat, diedit, atau dipindahkan, beserta nama penggunanya.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Ekspor Excel Berwarna:</strong> Daftar pekerjaan dapat diekspor ke Excel dengan format warna sel (berdasarkan Status/Prioritas) yang sudah disesuaikan secara otomatis.</span>
             </li>
           </ul>
-        </>
-      )
-    },
-    {
-      id: 'calendar',
-      icon: <CalendarDays size={24} />,
-      color: '#8b5cf6',
-      bg: 'rgba(139, 92, 246, 0.1)',
-      title: '4. Kalender',
-      content: (
-        <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Lihat beban kerja Anda dalam format Kalender (Bulan, Minggu, Hari). Sangat membantu untuk mengetahui tenggat waktu (deadline).
-          </p>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Perbaikan Performa (Baru):</strong> Algoritma kalender telah diperbarui untuk mencegah tumpang tindih dari peristiwa perulangan jangka panjang (misal dari impor Excel yang kurang tepat).</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Edit Drag and Drop:</strong> Anda dapat menggeser event di dalam kalender ke hari lain, atau memanjangkan durasinya secara langsung.</span>
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 'reports',
-      icon: <BarChart3 size={24} />,
-      color: '#06b6d4',
-      bg: 'rgba(6, 182, 212, 0.1)',
-      title: '5. Analisis Laporan',
-      content: (
-        <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Modul pelaporan komprehensif berisi grafik kinerja mendalam untuk evaluasi tingkat manajerial.
-          </p>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Grafik Kinerja Dinamis (Baru):</strong> Terdapat grafik tambahan seperti Rata-rata Progress per Kategori, Kepatuhan Tenggat Waktu, dan Distribusi Pekerjaan.</span>
-            </li>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Render Dinamis Label Data (Baru):</strong> Distribusi warna bagan dan labelnya (seperti Doughnut Chart) kini secara cerdas merender berdasarkan kategori yang sebenarnya ada di data Anda.</span>
-            </li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: 'team',
-      icon: <Users size={24} />,
-      color: '#ec4899',
-      bg: 'rgba(236, 72, 153, 0.1)',
-      title: '6. Manajemen Tim',
-      content: (
-        <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Pantau kinerja dan beban kerja masing-masing individu (PIC) di dalam tim Anda.
-          </p>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
-            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Produktivitas Individu:</strong> Lihat persentase penyelesaian tugas (Done vs Total Tugas) untuk setiap PIC.</span>
-            </li>
-          </ul>
+
+          <div style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
+            <div style={{ padding: '40px', background: 'var(--surface-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+              [Ilustrasi Pengisian Sub-Tugas dan Edit Massal]
+            </div>
+          </div>
         </>
       )
     },
@@ -171,225 +161,331 @@ export default function GuidePage() {
       icon: <Settings size={24} />,
       color: '#ef4444',
       bg: 'rgba(239, 68, 68, 0.1)',
-      title: '7. Pengaturan (Settings)',
+      title: '5. Pengaturan, Master Data & Backup',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-            Area kontrol untuk menyesuaikan aplikasi dengan kebutuhan spesifik organisasi Anda.
+            Administrator memiliki akses penuh untuk mengatur master data aplikasi agar semua input dari user tetap terstandarisasi.
           </p>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', listStyle: 'none', padding: 0 }}>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Kustomisasi Master Warna & Ikon (Baru):</strong> Anda bebas memilih warna dan ikon spesifik untuk merepresentasikan status, kategori, dan prioritas, yang langsung diterapkan di seluruh UI!</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Master Dropdown:</strong> Tambah, edit, atau hapus pilihan untuk PIC, Kategori, Prioritas, dan Status. Dropdown di seluruh aplikasi akan merujuk ke data master ini secara ketat.</span>
             </li>
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ color: 'var(--text-primary)' }}><strong>Panduan Interaktif (Baru):</strong> Tutorial interaktif bergaya penyorotan area ini, yang juga memiliki opsi untuk mematikan efek redup (highlight).</span>
+              <span style={{ color: 'var(--text-primary)' }}><strong>Warna Kustom & Progress:</strong> Tentukan warna untuk masing-masing label Status/Kategori. Anda juga dapat menentukan "Persentase Progress Otomatis" untuk setiap tahapan Status.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Mode Fokus (Zen Mode):</strong> Sembunyikan sidebar navigasi agar layar terlihat penuh. Sangat berguna untuk presentasi atau saat dijalankan di layar beresolusi kecil/HP.</span>
+            </li>
+            <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span style={{ color: 'var(--text-primary)' }}><strong>Backup & Restore Utuh:</strong> Anda bisa mengunduh file cadangan (*backup*) berformat JSON. File ini menyimpan tidak hanya Pekerjaan, melainkan seluruh Master Pengaturan. Gunakan tombol "Restore" untuk memulihkan seluruh data dalam 1 klik.</span>
             </li>
           </ul>
         </>
       )
-    }
+    },
   ];
 
-  const startTutorial = async () => {
-    const { driver } = await import('driver.js');
-    const driverObj = driver({
-      showProgress: true,
-      animate: useHighlight,
-      // @ts-ignore - driver.js type definition doesn't include opacity but it works
-      opacity: useHighlight ? 0.75 : 0,
-      nextBtnText: 'Selanjutnya',
-      prevBtnText: 'Sebelumnya',
-      doneBtnText: 'Selesai',
-      progressText: 'Langkah {{current}} dari {{total}}',
-      steps: [
-        { 
-          element: '#menu-monitoring', 
-          popover: { 
-            title: 'Monitoring Board', 
-            description: 'Selamat datang! Ini adalah tampilan utama pemantauan per-departemen yang memungkinkan Anda melihat seluruh status aktivitas.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-dashboard', 
-          popover: { 
-            title: 'Dashboard Executive', 
-            description: 'Lihat ringkasan dan metrik kinerja seluruh tugas Anda secara visual dan real-time di sini.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-tasks', 
-          popover: { 
-            title: 'Daftar Pekerjaan', 
-            description: 'Kelola seluruh daftar pekerjaan Anda dalam bentuk tabel interaktif. Anda bisa menambah, mengedit massal, dan mengunduh data di sini.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-kanban', 
-          popover: { 
-            title: 'Papan Kanban', 
-            description: 'Visualisasikan alur kerja (workflow) tim Anda. Pindahkan pekerjaan antar status semudah drag and drop!', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-calendar', 
-          popover: { 
-            title: 'Kalender & Jadwal', 
-            description: 'Pantau tenggat waktu, waktu mulai, serta hari libur nasional secara langsung dalam format kalender bulanan/mingguan.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-teams', 
-          popover: { 
-            title: 'Manajemen Tim & PIC', 
-            description: 'Pantau beban kerja dan performa setiap penanggung jawab (PIC) secara komprehensif.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-reports', 
-          popover: { 
-            title: 'Analisis & Laporan', 
-            description: 'Akses berbagai grafik tingkat lanjut dan ekspor keseluruhan kinerja aplikasi sebagai laporan resmi.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#menu-settings', 
-          popover: { 
-            title: 'Master Pengaturan', 
-            description: 'Sesuaikan kategori, kustomisasi palet warna, dan tentukan alur status pekerjaan yang sesuai dengan gaya perusahaan Anda.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#filter-pic', 
-          popover: { 
-            title: 'Filter Global PIC', 
-            description: 'Pilih PIC di sini untuk memfilter seluruh data aplikasi (Dashboard, Tabel, Kanban, Grafik) HANYA untuk PIC tersebut.', 
-            side: "right", align: 'start' 
-          }
-        },
-        { 
-          element: '#filter-target', 
-          popover: { 
-            title: 'Filter Rentang Waktu', 
-            description: 'Tentukan rentang tanggal secara global (misal: "Bulan Ini" atau kustom) untuk membatasi ruang lingkup laporan kerja Anda.', 
-            side: "right", align: 'start' 
-          }
-        },
-        {
-          popover: {
-            title: '🎉 Tutorial Selesai!',
-            description: 'Anda sudah siap menggunakan aplikasi ini secara maksimal. Jika Anda butuh bantuan, menu Panduan ini akan selalu tersedia.',
-          }
-        }
-      ]
-    });
-    driverObj.drive();
+  const handlePrintPDF = () => {
+    window.print();
   };
 
   return (
-    <motion.div 
-      style={{ padding: '32px 0', maxWidth: '1000px', margin: '0 auto' }}
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', color: 'white', marginBottom: '16px' }}>
-          <BookOpen size={32} />
-        </div>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>Panduan Aplikasi Lengkap</h1>
-        <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', marginBottom: '24px' }}>
-          Selamat datang di buku panduan interaktif. Klik pada setiap bagian di bawah ini untuk mempelajari fungsionalitas dan fitur terbaik dari aplikasi ini.
-        </p>
-        <button 
-          onClick={startTutorial}
-          className="btn btn-primary"
-          style={{ padding: '12px 24px', fontSize: '15px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
-        >
-          <PlayCircle size={20} />
-          🚀 Mulai Tutorial Interaktif
-        </button>
-        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        /* ================== PRINT STYLES UNTUK PDF ================== */
+        @media print {
+          /* Sembunyikan Web UI biasa saat mencetak */
+          #web-area, header, nav, aside {
+            display: none !important;
+          }
+          
+          /* Atur margin halaman */
+          @page {
+            margin: 20mm;
+            size: A4 portrait;
+          }
+
+          body {
+            background: white !important;
+            color: black !important;
+          }
+
+          /* Tampilkan area khusus Print */
+          #print-area {
+            display: block !important;
+            width: 100%;
+          }
+
+          .print-cover {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            page-break-after: always;
+          }
+          
+          .print-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e3a8a; /* Biru tua untuk cover */
+            margin-bottom: 24px;
+          }
+          
+          .print-subtitle {
+            font-size: 20px;
+            color: #4b5563;
+          }
+          
+          .print-section {
+            page-break-before: always;
+            margin-bottom: 40px;
+          }
+          
+          .print-section h2 {
+            font-size: 24px;
+            color: #1e40af;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            margin-top: 20px;
+          }
+
+          .print-list-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+
+          .print-toc-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+          }
+          
+          .print-toc-item {
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 4px;
+          }
+
+          .print-img-placeholder {
+            border: 1px solid #ccc;
+            background: #f3f4f6;
+            padding: 40px;
+            text-align: center;
+            color: #6b7280;
+            margin-top: 16px;
+            border-radius: 8px;
+            font-style: italic;
+          }
+        }
+
+        /* Saat di web biasa, Print Area disembunyikan */
+        @media screen {
+          #print-area {
+            display: none !important;
+          }
+        }
+      `}} />
+
+      {/* ================== WEB AREA (Interactive UI) ================== */}
+      <motion.div 
+        id="web-area"
+        className="glass" 
+        style={{ padding: '32px', maxWidth: '1000px', margin: '0 auto', borderRadius: '16px' }}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', color: 'white', marginBottom: '16px' }}>
+            <BookOpen size={32} />
+          </div>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>Panduan Aplikasi Lengkap</h1>
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', marginBottom: '24px' }}>
+            Pelajari semua fungsionalitas dan fitur terbaik dari aplikasi ini. Klik pada setiap bagian di bawah ini untuk melihat rincian secara interaktif.
+          </p>
+          
           <button 
-            onClick={() => setUseHighlight(!useHighlight)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: useHighlight ? 'var(--accent-primary)' : 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}
+            onClick={handlePrintPDF}
+            className="btn btn-primary"
+            style={{ padding: '12px 24px', fontSize: '15px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
           >
-            {useHighlight ? <Eye size={16} /> : <EyeOff size={16} />}
-            {useHighlight ? 'Efek Gelap (Highlight) Aktif' : 'Efek Gelap (Highlight) Nonaktif'}
+            <Printer size={20} />
+            Unduh Panduan PDF (Buku Lengkap)
           </button>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {sections.map((section, index) => (
-          <div key={section.id} className="glass" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-            <button
-              onClick={() => toggleAccordion(section.id)}
-              style={{
-                width: '100%',
-                padding: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ padding: '12px', background: section.bg, borderRadius: '12px', color: section.color }}>
-                  {section.icon}
-                </div>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
-                  {section.title}
-                </h2>
-              </div>
-              <motion.div
-                animate={{ rotate: activeAccordion === section.id ? 180 : 0 }}
-                transition={{ duration: 0.3 }}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {sections.map((section) => (
+            <div key={section.id} className="glass" style={{ borderRadius: '16px', overflow: 'hidden', background: 'var(--surface-color)', border: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => toggleAccordion(section.id)}
+                style={{
+                  width: '100%',
+                  padding: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: activeAccordion === section.id ? 'var(--bg-color)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
               >
-                <ChevronDown size={24} color="var(--text-secondary)" />
-              </motion.div>
-            </button>
-            
-            <AnimatePresence>
-              {activeAccordion === section.id && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  style={{ overflow: 'hidden' }}
-                >
-                  <div style={{ padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
-                    {section.content}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ padding: '12px', background: section.bg, borderRadius: '12px', color: section.color }}>
+                    {section.icon}
                   </div>
+                  <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                    {section.title}
+                  </h2>
+                </div>
+                <motion.div
+                  animate={{ rotate: activeAccordion === section.id ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ChevronDown size={24} color="var(--text-secondary)" />
                 </motion.div>
+              </button>
+              
+              <AnimatePresence>
+                {activeAccordion === section.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div style={{ padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-color)', paddingTop: '24px' }}>
+                      {section.content}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+        
+        <div style={{ marginTop: '40px', padding: '24px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <AlertCircle size={24} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px' }}>Punya Pertanyaan Lain?</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+              Jika Anda mengalami kendala teknis atau memiliki pertanyaan yang belum terjawab pada panduan ini, Anda dapat menyalin (copy) <strong>Error Clipboard</strong> apabila muncul notifikasi error sistem, dan mengirimkannya ke tim dukungan IT untuk penanganan cepat.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ================== PRINT AREA (Hidden in web, visible in PDF) ================== */}
+      <div id="print-area">
+        {/* Halaman Sampul (Cover) */}
+        <div className="print-cover">
+          <BookOpen size={64} color="#1e3a8a" style={{ marginBottom: '24px' }} />
+          <h1 className="print-title">Buku Panduan Penggunaan<br/>Aplikasi Monitoring Pekerjaan</h1>
+          <p className="print-subtitle">Versi Resmi - {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          
+          <div style={{ marginTop: '60px', color: '#6b7280', fontSize: '14px' }}>
+            <p>Dokumen ini merangkum seluruh instruksi penggunaan modul, fitur, pengaturan, dan mekanisme aplikasi.</p>
+          </div>
+        </div>
+
+        {/* Daftar Isi (TOC) */}
+        <div style={{ pageBreakAfter: 'always', margin: '40px 0' }}>
+          <h2 className="print-toc-title">Daftar Isi</h2>
+          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+            {sections.map(sec => (
+              <div key={sec.id} className="print-toc-item">
+                {sec.title}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Konten Utama (Bab-bab) */}
+        {sections.map(sec => (
+          <div key={sec.id} className="print-section">
+            <h2>{sec.title}</h2>
+            
+            {/* Merender isi content (React elements diparse standar CSS oleh browser untuk print) */}
+            <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+              {sec.id === 'auth' && (
+                <>
+                  <p>Aplikasi menggunakan sistem autentikasi berbasis NPK (Nomor Pokok Karyawan) atau Email.</p>
+                  <ul>
+                    <li className="print-list-item"><strong>Login Default:</strong> Jika Anda baru pertama kali menggunakan aplikasi atau akun Anda direset, Anda dapat login menggunakan kredensial default yang telah diberikan oleh Administrator.</li>
+                    <li className="print-list-item"><strong>Lupa Password:</strong> Di halaman Login, klik tombol "Lupa Password?". Anda akan diminta memasukkan NPK. Permintaan reset password akan dikirimkan dan menunggu persetujuan Administrator (Status "PENDING").</li>
+                    <li className="print-list-item"><strong>Profil Pengguna:</strong> Anda dapat mengubah nama, email, avatar, dan password kapan saja melalui menu Profil di pojok kanan atas.</li>
+                  </ul>
+                  <div className="print-img-placeholder">[Visual: Form Login & Halaman Reset Password]</div>
+                </>
               )}
-            </AnimatePresence>
+
+              {sec.id === 'dashboard' && (
+                <>
+                  <p>Dashboard adalah pusat informasi yang memberikan ringkasan seluruh metrik dan kinerja secara visual.</p>
+                  <ul>
+                    <li className="print-list-item"><strong>Statistik Kinerja (KPI):</strong> Lihat total pekerjaan, tugas selesai, dan tugas tertunda. Indikator persentase menunjukkan perbandingan performa bulan ini dengan bulan lalu.</li>
+                    <li className="print-list-item"><strong>Filter Global:</strong> Filter data yang ditampilkan di Dashboard berdasarkan <strong>Waktu</strong>, <strong>PIC</strong>, dan <strong>Kategori</strong> untuk menganalisis data secara spesifik.</li>
+                    <li className="print-list-item"><strong>Grafik Tren & Distribusi:</strong> Terdapat grafik bar untuk penyelesaian bulanan (Tren Penyelesaian Tugas) dan grafik donat untuk distribusi beban kerja per PIC (Distribusi PIC).</li>
+                  </ul>
+                  <div className="print-img-placeholder">[Visual: Tampilan Analitik Dashboard dan Interaksi Filter]</div>
+                </>
+              )}
+
+              {sec.id === 'monitoring-board' && (
+                <>
+                  <p>Visualisasi pekerjaan dalam bentuk papan Kanban. Sangat cocok untuk rapat koordinasi dan melacak pergerakan progres (To Do 👉 In Progress 👉 Done).</p>
+                  <ul>
+                    <li className="print-list-item"><strong>Drag and Drop Status:</strong> Pindahkan tugas dari satu tahap ke tahap lainnya cukup dengan menggeser kartu. Jika dipindah ke kolom "Selesai", progress otomatis menjadi 100%.</li>
+                    <li className="print-list-item"><strong>Pengurutan Kustom (Sort By):</strong> Tiap kolom Kanban memiliki opsi pengurutan (Sort By) untuk menyusun kartu berdasarkan "Terbaru", "Prioritas", atau "Tenggat Waktu Terdekat".</li>
+                    <li className="print-list-item"><strong>Tampilan Kartu Dinamis:</strong> Setiap kartu akan menampilkan indikator warna prioritas, foto avatar PIC (jika ada), tenggat waktu, serta label progress bar sub-tugas.</li>
+                  </ul>
+                  <div className="print-img-placeholder">[Visual: Peragaan Seret-dan-Lepas (Drag & Drop) di Papan Kanban]</div>
+                </>
+              )}
+
+              {sec.id === 'daftar-pekerjaan' && (
+                <>
+                  <p>Daftar Pekerjaan menampilkan tabel detail untuk setiap tugas. Ideal untuk pengelolaan massal dan melihat detail spesifik dari setiap data.</p>
+                  <ul>
+                    <li className="print-list-item"><strong>Sub-Tugas (Checklist):</strong> Di dalam detail pekerjaan, Anda dapat memecah tugas besar menjadi bagian kecil (Sub-Tugas). Setiap sub-tugas memiliki penanggung jawab (PIC) dan tenggat waktu (Tgl Mulai & Tgl Selesai) secara terpisah.</li>
+                    <li className="print-list-item"><strong>Edit Massal (Bulk Edit):</strong> Centang beberapa baris sekaligus, lalu klik "Edit Terpilih" untuk mengubah PIC, Status, Kategori, atau Jadwal & Waktu untuk banyak pekerjaan dalam 1 klik.</li>
+                    <li className="print-list-item"><strong>Log Perubahan (History):</strong> Aplikasi secara otomatis merekam jejak (Audit Trail) kapan sebuah pekerjaan dibuat, diedit, atau dipindahkan, beserta nama penggunanya.</li>
+                    <li className="print-list-item"><strong>Ekspor Excel Berwarna:</strong> Daftar pekerjaan dapat diekspor ke Excel dengan format warna sel (berdasarkan Status/Prioritas) yang sudah disesuaikan secara otomatis.</li>
+                  </ul>
+                  <div className="print-img-placeholder">[Visual: Pengisian Sub-Tugas Detail & Fungsi Edit Massal (Bulk Edit)]</div>
+                </>
+              )}
+
+              {sec.id === 'settings' && (
+                <>
+                  <p>Administrator memiliki akses penuh untuk mengatur master data aplikasi agar semua input dari user tetap terstandarisasi.</p>
+                  <ul>
+                    <li className="print-list-item"><strong>Master Dropdown:</strong> Tambah, edit, atau hapus pilihan untuk PIC, Kategori, Prioritas, dan Status. Dropdown di seluruh aplikasi akan merujuk ke data master ini secara ketat.</li>
+                    <li className="print-list-item"><strong>Warna Kustom & Progress:</strong> Tentukan warna untuk masing-masing label Status/Kategori. Anda juga dapat menentukan "Persentase Progress Otomatis" untuk setiap tahapan Status.</li>
+                    <li className="print-list-item"><strong>Mode Fokus (Zen Mode):</strong> Sembunyikan sidebar navigasi agar layar terlihat penuh. Sangat berguna untuk presentasi atau saat dijalankan di layar beresolusi kecil/HP.</li>
+                    <li className="print-list-item"><strong>Backup & Restore Utuh:</strong> Anda bisa mengunduh file cadangan (*backup*) berformat JSON. File ini menyimpan tidak hanya Pekerjaan, melainkan seluruh Master Pengaturan. Gunakan tombol "Restore" untuk memulihkan seluruh data dalam 1 klik.</li>
+                  </ul>
+                  <div className="print-img-placeholder">[Visual: Menu Pengaturan Master dan Mekanisme Backup Database]</div>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
-      
-      <div style={{ marginTop: '40px', padding: '24px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <AlertCircle size={24} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px' }}>Punya Pertanyaan Lain?</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-            Jika Anda mengalami kendala teknis atau memiliki pertanyaan yang belum terjawab pada panduan ini, Anda selalu dapat memanfaatkan pesan <strong>Error Clipboard</strong>. Jika terjadi error sistem, aplikasi akan memunculkan detail pesan yang dapat Anda salin (copy) dan kirim ke tim pengembang untuk penanganan cepat.
-          </p>
-        </div>
-      </div>
-    </motion.div>
+    </>
   );
 }
