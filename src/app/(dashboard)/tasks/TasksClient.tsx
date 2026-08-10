@@ -1158,16 +1158,32 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </div>
                     </td>
                      <td className="hide-mobile" style={{ padding: '8px 6px' }}>
-                      {task.fileUrl ? (
-                         <a href={task.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(task.fileUrl)}` : task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                          <Paperclip size={14} /> {task.fileName || 'Lampiran'}
-                        </a>
-                      ) : '-'}
-                      {taskFiles.length > 0 && !task.fileUrl && (
-                         <div style={{ fontSize: '11.5px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Paperclip size={14} /> {taskFiles.length} Lampiran
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {task.fileUrl && (
+                          <div 
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               setPreviewFile({ name: task.fileName || 'Lampiran', url: task.fileUrl!, size: 0, type: 'url' });
+                            }}
+                          >
+                            <Paperclip size={14} /> {task.fileName || 'Lampiran'}
+                          </div>
+                        )}
+                        {!task.fileUrl && taskFiles.length > 0 && taskFiles.map((f, i) => (
+                          <div 
+                            key={i}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               setPreviewFile(f);
+                            }}
+                          >
+                            <Paperclip size={14} /> {f.name}
+                          </div>
+                        ))}
+                        {!task.fileUrl && taskFiles.length === 0 && '-'}
+                      </div>
                     </td>
                      <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
