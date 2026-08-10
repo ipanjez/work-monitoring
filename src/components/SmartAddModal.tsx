@@ -109,7 +109,7 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                 <li><strong>Tanggal:</strong> Terdeteksi dari tulisan "Hari/Tanggal :" atau format kalender (misal: "Jumat, 7 Agustus 2026"). Tanggal ini otomatis menjadi Tanggal Mulai dan Selesai.</li>
                 <li><strong>Jam:</strong> Terdeteksi dari kata "Waktu :", ikon ⏰, atau format XX:XX. Jika ada dua jam yang dihubungkan (misal 09:00 - 11:00), diset sebagai Jam Mulai dan Selesai.</li>
                 <li><strong>Lokasi/Deskripsi:</strong> Teks dari kata "Tempat :", ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
-                <li><strong>PIC/Kategori/Prioritas:</strong> Terdeteksi jika ada teks yang cocok dengan daftar master (misal: nama PIC lengkap, "Prioritas: High", "Kategori: Umum").</li>
+                <li><strong>PIC/Kategori/Prioritas:</strong> Terdeteksi otomatis dari penyebutan di teks. Sebutkan beberapa nama PIC sekaligus untuk mengisi PIC Utama dan Tambahan (misal: Budi, Siti). Gunakan format "Prioritas: High" atau "Kategori: Umum" untuk prioritas dan kategori.</li>
               </ul>
             </div>
             
@@ -171,9 +171,9 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                       </div>
                       
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
                         <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>PIC</label>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>PIC Utama</label>
                           <select 
                             className="input" 
                             value={task.pic || ''} 
@@ -183,6 +183,24 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                             <option value="">-- Pilih PIC --</option>
                             {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
                           </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>PIC Tambahan</label>
+                          <input 
+                            type="text"
+                            className="input"
+                            value={(() => {
+                              try {
+                                return task.additionalPics ? JSON.parse(task.additionalPics).join(', ') : '';
+                              } catch(e) { return ''; }
+                            })()}
+                            onChange={(e) => {
+                               const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                               updateTask(idx, 'additionalPics', val.length > 0 ? JSON.stringify(val) : undefined);
+                            }}
+                            style={{ padding: '6px 10px' }}
+                            placeholder="Pisahkan koma"
+                          />
                         </div>
                         <div>
                           <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Kategori</label>

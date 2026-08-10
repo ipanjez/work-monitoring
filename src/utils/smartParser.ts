@@ -15,6 +15,7 @@ export interface ParsedTask {
   lokasi?: string;
   kategori?: string;
   prioritas?: string;
+  additionalPics?: string;
 }
 
 function parseDateIndonesian(text: string): Date | null {
@@ -166,19 +167,37 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
     }
     // Misc Description parsing
     else {
-      let matchedPic = '';
+      let matchedPics: string[] = [];
       if (picOptions.length > 0) {
-        const exactMatch = picOptions.find(p => p.toLowerCase() === lowerLine);
-        if (exactMatch) {
-          matchedPic = exactMatch;
-        } else {
-          const picMatch = picOptions.find(p => lowerLine.includes(p.toLowerCase()));
-          if (picMatch) matchedPic = picMatch;
+        // Sort by length descending to match longest names first
+        const sortedPics = [...picOptions].sort((a, b) => b.length - a.length);
+        let remainingLine = lowerLine;
+        for (const p of sortedPics) {
+           const pLower = p.toLowerCase();
+           if (remainingLine.includes(pLower)) {
+               matchedPics.push(p);
+               remainingLine = remainingLine.replace(pLower, '');
+           }
         }
       }
       
-      if (matchedPic && !currentTask.pic) {
-        currentTask.pic = matchedPic;
+      if (matchedPics.length > 0) {
+        if (!currentTask.pic) {
+          currentTask.pic = matchedPics[0];
+          if (matchedPics.length > 1) {
+            currentTask.additionalPics = JSON.stringify(matchedPics.slice(1));
+          }
+        } else {
+           let existing: string[] = [];
+           try {
+             if (currentTask.additionalPics) existing = JSON.parse(currentTask.additionalPics);
+           } catch(e){}
+           
+           const newAdditional = Array.from(new Set([...existing, ...matchedPics])).filter(p => p !== currentTask.pic);
+           if (newAdditional.length > 0) {
+             currentTask.additionalPics = JSON.stringify(newAdditional);
+           }
+        }
       }
       
       if (lowerLine.includes('prioritas') && priorityOptions.length > 0) {

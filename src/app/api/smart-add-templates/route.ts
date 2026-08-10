@@ -10,7 +10,7 @@ const defaultTemplates = [
   {
     id: 'default-1',
     name: 'Template Agenda MRK (Default)',
-    content: `📌AGENDA \n🌟Hari, DD MMMM YYYY\n\n1. Judul Agenda 1\n⏰️ : 09:00 - 11:00 WITA\n🏩 : Lokasi atau Link Zoom\n[Nama PIC Lengkap]\nPrioritas: High\nKategori: Umum\n\n2. Judul Agenda 2\n⏰️ : 13:00 - 15:00 WITA\n🏩 : Lokasi Agenda 2\n[Nama PIC Lengkap]\nPrioritas: Medium\nKategori: Umum`,
+    content: `📌AGENDA \n🌟Hari, DD MMMM YYYY\n\n1. Judul Agenda 1\n⏰️ : 09:00 - 11:00 WITA\n🏩 : Lokasi atau Link Zoom\n[Nama PIC Utama], [Nama PIC Tambahan]\nPrioritas: High\nKategori: Umum\n\n2. Judul Agenda 2\n⏰️ : 13:00 - 15:00 WITA\n🏩 : Lokasi Agenda 2\n[Nama PIC Lengkap]\nPrioritas: Medium\nKategori: Umum`,
     isDefault: true,
     orderIndex: 0,
     createdAt: new Date().toISOString(),
