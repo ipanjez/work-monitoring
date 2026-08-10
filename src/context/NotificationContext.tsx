@@ -117,10 +117,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: act.type === 'danger' ? 'var(--danger)' : 'var(--accent-primary)' }}>{act.title} 🔔</span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: act.type === 'danger' ? 'var(--danger)' : 'var(--accent-primary)' }}>{act.title} 🔔</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Baru saja</span>
                   </div>
-                  <p style={{ fontSize: '13px', margin: 0 }}>
+                  <p style={{ fontSize: '12px', margin: 0, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {act.message}
                   </p>
                 </div>
