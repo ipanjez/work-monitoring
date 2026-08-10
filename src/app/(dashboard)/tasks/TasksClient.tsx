@@ -1463,6 +1463,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         isOpen={isSmartModalOpen}
         onClose={() => setIsSmartModalOpen(false)}
         picOptions={formPicOptions}
+        categoryOptions={formCategoryOptions}
+        priorityOptions={masterPriorities}
         onSaveBulk={async (tasks) => {
           setIsSmartModalOpen(false);
           setLoading(true);

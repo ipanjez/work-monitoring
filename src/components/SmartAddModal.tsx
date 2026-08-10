@@ -10,10 +10,12 @@ interface SmartAddModalProps {
   isOpen: boolean;
   onClose: () => void;
   picOptions?: string[];
+  categoryOptions?: string[];
+  priorityOptions?: string[];
   onSaveBulk: (tasks: ParsedTask[]) => void;
 }
 
-export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSaveBulk }: SmartAddModalProps) {
+export default function SmartAddModal({ isOpen, onClose, picOptions = [], categoryOptions = [], priorityOptions = [], onSaveBulk }: SmartAddModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [rawText, setRawText] = useState('');
   const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
@@ -22,7 +24,7 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
 
   const handleParse = () => {
     if (!rawText.trim()) return;
-    const result = parseAgendaText(rawText);
+    const result = parseAgendaText(rawText, picOptions, categoryOptions, priorityOptions);
     setParsedTasks(result);
     setStep(2);
   };
@@ -107,7 +109,7 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                 <li><strong>Tanggal:</strong> Terdeteksi dari tulisan "Hari/Tanggal :" atau format kalender (misal: "Jumat, 7 Agustus 2026"). Tanggal ini otomatis menjadi Tanggal Mulai dan Selesai.</li>
                 <li><strong>Jam:</strong> Terdeteksi dari kata "Waktu :", ikon ⏰, atau format XX:XX. Jika ada dua jam yang dihubungkan (misal 09:00 - 11:00), diset sebagai Jam Mulai dan Selesai.</li>
                 <li><strong>Lokasi/Deskripsi:</strong> Teks dari kata "Tempat :", ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
-                <li><strong>PIC:</strong> Terdeteksi jika ada penyebutan nama atau jabatan yang cocok dengan daftar PIC master.</li>
+                <li><strong>PIC/Kategori/Prioritas:</strong> Terdeteksi jika ada teks yang cocok dengan daftar master (misal: nama PIC lengkap, "Prioritas: High", "Kategori: Umum").</li>
               </ul>
             </div>
             
@@ -169,12 +171,12 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                       </div>
                       
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                         <div>
                           <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>PIC</label>
                           <select 
                             className="input" 
-                            value={task.pic} 
+                            value={task.pic || ''} 
                             onChange={(e) => updateTask(idx, 'pic', e.target.value)} 
                             style={{ padding: '6px 10px' }}
                           >
@@ -182,6 +184,31 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], onSave
                             {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
                           </select>
                         </div>
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Kategori</label>
+                          <select 
+                            className="input" 
+                            value={task.kategori || (categoryOptions.length > 0 ? categoryOptions[0] : 'Umum')} 
+                            onChange={(e) => updateTask(idx, 'kategori', e.target.value)} 
+                            style={{ padding: '6px 10px' }}
+                          >
+                            {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Prioritas</label>
+                          <select 
+                            className="input" 
+                            value={task.prioritas || (priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium')} 
+                            onChange={(e) => updateTask(idx, 'prioritas', e.target.value)} 
+                            style={{ padding: '6px 10px' }}
+                          >
+                            {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                         <div>
                           <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tanggal</label>
                           <input 

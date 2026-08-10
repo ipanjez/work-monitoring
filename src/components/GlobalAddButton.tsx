@@ -665,6 +665,8 @@ export default function GlobalAddButton() {
         isOpen={isSmartModalOpen}
         onClose={() => setIsSmartModalOpen(false)}
         picOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
+        categoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
+        priorityOptions={masterPriorities}
         onSaveBulk={handleSaveSmartModal}
       />
     </div>

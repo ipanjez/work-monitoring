@@ -13,6 +13,8 @@ export interface ParsedTask {
   endTime: string;
   deskripsi: string;
   lokasi?: string;
+  kategori?: string;
+  prioritas?: string;
 }
 
 function parseDateIndonesian(text: string): Date | null {
@@ -49,7 +51,7 @@ function extractTimes(line: string): { start: string, end: string | null } {
   return { start: '', end: null };
 }
 
-export function parseAgendaText(rawText: string): ParsedTask[] {
+export function parseAgendaText(rawText: string, picOptions: string[] = [], categoryOptions: string[] = [], priorityOptions: string[] = []): ParsedTask[] {
   // Pre-process rawText to handle single-line PDF pastes by inserting newlines before key fields
   const processedText = rawText.replace(/(Hari\/Tanggal|Waktu|Tempat|Agenda)\s*:/gi, '\n$1 :');
   const lines = processedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -164,6 +166,31 @@ export function parseAgendaText(rawText: string): ParsedTask[] {
     }
     // Misc Description parsing
     else {
+      let matchedPic = '';
+      if (picOptions.length > 0) {
+        const exactMatch = picOptions.find(p => p.toLowerCase() === lowerLine);
+        if (exactMatch) {
+          matchedPic = exactMatch;
+        } else {
+          const picMatch = picOptions.find(p => lowerLine.includes(p.toLowerCase()));
+          if (picMatch) matchedPic = picMatch;
+        }
+      }
+      
+      if (matchedPic && !currentTask.pic) {
+        currentTask.pic = matchedPic;
+      }
+      
+      if (lowerLine.includes('prioritas') && priorityOptions.length > 0) {
+         const matchedPrio = priorityOptions.find(p => lowerLine.includes(p.toLowerCase()));
+         if (matchedPrio) currentTask.prioritas = matchedPrio;
+      }
+
+      if (lowerLine.includes('kategori') && categoryOptions.length > 0) {
+         const matchedCat = categoryOptions.find(c => lowerLine.includes(c.toLowerCase()));
+         if (matchedCat) currentTask.kategori = matchedCat;
+      }
+
       currentDescription.push(line);
     }
   }
