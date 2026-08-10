@@ -207,9 +207,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   }
 
   let formPicOptions = Array.from(new Set([
-    ...masterPics,
-    ...registeredUserNames,
-    ...tasks.map(t => t.pic).filter(Boolean)
+    ...masterPics
   ]));
   if (editingTask?.pic && !formPicOptions.includes(editingTask.pic)) {
     formPicOptions.push(editingTask.pic);
