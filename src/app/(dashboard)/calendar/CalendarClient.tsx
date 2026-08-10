@@ -97,18 +97,35 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
     const fetchHolidays = async () => {
       try {
-        const res = await fetch(`https://dayoffapi.vercel.app/api?year=${year}`);
+        const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/ID`);
         if (res.ok) {
           const data = await res.json();
           const newHols: Record<string, string> = {};
           data.forEach((h: any) => {
-            newHols[h.tanggal] = h.keterangan;
+            newHols[h.date] = h.localName;
           });
           setHolidays(prev => ({ ...prev, ...newHols }));
           setFetchedYears(prev => new Set(prev).add(year));
         }
       } catch (err) {
         console.error('Failed to fetch holidays', err);
+      }
+
+      // Hardcoded fallback/supplement for 2026 (especially for Indonesian Cuti Bersama & Islamic Holidays missing from generic APIs)
+      if (year === 2026) {
+        const extraHols2026: Record<string, string> = {
+          "2026-02-14": "Isra Mikraj Nabi Muhammad SAW",
+          "2026-02-17": "Tahun Baru Imlek 2577 Kongzili",
+          "2026-03-19": "Hari Suci Nyepi Tahun Baru Saka 1948",
+          "2026-03-20": "Idul Fitri 1447 Hijriah",
+          "2026-03-21": "Idul Fitri 1447 Hijriah",
+          "2026-05-27": "Idul Adha 1447 Hijriah",
+          "2026-05-31": "Hari Raya Waisak 2570 BE",
+          "2026-06-17": "Tahun Baru Islam 1448 Hijriah",
+          "2026-08-17": "Hari Kemerdekaan Republik Indonesia",
+          "2026-08-26": "Maulid Nabi Muhammad SAW"
+        };
+        setHolidays(prev => ({ ...prev, ...extraHols2026 }));
       }
     };
 
