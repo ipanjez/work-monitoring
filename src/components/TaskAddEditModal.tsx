@@ -14,7 +14,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
   if (!logs || logs.length === 0) return null;
-  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 3, 0));
+  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
 
   return (
     <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
@@ -22,16 +22,19 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
       {visibleLogs.map((log: any, lidx: number) => (
         <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
           <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-          <span style={{ color: 'var(--text-primary)' }}>- {log.status}</span>
+          <span 
+            style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
+            dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
+          />
         </div>
       ))}
-      {logs.length > 3 && (
+      {logs.length > 1 && (
         <button
           type="button"
           style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? 'Sembunyikan' : `Tampilkan ${logs.length - 3} log lainnya...`}
+          {expanded ? 'Sembunyikan' : `Tampilkan ${logs.length - 1} log lainnya...`}
         </button>
       )}
     </div>
@@ -771,27 +774,17 @@ export default function TaskAddEditModal({
                     <div key={subTask.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <textarea
+                          <div
                             className="input"
-                            style={{ flex: 1, resize: 'none', minHeight: '60px', overflow: 'hidden' }}
-                            placeholder="Deskripsi Sub Pekerjaan..."
-                            value={subTask.text}
-                            ref={(el) => {
-                              if (el) {
-                                el.style.height = 'auto';
-                                el.style.height = el.scrollHeight + 'px';
-                              }
-                            }}
-                            onKeyDown={(e) => handleMarkdownShortcut(e, subTask.text, (v) => {
+                            contentEditable
+                            suppressContentEditableWarning
+                            style={{ flex: 1, minHeight: '60px', overflowY: 'auto', whiteSpace: 'pre-wrap', cursor: 'text', padding: '10px' }}
+                            onBlur={e => {
                               const updated = [...(editingTask.subTasksList || [])];
-                              updated[idx].text = v;
-                              setEditingTask({ ...editingTask, subTasksList: updated });
-                            })}
-                            onChange={e => {
-                              const updated = [...(editingTask.subTasksList || [])];
-                              updated[idx].text = e.target.value;
+                              updated[idx].text = e.currentTarget.innerHTML;
                               setEditingTask({ ...editingTask, subTasksList: updated });
                             }}
+                            dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
                           />
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <div style={{ flex: 1, minWidth: '150px' }}>
