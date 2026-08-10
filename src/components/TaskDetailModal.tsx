@@ -394,6 +394,17 @@ ${task!.deskripsi || '-'}`;
               </div>
             )}
 
+            {task.catatan && (
+              <div style={{ marginTop: '8px' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Catatan Tambahan</h4>
+                <div 
+                  style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', overflowX: 'auto', whiteSpace: 'pre-wrap', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--accent-primary)' }}
+                >
+                  {task.catatan}
+                </div>
+              </div>
+            )}
+
             {/* Sub-Tasks Display */}
             {task.subTasksJson && (() => {
               let subTasks: SubTask[] = [];

@@ -724,6 +724,19 @@ export default function TaskAddEditModal({
                 />
               </div>
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Catatan Tambahan (Opsional)
+                </label>
+                <textarea
+                  className="input"
+                  style={{ minHeight: '80px', resize: 'vertical' }}
+                  placeholder="Tambahkan catatan khusus, pengingat, atau instruksi singkat..."
+                  value={editingTask.catatan || ''}
+                  onChange={e => setEditingTask({ ...editingTask, catatan: e.target.value })}
+                />
+              </div>
+
               {/* Sub-Pekerjaan Section */}
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
