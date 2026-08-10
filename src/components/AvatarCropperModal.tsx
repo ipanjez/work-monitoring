@@ -21,16 +21,17 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> 
     img.src = imageSrc;
   });
 
+  const TARGET_SIZE = 150;
   const canvas = document.createElement('canvas');
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  canvas.width = TARGET_SIZE;
+  canvas.height = TARGET_SIZE;
   const ctx = canvas.getContext('2d');
 
   if (!ctx) {
     throw new Error('No 2d context');
   }
 
-  // Draw image on canvas
+  // Draw image on canvas, scaling it to TARGET_SIZE
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -39,8 +40,8 @@ const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> 
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    TARGET_SIZE,
+    TARGET_SIZE
   );
 
   // Return Base64

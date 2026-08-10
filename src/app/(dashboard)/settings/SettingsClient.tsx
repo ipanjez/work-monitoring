@@ -277,6 +277,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       });
     }
 
+    if (type === 'pic' && masterPicAvatars[oldVal] !== undefined) {
+      setMasterPicAvatars(prev => {
+        const next = { ...prev };
+        next[newVal.trim()] = next[oldVal];
+        delete next[oldVal];
+        return next;
+      });
+    }
+
     setEditingItem(null);
     const loadingToast = toast.loading('Memperbarui nama di semua pekerjaan...');
 
@@ -543,6 +552,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_colors', JSON.stringify(masterColors));
     localStorage.setItem('master_icons', JSON.stringify(masterIcons));
     localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
+    localStorage.setItem('master_pic_avatars', JSON.stringify(masterPicAvatars));
 
     fetch('/api/settings', {
       method: 'POST',
@@ -560,6 +570,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_colors: masterColors,
         master_icons: masterIcons,
         master_status_progress: masterStatusProgress,
+        master_pic_avatars: masterPicAvatars,
         max_file_size_mb: Number(maxFileSizeMb) || 25,
         max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
         max_total_storage_mb: Number(maxTotalStorageMb) || 5000
