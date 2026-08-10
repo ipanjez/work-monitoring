@@ -740,8 +740,11 @@ export default function TaskAddEditModal({
               {/* Sub-Pekerjaan Section */}
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     Sub Pekerjaan (Sub Deskripsi)
+                    <span title="Bisa menggunakan shortcut keyboard saat mengetik di dalam kotak:&#10;• Ctrl+B (Tebal / Bold)&#10;• Ctrl+I (Miring / Italic)&#10;• Ctrl+U (Garis Bawah / Underline)&#10;• Ctrl+Shift+X (Coret / Strikethrough)&#10;Atau ketik manual sintaksnya seperti **tebal** atau *miring*." style={{ display: 'inline-flex', color: 'var(--accent-primary)', cursor: 'help' }}>
+                      <Info size={14} />
+                    </span>
                   </label>
                   <button
                     type="button"

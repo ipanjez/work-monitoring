@@ -1,5 +1,6 @@
-import React from 'react';
-import { SubTask } from '@/utils/taskUtils';
+import React, { useState } from 'react';
+import { SubTask, formatDescription } from '@/utils/taskUtils';
+import { User } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 
 interface TaskTimelineProps {
@@ -16,9 +17,12 @@ interface TimelineEvent {
   title: string;
   status?: string;
   color: string;
+  pic?: string;
 }
 
 export default function TaskTimeline({ startDate, endDate, subTasks, masterColors }: TaskTimelineProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   if (!startDate) return null;
 
   const start = startOfDay(new Date(startDate));
@@ -76,7 +80,8 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         date: startOfDay(new Date(st.tenggatWaktu)),
         title: st.text,
         status: st.status,
-        color: getStatusColor(st.status)
+        color: getStatusColor(st.status),
+        pic: st.pic
       });
     }
   });
@@ -84,11 +89,22 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
   // Sort chronologically
   events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
+  const statusCounts = subTasks.reduce((acc, st) => {
+    acc[st.status] = (acc[st.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const statusSummary = Object.entries(statusCounts)
+    .map(([status, count]) => `${count} ${status}`)
+    .join(', ');
+
   return (
     <div style={{ padding: '24px 16px 24px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '32px', textAlign: 'center' }}>
+      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', textAlign: 'center' }}>
         Alur Timeline Pekerjaan
       </h4>
+      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px' }}>
+        {statusSummary ? `(${statusSummary})` : ''}
+      </div>
       
       <div style={{ position: 'relative', margin: '0 auto', width: '100%', maxWidth: '600px' }}>
         {/* Central Vertical Line */}
@@ -108,7 +124,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(ev.date, 'dd MMM yyyy')}
                     </span>
-                    <div style={{ 
+                    <div 
+                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
+                      style={{ 
                       background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
                       border: isSpecial ? 'none' : '1px solid var(--border-color)', 
                       padding: isSpecial ? 0 : '10px 12px', 
@@ -117,14 +135,35 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                       fontWeight: isSpecial ? 600 : 500,
                       fontSize: '12px',
                       width: '100%',
-                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)'
+                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                      cursor: isSpecial ? 'default' : 'pointer'
                     }}>
-                      <div style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.5 }}>
-                        {ev.title}
+                      <div 
+                        style={{ 
+                          wordBreak: 'break-word', 
+                          whiteSpace: 'normal', 
+                          lineHeight: 1.5,
+                          display: isSpecial ? 'block' : '-webkit-box',
+                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                        }}
+                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                      >
+                        {isSpecial ? ev.title : null}
                       </div>
-                      {ev.status && (
-                        <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 'bold', color: ev.color }}>
-                          {ev.status}
+                      {!isSpecial && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                          {ev.pic && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <User size={10} /> {ev.pic}
+                            </span>
+                          )}
+                          {ev.status && (
+                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                              {ev.status}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -142,7 +181,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(ev.date, 'dd MMM yyyy')}
                     </span>
-                    <div style={{ 
+                    <div 
+                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
+                      style={{ 
                       background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
                       border: isSpecial ? 'none' : '1px solid var(--border-color)', 
                       padding: isSpecial ? 0 : '10px 12px', 
@@ -151,14 +192,35 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                       fontWeight: isSpecial ? 600 : 500,
                       fontSize: '12px',
                       width: '100%',
-                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)'
+                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                      cursor: isSpecial ? 'default' : 'pointer'
                     }}>
-                      <div style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.5 }}>
-                        {ev.title}
+                      <div 
+                        style={{ 
+                          wordBreak: 'break-word', 
+                          whiteSpace: 'normal', 
+                          lineHeight: 1.5,
+                          display: isSpecial ? 'block' : '-webkit-box',
+                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                        }}
+                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                      >
+                        {isSpecial ? ev.title : null}
                       </div>
-                      {ev.status && (
-                        <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 'bold', color: ev.color }}>
-                          {ev.status}
+                      {!isSpecial && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                          {ev.status && (
+                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                              {ev.status}
+                            </span>
+                          )}
+                          {ev.pic && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <User size={10} /> {ev.pic}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
