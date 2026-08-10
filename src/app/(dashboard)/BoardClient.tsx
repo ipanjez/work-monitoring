@@ -718,12 +718,60 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           )}
 
                         </div>
-                      <Avatar 
-                        name={task.pic} 
-                        src={masterPicAvatars?.[task.pic]} 
-                        size={24} 
-                        masterColors={masterColors} 
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {(() => {
+                          let addPics: string[] = [];
+                          if (task.additionalPics) {
+                            try {
+                              addPics = JSON.parse(task.additionalPics);
+                            } catch(e) {}
+                          }
+                          const allPics = [task.pic, ...addPics].filter(Boolean);
+                          const displayPics = allPics.slice(0, 3);
+                          const extraCount = allPics.length - 3;
+
+                          return (
+                            <>
+                              {displayPics.map((p, i) => (
+                                <div key={i} style={{ 
+                                  marginLeft: i > 0 ? '-8px' : '0', 
+                                  border: '2px solid var(--surface-color)', 
+                                  borderRadius: '50%',
+                                  zIndex: displayPics.length - i,
+                                  position: 'relative'
+                                }} title={p}>
+                                  <Avatar 
+                                    name={p} 
+                                    src={masterPicAvatars?.[p]} 
+                                    size={24} 
+                                    masterColors={masterColors} 
+                                  />
+                                </div>
+                              ))}
+                              {extraCount > 0 && (
+                                <div style={{ 
+                                  marginLeft: '-8px',
+                                  border: '2px solid var(--surface-color)',
+                                  borderRadius: '50%',
+                                  width: '24px',
+                                  height: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: 'var(--bg-hover)',
+                                  color: 'var(--text-secondary)',
+                                  fontSize: '10px',
+                                  fontWeight: 'bold',
+                                  zIndex: 0,
+                                  position: 'relative'
+                                }} title={`${extraCount} PIC lainnya`}>
+                                  +{extraCount}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                       </div>
                     </div>
                   );
