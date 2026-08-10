@@ -1093,7 +1093,7 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                       </div>
                     )}
                     {t.fileUrl && (
-                      <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px', marginTop: '4px' }}>
+                      <a href={t.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(t.fileUrl)}` : t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px', marginTop: '4px' }}>
                         <Paperclip size={12} /> {t.fileName || 'Lampiran'}
                       </a>
                     )}
@@ -1168,10 +1168,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
                         {t.nama}
                         {t.fileUrl && (
                           <div style={{ marginTop: '8px', fontSize: '12px' }}>
-                            <a href={t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>
-                              <Paperclip size={12} /> {t.fileName || 'Lampiran'}
-                            </a>
-                          </div>
+                            {t.fileUrl && (
+                              <a href={t.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(t.fileUrl)}` : t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-primary)', marginTop: '4px' }}>
+                                <Paperclip size={12} /> {t.fileName || 'Lampiran'}
+                              </a>
+                            )}</div>
                         )}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top', maxWidth: '200px', whiteSpace: 'normal' }}>

@@ -1143,7 +1143,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </td>
                      <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       {task.fileUrl ? (
-                         <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                         <a href={task.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(task.fileUrl)}` : task.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                           <Paperclip size={14} /> {task.fileName || 'Lampiran'}
                         </a>
                       ) : '-'}
