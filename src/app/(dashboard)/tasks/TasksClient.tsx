@@ -1159,18 +1159,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </td>
                      <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {task.fileUrl && (
-                          <div 
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
-                            onClick={(e) => {
-                               e.stopPropagation();
-                               setPreviewFile({ name: task.fileName || 'Lampiran', url: task.fileUrl!, size: 0 });
-                            }}
-                          >
-                            <Paperclip size={14} /> {task.fileName || 'Lampiran'}
-                          </div>
-                        )}
-                        {!task.fileUrl && taskFiles.length > 0 && taskFiles.map((f, i) => (
+                        {taskFiles.length > 0 ? taskFiles.map((f, i) => (
                           <div 
                             key={i}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
@@ -1181,8 +1170,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                           >
                             <Paperclip size={14} /> {f.name}
                           </div>
-                        ))}
-                        {!task.fileUrl && taskFiles.length === 0 && '-'}
+                        )) : '-'}
                       </div>
                     </td>
                      <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
