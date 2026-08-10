@@ -2,20 +2,29 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 
-const calculateProgress = (status: string, subTasksJson: string | null | undefined): number => {
+const calculateProgress = async (status: string, subTasksJson: string | null | undefined): Promise<number> => {
+  let masterProgress: Record<string, number> = { 'To Do': 0, 'In Progress': 50, 'Done': 100 };
+  try {
+    const setting = await prisma.appSetting.findUnique({ where: { key: 'master_status_progress' } });
+    if (setting && setting.value) {
+      masterProgress = JSON.parse(setting.value);
+    }
+  } catch(e) {}
+
   if (subTasksJson) {
     try {
       const subTasks = JSON.parse(subTasksJson);
       if (Array.isArray(subTasks) && subTasks.length > 0) {
-        const doneCount = subTasks.filter(t => t.status === 'Done').length;
-        const inProgCount = subTasks.filter(t => t.status === 'In Progress').length;
-        return Math.round(((doneCount + (inProgCount * 0.5)) / subTasks.length) * 100);
+        let totalScore = 0;
+        for (const st of subTasks) {
+           const p = masterProgress[st.status];
+           totalScore += (p !== undefined ? p : (st.status === 'Done' ? 100 : st.status === 'In Progress' ? 50 : 0));
+        }
+        return Math.round(totalScore / subTasks.length);
       }
     } catch(e) {}
   }
-  if (status === 'Done') return 100;
-  if (status === 'In Progress') return 50;
-  return 0;
+  return masterProgress[status] !== undefined ? masterProgress[status] : (status === 'Done' ? 100 : status === 'In Progress' ? 50 : 0);
 };
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -152,7 +161,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     const finalStatus = status !== undefined ? status : existingTask.status;
     const currentSubTasksJson = subTasksJson !== undefined ? subTasksJson : existingTask.subTasksJson;
-    const finalProgress = calculateProgress(finalStatus, currentSubTasksJson);
+    const finalProgress = await calculateProgress(finalStatus, currentSubTasksJson);
 
     try {
       const task = await prisma.task.update({

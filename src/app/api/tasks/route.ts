@@ -17,20 +17,29 @@ export async function GET() {
 }
 
 
-const calculateProgress = (status: string, subTasksJson: string | null | undefined): number => {
+const calculateProgress = async (status: string, subTasksJson: string | null | undefined): Promise<number> => {
+  let masterProgress: Record<string, number> = { 'To Do': 0, 'In Progress': 50, 'Done': 100 };
+  try {
+    const setting = await prisma.appSetting.findUnique({ where: { key: 'master_status_progress' } });
+    if (setting && setting.value) {
+      masterProgress = JSON.parse(setting.value);
+    }
+  } catch(e) {}
+
   if (subTasksJson) {
     try {
       const subTasks = JSON.parse(subTasksJson);
       if (Array.isArray(subTasks) && subTasks.length > 0) {
-        const doneCount = subTasks.filter(t => t.status === 'Done').length;
-        const inProgCount = subTasks.filter(t => t.status === 'In Progress').length;
-        return Math.round(((doneCount + (inProgCount * 0.5)) / subTasks.length) * 100);
+        let totalScore = 0;
+        for (const st of subTasks) {
+           const p = masterProgress[st.status];
+           totalScore += (p !== undefined ? p : (st.status === 'Done' ? 100 : st.status === 'In Progress' ? 50 : 0));
+        }
+        return Math.round(totalScore / subTasks.length);
       }
     } catch(e) {}
   }
-  if (status === 'Done') return 100;
-  if (status === 'In Progress') return 50;
-  return 0;
+  return masterProgress[status] !== undefined ? masterProgress[status] : (status === 'Done' ? 100 : status === 'In Progress' ? 50 : 0);
 };
 
 export async function POST(req: Request) {
@@ -47,30 +56,33 @@ export async function POST(req: Request) {
 
     // Handle array for bulk import
     if (Array.isArray(body)) {
+      const tasksToCreate = await Promise.all(body.map(async (task) => {
+        const prog = await calculateProgress(task.status || 'To Do', task.subTasksJson);
+        return {
+          nama: String(task.nama || 'Tanpa Nama'),
+          pic: String(task.pic || 'Unassigned'),
+          status: task.status || 'To Do',
+          prioritas: task.prioritas || 'Medium',
+          kategori: task.kategori || 'Umum',
+          progress: prog,
+          deskripsi: task.deskripsi || null,
+          catatan: task.catatan || null,
+          fileUrl: task.fileUrl || null,
+          fileName: task.fileName || null,
+          startDate: parseDate(task.startDate),
+          endDate: parseDate(task.endDate),
+          isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+          startTime: task.startTime || '08:00',
+          endTime: task.endTime || '17:00',
+          subTasksJson: task.subTasksJson || null,
+          additionalPics: task.additionalPics || null,
+          historyLogsJson: initialLog,
+          lokasi: task.lokasi || null,
+        };
+      }));
+      
       const created = await prisma.$transaction(
-        body.map((task) => prisma.task.create({
-          data: {
-            nama: String(task.nama || 'Tanpa Nama'),
-            pic: String(task.pic || 'Unassigned'),
-            status: task.status || 'To Do',
-            prioritas: task.prioritas || 'Medium',
-            kategori: task.kategori || 'Umum',
-            progress: calculateProgress(task.status || 'To Do', task.subTasksJson),
-            deskripsi: task.deskripsi || null,
-            catatan: task.catatan || null,
-            fileUrl: task.fileUrl || null,
-            fileName: task.fileName || null,
-            startDate: parseDate(task.startDate),
-            endDate: parseDate(task.endDate),
-            isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-            startTime: task.startTime || '08:00',
-            endTime: task.endTime || '17:00',
-            subTasksJson: task.subTasksJson || null,
-            additionalPics: task.additionalPics || null,
-            historyLogsJson: initialLog,
-            lokasi: task.lokasi || null,
-            }
-          }))
+        tasksToCreate.map(data => prisma.task.create({ data }))
       );
       return NextResponse.json(created);
     }
@@ -87,7 +99,7 @@ export async function POST(req: Request) {
     }
 
     const finalStatus = status || 'To Do';
-      const finalProgress = calculateProgress(finalStatus, subTasksJson);
+      const finalProgress = await calculateProgress(finalStatus, subTasksJson);
 
     try {
       const task = await prisma.task.create({
