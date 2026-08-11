@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
@@ -54,6 +54,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
+  const [picEmails, setPicEmails] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (task) {
@@ -73,7 +74,19 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         console.error('Failed to load settings:', err);
       }
     };
+    
+    const loadPicEmails = async () => {
+      try {
+        const res = await fetch('/api/users/emails');
+        if (res.ok) {
+          const data = await res.json();
+          setPicEmails(data);
+        }
+      } catch (e) { }
+    };
+
     loadSettings();
+    loadPicEmails();
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
@@ -95,6 +108,66 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     }
   };
 
+
+  const getAllPics = () => {
+    if (!task) return [];
+    const pics = new Set<string>();
+    if (task.pic) pics.add(task.pic);
+    
+    if (task.additionalPics) {
+      try {
+        const arr = JSON.parse(task.additionalPics);
+        if (Array.isArray(arr)) arr.forEach((p: string) => pics.add(p));
+      } catch (e) {}
+    }
+    
+    if (task.subTasksJson) {
+      try {
+        const arr = JSON.parse(task.subTasksJson);
+        if (Array.isArray(arr)) {
+          arr.forEach((st: any) => {
+            if (st.pic) pics.add(st.pic);
+          });
+        }
+      } catch (e) {}
+    }
+    return Array.from(pics);
+  };
+
+  const allPics = getAllPics();
+  const emailsTo = allPics.map(p => picEmails[p]).filter(Boolean);
+  const canSendMail = emailsTo.length > 0;
+
+  const handleSendMail = () => {
+    if (!task || !canSendMail) return;
+    
+    const subject = `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}`;
+    const calUrl = getGoogleCalendarUrl(task);
+    
+    let subTasksStr = '';
+    if (task.subTasksJson) {
+      try {
+        const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
+        if (Array.isArray(subTasks) && subTasks.length > 0) {
+          subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
+        }
+      } catch (e) { }
+    }
+
+    const body = `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
+      `Nama Pekerjaan: ${task.nama}\n` +
+      `Kategori: ${task.kategori || 'Umum'}\n` +
+      `Status: ${task.status}\n` +
+      `Prioritas: ${task.prioritas || 'Medium'}\n` +
+      `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
+      `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
+      `${subTasksStr}\n\n` +
+      `---\n` +
+      `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n`;
+
+    const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
+  };
 
   const handleAddComment = async () => {
     const finalAuthor = session?.user?.name || commentAuthor;
@@ -282,6 +355,27 @@ ${task!.deskripsi || '-'}`;
                     title="Export PDF"
                   >
                     <FileDown size={16} />
+                  </button>
+                  
+                  <button 
+                    className="btn" 
+                    onClick={handleSendMail}
+                    disabled={!canSendMail}
+                    style={{ 
+                      padding: '6px', 
+                      borderRadius: '6px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      background: canSendMail ? '#3b82f6' : 'var(--border-color)', 
+                      color: canSendMail ? 'white' : 'var(--text-secondary)', 
+                      border: 'none',
+                      cursor: canSendMail ? 'pointer' : 'not-allowed',
+                      opacity: canSendMail ? 1 : 0.6
+                    }}
+                    title={canSendMail ? "Kirim Email ke PIC" : "Tidak ada data email PIC untuk pekerjaan ini"}
+                  >
+                    <Mail size={16} />
                   </button>
                 </div>
               </div>
