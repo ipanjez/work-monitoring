@@ -1013,19 +1013,11 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
 
         {/* Charts Grid (Responsive) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+          {/* Doughnut Charts (Side-by-Side) */}
           <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Doughnut data={statusData} options={statusOptions} />
-            </div>
-          </div>
-
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
-            <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
-              <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
-                <Bar data={picData} options={picOptions} plugins={[picAvatarXAxisPlugin]} />
-              </div>
             </div>
           </div>
 
@@ -1036,10 +1028,20 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          {/* Full Width Bar Charts */}
+          <div className="glass" style={{ padding: '24px', minHeight: '340px', gridColumn: '1 / -1' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
+            <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
+              <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
+                <Bar data={picData} options={picOptions} plugins={[picAvatarXAxisPlugin]} />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass" style={{ padding: '24px', minHeight: '340px', gridColumn: '1 / -1' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
-              <div style={{ height: '240px', position: 'relative', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
+              <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
                 <Bar data={categoryData} options={categoryOptions} />
               </div>
             </div>
