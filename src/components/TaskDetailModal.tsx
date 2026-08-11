@@ -6,10 +6,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
+import { exportTaskPdf } from '@/utils/exportPdf';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   if (!logs || logs.length === 0) return null;
@@ -268,6 +269,20 @@ ${task!.deskripsi || '-'}`;
                       <Eye size={16} />
                     </button>
                   )}
+
+                  <button 
+                    className="btn" 
+                    onClick={() => {
+                      const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
+                      const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
+                      exportTaskPdf(task, currentAppName, siteUrl);
+                      toast.success('PDF berhasil di-download!');
+                    }}
+                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
+                    title="Export PDF"
+                  >
+                    <FileDown size={16} />
+                  </button>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
