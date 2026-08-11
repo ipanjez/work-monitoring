@@ -1008,7 +1008,7 @@ export default function TaskAddEditModal({
                               <span style={{ fontWeight: 500 }}>{f.name}</span>
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                              {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                              {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` • ${(f.size / (1024*1024)).toFixed(2)} MB` : ''}</span>}
                               {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
                             </div>
                           </div>
