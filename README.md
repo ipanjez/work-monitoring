@@ -12,9 +12,15 @@ Proyek ini dilengkapi dengan antarmuka yang sangat estetik, manajemen data yang 
 - 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
 - ☁️ **Sistem Database Sentral:** Menggunakan *Prisma ORM* dengan database pilihan untuk penyimpanan data lokal yang solid, cepat, dan tersinkronisasi di berbagai perangkat dalam jaringan lokal Anda.
 - 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
-- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), serta integrasi feed Google Calendar.
-- 🔒 **Keamanan Sesi Terpusat:** Dilengkapi fitur *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan, lengkap dengan penghitung waktu mundur pada *sidebar*.
-- 🔑 **Kustomisasi Global Password:** Anda kini dapat mengubah kata sandi masuk (Global Password) secara langsung melalui menu Pengaturan tanpa harus mengubah file `.env`. Saat Anda mengatur sandi baru, sistem akan mendahulukannya dari konfigurasi default.
+- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), integrasi feed Google Calendar yang dilindungi Token Rahasia, serta **Kirim Email Otomatis** ke seluruh PIC langsung dari detail pekerjaan.
+- 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security):** 
+  - *Role-Based Access Control* (RBAC) dengan pemisahan akses Admin, Member, dan Viewer.
+  - *Global Middleware / Proxy Route Protection* untuk mengunci API rahasia.
+  - Sanitasi HTML (Anti-XSS) dengan DOMPurify.
+  - *Whitelist* ekstensi file pada fitur unggah (Anti-Malware).
+  - Enjeksi *HTTP Security Headers* (Anti-Clickjacking & MIME-sniffing).
+  - *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan.
+- 🔑 **Kustomisasi Global Password & Pengaturan:** Anda dapat mengubah kata sandi masuk (Global Password) dan mengelola akun PIC/User (termasuk Role & Email) secara langsung melalui menu Pengaturan tanpa mengubah kode sumber.
 - ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan tersimpan otomatis tanpa perlu memuat ulang halaman (*real-time update*).
 - 🧪 **Impor Excel Pintar & Otomatis:** Saat mengimpor Excel, apabila terdapat Nama PIC atau Kategori yang belum terdaftar di pengaturan, sistem akan **secara otomatis mendaftarkannya** ke dalam Master Data Pengaturan Anda. Template Excel beserta lembar panduannya dapat Anda unduh langsung dari dalam aplikasi.
 
