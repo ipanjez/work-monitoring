@@ -555,9 +555,17 @@ ${task!.deskripsi || '-'}`;
                   <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                     File Lampiran ({getTaskFiles(task).length} File, Maks {maxFileSizeMb} MB/file)
                   </h4>
-                  <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-                    Total terpakai: {(getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0) / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
-                  </span>
+                  {(() => {
+                    const totalSize = getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0);
+                    if (totalSize > 0) {
+                      return (
+                        <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                          Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {getTaskFiles(task).map((f, idx) => (
