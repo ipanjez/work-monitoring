@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
@@ -122,10 +122,35 @@ export default function UserProfileButton() {
             animation: 'fadeIn 0.2s ease',
           }}
         >
-          <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>NPK / ID</div>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '2px' }}>NPK / ID</div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
               {(session.user as any).npk || '—'}
+            </div>
+            
+            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Role Akses</div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                {(() => {
+                  const role = (session.user as any).role;
+                  if (role === 'ADMIN') return <ShieldAlert size={16} color="var(--danger)" style={{ marginTop: '2px' }} />;
+                  if (role === 'VIEWER') return <Eye size={16} color="var(--text-secondary)" style={{ marginTop: '2px' }} />;
+                  return <Shield size={16} color="var(--accent-primary)" style={{ marginTop: '2px' }} />;
+                })()}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {(session.user as any).role || 'MEMBER'}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    {(() => {
+                      const role = (session.user as any).role;
+                      if (role === 'ADMIN') return 'Akses penuh kelola data.';
+                      if (role === 'VIEWER') return 'Read-only (Hanya lihat).';
+                      return 'Akses standar.';
+                    })()}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
