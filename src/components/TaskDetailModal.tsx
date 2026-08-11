@@ -235,18 +235,6 @@ ${task!.deskripsi || '-'}`;
                     <Copy size={16} />
                   </button>
 
-                  {onEdit && userRole !== 'SPV' && (
-                    <button className="btn btn-secondary" style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onEdit} title="Edit Pekerjaan Ini">
-                      <Edit size={16} />
-                    </button>
-                  )}
-                  
-                  {onDelete && userRole !== 'SPV' && (
-                    <button className="btn btn-danger" style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onDelete} title="Hapus Pekerjaan">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
                   <a
                     href={getGoogleCalendarUrl(task)}
                     target="_blank"
@@ -282,7 +270,21 @@ ${task!.deskripsi || '-'}`;
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                {onEdit && userRole !== 'SPV' && (
+                  <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                    <Edit size={16} style={{ marginRight: '6px' }} /> Edit
+                  </button>
+                )}
+                
+                {onDelete && userRole !== 'SPV' && (
+                  <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
+                    <Trash2 size={16} style={{ marginRight: '6px' }} /> Hapus
+                  </button>
+                )}
+
+                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }}></div>
+
                 <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
                   <X size={18} />
                 </button>
