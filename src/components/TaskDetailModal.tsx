@@ -166,7 +166,12 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n`;
 
     const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoLink, '_blank');
+    
+    const a = document.createElement('a');
+    a.href = mailtoLink;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.click();
   };
 
   const handleAddComment = async () => {
