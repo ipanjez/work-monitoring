@@ -185,6 +185,7 @@ export default function GlobalAddButton() {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      const toastId = toast.loading('Sedang memproses dan menyimpan data...');
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
@@ -294,20 +295,27 @@ export default function GlobalAddButton() {
           return;
         }
 
-        await fetch('/api/tasks', {
+        const res = await fetch('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formattedData),
         });
 
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Terjadi kesalahan di server saat menyimpan data.');
+        }
+
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('tasksUpdated'));
         }
 
+        toast.dismiss(toastId);
         toast.success(`Berhasil mengimpor ${formattedData.length} data pekerjaan dari Excel!`);
         setIsOpen(false);
       } catch (err: any) {
         console.error(err);
+        toast.dismiss(toastId);
         toast.error(`Gagal mengimpor file Excel: ${err?.message || err}`);
       }
     };
@@ -679,11 +687,12 @@ export default function GlobalAddButton() {
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Unggah data pekerjaan sekaligus</div>
               </div>
             </div>
-            
-            <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
           </div>
         </>
       )}
+
+      {/* Render file input outside so it doesn't get destroyed when dropdown closes */}
+      <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
 
       {/* Modals rendered outside of dropdown so they don't get unmounted/clipped */}
       <TaskAddEditModal
