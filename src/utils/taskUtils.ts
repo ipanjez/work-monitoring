@@ -492,9 +492,15 @@ export const formatLogDetails = (text: string): string => {
   let formatted = text;
 
   // 1. Parse CUSTOM_RECURRENCE JSON
-  formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*({[^}]+})/g, (match, jsonString) => {
+  formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*("?\\?{.*?\\?}?"?)/g, (match, jsonStringWithQuotes) => {
     try {
-      const data = JSON.parse(jsonString);
+      let cleanStr = jsonStringWithQuotes;
+      if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) {
+        cleanStr = cleanStr.slice(1, -1);
+      }
+      cleanStr = cleanStr.replace(/\\"/g, '"').replace(/\\{/g, '{').replace(/\\}/g, '}');
+      
+      const data = JSON.parse(cleanStr);
       let res = `Pengulangan Kustom: Tiap ${data.every} ${data.unit}`;
       if (data.endType === 'date' && data.endDate) res += ` hingga ${data.endDate}`;
       if (data.endType === 'occurrences') res += ` (${data.endOccurrences} kali)`;
