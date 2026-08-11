@@ -290,7 +290,17 @@ export default function TaskAddEditModal({
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ 
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              position: 'sticky', top: '-24px',
+              background: 'var(--modal-bg, var(--surface-color))',
+              zIndex: 10,
+              padding: '24px 24px 16px 24px',
+              margin: '-24px -24px 20px -24px',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              borderBottom: '1px solid var(--border-color)'
+            }}>
               <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                 {editingTask.id ? 'Edit Pekerjaan' : 'Tambah Pekerjaan Baru'}
               </h2>
@@ -1030,7 +1040,17 @@ export default function TaskAddEditModal({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+              <div style={{ 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                position: 'sticky', bottom: '-24px',
+                background: 'var(--modal-bg, var(--surface-color))',
+                zIndex: 10,
+                padding: '16px 24px 24px 24px',
+                margin: '16px -24px -24px -24px',
+                borderBottomLeftRadius: '24px',
+                borderBottomRightRadius: '24px',
+                borderTop: '1px solid var(--border-color)'
+              }}>
                 <div>
                   {editingTask && editingTask.id !== undefined && (
                     <button 
