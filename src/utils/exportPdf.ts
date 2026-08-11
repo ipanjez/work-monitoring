@@ -155,11 +155,10 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
 
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Nama File', 'Ukuran', 'Tanggal Unggah']],
+      head: [['#', 'Nama File', 'Tanggal Unggah']],
       body: activeFiles.map((f, idx) => [
         `${idx + 1}`,
         f.name,
-        f.size ? `${(f.size / (1024 * 1024)).toFixed(2)} MB` : '-',
         f.uploadedAt ? format(new Date(f.uploadedAt), 'dd MMM yyyy') : '-',
       ]),
       theme: 'grid',
@@ -170,8 +169,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
       columnStyles: {
         0: { cellWidth: 8, halign: 'center' },
         1: { cellWidth: 'auto', textColor: BLUE, fontStyle: 'bold' },
-        2: { cellWidth: 22, halign: 'center' },
-        3: { cellWidth: 28, halign: 'center' }
+        2: { cellWidth: 28, halign: 'center' }
       },
       didDrawCell: (data) => {
         // Add hyperlink + underline to file name
