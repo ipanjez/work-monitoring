@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
 type Log = { id: number; action: string; title: string; message: string; type: string; userId?: string; userName?: string; createdAt: string };
-type Tab = 'users' | 'requests' | 'logs';
+type Tab = 'users' | 'requests' | 'logs' | 'roles';
 
 const EMPTY_USER: Partial<UserData & { password: string }> = { npk: '', name: '', role: 'MEMBER', status: 'ACTIVE', password: '', email: '' };
 
@@ -197,7 +197,7 @@ export default function UsersClient() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
-        {(['users', 'requests', 'logs'] as Tab[]).map(t => (
+        {(['users', 'requests', 'logs', 'roles'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -220,8 +220,10 @@ export default function UsersClient() {
               <><User size={15} /> Daftar User</>
             ) : t === 'requests' ? (
               <><KeyRound size={15} /> Reset Requests {pendingCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 7px', fontSize: '11px' }}>{pendingCount}</span>}</>
-            ) : (
+            ) : t === 'logs' ? (
               <><ScrollText size={15} /> Sistem Logs</>
+            ) : (
+              <><ShieldCheck size={15} /> Info Role</>
             )}
           </button>
         ))}
@@ -393,6 +395,61 @@ export default function UsersClient() {
           </div>
           <p style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '12px' }}>{filteredLogs.length} dari {logs.length} log ditampilkan</p>
         </>
+      )}
+
+      {/* Roles Tab */}
+      {tab === 'roles' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} /> Role: ADMIN
+            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+              Administrator memiliki hak akses penuh ke seluruh fitur dan pengaturan aplikasi. Role ini diperuntukkan bagi pengelola sistem.
+            </p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', padding: 0 }}>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Manajemen User:</strong> Menambah, mengedit, menghapus, dan mereset password pengguna lain. Menyetujui permintaan reset password.</span>
+              </li>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Master Data & Pengaturan:</strong> Mengakses menu Pengaturan untuk menambah/menghapus master kategori, PIC, status, prioritas, ikon, dan batas waktu sesi login.</span>
+              </li>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Akses Data Global:</strong> Dapat melihat dan mengedit seluruh pekerjaan (tasks), kalender, dan monitoring board secara keseluruhan.</span>
+              </li>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Sistem Log:</strong> Dapat melihat log aktivitas sistem secara lengkap (audit trail).</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f59e0b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <User size={20} /> Role: MEMBER
+            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
+              Member adalah pengguna standar yang menggunakan aplikasi untuk keperluan monitoring dan manajemen tugas sehari-hari.
+            </p>
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', padding: 0 }}>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Manajemen Pekerjaan:</strong> Menambah, mengedit, dan menghapus pekerjaan atau tugas yang ada di sistem (selama tidak dibatasi).</span>
+              </li>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Monitoring Board & Kalender:</strong> Mengakses, melihat, dan berinteraksi dengan Kanban board, daftar pekerjaan, dan kalender.</span>
+              </li>
+              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
+                <XCircle size={16} color="#ef4444" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Dibatasi:</strong> <em>Tidak</em> dapat mengakses menu Pengaturan (Master Data), Sistem User (Tambah user/Reset Password), dan tidak dapat mengakses Sistem Logs.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       )}
 
       {/* Modal Tambah/Edit User */}
