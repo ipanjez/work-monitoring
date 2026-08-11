@@ -3,12 +3,12 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { Task, SubTask, FileItem, LogItem, CommentItem, getAdditionalPics, getTaskFiles, getHistoryLogs, getTaskComments, formatRecurrenceText, formatLogDetails } from './taskUtils';
 
-const ACCENT = [16, 185, 129]; // #10b981
-const DARK = [30, 41, 59];     // #1e293b
-const GRAY = [100, 116, 139];  // #64748b
-const LIGHT_GRAY = [241, 245, 249]; // #f1f5f9
-const WHITE: [number, number, number] = [255, 255, 255];
-const RED = [220, 38, 38];
+const ACCENT = [16, 185, 129] as [number, number, number]; // #10b981
+const DARK = [30, 41, 59] as [number, number, number];     // #1e293b
+const GRAY = [100, 116, 139] as [number, number, number];  // #64748b
+const LIGHT_GRAY = [241, 245, 249] as [number, number, number]; // #f1f5f9
+const WHITE = [255, 255, 255] as [number, number, number];
+const BLUE = [37, 99, 235] as [number, number, number]; // #2563eb
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
@@ -22,30 +22,32 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
   const contentW = pageW - margin * 2;
   let y = 0;
 
-  const addFooter = () => {
-    const footerY = pageH - 12;
-    doc.setDrawColor(...LIGHT_GRAY as [number, number, number]);
-    doc.setLineWidth(0.3);
-    doc.line(margin, footerY - 2, pageW - margin, footerY - 2);
-    doc.setFontSize(7);
-    doc.setTextColor(...GRAY as [number, number, number]);
-    doc.text(`${appName} — Dashboard Monitoring Pekerjaan | ${siteUrl}`, margin, footerY + 1);
-    doc.text(`Dicetak: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageW - margin, footerY + 1, { align: 'right' });
-    doc.text(`Halaman ${(doc as any).getNumberOfPages()}`, pageW / 2, footerY + 1, { align: 'center' });
+  const footerHeight = 16;
+
+  const addFooter = (pageNum: number, totalPages: number) => {
+    const footerY = pageH - footerHeight + 4;
+    doc.setDrawColor(...GRAY);
+    doc.setLineWidth(0.2);
+    doc.line(margin, footerY - 3, pageW - margin, footerY - 3);
+    doc.setFontSize(6.5);
+    doc.setTextColor(...GRAY);
+    doc.text(`${appName} — Dashboard Monitoring Pekerjaan`, margin, footerY);
+    doc.text(`${siteUrl}`, margin, footerY + 3.5);
+    doc.text(`Dicetak: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageW - margin, footerY, { align: 'right' });
+    doc.text(`Halaman ${pageNum} dari ${totalPages}`, pageW - margin, footerY + 3.5, { align: 'right' });
   };
 
   const checkPage = (needed: number) => {
-    if (y + needed > pageH - 20) {
-      addFooter();
+    if (y + needed > pageH - footerHeight - 4) {
       doc.addPage();
       y = 16;
     }
   };
 
   // ======= HEADER BAR =======
-  doc.setFillColor(...DARK as [number, number, number]);
+  doc.setFillColor(...DARK);
   doc.rect(0, 0, pageW, 22, 'F');
-  doc.setFillColor(...ACCENT as [number, number, number]);
+  doc.setFillColor(...ACCENT);
   doc.rect(0, 22, pageW, 2, 'F');
 
   doc.setTextColor(...WHITE);
@@ -59,7 +61,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
   y = 30;
 
   // ======= TASK TITLE =======
-  doc.setTextColor(...DARK as [number, number, number]);
+  doc.setTextColor(...DARK);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   const titleLines = doc.splitTextToSize(task.nama, contentW);
@@ -69,24 +71,126 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
   // Priority + Status badges
   doc.setFontSize(9);
   const prioritas = task.prioritas || 'Medium';
-  const prioColors: Record<string, number[]> = {
+  const prioColors: Record<string, [number, number, number]> = {
     'Urgent': [220, 38, 38], 'High': [249, 115, 22], 'Medium': [59, 130, 246], 'Low': [34, 197, 94]
   };
   const prioColor = prioColors[prioritas] || [59, 130, 246];
-  doc.setFillColor(...prioColor as [number, number, number]);
+  doc.setFillColor(...prioColor);
   doc.roundedRect(margin, y - 4, 24, 7, 2, 2, 'F');
   doc.setTextColor(...WHITE);
   doc.setFont('helvetica', 'bold');
   doc.text(prioritas, margin + 12, y + 0.5, { align: 'center' });
 
   const statusX = margin + 28;
-  doc.setFillColor(...ACCENT as [number, number, number]);
+  doc.setFillColor(...ACCENT);
   const statusText = `${task.status} (${task.progress || 0}%)`;
   const statusW = Math.max(doc.getTextWidth(statusText) + 6, 24);
   doc.roundedRect(statusX, y - 4, statusW, 7, 2, 2, 'F');
   doc.setTextColor(...WHITE);
   doc.text(statusText, statusX + statusW / 2, y + 0.5, { align: 'center' });
   y += 12;
+
+  // ======= RINGKASAN STATUS (Summary) =======
+  let subTasks: SubTask[] = [];
+  if (task.subTasksJson) {
+    try { subTasks = JSON.parse(task.subTasksJson); } catch {}
+  }
+
+  if (subTasks.length > 0) {
+    const statusCounts = subTasks.reduce((acc, st) => {
+      acc[st.status] = (acc[st.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    doc.setFillColor(240, 253, 244); // very light green
+    doc.roundedRect(margin, y - 2, contentW, 16, 3, 3, 'F');
+    doc.setDrawColor(...ACCENT);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(margin, y - 2, contentW, 16, 3, 3, 'S');
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('Ringkasan Status Sub Pekerjaan:', margin + 4, y + 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    let summaryX = margin + 4;
+    const summaryY = y + 10;
+    const entries = Object.entries(statusCounts);
+    entries.forEach(([status, count], idx) => {
+      const label = `${status}: ${count}`;
+      const labelW = doc.getTextWidth(label) + 8;
+      
+      const statusColors: Record<string, [number, number, number]> = {
+        'Done': [16, 185, 129], 'In Progress': [245, 158, 11], 'To Do': [239, 68, 68], 'Pending': [239, 68, 68]
+      };
+      const sColor = statusColors[status] || [59, 130, 246];
+      doc.setFillColor(...sColor);
+      doc.roundedRect(summaryX, summaryY - 3.5, labelW, 6, 1.5, 1.5, 'F');
+      doc.setTextColor(...WHITE);
+      doc.text(label, summaryX + labelW / 2, summaryY + 0.5, { align: 'center' });
+      summaryX += labelW + 4;
+    });
+
+    const totalLabel = `Total: ${subTasks.length}`;
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(totalLabel, pageW - margin - 4, summaryY + 0.5, { align: 'right' });
+
+    y += 20;
+  }
+
+  // ======= FILE LAMPIRAN (moved to top) =======
+  const files = getTaskFiles(task);
+  if (files.length > 0) {
+    checkPage(20);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('File Lampiran', margin, y);
+    y += 2;
+
+    const activeFiles = files.filter(f => !f.isDeleted);
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Nama File', 'Ukuran', 'Tanggal Unggah']],
+      body: activeFiles.map((f, idx) => [
+        `${idx + 1}`,
+        f.name,
+        f.size ? `${(f.size / (1024 * 1024)).toFixed(2)} MB` : '-',
+        f.uploadedAt ? format(new Date(f.uploadedAt), 'dd MMM yyyy') : '-',
+      ]),
+      theme: 'grid',
+      margin: { left: margin, right: margin },
+      headStyles: { fillColor: ACCENT, fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
+      bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 'auto', textColor: BLUE, fontStyle: 'bold' },
+        2: { cellWidth: 22, halign: 'center' },
+        3: { cellWidth: 28, halign: 'center' }
+      },
+      didDrawCell: (data) => {
+        // Add hyperlink + underline to file name
+        if (data.section === 'body' && data.column.index === 1) {
+          const file = activeFiles[data.row.index];
+          if (file && file.url) {
+            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: file.url });
+            // Draw underline
+            const textW = doc.getTextWidth(file.name);
+            doc.setDrawColor(...BLUE);
+            doc.setLineWidth(0.2);
+            const textY = data.cell.y + data.cell.height - 2;
+            doc.line(data.cell.x + 2, textY, data.cell.x + 2 + Math.min(textW, data.cell.width - 4), textY);
+          }
+        }
+      }
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
 
   // ======= INFO TABLE =======
   const extraPics = getAdditionalPics(task);
@@ -111,17 +215,18 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     ['Lokasi', locationStr],
   ];
 
+  checkPage(30);
   autoTable(doc, {
     startY: y,
     head: [['Informasi', 'Detail']],
     body: infoData,
     theme: 'striped',
     margin: { left: margin, right: margin },
-    headStyles: { fillColor: DARK as [number, number, number], fontSize: 9, fontStyle: 'bold', cellPadding: 3 },
-    bodyStyles: { fontSize: 9, cellPadding: 3, textColor: DARK as [number, number, number] },
-    alternateRowStyles: { fillColor: LIGHT_GRAY as [number, number, number] },
+    headStyles: { fillColor: DARK, fontSize: 9, fontStyle: 'bold', cellPadding: 3 },
+    bodyStyles: { fontSize: 9, cellPadding: 3, textColor: DARK },
+    alternateRowStyles: { fillColor: LIGHT_GRAY },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 35, textColor: GRAY as [number, number, number] },
+      0: { fontStyle: 'bold', cellWidth: 35, textColor: GRAY },
       1: { cellWidth: 'auto' }
     },
   });
@@ -132,7 +237,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     checkPage(20);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK as [number, number, number]);
+    doc.setTextColor(...DARK);
     doc.text('Deskripsi', margin, y);
     y += 5;
     doc.setFontSize(9);
@@ -144,45 +249,43 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
   }
 
   // ======= TIMELINE / SUB-TASKS =======
-  if (task.subTasksJson) {
-    try {
-      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-      if (subTasks.length > 0) {
-        checkPage(20);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...DARK as [number, number, number]);
-        doc.text('Alur Timeline Pekerjaan (Sub Pekerjaan)', margin, y);
-        y += 2;
+  if (subTasks.length > 0) {
+    checkPage(20);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('Alur Timeline Pekerjaan (Sub Pekerjaan)', margin, y);
+    y += 2;
 
-        const subData = subTasks.map((st, idx) => [
-          `${idx + 1}`,
-          stripHtml(st.text),
-          st.status,
-          st.pic || '-',
-          st.tenggatWaktu ? format(new Date(st.tenggatWaktu), 'dd MMM yyyy') : '-',
-        ]);
+    const subData = subTasks.map((st, idx) => {
+      const pics = [st.pic, ...(st.additionalPics || [])].filter(Boolean).join(', ');
+      return [
+        `${idx + 1}`,
+        stripHtml(st.text),
+        st.status,
+        pics || '-',
+        st.tenggatWaktu ? format(new Date(st.tenggatWaktu), 'dd MMM yyyy') : '-',
+      ];
+    });
 
-        autoTable(doc, {
-          startY: y,
-          head: [['#', 'Sub Pekerjaan', 'Status', 'PIC', 'Tenggat']],
-          body: subData,
-          theme: 'grid',
-          margin: { left: margin, right: margin },
-          headStyles: { fillColor: ACCENT as [number, number, number], fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
-          bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK as [number, number, number] },
-          alternateRowStyles: { fillColor: LIGHT_GRAY as [number, number, number] },
-          columnStyles: {
-            0: { cellWidth: 8, halign: 'center' },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 22, halign: 'center' },
-            3: { cellWidth: 28 },
-            4: { cellWidth: 24, halign: 'center' }
-          },
-        });
-        y = (doc as any).lastAutoTable.finalY + 8;
-      }
-    } catch (e) { }
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Sub Pekerjaan', 'Status', 'PIC', 'Tenggat']],
+      body: subData,
+      theme: 'grid',
+      margin: { left: margin, right: margin },
+      headStyles: { fillColor: ACCENT, fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
+      bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 22, halign: 'center' },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 24, halign: 'center' }
+      },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
   }
 
   // ======= RIWAYAT PERUBAHAN (3 LOG TERAKHIR) =======
@@ -192,7 +295,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     checkPage(20);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK as [number, number, number]);
+    doc.setTextColor(...DARK);
     doc.text('Informasi & Riwayat Perubahan (3 Log Terakhir)', margin, y);
     y += 2;
 
@@ -214,59 +317,14 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
       body: logData,
       theme: 'grid',
       margin: { left: margin, right: margin },
-      headStyles: { fillColor: DARK as [number, number, number], fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
-      bodyStyles: { fontSize: 7.5, cellPadding: 2.5, textColor: DARK as [number, number, number] },
-      alternateRowStyles: { fillColor: LIGHT_GRAY as [number, number, number] },
+      headStyles: { fillColor: DARK, fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
+      bodyStyles: { fontSize: 7.5, cellPadding: 2.5, textColor: DARK },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
       columnStyles: {
         0: { cellWidth: 30 },
         1: { cellWidth: 25 },
         2: { cellWidth: 'auto' }
       },
-    });
-    y = (doc as any).lastAutoTable.finalY + 8;
-  }
-
-  // ======= FILE LAMPIRAN =======
-  const files = getTaskFiles(task);
-  if (files.length > 0) {
-    checkPage(20);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK as [number, number, number]);
-    doc.text('File Lampiran', margin, y);
-    y += 2;
-
-    const fileData = files.filter(f => !f.isDeleted).map((f, idx) => [
-      `${idx + 1}`,
-      f.name,
-      f.size ? `${(f.size / (1024 * 1024)).toFixed(2)} MB` : '-',
-      f.uploadedAt ? format(new Date(f.uploadedAt), 'dd MMM yyyy') : '-',
-    ]);
-
-    autoTable(doc, {
-      startY: y,
-      head: [['#', 'Nama File', 'Ukuran', 'Tanggal Unggah']],
-      body: fileData,
-      theme: 'grid',
-      margin: { left: margin, right: margin },
-      headStyles: { fillColor: ACCENT as [number, number, number], fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
-      bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK as [number, number, number] },
-      alternateRowStyles: { fillColor: LIGHT_GRAY as [number, number, number] },
-      columnStyles: {
-        0: { cellWidth: 8, halign: 'center' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 22, halign: 'center' },
-        3: { cellWidth: 28, halign: 'center' }
-      },
-      didDrawCell: (data) => {
-        // Add hyperlink to file name cell
-        if (data.section === 'body' && data.column.index === 1) {
-          const file = files.filter(f => !f.isDeleted)[data.row.index];
-          if (file && file.url) {
-            doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: file.url });
-          }
-        }
-      }
     });
     y = (doc as any).lastAutoTable.finalY + 8;
   }
@@ -277,11 +335,11 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     checkPage(20);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...DARK as [number, number, number]);
+    doc.setTextColor(...DARK);
     doc.text('Komentar', margin, y);
     y += 2;
 
-    const commentData = comments.map((c, idx) => [
+    const commentData = comments.map(c => [
       c.author,
       c.text,
       format(new Date(c.createdAt), 'dd MMM yyyy HH:mm')
@@ -293,9 +351,9 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
       body: commentData,
       theme: 'grid',
       margin: { left: margin, right: margin },
-      headStyles: { fillColor: DARK as [number, number, number], fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
-      bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK as [number, number, number] },
-      alternateRowStyles: { fillColor: LIGHT_GRAY as [number, number, number] },
+      headStyles: { fillColor: DARK, fontSize: 8, fontStyle: 'bold', cellPadding: 2.5 },
+      bodyStyles: { fontSize: 8, cellPadding: 2.5, textColor: DARK },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
       columnStyles: {
         0: { cellWidth: 30 },
         1: { cellWidth: 'auto' },
@@ -305,30 +363,54 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     y = (doc as any).lastAutoTable.finalY + 8;
   }
 
-  // ======= FOOTER INFORMATION BOX =======
-  checkPage(30);
-  doc.setFillColor(...LIGHT_GRAY as [number, number, number]);
-  doc.roundedRect(margin, y, contentW, 22, 2, 2, 'F');
-  doc.setDrawColor(...ACCENT as [number, number, number]);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, y, contentW, 22, 2, 2, 'S');
+  // ======= CARA MENGAKSES (Improved) =======
+  checkPage(35);
 
-  doc.setFontSize(8);
+  doc.setFillColor(240, 249, 255); // light blue bg
+  doc.roundedRect(margin, y, contentW, 30, 3, 3, 'F');
+  doc.setDrawColor(59, 130, 246); // blue border
+  doc.setLineWidth(0.4);
+  doc.roundedRect(margin, y, contentW, 30, 3, 3, 'S');
+
+  // Left accent bar
+  doc.setFillColor(59, 130, 246);
+  doc.rect(margin, y, 3, 30, 'F');
+
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...DARK as [number, number, number]);
-  doc.text('Cara Mengakses & Memperbarui Pekerjaan Ini:', margin + 4, y + 5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...GRAY as [number, number, number]);
-  doc.setFontSize(7.5);
-  doc.text(`1. Buka ${siteUrl} → Login dengan akun Anda`, margin + 4, y + 10);
-  doc.text(`2. Pilih menu "Daftar Pekerjaan" → Cari pekerjaan "${task.nama.length > 40 ? task.nama.substring(0, 40) + '...' : task.nama}"`, margin + 4, y + 14);
-  doc.text(`3. Klik pekerjaan untuk melihat detail, lalu klik "Edit" untuk memperbarui status, progress, atau informasi lainnya.`, margin + 4, y + 18);
+  doc.setTextColor(...DARK);
+  doc.text('Panduan Akses & Pembaruan Pekerjaan', margin + 7, y + 6);
 
-  // Add footer to all pages
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+
+  const guideLines = [
+    `Langkah 1   Buka halaman ${siteUrl} melalui browser, kemudian masuk (login) dengan akun Anda.`,
+    `Langkah 2   Pilih menu "Daftar Pekerjaan", lalu cari judul pekerjaan terkait.`,
+    `Langkah 3   Klik pekerjaan untuk membuka detail, kemudian klik tombol "Edit" untuk memperbarui status, progress, dan data lainnya.`,
+  ];
+
+  guideLines.forEach((line, idx) => {
+    const lineY = y + 12 + idx * 6;
+    // "Langkah X" in bold
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(59, 130, 246);
+    doc.text(`Langkah ${idx + 1}`, margin + 7, lineY);
+    // Rest of text in normal
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRAY);
+    const restText = line.replace(`Langkah ${idx + 1}   `, '');
+    doc.text(restText, margin + 24, lineY);
+  });
+
+  y += 36;
+
+  // ======= Add footer to all pages =======
   const totalPages = (doc as any).getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter();
+    addFooter(i, totalPages);
   }
 
   // Save
