@@ -193,6 +193,7 @@ export default function TaskAddEditModal({
         newFiles.push({
           url: data.fileUrl,
           name: data.fileName,
+          size: file.size,
           uploadedAt: new Date().toISOString()
         });
       }
