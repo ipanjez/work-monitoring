@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
@@ -423,9 +423,9 @@ ${task!.deskripsi || '-'}`;
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                     Timeline Aktivitas:
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '120px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
                     {localHistoryLogs.map((log, idx) => (
-                      <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '2px', color: 'var(--text-secondary)' }}>
+                      <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-secondary)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <span style={{ fontWeight: 600 }}>• {log.action}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -433,8 +433,8 @@ ${task!.deskripsi || '-'}`;
                           </div>
                         </div>
                         {(log as any).details && (
-                          <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '10px' }}>
-                            Diubah: {(log as any).details}
+                          <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                            {formatLogDetails((log as any).details.startsWith('Diubah:') ? (log as any).details : `Diubah: ${(log as any).details}`)}
                           </div>
                         )}
                       </div>

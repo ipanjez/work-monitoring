@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, X, CheckCircle, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle, Trash2 } from 'lucide-react';
 import { useNotifications } from '@/context/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { formatLogDetails } from '@/utils/taskUtils';
 
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
@@ -158,7 +159,7 @@ export default function NotificationBell() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.4 }}>
                     {notif.title && <div style={{ fontWeight: 600, color: notif.type === 'danger' ? 'var(--danger)' : notif.type === 'success' ? '#10b981' : 'var(--accent-primary)', marginBottom: '2px' }}>{notif.title}</div>}
-                    <div>{notif.message || (
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{notif.message ? formatLogDetails(notif.message) : (
                       <>
                         <span style={{ fontWeight: 600 }}>{notif.pic}</span> memperbarui pekerjaan 
                         <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}> {notif.nama}</span>

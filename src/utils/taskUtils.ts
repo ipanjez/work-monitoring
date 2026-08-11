@@ -486,3 +486,47 @@ export const handleMarkdownShortcut = (
     target.setSelectionRange(start + prefix.length, end + prefix.length);
   }, 0);
 };
+
+export const formatLogDetails = (text: string): string => {
+  if (!text) return '';
+  let formatted = text;
+
+  // 1. Parse CUSTOM_RECURRENCE JSON
+  formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*({[^}]+})/g, (match, jsonString) => {
+    try {
+      const data = JSON.parse(jsonString);
+      let res = `Pengulangan Kustom: Tiap ${data.every} ${data.unit}`;
+      if (data.endType === 'date' && data.endDate) res += ` hingga ${data.endDate}`;
+      if (data.endType === 'occurrences') res += ` (${data.endOccurrences} kali)`;
+      return res;
+    } catch (e) {
+      return 'Pengulangan Kustom';
+    }
+  });
+
+  // 2. Add line breaks for readability before major fields
+  const fields = [
+    'Nama Pekerjaan', 'Sub Pekerjaan', 'Progress', 'Pengulangan', 
+    'PIC Tambahan', 'Lampiran', 'PIC', 'Status', 'Prioritas', 
+    'Kategori', 'Tenggat Waktu', 'Deskripsi', 'Lokasi', 'Tanggal Mulai'
+  ];
+  
+  fields.forEach(field => {
+    // Match ", Field" and replace with "\n- Field"
+    const regex = new RegExp(`,\\s*(${field}\\b)`, 'g');
+    formatted = formatted.replace(regex, '\n- $1');
+  });
+
+  // 3. Format starting prefixes
+  formatted = formatted.replace(/^Diubah:\s*/, 'Diubah:\n- ');
+  formatted = formatted.replace(/^Ditambahkan:\s*/, 'Ditambahkan:\n- ');
+  formatted = formatted.replace(/^Dihapus:\s*/, 'Dihapus:\n- ');
+
+  // 4. Format Notification wrapper
+  formatted = formatted.replace(/\(Perubahan:\s*/g, '\nPerubahan:\n- ');
+  if (formatted.includes('\nPerubahan:\n- ') && formatted.endsWith(')')) {
+    formatted = formatted.slice(0, -1); // Remove trailing parenthesis
+  }
+
+  return formatted.trim();
+};
