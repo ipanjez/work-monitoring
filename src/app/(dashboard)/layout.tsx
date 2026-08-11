@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
+import SessionMonitor from '@/components/SessionMonitor';
 
 export default function DashboardLayout({
   children,
@@ -29,6 +30,7 @@ export default function DashboardLayout({
 
   return (
     <>
+      <SessionMonitor />
       {/* Mobile Header */}
       <div className="mobile-header glass">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

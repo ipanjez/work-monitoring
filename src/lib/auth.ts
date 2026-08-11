@@ -67,6 +67,7 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
         token.npk = (user as any).npk;
         token.id = user.id;
+        token.loginAt = Date.now();
       }
       if (trigger === 'update' && session?.name) {
         token.name = session.name;
@@ -78,6 +79,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
         (session.user as any).npk = token.npk;
         (session.user as any).id = token.id;
+        (session.user as any).loginAt = token.loginAt;
         session.user.name = token.name as string;
       }
       return session;

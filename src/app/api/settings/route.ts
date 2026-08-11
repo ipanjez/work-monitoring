@@ -27,7 +27,8 @@ export async function GET() {
       app_subtitle: 'MRK',
       app_logo: '',
       max_file_size_mb: 25,
-      max_task_files_size_mb: 100
+      max_task_files_size_mb: 100,
+      session_timeout_hours: 720
     };
 
     settings.forEach(setting => {
@@ -183,6 +184,14 @@ export async function POST(request: Request) {
         where: { key: 'max_task_files_size_mb' },
         update: { value: String(body.max_task_files_size_mb) },
         create: { key: 'max_task_files_size_mb', value: String(body.max_task_files_size_mb) }
+      });
+    }
+
+    if (body.session_timeout_hours !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'session_timeout_hours' },
+        update: { value: String(body.session_timeout_hours) },
+        create: { key: 'session_timeout_hours', value: String(body.session_timeout_hours) }
       });
     }
 

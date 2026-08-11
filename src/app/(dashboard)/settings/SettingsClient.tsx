@@ -40,6 +40,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
+  const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(720);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -107,6 +108,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
+        if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
       })
       .catch(e => console.error(e));
 
@@ -573,7 +575,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         master_pic_avatars: masterPicAvatars,
         max_file_size_mb: Number(maxFileSizeMb) || 25,
         max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
-        max_total_storage_mb: Number(maxTotalStorageMb) || 5000
+        max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
+        session_timeout_hours: Number(sessionTimeoutHours) || 720
       })
     })
       .then(() => {
@@ -1088,6 +1091,44 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   Sisa kapasitas: {Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB
                 </p>
               </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Batas Waktu Sesi Login (Auto Logout)
+              </label>
+              <select
+                className="input"
+                value={sessionTimeoutHours}
+                onChange={(e) => setSessionTimeoutHours(e.target.value)}
+              >
+                <option value={1}>1 Jam</option>
+                <option value={12}>12 Jam</option>
+                <option value={24}>1 Hari</option>
+                <option value={168}>7 Hari</option>
+                <option value={720}>30 Hari</option>
+              </select>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                Jika pengguna tidak aktif / menutup aplikasi melampaui batas waktu ini, sistem akan otomatis mengeluarkan (logout) pengguna tersebut.
+              </p>
+              
+              {session?.user && (session.user as any).loginAt && (
+                <div style={{ marginTop: '12px', padding: '12px', background: 'var(--background-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <strong>Informasi Sesi Anda:</strong><br />
+                  Login pada: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}<br />
+                  Sisa waktu sesi Anda: {
+                    (() => {
+                      const expiresAt = (session.user as any).loginAt + (Number(sessionTimeoutHours) || 720) * 3600000;
+                      const remainingMs = expiresAt - Date.now();
+                      if (remainingMs <= 0) return 'Kedaluwarsa (akan logout)';
+                      const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+                      const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                      const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                      return `${days} hari, ${hours} jam, ${minutes} menit`;
+                    })()
+                  }
+                </div>
+              )}
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
