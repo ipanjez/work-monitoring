@@ -112,6 +112,25 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     .map(([status, count]) => `${count} ${status}`)
     .join(', ');
 
+  const groupedEvents: { date: Date; events: TimelineEvent[], isSpecial: boolean, id: string, color: string }[] = [];
+  events.forEach(ev => {
+    const time = ev.date.getTime();
+    const isSpecial = ev.type !== 'subtask';
+    const lastGroup = groupedEvents[groupedEvents.length - 1];
+    
+    if (lastGroup && lastGroup.date.getTime() === time && lastGroup.isSpecial === isSpecial) {
+      lastGroup.events.push(ev);
+    } else {
+      groupedEvents.push({ 
+        date: ev.date, 
+        events: [ev], 
+        isSpecial, 
+        id: ev.id,
+        color: ev.color || '#3b82f6'
+      });
+    }
+  });
+
   return (
     <div style={{ padding: '24px 16px 24px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
       <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', textAlign: 'center' }}>
@@ -125,120 +144,126 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
         {/* Central Vertical Line */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '10px', bottom: '10px', width: '2px', background: 'var(--border-color)' }} />
 
-        {events.map((ev, index) => {
+        {groupedEvents.map((group, index) => {
           const isLeft = index % 2 === 0;
-          const isSpecial = ev.type !== 'subtask';
+          const isSpecial = group.isSpecial;
 
           return (
-            <div key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', position: 'relative', width: '100%' }}>
+            <div key={group.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', position: 'relative', width: '100%' }}>
               
               {/* Left Side */}
               <div style={{ width: '45%', textAlign: 'right', paddingRight: '16px', paddingTop: '2px' }}>
                 {isLeft && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
-                      {format(ev.date, 'dd MMM yyyy')}
+                      {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    <div 
-                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
-                      style={{ 
-                      background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
-                      border: isSpecial ? 'none' : '1px solid var(--border-color)', 
-                      padding: isSpecial ? 0 : '10px 12px', 
-                      borderRadius: '8px',
-                      color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                      fontWeight: isSpecial ? 600 : 500,
-                      fontSize: '12px',
-                      width: '100%',
-                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
-                      cursor: isSpecial ? 'default' : 'pointer'
-                    }}>
+                    {group.events.map(ev => (
                       <div 
+                        key={ev.id}
+                        onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                         style={{ 
-                          wordBreak: 'break-word', 
-                          whiteSpace: 'normal', 
-                          lineHeight: 1.5,
-                          display: isSpecial ? 'block' : '-webkit-box',
-                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
-                        }}
-                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
-                      >
-                        {isSpecial ? ev.title : null}
-                      </div>
-                      {!isSpecial && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
-                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <User size={10} /> {p}
-                            </span>
-                          ))}
-                          {ev.status && (
-                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
-                              {ev.status}
-                            </span>
-                          )}
+                          background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
+                          border: isSpecial ? 'none' : '1px solid var(--border-color)', 
+                          padding: isSpecial ? 0 : '10px 12px', 
+                          borderRadius: '8px',
+                          color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          fontWeight: isSpecial ? 600 : 500,
+                          fontSize: '12px',
+                          width: '100%',
+                          boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                          cursor: isSpecial ? 'default' : 'pointer'
+                        }}>
+                        <div 
+                          style={{ 
+                            wordBreak: 'break-word', 
+                            whiteSpace: 'normal', 
+                            lineHeight: 1.5,
+                            display: isSpecial ? 'block' : '-webkit-box',
+                            WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                          }}
+                          dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                        >
+                          {isSpecial ? ev.title : null}
                         </div>
-                      )}
-                    </div>
+                        {!isSpecial && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                              <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <User size={10} /> {p}
+                              </span>
+                            ))}
+                            {ev.status && (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                                {ev.status}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
               {/* Center Dot */}
-              <div style={{ position: 'absolute', left: '50%', transform: 'translate(-50%, 4px)', width: isSpecial ? '12px' : '16px', height: isSpecial ? '12px' : '16px', borderRadius: '50%', background: ev.color, border: '2px solid var(--surface-color)', boxShadow: '0 0 0 2px var(--border-color), 0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }} />
+              <div style={{ position: 'absolute', left: '50%', transform: 'translate(-50%, 4px)', width: isSpecial ? '12px' : '16px', height: isSpecial ? '12px' : '16px', borderRadius: '50%', background: group.color, border: '2px solid var(--surface-color)', boxShadow: '0 0 0 2px var(--border-color), 0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }} />
 
               {/* Right Side */}
               <div style={{ width: '45%', textAlign: 'left', paddingLeft: '16px', paddingTop: '2px' }}>
                 {!isLeft && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
-                      {format(ev.date, 'dd MMM yyyy')}
+                      {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    <div 
-                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
-                      style={{ 
-                      background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
-                      border: isSpecial ? 'none' : '1px solid var(--border-color)', 
-                      padding: isSpecial ? 0 : '10px 12px', 
-                      borderRadius: '8px',
-                      color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                      fontWeight: isSpecial ? 600 : 500,
-                      fontSize: '12px',
-                      width: '100%',
-                      boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
-                      cursor: isSpecial ? 'default' : 'pointer'
-                    }}>
+                    {group.events.map(ev => (
                       <div 
+                        key={ev.id}
+                        onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                         style={{ 
-                          wordBreak: 'break-word', 
-                          whiteSpace: 'normal', 
-                          lineHeight: 1.5,
-                          display: isSpecial ? 'block' : '-webkit-box',
-                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
-                        }}
-                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
-                      >
-                        {isSpecial ? ev.title : null}
-                      </div>
-                      {!isSpecial && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          {ev.status && (
-                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
-                              {ev.status}
-                            </span>
-                          )}
-                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
-                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <User size={10} /> {p}
-                            </span>
-                          ))}
+                          background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
+                          border: isSpecial ? 'none' : '1px solid var(--border-color)', 
+                          padding: isSpecial ? 0 : '10px 12px', 
+                          borderRadius: '8px',
+                          color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          fontWeight: isSpecial ? 600 : 500,
+                          fontSize: '12px',
+                          width: '100%',
+                          boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                          cursor: isSpecial ? 'default' : 'pointer'
+                        }}>
+                        <div 
+                          style={{ 
+                            wordBreak: 'break-word', 
+                            whiteSpace: 'normal', 
+                            lineHeight: 1.5,
+                            display: isSpecial ? 'block' : '-webkit-box',
+                            WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                          }}
+                          dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                        >
+                          {isSpecial ? ev.title : null}
                         </div>
-                      )}
-                    </div>
+                        {!isSpecial && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {ev.status && (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                                {ev.status}
+                              </span>
+                            )}
+                            {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                              <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <User size={10} /> {p}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
