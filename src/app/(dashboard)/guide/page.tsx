@@ -11,23 +11,78 @@ import {
   Filter, Globe, Palette, Database, UserCheck, Lock
 } from 'lucide-react';
 
-/* ─── Inline mini-illustration component ─── */
-const FeatureVisual = ({ children, gradient }: { children: React.ReactNode; gradient: string }) => (
+const FeatureVisual = ({ children, gradient, interactiveMockup }: { children: React.ReactNode; gradient: string; interactiveMockup?: React.ReactNode }) => (
   <div style={{
     marginTop: '20px',
     padding: '24px',
     borderRadius: '16px',
     background: gradient,
     display: 'flex',
-    flexWrap: 'wrap',
-    gap: '12px',
-    justifyContent: 'center',
-    alignItems: 'center',
-    border: '1px solid var(--border-color)'
+    flexDirection: 'column',
+    gap: '24px',
+    border: '1px solid var(--border-color)',
+    alignItems: 'center'
   }}>
-    {children}
+    <div style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '12px',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%'
+    }}>
+      {children}
+    </div>
+    {interactiveMockup && (
+      <div style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-color)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+        {interactiveMockup}
+      </div>
+    )}
   </div>
 );
+
+const InteractiveKanbanMockup = () => {
+  return (
+    <div style={{ display: 'flex', gap: '10px', height: '180px' }}>
+      {/* Column 1 */}
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>To Do</div>
+        <motion.div 
+          style={{ background: 'var(--bg-color)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', height: '60px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}
+          animate={{ x: [0, 0, 160, 160, 320, 320, 0], y: [0, 0, 0, 0, 0, 0, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div style={{ width: '40%', height: '6px', background: '#3b82f6', borderRadius: '3px', marginBottom: '8px' }} />
+          <div style={{ width: '80%', height: '4px', background: 'var(--border-color)', borderRadius: '2px', marginBottom: '4px' }} />
+          <div style={{ width: '60%', height: '4px', background: 'var(--border-color)', borderRadius: '2px' }} />
+        </motion.div>
+      </div>
+      {/* Column 2 */}
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>In Progress</div>
+      </div>
+      {/* Column 3 */}
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</div>
+      </div>
+    </div>
+  );
+};
+
+const InteractiveChartMockup = () => {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '140px', padding: '20px 10px 0 10px' }}>
+      {[40, 70, 45, 90, 60].map((h, i) => (
+        <motion.div
+          key={i}
+          style={{ width: '15%', background: 'linear-gradient(to top, #3b82f6, #60a5fa)', borderRadius: '4px 4px 0 0' }}
+          animate={{ height: [0, h, h, 0] }}
+          transition={{ duration: 4, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+        />
+      ))}
+    </div>
+  );
+};
 
 const MiniCard = ({ icon, label, color }: { icon: React.ReactNode; label: string; color: string }) => (
   <div style={{
@@ -165,7 +220,7 @@ export default function GuidePage() {
               <span><strong>Tabel Ringkasan:</strong> Daftar pekerjaan aktif dengan kolom yang dapat di-sort (nama, PIC, kategori, status, tenggat).</span>
             </div>
           </div>
-          <FeatureVisual gradient="linear-gradient(135deg, rgba(59,130,246,0.05), rgba(16,185,129,0.05))">
+          <FeatureVisual gradient="linear-gradient(135deg, rgba(59,130,246,0.05), rgba(16,185,129,0.05))" interactiveMockup={<InteractiveChartMockup />}>
             <MiniCard icon={<BarChart3 size={20} />} label="Grafik Tren" color="#3b82f6" />
             <MiniCard icon={<Filter size={20} />} label="Filter Global" color="#8b5cf6" />
             <MiniCard icon={<Eye size={20} />} label="Detail Modal" color="#10b981" />
@@ -199,7 +254,7 @@ export default function GuidePage() {
               <span><strong>Kartu Dinamis:</strong> Setiap kartu menampilkan indikator prioritas, avatar PIC, tenggat waktu, dan progress bar sub-tugas.</span>
             </div>
           </div>
-          <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.05))">
+          <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.05))" interactiveMockup={<InteractiveKanbanMockup />}>
             <MiniCard icon={<ListTodo size={20} />} label="To Do" color="#6b7280" />
             <FlowArrow />
             <MiniCard icon={<Clock size={20} />} label="In Progress" color="#f59e0b" />
@@ -374,12 +429,12 @@ export default function GuidePage() {
           .print-toc { page-break-after: always; padding: 40px 0; }
           .print-toc h2 { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 24px; color: #1e40af; }
           .print-toc-item { font-size: 15px; margin-bottom: 10px; border-bottom: 1px dotted #d1d5db; padding-bottom: 6px; color: #374151; }
-          .print-section { page-break-before: always; margin-bottom: 20px; }
-          .print-section h2 { font-size: 22px; color: #1e40af; border-bottom: 2px solid #dbeafe; padding-bottom: 8px; margin-bottom: 16px; margin-top: 0; }
+          .print-section { page-break-inside: avoid; margin-bottom: 30px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
+          .print-section h2 { font-size: 20px; color: #1e40af; border-bottom: 2px solid #dbeafe; padding-bottom: 8px; margin-bottom: 16px; margin-top: 0; }
           .print-section p { font-size: 13px; line-height: 1.7; color: #374151; margin-bottom: 12px; }
           .print-section ul { padding-left: 20px; }
           .print-section li { font-size: 13px; line-height: 1.6; margin-bottom: 8px; color: #374151; }
-          .print-footer { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+          .print-footer { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
         }
         @media screen { #print-area { display: none !important; } }
       `}} />

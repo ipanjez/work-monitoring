@@ -633,7 +633,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     return false;
                   };
 
-                  const canDrag = userRole !== 'SPV' && isOwnTask(task);
+                  const canDrag = userRole !== 'VIEWER' && userRole !== 'SPV' && isOwnTask(task);
 
                   return (
                     <div

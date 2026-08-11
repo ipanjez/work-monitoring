@@ -286,13 +286,13 @@ ${task!.deskripsi || '-'}`;
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                {onEdit && userRole !== 'SPV' && (
+                {onEdit && userRole !== 'VIEWER' && userRole !== 'SPV' && (
                   <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
                     <Edit size={16} style={{ marginRight: '6px' }} /> Edit
                   </button>
                 )}
                 
-                {onDelete && userRole !== 'SPV' && (
+                {onDelete && userRole !== 'VIEWER' && userRole !== 'SPV' && (
                   <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
                     <Trash2 size={16} style={{ marginRight: '6px' }} /> Hapus
                   </button>
@@ -500,6 +500,13 @@ ${task!.deskripsi || '-'}`;
                 .map(([status, count]) => `${count} ${status}`)
                 .join(', ');
 
+              const groupedSubTasks = subTasks.reduce((acc, st) => {
+                const dateKey = st.tenggatWaktu ? format(new Date(st.tenggatWaktu), 'yyyy-MM-dd') : 'Tanpa Tenggat Waktu';
+                if (!acc[dateKey]) acc[dateKey] = [];
+                acc[dateKey].push(st);
+                return acc;
+              }, {} as Record<string, SubTask[]>);
+
               return (
                 <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -508,39 +515,41 @@ ${task!.deskripsi || '-'}`;
                       {statusSummary ? `(${statusSummary})` : ''}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                    {subTasks.map(subTask => (
-                      <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
-                            {(subTask.pic || subTask.tenggatWaktu) && (
-                              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {Object.entries(groupedSubTasks)
+                      .sort(([dateA], [dateB]) => dateA === 'Tanpa Tenggat Waktu' ? 1 : dateB === 'Tanpa Tenggat Waktu' ? -1 : dateA.localeCompare(dateB))
+                      .map(([dateKey, tasksGroup]) => (
+                      <div key={dateKey} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
+                          {dateKey === 'Tanpa Tenggat Waktu' ? 'Tanpa Tenggat Waktu' : `Tenggat Waktu: ${format(new Date(dateKey), 'dd MMM yyyy')}`}
+                        </div>
+                        {tasksGroup.map(subTask => (
+                          <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
                                 {subTask.pic && (
-                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <User size={12} /> {subTask.pic}
-                                  </span>
-                                )}
-                                {subTask.tenggatWaktu && (
-                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <CalendarDays size={12} /> {format(new Date(subTask.tenggatWaktu), 'dd MMM yyyy')}
-                                  </span>
+                                  <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <User size={12} /> {subTask.pic}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
+                              {(() => {
+                                const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
+                                return (
+                                  <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
+                                    {subTask.status}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                            {subTask.logs && subTask.logs.length > 0 && (
+                              <SubTaskLogViewer logs={subTask.logs} />
                             )}
                           </div>
-                          {(() => {
-                            const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
-                            return (
-                              <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
-                                {subTask.status}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                        {subTask.logs && subTask.logs.length > 0 && (
-                          <SubTaskLogViewer logs={subTask.logs} />
-                        )}
+                        ))}
                       </div>
                     ))}
                   </div>
@@ -557,14 +566,11 @@ ${task!.deskripsi || '-'}`;
                   </h4>
                   {(() => {
                     const totalSize = getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0);
-                    if (totalSize > 0) {
-                      return (
-                        <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-                          Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
-                        </span>
-                      );
-                    }
-                    return null;
+                    return (
+                      <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
+                        Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                      </span>
+                    );
                   })()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -589,7 +595,7 @@ ${task!.deskripsi || '-'}`;
                         )}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` • ${(f.size / (1024*1024)).toFixed(2)} MB` : ''}</span>}
+                        {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` (${(f.size / (1024*1024)).toFixed(2)} MB)` : ''}</span>}
                         {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
                       </div>
                     </div>
@@ -614,7 +620,7 @@ ${task!.deskripsi || '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {userRole !== 'SPV' && (
+                          {userRole !== 'VIEWER' && userRole !== 'SPV' && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -632,7 +638,7 @@ ${task!.deskripsi || '-'}`;
                 )}
               </div>
  
-              {userRole !== 'SPV' && (
+              {userRole !== 'VIEWER' && userRole !== 'SPV' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"

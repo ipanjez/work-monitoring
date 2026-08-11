@@ -400,54 +400,70 @@ export default function UsersClient() {
       {/* Roles Tab */}
       {tab === 'roles' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldCheck size={20} /> Role: ADMIN
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role
             </h2>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-              Administrator memiliki hak akses penuh ke seluruh fitur dan pengaturan aplikasi. Role ini diperuntukkan bagi pengelola sistem.
-            </p>
-            <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', padding: 0 }}>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Manajemen User:</strong> Menambah, mengedit, menghapus, dan mereset password pengguna lain. Menyetujui permintaan reset password.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Master Data & Pengaturan:</strong> Mengakses menu Pengaturan untuk menambah/menghapus master kategori, PIC, status, prioritas, ikon, dan batas waktu sesi login.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Akses Data Global:</strong> Dapat melihat dan mengedit seluruh pekerjaan (tasks), kalender, dan monitoring board secara keseluruhan.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Sistem Log:</strong> Dapat melihat log aktivitas sistem secara lengkap (audit trail).</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f59e0b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={20} /> Role: MEMBER
-            </h2>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>
-              Member adalah pengguna standar yang menggunakan aplikasi untuk keperluan monitoring dan manajemen tugas sehari-hari.
-            </p>
-            <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', listStyle: 'none', padding: 0 }}>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Manajemen Pekerjaan:</strong> Menambah, mengedit, dan menghapus pekerjaan atau tugas yang ada di sistem (selama tidak dibatasi).</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <CheckCircle size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Monitoring Board & Kalender:</strong> Mengakses, melihat, dan berinteraksi dengan Kanban board, daftar pekerjaan, dan kalender.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-primary)' }}>
-                <XCircle size={16} color="#ef4444" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Dibatasi:</strong> <em>Tidak</em> dapat mengakses menu Pengaturan (Master Data), Sistem User (Tambah user/Reset Password), dan tidak dapat mengakses Sistem Logs.</span>
-              </li>
-            </ul>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)' }}>Fitur / Hak Akses</th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: 'var(--accent-primary)', borderRight: '1px solid var(--border-color)' }}>ADMIN</th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: '#f59e0b', borderRight: '1px solid var(--border-color)' }}>MEMBER</th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: 'var(--text-secondary)' }}>VIEWER</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Dashboard & Board</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Detail Tugas & Lampiran</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Menambah/Mengedit Tugas</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Hapus Tugas / Edit Massal (Bulk)</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Upload Lampiran & Komentar</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Akses Pengaturan (Master Data)</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Manajemen User & Password</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Sistem Log Lengkap</strong></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -474,6 +490,7 @@ export default function UsersClient() {
                 <select className="input" value={editUser.role || 'MEMBER'} onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
                   <option value="MEMBER">MEMBER</option>
                   <option value="ADMIN">ADMIN</option>
+                  <option value="VIEWER">VIEWER</option>
                 </select>
               </div>
               <div>

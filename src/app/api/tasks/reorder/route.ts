@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role === 'VIEWER') {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
     const { updates } = await request.json(); // expected: { id: number, orderIndex: number }[]
     
     if (!updates || !Array.isArray(updates)) {

@@ -1057,7 +1057,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
                 return (
                   <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    {userRole !== 'SPV' && (
+                    {userRole !== 'VIEWER' && userRole !== 'SPV' && (
                       <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -1449,7 +1449,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   >
                     <CalendarDays size={12} /> .ics
                   </button>
-                  {userRole !== 'SPV' && (
+                  {userRole !== 'VIEWER' && userRole !== 'SPV' && (
                     <>
                       <button
                         className="btn btn-secondary"

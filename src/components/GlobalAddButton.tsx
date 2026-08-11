@@ -566,6 +566,8 @@ export default function GlobalAddButton() {
     }
   };
 
+  if ((session?.user as any)?.role === 'VIEWER') return null;
+
   return (
     <div 
       style={{ position: 'relative', zIndex: 1000 }} 

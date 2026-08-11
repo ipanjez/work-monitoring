@@ -41,8 +41,11 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { useSession } from 'next-auth/react';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
+  const { data: session } = useSession();
+  const userRole: string = (session?.user as any)?.role || 'PIC';
   const { masterColors } = useMaster();
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
@@ -315,6 +318,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    if (userRole === 'VIEWER') return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
     const endStr = slotInfo.end.toISOString().split('T')[0];
     setEditingTask({

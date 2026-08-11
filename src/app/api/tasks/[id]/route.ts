@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 
 const calculateProgress = async (status: string, subTasksJson: string | null | undefined): Promise<number> => {
@@ -29,6 +31,10 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role === 'VIEWER') {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
     const { id } = await params;
     const body = await req.json();
     const { 
@@ -295,6 +301,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role === 'VIEWER') {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
     const { id } = await params;
     await prisma.task.delete({
       where: { id: Number(id) },

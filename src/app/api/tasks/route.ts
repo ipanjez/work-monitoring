@@ -42,8 +42,16 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
   return masterProgress[status] !== undefined ? masterProgress[status] : (status === 'Done' ? 100 : status === 'In Progress' ? 50 : 0);
 };
 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if ((session?.user as any)?.role === 'VIEWER') {
+      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    }
+
     const body = await req.json();
 
     const parseDate = (d: any) => {
