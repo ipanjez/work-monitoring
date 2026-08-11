@@ -31,10 +31,18 @@ export async function POST(req: Request) {
     }
 
     const uploadedResults = [];
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.docx', '.xlsx', '.zip', '.txt', '.csv'];
 
     for (const file of files) {
       if (typeof file === 'string') continue;
       
+      const fileName = file.name.toLowerCase();
+      const isValidExt = allowedExtensions.some(ext => fileName.endsWith(ext));
+      
+      if (!isValidExt) {
+        return NextResponse.json({ error: `Tipe file tidak didukung: ${file.name}` }, { status: 400 });
+      }
+
       const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const uniqueFileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}_${safeName}`;
 

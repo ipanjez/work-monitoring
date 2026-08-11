@@ -5,8 +5,16 @@ import { getTaskDatesForExport, getTaskLocationString } from '@/utils/taskUtils'
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const token = searchParams.get('token');
+    const expectedToken = process.env.CALENDAR_SECRET_TOKEN || 'secure-calendar-token-12345';
+    
+    if (token !== expectedToken) {
+      return new NextResponse('Unauthorized: Invalid calendar token', { status: 401 });
+    }
+
     const tasks = await prisma.task.findMany({
       orderBy: { startDate: 'asc' },
     });

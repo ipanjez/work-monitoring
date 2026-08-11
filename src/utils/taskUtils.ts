@@ -1,5 +1,6 @@
 import { createEvent, EventAttributes } from 'ics';
 import { format } from 'date-fns';
+import DOMPurify from 'isomorphic-dompurify';
 
 export type FileItem = {
   url: string;
@@ -444,14 +445,14 @@ export const formatDescription = (htmlOrText: string): string => {
           n.parentNode?.replaceChild(span, n);
         }
       }
-      return doc.body.innerHTML;
+      return DOMPurify.sanitize(doc.body.innerHTML);
     } catch (e) {
       console.error('Safe HTML parsing failed', e);
-      return content;
+      return DOMPurify.sanitize(content);
     }
   }
   
-  return content;
+  return DOMPurify.sanitize(content);
 };
 
 export const handleMarkdownShortcut = (

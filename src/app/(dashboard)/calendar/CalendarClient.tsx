@@ -557,7 +557,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           <button 
             className="btn" 
             onClick={() => {
-              const feedUrl = `${window.location.origin}/calendar.ics`;
+              const feedUrl = `${window.location.origin}/calendar.ics?token=secure-calendar-token-12345`;
               copyToClipboard(feedUrl);
               toast.success('URL Kalender berhasil disalin ke clipboard!');
               alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars' (Kalender Lain)\n3. Pilih 'From URL' (Dari URL)\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
