@@ -201,32 +201,92 @@ ${task!.deskripsi || '-'}`;
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-            <div>
-              {(() => {
-                const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
-                return (
-                  <span className={badge.className} style={{ ...badge.style, marginBottom: '8px' }}>
-                    {task.prioritas || 'Medium'}
-                  </span>
-                );
-              })()}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{task.nama}</h2>
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  onClick={handleCopyTaskDetails}
-                  title="Salin Detail Pekerjaan ke Teks"
-                >
-                  <Copy size={16} />
+          <div style={{ 
+            position: 'sticky', 
+            top: '-24px', 
+            background: 'var(--modal-bg, var(--surface-color))', 
+            zIndex: 10, 
+            padding: '24px 24px 16px 24px', 
+            margin: '-24px -24px 20px -24px', 
+            borderBottom: '1px solid var(--border-color)',
+            borderTopLeftRadius: '20px',
+            borderTopRightRadius: '20px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, paddingRight: '16px' }}>
+                {(() => {
+                  const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
+                  return (
+                    <span className={badge.className} style={{ ...badge.style, marginBottom: '12px', display: 'inline-block' }}>
+                      {task.prioritas || 'Medium'}
+                    </span>
+                  );
+                })()}
+                
+                <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>{task.nama}</h2>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={handleCopyTaskDetails}
+                    title="Salin Detail Pekerjaan ke Teks"
+                  >
+                    <Copy size={16} />
+                  </button>
+
+                  {onEdit && userRole !== 'SPV' && (
+                    <button className="btn btn-secondary" style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                      <Edit size={16} />
+                    </button>
+                  )}
+                  
+                  {onDelete && userRole !== 'SPV' && (
+                    <button className="btn btn-danger" style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onDelete} title="Hapus Pekerjaan">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+
+                  <a
+                    href={getGoogleCalendarUrl(task)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ padding: '6px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Tambah ke Google Calendar"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                  
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => handleExportICS(task)}
+                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Download .ics"
+                  >
+                    <CalendarDays size={16} />
+                  </button>
+                  
+                  {pathname !== '/calendar' && (
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        onClose();
+                        router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
+                      }}
+                      style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="Pergi ke Kalender"
+                    >
+                      <Eye size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
+                  <X size={18} />
                 </button>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
-                <X size={18} />
-              </button>
             </div>
           </div>
 
@@ -579,76 +639,6 @@ ${task!.deskripsi || '-'}`;
               )}
             </div>
  
-            {/* Row 1: Manage Task Actions */}
-            {(onEdit || onDelete) && userRole !== 'SPV' && (
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-                {onEdit && (
-                  <button className="btn btn-secondary" onClick={onEdit}>
-                    <Edit size={16} /> Edit Pekerjaan Ini
-                  </button>
-                )}
-                {onDelete && (
-                  <button className="btn btn-danger" onClick={onDelete}>
-                    <X size={16} /> Hapus Pekerjaan
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Row 2: Calendar Actions */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: (onEdit || onDelete) && userRole !== 'SPV' ? '4px' : '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <a
-                href={getGoogleCalendarUrl(task)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                <ExternalLink size={16} /> Tambah ke Google Calendar
-              </a>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => handleExportICS(task)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                <CalendarDays size={16} /> Download .ics
-              </button>
-              {pathname !== '/calendar' && (
-                <button 
-                  className="btn" 
-                  style={{ 
-                    background: 'transparent', 
-                    color: 'var(--text-secondary)', 
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    padding: '10px 18px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onClick={() => {
-                    onClose();
-                    router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = 'var(--text-primary)';
-                    e.currentTarget.style.borderColor = 'var(--text-secondary)';
-                    e.currentTarget.style.background = 'var(--surface-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  <Eye size={15} /> Pergi ke Kalender
-                </button>
-              )}
-            </div>
           </div>
         </motion.div>
       </div>
