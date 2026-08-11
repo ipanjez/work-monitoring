@@ -35,6 +35,13 @@ export async function GET() {
         productId: 'DeptMonitor/CalendarFeed',
         sequence: task.editCount || 0,
         lastModified: [updated.getFullYear(), updated.getMonth() + 1, updated.getDate(), updated.getHours(), updated.getMinutes()],
+        alarms: [
+          {
+            action: 'display',
+            description: `Reminder: ${task.nama}`,
+            trigger: { minutes: 30, before: true }
+          }
+        ]
       };
     });
 

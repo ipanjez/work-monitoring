@@ -351,6 +351,13 @@ export const handleExportICS = (task: Task) => {
     start: [startY, startMo + 1, startD, startH, startM],
     end: [endY, endMo + 1, endD, endH, endM],
     location: locStr || undefined,
+    alarms: [
+      {
+        action: 'display',
+        description: `Reminder: ${task.nama}`,
+        trigger: { minutes: 30, before: true }
+      }
+    ]
   };
 
   createEvent(event, (error, value) => {

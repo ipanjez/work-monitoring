@@ -891,6 +891,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}`,
         start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0],
         end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 17, 0],
+        alarms: [
+          {
+            action: 'display',
+            description: `Reminder: ${task.nama}`,
+            trigger: { minutes: 30, before: true }
+          }
+        ]
       };
     });
 
