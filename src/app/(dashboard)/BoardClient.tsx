@@ -82,6 +82,15 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setTasks(initialTasks);
   }, [initialTasks]);
 
+  useEffect(() => {
+    if (selectedTask) {
+      const updated = tasks.find(t => t.id === selectedTask.id);
+      if (updated && updated !== selectedTask) {
+        setSelectedTask(updated);
+      }
+    }
+  }, [tasks, selectedTask]);
+
   const handleDragStart = (e: React.DragEvent, id: number) => {
     setDraggedTaskId(id);
     e.dataTransfer.setData('text/plain', id.toString());

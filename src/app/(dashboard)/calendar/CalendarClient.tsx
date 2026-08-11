@@ -132,6 +132,15 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     fetchHolidays();
   }, [date]);
 
+  useEffect(() => {
+    if (selectedTask) {
+      const updated = tasks.find(t => t.id === selectedTask.id);
+      if (updated && updated !== selectedTask) {
+        setSelectedTask(updated);
+      }
+    }
+  }, [tasks, selectedTask]);
+
   const customDayPropGetter = (d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
     const dayOfWeek = getDay(d);

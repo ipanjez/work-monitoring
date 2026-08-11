@@ -45,6 +45,15 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   }, [initialTasks]);
 
   useEffect(() => {
+    if (detailTask) {
+      const updated = localTasks.find(t => t.id === detailTask.id);
+      if (updated && updated !== detailTask) {
+        setDetailTask(updated);
+      }
+    }
+  }, [localTasks, detailTask]);
+
+  useEffect(() => {
     const loadMasterPics = () => {
       fetch('/api/settings')
         .then(res => res.json())

@@ -120,6 +120,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     setTasks(initialTasks);
   }, [initialTasks]);
 
+  useEffect(() => {
+    if (detailTask) {
+      const updated = tasks.find(t => t.id === detailTask.id);
+      if (updated && updated !== detailTask) {
+        setDetailTask(updated);
+      }
+    }
+  }, [tasks, detailTask]);
+
   const refreshData = () => router.refresh();
 
   const handleToggleSelectAll = () => {

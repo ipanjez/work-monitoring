@@ -56,7 +56,13 @@ ChartJS.register(
 
 
 
-export default function DashboardClient({ tasks }: { tasks: Task[] }) {
+export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[] }) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { theme } = useTheme();
@@ -100,24 +106,12 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       fetch('/api/settings')
         .then(res => res.json())
         .then(data => {
-          if (data.master_pics) {
-            setMasterPics(data.master_pics);
-          }
-          if (data.master_categories) {
-            setMasterCategories(data.master_categories);
-          }
-          if (data.master_statuses) {
-            setMasterStatuses(data.master_statuses);
-          }
-          if (data.master_priorities) {
-            setMasterPriorities(data.master_priorities);
-          }
-          if (data.master_colors) {
-            setMasterColors(data.master_colors);
-          }
-          if (data.master_pic_avatars) {
-            setMasterPicAvatars(data.master_pic_avatars);
-          }
+          if (data.master_pics) setMasterPics(data.master_pics);
+          if (data.master_categories) setMasterCategories(data.master_categories);
+          if (data.master_statuses) setMasterStatuses(data.master_statuses);
+          if (data.master_priorities) setMasterPriorities(data.master_priorities);
+          if (data.master_colors) setMasterColors(data.master_colors);
+          if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
         })
         .catch(e => console.error(e));
     };
@@ -125,6 +119,15 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
     window.addEventListener('tasksUpdated', loadMasterData);
     return () => window.removeEventListener('tasksUpdated', loadMasterData);
   }, []);
+
+  useEffect(() => {
+    if (selectedTaskForDetail) {
+      const updated = tasks.find(t => t.id === selectedTaskForDetail.id);
+      if (updated && updated !== selectedTaskForDetail) {
+        setSelectedTaskForDetail(updated);
+      }
+    }
+  }, [tasks, selectedTaskForDetail]);
 
   const handleOpenEditModal = (task: any) => {
     let parsedSubTasks: SubTask[] = [];
@@ -204,6 +207,9 @@ export default function DashboardClient({ tasks }: { tasks: Task[] }) {
       });
 
       if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
+      
+      const savedTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
       
       toast.success('Pekerjaan berhasil diperbarui!');
       if (addActivityLog) {
