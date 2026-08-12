@@ -286,7 +286,7 @@ export const getTaskExportRow = (task: any) => {
     'Jam Selesai': task.endTime || '',
     'Tanggal Mulai': task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
     'Tenggat Waktu': task.endDate ? format(new Date(task.endDate), 'yyyy-MM-dd') : '',
-    'Repetisi': task.repetisi || 'Tidak Berulang',
+    'Repetisi': formatRecurrenceText(task.repetisi),
     'Deskripsi': task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '',
     'Catatan': task.catatan || '',
     'Lokasi Pekerjaan': getTaskLocationString(task),
