@@ -1,0 +1,51 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { defaultRolePermissions } from '@/lib/permissions';
+
+export async function GET() {
+  try {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: 'role_permissions' }
+    });
+
+    if (!setting || !setting.value) {
+      return NextResponse.json(defaultRolePermissions);
+    }
+
+    return NextResponse.json(JSON.parse(setting.value));
+  } catch (error: any) {
+    console.error('Error fetching role_permissions:', error);
+    return NextResponse.json(defaultRolePermissions);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user as any)?.role;
+    
+    if (userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Akses ditolak. Hanya Admin yang dapat mengubah role.' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    
+    // Validate basic structure
+    if (!body.labels || !body.permissions) {
+      return NextResponse.json({ error: 'Format data tidak valid' }, { status: 400 });
+    }
+
+    await prisma.appSetting.upsert({
+      where: { key: 'role_permissions' },
+      update: { value: JSON.stringify(body) },
+      create: { key: 'role_permissions', value: JSON.stringify(body) },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error updating role_permissions:', error);
+    return NextResponse.json({ error: error.message || 'Failed to update' }, { status: 500 });
+  }
+}

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
+
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
 type Log = { id: number; action: string; title: string; message: string; type: string; userId?: string; userName?: string; createdAt: string };
@@ -32,7 +34,7 @@ const actionLabel: Record<string, string> = {
   DELETE_TASK: 'Hapus Task',
 };
 
-export default function UsersClient() {
+export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string }) {
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [requests, setRequests] = useState<ResetReq[]>([]);
@@ -49,6 +51,9 @@ export default function UsersClient() {
   const [forceResetUser, setForceResetUser] = useState<UserData | null>(null);
   const [forceNewPassword, setForceNewPassword] = useState('');
 
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  const [savingRoles, setSavingRoles] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     const res = await fetch('/api/users');
     if (res.ok) setUsers(await res.json());
@@ -64,11 +69,19 @@ export default function UsersClient() {
     if (res.ok) setLogs(await res.json());
   }, []);
 
+  const fetchRoles = useCallback(async () => {
+    const res = await fetch('/api/settings/permissions');
+    if (res.ok) {
+      setRoleConfig(await res.json());
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
     fetchRequests();
     fetchLogs();
-  }, [fetchUsers, fetchRequests, fetchLogs]);
+    fetchRoles();
+  }, [fetchUsers, fetchRequests, fetchLogs, fetchRoles]);
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
 
@@ -223,7 +236,7 @@ export default function UsersClient() {
             ) : t === 'logs' ? (
               <><ScrollText size={15} /> Sistem Logs</>
             ) : (
-              <><ShieldCheck size={15} /> Info Role</>
+              <><ShieldCheck size={15} /> Edit Role</>
             )}
           </button>
         ))}
@@ -257,7 +270,7 @@ export default function UsersClient() {
                     <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{u.name}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 600, background: u.role === 'ADMIN' ? 'rgba(139,92,246,0.15)' : 'rgba(59,130,246,0.12)', color: u.role === 'ADMIN' ? '#7c3aed' : '#2563eb' }}>
-                        {u.role === 'ADMIN' ? <ShieldCheck size={12} /> : <User size={12} />} {u.role}
+                        {u.role === 'ADMIN' ? <ShieldCheck size={12} /> : <User size={12} />} {roleConfig.labels[u.role] || u.role}
                       </span>
                     </td>
                     <td style={{ padding: '12px' }}>
@@ -380,7 +393,7 @@ export default function UsersClient() {
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>{l.userName || '—'}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${typeColor[l.type] || '#6b7280'}20`, color: typeColor[l.type] || '#6b7280', whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${typeColor[l.type] || '#6b7280'}20`, color: typeColor[l.type] || '#6b7280', whiteSpace: 'nowrap' }}>
                         {actionLabel[l.action] || l.action}
                       </span>
                     </td>
@@ -401,67 +414,104 @@ export default function UsersClient() {
       {tab === 'roles' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShieldCheck size={20} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={20} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role
+              </h2>
+              {userRole === 'ADMIN' && (
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async () => {
+                    setSavingRoles(true);
+                    try {
+                      const res = await fetch('/api/settings/permissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(roleConfig)
+                      });
+                      if (res.ok) toast.success('Matriks Role berhasil disimpan');
+                      else toast.error('Gagal menyimpan matriks role');
+                    } catch (e) {
+                      toast.error('Gagal menyimpan matriks role');
+                    } finally {
+                      setSavingRoles(false);
+                    }
+                  }} 
+                  disabled={savingRoles}
+                >
+                  {savingRoles ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              )}
+            </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)' }}>Fitur / Hak Akses</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: 'var(--accent-primary)', borderRight: '1px solid var(--border-color)' }}>ADMIN</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: '#f59e0b', borderRight: '1px solid var(--border-color)' }}>MEMBER</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 700, color: 'var(--text-secondary)' }}>VIEWER</th>
+                  {['ADMIN', 'MEMBER', 'VIEWER'].map(rk => (
+                    <th key={rk} style={{ padding: '12px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)' }}>
+                      {userRole === 'ADMIN' ? (
+                        <input 
+                          className="input" 
+                          style={{ padding: '4px 8px', fontSize: '13px', textAlign: 'center', width: '100px', fontWeight: 600 }}
+                          value={roleConfig.labels[rk] || ''}
+                          onChange={(e) => {
+                            setRoleConfig({
+                              ...roleConfig,
+                              labels: { ...roleConfig.labels, [rk]: e.target.value }
+                            });
+                          }}
+                        />
+                      ) : (
+                        roleConfig.labels[rk] || rk
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Dashboard & Board</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Detail Tugas & Lampiran</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Menambah/Mengedit Tugas</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Hapus Tugas / Edit Massal (Bulk)</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Upload Lampiran & Komentar</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Akses Pengaturan (Master Data)</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Manajemen User & Password</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>Melihat Sistem Log Lengkap</strong></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}><XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} /></td>
-                </tr>
+                {[
+                  { key: 'view_dashboard', label: 'Melihat Dashboard & Board' },
+                  { key: 'view_detail', label: 'Melihat Detail Tugas & Lampiran' },
+                  { key: 'manage_task', label: 'Menambah/Mengedit Tugas' },
+                  { key: 'delete_task', label: 'Hapus Tugas / Edit Massal (Bulk)' },
+                  { key: 'upload_comment', label: 'Upload Lampiran & Komentar' },
+                  { key: 'master_data', label: 'Akses Pengaturan (Master Data)' },
+                  { key: 'user_management', label: 'Manajemen User & Password' },
+                  { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' }
+                ].map(feature => (
+                  <tr key={feature.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>{feature.label}</strong></td>
+                    {['ADMIN', 'MEMBER', 'VIEWER'].map(rk => {
+                      const hasPerm = roleConfig.permissions[feature.key]?.includes(rk);
+                      return (
+                        <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+                          {userRole === 'ADMIN' ? (
+                            <input 
+                              type="checkbox" 
+                              checked={hasPerm}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setRoleConfig(prev => {
+                                  const list = prev.permissions[feature.key] || [];
+                                  return {
+                                    ...prev,
+                                    permissions: {
+                                      ...prev.permissions,
+                                      [feature.key]: checked ? [...list, rk] : list.filter(r => r !== rk)
+                                    }
+                                  };
+                                });
+                              }}
+                            />
+                          ) : (
+                            hasPerm ? <CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /> : <XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -488,9 +538,9 @@ export default function UsersClient() {
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Role</label>
                 <select className="input" value={editUser.role || 'MEMBER'} onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
-                  <option value="MEMBER">MEMBER</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="VIEWER">VIEWER</option>
+                  {Object.entries(roleConfig.labels).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
                 </select>
               </div>
               <div>

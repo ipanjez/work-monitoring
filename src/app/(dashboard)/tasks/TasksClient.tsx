@@ -2,12 +2,9 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
-  ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical,
-  Video, MapPin
-} from 'lucide-react';
+import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, Settings2, Calendar, FileDown, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
 import { format } from 'date-fns';
@@ -34,11 +31,16 @@ import UniversalActionBar from '@/components/UniversalActionBar';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
-import { useSession } from 'next-auth/react';
+
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   const { masterColors, masterPicAvatars } = useMaster();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -1016,7 +1018,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
-                {userRole !== 'SPV' && (
+                {hasPermission(roleConfig, 'manage_task', userRole) && (
                   <th style={{ padding: '8px 4px', width: '35px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
@@ -1075,7 +1077,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
                 return (
                   <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                    {hasPermission(roleConfig, 'delete_task', userRole) && (
                       <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -1304,7 +1306,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                               >
                                 <CalendarDays size={13} />
                               </button>
-                              {userRole !== 'SPV' && (
+                              {hasPermission(roleConfig, 'manage_task', userRole) && (
                                 <>
                                   <button
                                     className="btn btn-secondary"
@@ -1481,7 +1483,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   >
                     <CalendarDays size={12} /> .ics
                   </button>
-                  {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                  {hasPermission(roleConfig, 'manage_task', userRole) && (
                     <>
                       <button
                         className="btn btn-secondary"

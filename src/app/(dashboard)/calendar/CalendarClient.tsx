@@ -42,10 +42,16 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   const { masterColors } = useMaster();
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
@@ -318,7 +324,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
-    if (userRole === 'VIEWER') return;
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
     const endStr = slotInfo.end.toISOString().split('T')[0];
     setEditingTask({

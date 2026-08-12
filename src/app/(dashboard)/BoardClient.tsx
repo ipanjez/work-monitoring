@@ -19,10 +19,16 @@ import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, ge
 import Avatar from '@/components/Avatar';
 
 import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   const { masterColors, masterPicAvatars } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -623,7 +629,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   const isDragged = draggedTaskId === task.id;
                   const isDragOverThisCard = dragOverCardId === task.id;
                   const isOwnTask = (task: any) => {
-                    if (userRole === 'ADMIN') return true;
+                    if (hasPermission(roleConfig, 'manage_task', userRole)) return true;
                     if (!session?.user?.name) return false;
                     if (task.pic === session.user.name) return true;
                     try {
@@ -633,7 +639,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     return false;
                   };
 
-                  const canDrag = userRole !== 'VIEWER' && userRole !== 'SPV' && isOwnTask(task);
+                  const canDrag = hasPermission(roleConfig, 'manage_task', userRole) && isOwnTask(task);
 
                   return (
                     <div
