@@ -9,9 +9,10 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get('token');
-    const expectedToken = process.env.CALENDAR_SECRET_TOKEN || 'secure-calendar-token-12345';
+    const setting = await prisma.appSetting.findUnique({ where: { key: 'calendar_token' } });
+    const expectedToken = setting ? setting.value : (process.env.CALENDAR_SECRET_TOKEN || 'secure-calendar-token-12345');
     
-    if (token !== expectedToken) {
+    if (!token || token !== expectedToken) {
       return new NextResponse('Unauthorized: Invalid calendar token', { status: 401 });
     }
 

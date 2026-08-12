@@ -1157,14 +1157,23 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             className="btn btn-primary"
-            onClick={() => {
-              const feedUrl = `${window.location.origin}/calendar.ics?token=secure-calendar-token-12345`;
-              import('@/utils/clipboard').then(({ copyToClipboard }) => {
-                copyToClipboard(feedUrl);
-                alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars'\n3. Pilih 'From URL'\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
-              });
+            style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/calendar/token');
+                const data = await res.json();
+                const feedUrl = `${window.location.origin}/calendar.ics?token=${data.token}`;
+                const input = document.createElement('input');
+                input.value = feedUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('URL Kalender berhasil disalin!');
+              } catch (err) {
+                alert('Gagal mengambil token kalender');
+              }
             }}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <CalendarDays size={16} /> Salin URL Feed Kalender (.ics)
           </button>
