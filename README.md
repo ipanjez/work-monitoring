@@ -139,6 +139,36 @@ Aplikasi ini dirancang untuk mendukung dua lingkungan secara bersamaan:
 
 ---
 
+## 💸 Biaya & Konsekuensi Penggunaan Database Neon (Vercel)
+
+Jika Anda memilih menggunakan **PostgreSQL (Neon)** untuk *deployment* di Vercel, Anda tunduk pada kebijakan harga dari Neon. Berdasarkan integrasi Vercel, berikut adalah rincian biayanya:
+
+### 1. Free Plan (Gratis)
+Cocok untuk uji coba atau tim kecil dengan penggunaan sangat minim.
+- **Penyimpanan (Storage):** Maksimal 0.5 GB per proyek.
+- **Compute Time:** Dibatasi 100 CU-hours (Compute Unit hours) per proyek setiap bulannya.
+- *Konsekuensi:* Jika Anda melebihi 0.5 GB atau sering mengakses database secara intensif hingga limit CU habis, database akan dikunci sementara hingga bulan berikutnya (atau Anda harus upgrade).
+
+### 2. Launch Plan (Berbayar - Direkomendasikan untuk Produksi)
+Cocok untuk tim menengah yang menggunakan aplikasi setiap hari.
+- **Penyimpanan (Storage):** $0.35 (sekitar Rp 5.500) per GB per bulan.
+- **Compute Time:** $0.106 (sekitar Rp 1.600) per CU-hour.
+- **Performa:** Mendukung hingga 16 CU dan 64 GB RAM (jauh lebih cepat dan sanggup menampung banyak *request* bersamaan).
+- *Contoh Kasus:* Jika database Anda besarnya 2 GB dan aplikasi digunakan aktif selama jam kerja (asumsi memakan 200 CU-hour sebulan), biayanya kira-kira: 
+  - Storage: 2 GB × $0.35 = $0.70
+  - Compute: 200 × $0.106 = $21.20
+  - Total: ~$21.90/bulan (sekitar Rp 350.000/bulan).
+
+### 3. Scale Plan (Enterprise)
+Untuk perusahaan besar dengan beban kerja yang sangat tinggi.
+- **Penyimpanan:** $0.35 per GB per bulan.
+- **Compute Time:** $0.222 per CU-hour.
+- **Performa:** Super masif hingga 56 CU dan 224 GB RAM. Bisa menampung ribuan *request* tanpa hambatan.
+
+> **💡 Solusi Hemat 100% Gratis:** Jika Anda tidak ingin memikirkan biaya bulanan Neon, sangat disarankan untuk menjalankan aplikasi ini secara lokal di komputer server kantor Anda menggunakan mode `npm run dev:local` (SQLite). Data akan tersimpan di *hard disk* Anda sendiri dengan kapasitas tanpa batas (gratis)!
+
+---
+
 ## 📦 Migrasi Data (Neon ↔ Lokal)
 
 ### Backup & Restore Otomatis (1-Click)
