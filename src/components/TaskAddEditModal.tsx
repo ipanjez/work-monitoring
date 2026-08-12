@@ -103,6 +103,7 @@ export default function TaskAddEditModal({
 
   useEffect(() => {
     if (isOpen && taskToEdit) {
+      console.log('DEBUG taskToEdit:', taskToEdit);
       const cloned = JSON.parse(JSON.stringify(taskToEdit));
       
       if (cloned.repetisi && cloned.repetisi.startsWith('CUSTOM_RECURRENCE:')) {
@@ -136,6 +137,15 @@ export default function TaskAddEditModal({
         cloned.lokasiData = { tipe: '', linkZoom: '', lokasiFisik: '', jam: '' };
       }
 
+      if (!cloned.subTasksList) {
+        console.warn('DEBUG: subTasksList was missing in cloned taskToEdit!');
+        cloned.subTasksList = [];
+      } else if (!Array.isArray(cloned.subTasksList)) {
+        console.warn('DEBUG: subTasksList was not an array in cloned taskToEdit!', cloned.subTasksList);
+        cloned.subTasksList = [];
+      }
+
+      console.log('DEBUG FINAL CLONED TASK:', cloned);
       setEditingTask(cloned);
     } else {
       setEditingTask(null);

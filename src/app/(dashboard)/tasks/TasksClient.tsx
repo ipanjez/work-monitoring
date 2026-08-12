@@ -349,10 +349,21 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
 
     let parsedSubTasks: SubTask[] = [];
+    console.log('DEBUG handleOpenEditModal task:', task);
     if (task.subTasksJson) {
-      try {
-        parsedSubTasks = JSON.parse(task.subTasksJson);
-      } catch (e) { }
+      if (typeof task.subTasksJson === 'string') {
+        try {
+          parsedSubTasks = JSON.parse(task.subTasksJson);
+        } catch (e) {
+          console.error('Failed to parse subTasksJson in handleOpenEditModal', e);
+        }
+      } else if (Array.isArray(task.subTasksJson)) {
+        parsedSubTasks = task.subTasksJson;
+      }
+      
+      if (!Array.isArray(parsedSubTasks)) {
+        parsedSubTasks = [];
+      }
     }
 
     setEditingTask({
