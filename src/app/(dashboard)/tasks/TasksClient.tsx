@@ -1194,7 +1194,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
                             onClick={(e) => {
                                e.stopPropagation();
-                               setPreviewFile(f);
+                               hasPermission(roleConfig, 'view_detail', userRole) ? setPreviewFile(f) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
                             }}
                           >
                             <Paperclip size={14} /> {f.name}
