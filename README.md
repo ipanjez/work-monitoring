@@ -128,9 +128,8 @@ Aplikasi ini dirancang untuk mendukung dua lingkungan secara bersamaan:
 │   GitHub push        │     Otomatis switch schema   │
 │                      │                              │
 │   Akses:             │     Akses:                   │
-│   internal-work-     │     http://192.168.x.x:3000  │
-│   monitoring.        │     (Jaringan LAN kantor)    │
-│   vercel.app         │                              │
+│   https://<domain>-  │     http://192.168.x.x:3000  │
+│   .vercel.app        │     (Jaringan LAN kantor)    │
 └──────────────────────┴──────────────────────────────┘
 ```
 
@@ -146,7 +145,7 @@ Aplikasi ini dirancang untuk mendukung dua lingkungan secara bersamaan:
 Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memindahkan data. Gunakan fitur bawaan aplikasi:
 
 **Langkah 1: Export dari Vercel (Neon)**
-1. Buka `https://internal-work-monitoring.vercel.app/settings`
+1. Buka `https://<domain-aplikasi-anda>.vercel.app/settings`
 2. Scroll ke bagian **Cadangan & Export Data Database**
 3. Klik **📥 Unduh Backup** (akan mengunduh file JSON berisi seluruh pekerjaan, pengaturan, user, dan log)
 
