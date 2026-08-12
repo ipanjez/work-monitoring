@@ -459,14 +459,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         }
       });
       if (picChanged) {
-        setMasterPics(updatedMasterPics);
         localStorage.setItem('master_pics', JSON.stringify(updatedMasterPics));
+        window.dispatchEvent(new Event('masterUpdated'));
       }
 
       if (savedTask.kategori && !masterCats.includes(savedTask.kategori)) {
         const updatedCats = [...masterCats, savedTask.kategori];
-        setMasterCats(updatedCats);
-        localStorage.setItem('master_categories', JSON.stringify(updatedCats));
+        localStorage.setItem('master_cats', JSON.stringify(updatedCats));
+        window.dispatchEvent(new Event('masterUpdated'));
       }
 
       setIsModalOpen(false);
