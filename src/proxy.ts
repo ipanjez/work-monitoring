@@ -16,6 +16,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/calendar') ||
     pathname.startsWith('/api/settings') ||
+    pathname.startsWith('/api/database') ||
     pathname === '/api/users/reset-requests' ||
     pathname === '/calendar.ics'
   ) {

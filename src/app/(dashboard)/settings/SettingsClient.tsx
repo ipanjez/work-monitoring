@@ -590,6 +590,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   };
 
   const handleBackupDatabase = async () => {
+    const toastId = toast.loading('Sedang mengunduh seluruh data...');
     try {
       const res = await fetch('/api/database');
       if (!res.ok) throw new Error('Gagal mengambil backup');
@@ -602,8 +603,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       a.href = url;
       a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
-      toast.success('Backup berhasil diunduh');
+      toast.dismiss(toastId);
+      toast.success(`Backup berhasil! ${data.tasks?.length || 0} pekerjaan, ${data.users?.length || 0} user, ${data.settings?.length || 0} pengaturan.`);
     } catch (err) {
+      toast.dismiss(toastId);
       toast.error('Gagal mengunduh backup');
     }
   };
@@ -621,6 +624,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       }
 
       setLoading(true);
+      const toastId = toast.loading('Sedang memulihkan database dari backup...');
       try {
         const text = await file.text();
         const data = JSON.parse(text);
@@ -631,14 +635,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           body: JSON.stringify(data)
         });
 
+        toast.dismiss(toastId);
         if (res.ok) {
-          toast.success('Database berhasil dipulihkan!');
+          const result = await res.json();
+          toast.success(result.message || 'Database berhasil dipulihkan!');
           setTimeout(() => window.location.reload(), 1500);
         } else {
           const err = await res.json();
           toast.error(err.error || 'Gagal memulihkan database');
         }
       } catch (err) {
+        toast.dismiss(toastId);
         toast.error('File JSON tidak valid atau rusak');
       } finally {
         setLoading(false);
