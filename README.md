@@ -169,6 +169,25 @@ Untuk perusahaan besar dengan beban kerja yang sangat tinggi.
 
 ---
 
+## ☁️ Biaya & Batasan Vercel Blob (Penyimpanan File Cloud)
+
+Jika Anda melakukan *deployment* di Vercel, lampiran file (PDF, gambar, dll) akan disimpan di **Vercel Blob Storage**. Berdasarkan kebijakan Vercel, berikut batasannya:
+
+### 1. Hobby Plan (Gratis)
+- **Penyimpanan (Storage):** Maksimal **500 MB** total file tersimpan.
+- **Ukuran per file:** Maksimal **500 MB**.
+- **Bandwidth/Network (Download/Upload):** Maksimal **5 GB per bulan**.
+- *Konsekuensi:* Jika total file Anda melebihi 500 MB, Anda tidak bisa lagi mengunggah file baru. Jika file Anda sering diunduh oleh banyak user dan *bandwidth* melebihi 5 GB/bulan, akses unduh/upload akan diblokir oleh Vercel hingga bulan berikutnya (atau akun bisa disuspend).
+
+### 2. Pro Plan (Berbayar)
+- **Harga Dasar:** $20 per bulan per pengguna (akun Vercel Pro).
+- **Blob Add-on:** Storage dan Bandwidth di luar kuota gratis akan dikenakan biaya tambahan per GB ($0.15/GB untuk storage, dan tarif terpisah untuk bandwidth/egress).
+- *Konsekuensi:* Harga dapat membengkak secara tidak terprediksi apabila ada lonjakan *download* file berukuran besar secara terus-menerus.
+
+> **💡 Solusi Hemat 100% Gratis:** Jalankan aplikasi mode lokal (`npm run dev:local`). Mode ini memiliki fitur **Local File System** di mana seluruh file yang diunggah akan disimpan **langsung ke hard disk laptop/PC Anda** di folder `public/uploads/`. Sama sekali tidak menggunakan kuota internet ataupun layanan berbayar Vercel Blob!
+
+---
+
 ## 📦 Migrasi Data (Neon ↔ Lokal)
 
 ### Backup & Restore Otomatis (1-Click)
