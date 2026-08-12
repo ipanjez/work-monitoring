@@ -557,6 +557,11 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           <button 
             className="btn" 
             onClick={async () => {
+              const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+              if (isLocal) {
+                alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
+                return;
+              }
               try {
                 const res = await fetch('/api/calendar/token');
                 const data = await res.json();
