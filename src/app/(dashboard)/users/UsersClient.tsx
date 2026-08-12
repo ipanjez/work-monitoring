@@ -419,48 +419,79 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 <ShieldCheck size={20} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role
               </h2>
               {userRole === 'ADMIN' && (
-                <button 
-                  className="btn btn-primary" 
-                  onClick={async () => {
-                    setSavingRoles(true);
-                    try {
-                      const res = await fetch('/api/settings/permissions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(roleConfig)
-                      });
-                      if (res.ok) toast.success('Matriks Role berhasil disimpan');
-                      else toast.error('Gagal menyimpan matriks role');
-                    } catch (e) {
-                      toast.error('Gagal menyimpan matriks role');
-                    } finally {
-                      setSavingRoles(false);
-                    }
-                  }} 
-                  disabled={savingRoles}
-                >
-                  {savingRoles ? 'Menyimpan...' : 'Simpan Perubahan'}
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => {
+                      const newKey = `ROLE_${Date.now()}`;
+                      setRoleConfig(prev => ({
+                        ...prev,
+                        labels: { ...prev.labels, [newKey]: 'Role Baru' }
+                      }));
+                    }} 
+                    disabled={savingRoles}
+                  >
+                    <Plus size={16} style={{ marginRight: '4px' }} /> Tambah Role
+                  </button>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={async () => {
+                      setSavingRoles(true);
+                      try {
+                        const res = await fetch('/api/settings/permissions', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(roleConfig)
+                        });
+                        if (res.ok) toast.success('Matriks Role berhasil disimpan');
+                        else toast.error('Gagal menyimpan matriks role');
+                      } catch (e) {
+                        toast.error('Gagal menyimpan matriks role');
+                      } finally {
+                        setSavingRoles(false);
+                      }
+                    }} 
+                    disabled={savingRoles}
+                  >
+                    {savingRoles ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+                </div>
               )}
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)' }}>Fitur / Hak Akses</th>
-                  {['ADMIN', 'MEMBER', 'VIEWER'].map(rk => (
+                  {Object.keys(roleConfig.labels).map(rk => (
                     <th key={rk} style={{ padding: '12px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)' }}>
                       {userRole === 'ADMIN' ? (
-                        <input 
-                          className="input" 
-                          style={{ padding: '4px 8px', fontSize: '13px', textAlign: 'center', width: '100px', fontWeight: 600 }}
-                          value={roleConfig.labels[rk] || ''}
-                          onChange={(e) => {
-                            setRoleConfig({
-                              ...roleConfig,
-                              labels: { ...roleConfig.labels, [rk]: e.target.value }
-                            });
-                          }}
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <input 
+                            className="input" 
+                            style={{ padding: '4px 8px', fontSize: '13px', textAlign: 'center', width: '100px', fontWeight: 600 }}
+                            value={roleConfig.labels[rk] || ''}
+                            onChange={(e) => {
+                              setRoleConfig({
+                                ...roleConfig,
+                                labels: { ...roleConfig.labels, [rk]: e.target.value }
+                              });
+                            }}
+                          />
+                          {rk !== 'ADMIN' && (
+                            <button 
+                              onClick={() => {
+                                if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
+                                  const newLabels = { ...roleConfig.labels };
+                                  delete newLabels[rk];
+                                  setRoleConfig({ ...roleConfig, labels: newLabels });
+                                }
+                              }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         roleConfig.labels[rk] || rk
                       )}
@@ -481,7 +512,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 ].map(feature => (
                   <tr key={feature.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>{feature.label}</strong></td>
-                    {['ADMIN', 'MEMBER', 'VIEWER'].map(rk => {
+                    {Object.keys(roleConfig.labels).map(rk => {
                       const hasPerm = roleConfig.permissions[feature.key]?.includes(rk);
                       return (
                         <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
