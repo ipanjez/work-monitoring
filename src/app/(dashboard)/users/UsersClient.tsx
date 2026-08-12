@@ -506,6 +506,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   { key: 'manage_task', label: 'Menambah/Mengedit Tugas' },
                   { key: 'delete_task', label: 'Hapus Tugas / Edit Massal (Bulk)' },
                   { key: 'upload_comment', label: 'Upload Lampiran & Komentar' },
+                  { key: 'export_data', label: 'Export Data (Excel, PDF, Salin Gambar)' },
                   { key: 'master_data', label: 'Akses Pengaturan (Master Data)' },
                   { key: 'user_management', label: 'Manajemen User & Password' },
                   { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' }

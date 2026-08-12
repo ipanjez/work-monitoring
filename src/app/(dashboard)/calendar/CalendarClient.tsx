@@ -552,6 +552,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
           <button 
             className="btn" 

@@ -16,6 +16,7 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     manage_task: ['ADMIN', 'MEMBER'],
     delete_task: ['ADMIN', 'MEMBER'],
     upload_comment: ['ADMIN', 'MEMBER'],
+    export_data: ['ADMIN', 'MEMBER'],
     master_data: ['ADMIN'],
     user_management: ['ADMIN'],
     system_logs: ['ADMIN']

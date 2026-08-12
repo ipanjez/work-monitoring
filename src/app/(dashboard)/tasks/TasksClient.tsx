@@ -938,6 +938,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
           <button 
             className="btn" 

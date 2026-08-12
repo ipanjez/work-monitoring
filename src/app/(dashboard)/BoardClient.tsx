@@ -528,6 +528,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 
