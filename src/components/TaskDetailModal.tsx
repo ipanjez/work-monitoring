@@ -167,11 +167,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
     const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
-    const a = document.createElement('a');
-    a.href = mailtoLink;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.click();
+    // Gunakan window.location.href agar tidak membuka tab kosong (untitled)
+    window.location.href = mailtoLink;
   };
 
   const handleAddComment = async () => {
