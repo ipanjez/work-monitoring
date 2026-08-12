@@ -210,7 +210,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
-        {(['users', 'requests', 'logs', 'roles'] as Tab[]).map(t => (
+        {((['users', 'requests', 'logs', 'roles'] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}

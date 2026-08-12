@@ -154,8 +154,10 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { href: '/', label: 'Monitoring Board', icon: Kanban },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ...(hasPermission(roleConfig, 'view_dashboard', userRole) ? [
+      { href: '/', label: 'Monitoring Board', icon: Kanban },
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ] : []),
     { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
     { href: '/calendar', label: 'Kalender', icon: Calendar },
     { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },

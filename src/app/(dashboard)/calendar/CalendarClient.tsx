@@ -594,7 +594,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           events={events}
           selectable={true}
           onSelectSlot={handleSelectSlot}
-          onSelectEvent={(event) => setSelectedTask(event.resource)}
+          onSelectEvent={(event) => hasPermission(roleConfig, 'view_detail', userRole) ? setSelectedTask(event.resource) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
           startAccessor="start"
           endAccessor="end"
           view={view}

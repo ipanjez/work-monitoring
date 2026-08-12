@@ -655,7 +655,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       }}
                       onDragOver={(e) => handleDragOverCard(e, task.id)}
                       onDrop={(e) => handleDropCard(e, col, task.id)}
-                      onClick={() => openTaskDetail(task)}
+                      onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? openTaskDetail(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
                       style={{
                         backgroundColor: 'var(--surface-color)',
                         padding: '8px',
