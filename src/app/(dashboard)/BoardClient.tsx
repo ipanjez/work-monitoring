@@ -701,9 +701,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           })()}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                            {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </span>
+                          {(() => {
+                            const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                            return (
+                              <span style={{ fontSize: '10px', color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: isOverdue ? '600' : 'normal' }}>
+                                {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                            );
+                          })()}
                           {!task.isAllDay && (task.startTime || task.endTime) && (
                             <span style={{ fontSize: '9px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                               {task.startTime ? `${task.startTime} - ` : ''}{task.endTime || ''}

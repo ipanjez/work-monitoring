@@ -1190,7 +1190,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </div>
                     </td>
                      <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-                      <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
+                      {(() => {
+                        const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                        return (
+                          <div style={{ color: isOverdue ? 'var(--danger, #ef4444)' : 'inherit', fontWeight: isOverdue ? '600' : 'normal' }}>
+                            {format(new Date(task.endDate), 'dd MMM yyyy')}
+                          </div>
+                        );
+                      })()}
                       {!task.isAllDay && task.startTime && (
                          <div style={{ fontSize: '10.5px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
                       )}
@@ -1384,7 +1391,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <CalendarDays size={12} />
-                      <span style={{ fontWeight: 500 }}>{format(new Date(task.endDate), 'dd MMM yyyy')}</span>
+                      {(() => {
+                        const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                        return (
+                          <span style={{ fontWeight: isOverdue ? 600 : 500, color: isOverdue ? 'var(--danger, #ef4444)' : 'inherit' }}>
+                            {format(new Date(task.endDate), 'dd MMM yyyy')}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
 
