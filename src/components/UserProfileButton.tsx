@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
 
@@ -12,6 +13,11 @@ export default function UserProfileButton() {
   const { masterPicAvatars, masterColors } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -139,14 +145,14 @@ export default function UserProfileButton() {
                 })()}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {(session.user as any).role || 'MEMBER'}
+                    {getRoleLabel(roleConfig, (session.user as any).role)}
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                     {(() => {
                       const role = (session.user as any).role;
                       if (role === 'ADMIN') return 'Akses penuh kelola data.';
                       if (role === 'VIEWER') return 'Read-only (Hanya lihat).';
-                      return 'Akses standar.';
+                      return 'Akses disesuaikan.';
                     })()}
                   </span>
                 </div>

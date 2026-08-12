@@ -9,7 +9,7 @@ import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
-
+import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 
 export default function GlobalAddButton() {
   const { data: session } = useSession();
@@ -24,6 +24,11 @@ export default function GlobalAddButton() {
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Done']);
   const [masterPriorities, setMasterPriorities] = useState<string[]>(['Low', 'Medium', 'High', 'Critical']);
   const [masterLocations, setMasterLocations] = useState<string[]>([]);
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   
   const panelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +66,11 @@ export default function GlobalAddButton() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  const userRole = (session?.user as any)?.role || 'VIEWER';
+  if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+    return null;
+  }
 
   const handleSaveModal = async (task: any) => {
     try {
