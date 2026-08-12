@@ -137,6 +137,18 @@ export default function TaskAddEditModal({
         cloned.lokasiData = { tipe: '', linkZoom: '', lokasiFisik: '', jam: '' };
       }
 
+      // Force parsing from subTasksJson to prevent any missing list issues
+      if (cloned.subTasksJson) {
+        try {
+          const parsed = typeof cloned.subTasksJson === 'string' ? JSON.parse(cloned.subTasksJson) : cloned.subTasksJson;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cloned.subTasksList = parsed;
+          }
+        } catch(e) {
+          console.error("Failed to parse subTasksJson in modal", e);
+        }
+      }
+
       if (!cloned.subTasksList) {
         console.warn('DEBUG: subTasksList was missing in cloned taskToEdit!');
         cloned.subTasksList = [];
