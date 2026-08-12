@@ -25,17 +25,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
   const { 
     masterColors, 
     masterPicAvatars,
     masterCats: formCategoryOptions,
     masterPics: formPicOptions,
     masterStatuses,
-    masterPriorities
+    masterPriorities,
+    roleConfig
   } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();

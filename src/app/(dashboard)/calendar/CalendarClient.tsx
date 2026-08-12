@@ -48,16 +48,13 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
   const { 
     masterColors, 
     masterCats, 
     masterStatuses, 
     masterPriorities, 
-    masterPics 
+    masterPics,
+    roleConfig
   } = useMaster();
   const { 
     globalTargetFilter, setGlobalTargetFilter, 

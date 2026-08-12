@@ -67,10 +67,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
+  const { roleConfig } = useMaster();
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
   const { 

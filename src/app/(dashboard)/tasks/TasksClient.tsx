@@ -35,11 +35,7 @@ type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progres
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -94,7 +90,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     masterPriorities,
     masterLocations,
     masterStatusProgress,
-    masterPics
+    masterPics,
+    roleConfig
   } = useMaster();
 
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());

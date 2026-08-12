@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
 
 interface MasterContextType {
   masterColors: Record<string, string>;
@@ -15,6 +16,7 @@ interface MasterContextType {
   masterLocations: string[];
   masterStatusProgress: Record<string, number>;
   masterPics: string[];
+  roleConfig: RolePermissionsConfig;
 }
 
 const MasterContext = createContext<MasterContextType>({ 
@@ -29,7 +31,8 @@ const MasterContext = createContext<MasterContextType>({
   masterPriorities: ['Low', 'Medium', 'High', 'Critical'],
   masterLocations: [],
   masterStatusProgress: {},
-  masterPics: []
+  masterPics: [],
+  roleConfig: defaultRolePermissions
 });
 
 export function MasterProvider({ children }: { children: React.ReactNode }) {
@@ -45,6 +48,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [masterLocations, setMasterLocations] = useState<string[]>([]);
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [masterPics, setMasterPics] = useState<string[]>([]);
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -65,6 +69,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setMasterLocations(JSON.parse(localStorage.getItem('master_locations') || '[]'));
       setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
       setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
+      setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
     } catch {}
 
     setMounted(true);
@@ -146,6 +151,17 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data === 'object') {
+          setRoleConfig(data);
+          localStorage.setItem('role_config', JSON.stringify(data));
+          window.dispatchEvent(new Event('masterUpdated'));
+        }
+      })
+      .catch(() => {});
+
     // Listen to changes across tabs or other components
     const handleStorage = (e: StorageEvent) => {
       try {
@@ -161,6 +177,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'master_locations' && e.newValue) setMasterLocations(JSON.parse(e.newValue));
         if (e.key === 'master_status_progress' && e.newValue) setMasterStatusProgress(JSON.parse(e.newValue));
         if (e.key === 'master_pics' && e.newValue) setMasterPics(JSON.parse(e.newValue));
+        if (e.key === 'role_config' && e.newValue) setRoleConfig(JSON.parse(e.newValue));
       } catch (err) {}
     };
     
@@ -179,6 +196,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
             setMasterLocations(JSON.parse(localStorage.getItem('master_locations') || '[]'));
             setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
             setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
+            setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
         } catch(e) {}
     }
 
@@ -192,7 +210,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig }}>
       {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}
     </MasterContext.Provider>
   );

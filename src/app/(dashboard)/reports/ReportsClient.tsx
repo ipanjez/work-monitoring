@@ -49,12 +49,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { addActivityLog } = useNotifications();
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
   const { theme } = useTheme();
-  const { masterColors, masterPicAvatars } = useMaster();
+  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   

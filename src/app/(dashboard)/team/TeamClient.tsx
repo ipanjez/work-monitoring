@@ -25,11 +25,7 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
-  const { masterColors, masterPicAvatars } = useMaster();
+  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
