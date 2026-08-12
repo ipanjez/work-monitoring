@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
