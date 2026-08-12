@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel } from '@/lib/permissions';
+import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
 
@@ -152,16 +152,15 @@ export default function UserProfileButton() {
                       const role = (session.user as any).role;
                       if (role === 'ADMIN') return 'Akses penuh kelola data.';
                       
-                      const perms = roleConfig.permissions[role] || {};
                       const labels: string[] = [];
-                      if (perms.view_dashboard) labels.push('Dashboard');
-                      if (perms.view_detail) labels.push('Detail Tugas');
-                      if (perms.manage_task) labels.push('Kelola Tugas');
-                      if (perms.delete_task) labels.push('Hapus Tugas');
-                      if (perms.upload_comment) labels.push('Komentar');
-                      if (perms.master_data) labels.push('Pengaturan');
-                      if (perms.user_management) labels.push('Manajemen User');
-                      if (perms.system_logs) labels.push('Log Sistem');
+                      if (hasPermission(roleConfig, 'view_dashboard', role)) labels.push('Dashboard');
+                      if (hasPermission(roleConfig, 'view_detail', role)) labels.push('Detail Tugas');
+                      if (hasPermission(roleConfig, 'manage_task', role)) labels.push('Kelola Tugas');
+                      if (hasPermission(roleConfig, 'delete_task', role)) labels.push('Hapus Tugas');
+                      if (hasPermission(roleConfig, 'upload_comment', role)) labels.push('Komentar');
+                      if (hasPermission(roleConfig, 'master_data', role)) labels.push('Pengaturan');
+                      if (hasPermission(roleConfig, 'user_management', role)) labels.push('Manajemen User');
+                      if (hasPermission(roleConfig, 'system_logs', role)) labels.push('Log Sistem');
                       
                       if (labels.length === 0) return 'Tidak ada akses spesifik.';
                       return `Akses: ${labels.join(', ')}`;
