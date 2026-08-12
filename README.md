@@ -10,7 +10,10 @@ Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neo
 
 - 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif. Kini dengan fitur unggah *multiple file attachments* yang dinamis.
 - 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
-- ☁️ **Dual-Mode Database:** Mendukung **PostgreSQL (Neon)** untuk deployment cloud di Vercel, dan **SQLite** untuk server lokal berbasis LAN — keduanya bisa berjalan bersamaan tanpa konfigurasi manual.
+- ☁️ **Dual-Mode Database & Storage:** 
+  - **Cloud (Vercel):** Menggunakan PostgreSQL (Neon) & Vercel Blob untuk penyimpanan file online.
+  - **Lokal (LAN):** Menggunakan SQLite & *Local Disk Storage* (file tersimpan langsung di hard disk laptop Anda, 100% independen tanpa internet).
+  - Keduanya bisa berjalan bersamaan tanpa konfigurasi manual (cukup jalankan `npm run dev:local` untuk lokal).
 - 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
 - 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), integrasi feed Google Calendar yang dilindungi Token Rahasia, serta **Kirim Email Otomatis** ke seluruh PIC langsung dari detail pekerjaan.
 - 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security):** 
@@ -139,14 +142,20 @@ Aplikasi ini dirancang untuk mendukung dua lingkungan secara bersamaan:
 
 ## 📦 Migrasi Data (Neon ↔ Lokal)
 
-### Export dari Neon (PostgreSQL) ke Lokal (SQLite)
-1. Gunakan **DBeaver** untuk terhubung ke database Neon.
-2. Klik kanan pada tabel (contoh: `Task`) → **Export Data** → pilih **CSV**.
-3. Letakkan file CSV hasil ekspor di folder root proyek.
-4. Jalankan script migrasi:
-   ```bash
-   node import_csv.js
-   ```
+### Backup & Restore Otomatis (1-Click)
+Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memindahkan data. Gunakan fitur bawaan aplikasi:
+
+**Langkah 1: Export dari Vercel (Neon)**
+1. Buka `https://internal-work-monitoring.vercel.app/settings`
+2. Scroll ke bagian **Cadangan & Export Data Database**
+3. Klik **📥 Unduh Backup** (akan mengunduh file JSON berisi seluruh pekerjaan, pengaturan, user, dan log)
+
+**Langkah 2: Import ke Lokal (SQLite)**
+1. Jalankan `npm run dev:local`
+2. Buka `http://localhost:3000/settings`
+3. Scroll ke bagian **Cadangan & Export Data Database**
+4. Klik **📤 Pulihkan dari Backup** dan pilih file JSON yang tadi diunduh.
+> *Catatan: Jika database lokal masih kosong sama sekali, Anda bisa melakukan import tanpa perlu login.*
 
 ### Import dari Excel
 1. Buka aplikasi di browser.
