@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
+import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
