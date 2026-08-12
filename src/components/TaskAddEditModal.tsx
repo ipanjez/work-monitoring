@@ -157,6 +157,14 @@ export default function TaskAddEditModal({
         cloned.subTasksList = [];
       }
 
+      // Fix date formats for <input type="date"> (expects YYYY-MM-DD)
+      if (cloned.startDate) {
+        cloned.startDate = format(new Date(cloned.startDate), 'yyyy-MM-dd');
+      }
+      if (cloned.endDate) {
+        cloned.endDate = format(new Date(cloned.endDate), 'yyyy-MM-dd');
+      }
+
       console.log('DEBUG FINAL CLONED TASK:', cloned);
       setEditingTask(cloned);
     } else {
