@@ -19,11 +19,21 @@ import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, ge
 import Avatar from '@/components/Avatar';
 
 import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  const { masterColors, masterPicAvatars } = useMaster();
+
+  const { 
+    masterColors, 
+    masterPicAvatars,
+    masterCats: formCategoryOptions,
+    masterPics: formPicOptions,
+    masterStatuses,
+    masterPriorities,
+    roleConfig
+  } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { 
@@ -49,34 +59,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [commentTask, setCommentTask] = useState<any | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
-
-  const [formPicOptions, setFormPicOptions] = useState<string[]>([]);
-  const [formCategoryOptions, setFormCategoryOptions] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
-
-
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_pics) setFormPicOptions(data.master_pics);
-        if (data.master_categories) setFormCategoryOptions(data.master_categories);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-      })
-      .catch(e => console.error(e));
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(names => {
-        if (Array.isArray(names)) {
-          setFormPicOptions(prev => Array.from(new Set([...prev, ...names])));
-        }
-      })
-      .catch(e => console.error(e));
-  }, []);
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -543,6 +525,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 
@@ -623,7 +606,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                   const isDragged = draggedTaskId === task.id;
                   const isDragOverThisCard = dragOverCardId === task.id;
                   const isOwnTask = (task: any) => {
-                    if (userRole === 'ADMIN') return true;
+                    if (hasPermission(roleConfig, 'manage_task', userRole)) return true;
                     if (!session?.user?.name) return false;
                     if (task.pic === session.user.name) return true;
                     try {
@@ -633,7 +616,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     return false;
                   };
 
-                  const canDrag = userRole !== 'VIEWER' && userRole !== 'SPV' && isOwnTask(task);
+                  const canDrag = hasPermission(roleConfig, 'manage_task', userRole) && isOwnTask(task);
 
                   return (
                     <div
@@ -649,7 +632,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       }}
                       onDragOver={(e) => handleDragOverCard(e, task.id)}
                       onDrop={(e) => handleDropCard(e, col, task.id)}
-                      onClick={() => openTaskDetail(task)}
+                      onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? openTaskDetail(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
                       style={{
                         backgroundColor: 'var(--surface-color)',
                         padding: '8px',
@@ -701,9 +684,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           })()}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                            {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </span>
+                          {(() => {
+                            const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                            return (
+                              <span style={{ fontSize: '10px', color: isOverdue ? 'var(--danger, #ef4444)' : 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: isOverdue ? '600' : 'normal' }}>
+                                {new Date(task.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                            );
+                          })()}
                           {!task.isAllDay && (task.startTime || task.endTime) && (
                             <span style={{ fontSize: '9px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                               {task.startTime ? `${task.startTime} - ` : ''}{task.endTime || ''}

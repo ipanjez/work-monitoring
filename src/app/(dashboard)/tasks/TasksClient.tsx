@@ -2,12 +2,9 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  Download, Upload, Plus, Pencil, Trash2, CalendarDays, Search, Filter, 
-  ExternalLink, FileText, X, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, 
-  ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical,
-  Video, MapPin
-} from 'lucide-react';
+import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, Settings2, Calendar, FileDown, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import * as XLSX from 'xlsx';
 import { createEvent, createEvents, EventAttributes } from 'ics';
 import { format } from 'date-fns';
@@ -34,12 +31,11 @@ import UniversalActionBar from '@/components/UniversalActionBar';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
 
-import { useSession } from 'next-auth/react';
+
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  const { masterColors, masterPicAvatars } = useMaster();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -85,36 +81,21 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
-  const [masterCats, setMasterCats] = useState<string[]>([]);
-  const [masterPics, setMasterPics] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
-  const [masterLocations, setMasterLocations] = useState<string[]>([]);
-  const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
+  const { 
+    masterColors, 
+    masterPicAvatars, 
+    appName,
+    masterCats,
+    masterStatuses,
+    masterPriorities,
+    masterLocations,
+    masterStatusProgress,
+    masterPics,
+    roleConfig
+  } = useMaster();
+
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
-  const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_categories) setMasterCats(data.master_categories);
-        if (data.master_pics) setMasterPics(data.master_pics);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-        if (data.master_locations) setMasterLocations(data.master_locations);
-        if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
-      })
-      .catch(e => console.error(e));
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setRegisteredUserNames(data);
-      })
-      .catch(e => console.error(e));
-  }, []);
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -349,10 +330,21 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
 
     let parsedSubTasks: SubTask[] = [];
+    console.log('DEBUG handleOpenEditModal task:', task);
     if (task.subTasksJson) {
-      try {
-        parsedSubTasks = JSON.parse(task.subTasksJson);
-      } catch (e) { }
+      if (typeof task.subTasksJson === 'string') {
+        try {
+          parsedSubTasks = JSON.parse(task.subTasksJson);
+        } catch (e) {
+          console.error('Failed to parse subTasksJson in handleOpenEditModal', e);
+        }
+      } else if (Array.isArray(task.subTasksJson)) {
+        parsedSubTasks = task.subTasksJson;
+      }
+      
+      if (!Array.isArray(parsedSubTasks)) {
+        parsedSubTasks = [];
+      }
     }
 
     setEditingTask({
@@ -464,14 +456,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         }
       });
       if (picChanged) {
-        setMasterPics(updatedMasterPics);
         localStorage.setItem('master_pics', JSON.stringify(updatedMasterPics));
+        window.dispatchEvent(new Event('masterUpdated'));
       }
 
       if (savedTask.kategori && !masterCats.includes(savedTask.kategori)) {
         const updatedCats = [...masterCats, savedTask.kategori];
-        setMasterCats(updatedCats);
-        localStorage.setItem('master_categories', JSON.stringify(updatedCats));
+        localStorage.setItem('master_cats', JSON.stringify(updatedCats));
+        window.dispatchEvent(new Event('masterUpdated'));
       }
 
       setIsModalOpen(false);
@@ -667,54 +659,61 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
             const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
-            const subTasks = lines.map(line => {
+            const subTasks: any[] = [];
+            const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
+
+            for (const line of lines) {
               const match = line.match(/^\[(.*?)\]\s+(.*)/);
-              let status = 'To Do';
-              let text = line.trim();
-              const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
               if (match && validStatuses.includes(match[1])) {
-                status = match[1];
-                text = match[2].trim();
-              } else if (match) {
-                text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
-              }
-              let pic: string | undefined = undefined;
-              let additionalPics: string[] | undefined = undefined;
-              let tenggatWaktu: string | undefined = undefined;
+                let status = match[1];
+                let text = match[2].trim();
+                let pic: string | undefined = undefined;
+                let additionalPics: string[] | undefined = undefined;
+                let tenggatWaktu: string | undefined = undefined;
 
-              // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
-              const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
-              const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
+                const picMatch = text.match(/\|\s*PIC\s*:\s*([^|]+)/i);
+                const tenggatMatch = text.match(/\|\s*Tenggat\s*:\s*([^|]+)/i);
 
-              if (picMatch) {
-                const picRaw = picMatch[1].trim();
-                const picParts = picRaw.split(',').map(s => s.trim()).filter(Boolean);
-                if (picParts.length > 0) {
-                  pic = picParts[0];
-                  if (picParts.length > 1) {
-                    additionalPics = picParts.slice(1);
+                if (picMatch) {
+                  const picRaw = picMatch[1].trim();
+                  const picParts = picRaw.split(',').map((s: string) => s.trim()).filter(Boolean);
+                  if (picParts.length > 0) {
+                    pic = picParts[0];
+                    if (picParts.length > 1) {
+                      additionalPics = picParts.slice(1);
+                    }
                   }
+                  text = text.replace(picMatch[0], '').trim();
                 }
-                text = text.replace(picMatch[0], '').trim();
-              }
-              if (tenggatMatch) {
-                tenggatWaktu = tenggatMatch[1].trim();
-                text = text.replace(tenggatMatch[0], '').trim();
-              }
+                if (tenggatMatch) {
+                  tenggatWaktu = tenggatMatch[1].trim();
+                  text = text.replace(tenggatMatch[0], '').trim();
+                }
+                text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
 
-              // Remove any trailing or leading pipe characters left over
-              text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
-
-              return {
-                id: Math.random().toString(36).substring(2, 9),
-                text,
-                status,
-                ...(pic ? { pic } : {}),
-                ...(additionalPics ? { additionalPics } : {}),
-                ...(tenggatWaktu ? { tenggatWaktu } : {}),
-                logs: [{ status, timestamp: new Date().toISOString() }]
-              };
-            });
+                subTasks.push({
+                  id: Math.random().toString(36).substring(2, 9),
+                  text,
+                  status,
+                  ...(pic ? { pic } : {}),
+                  ...(additionalPics ? { additionalPics } : {}),
+                  ...(tenggatWaktu ? { tenggatWaktu } : {}),
+                  logs: [{ status, timestamp: new Date().toISOString() }]
+                });
+              } else {
+                if (subTasks.length > 0) {
+                  // Merge with <br> to preserve the line break that was in the Excel cell
+                  subTasks[subTasks.length - 1].text += '<br>' + line.trim();
+                } else {
+                  subTasks.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    text: line.trim(),
+                    status: 'To Do',
+                    logs: [{ status: 'To Do', timestamp: new Date().toISOString() }]
+                  });
+                }
+              }
+            }
             if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
 
@@ -943,6 +942,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
           <button 
             className="btn" 
@@ -1005,7 +1005,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
-                {userRole !== 'SPV' && (
+                {hasPermission(roleConfig, 'manage_task', userRole) && (
                   <th style={{ padding: '8px 4px', width: '35px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
@@ -1064,7 +1064,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
                 return (
                   <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                    {hasPermission(roleConfig, 'delete_task', userRole) && (
                       <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -1075,7 +1075,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </td>
                     )}
                     <td style={{ padding: '8px 6px' }}>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setDetailTask(task)}>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' }} onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? setDetailTask(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}>
                         {task.nama}
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
@@ -1181,7 +1181,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
                             onClick={(e) => {
                                e.stopPropagation();
-                               setPreviewFile(f);
+                               hasPermission(roleConfig, 'view_detail', userRole) ? setPreviewFile(f) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
                             }}
                           >
                             <Paperclip size={14} /> {f.name}
@@ -1190,7 +1190,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </div>
                     </td>
                      <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-                      <div>{format(new Date(task.endDate), 'dd MMM yyyy')}</div>
+                      {(() => {
+                        const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                        return (
+                          <div style={{ color: isOverdue ? 'var(--danger, #ef4444)' : 'inherit', fontWeight: isOverdue ? '600' : 'normal' }}>
+                            {format(new Date(task.endDate), 'dd MMM yyyy')}
+                          </div>
+                        );
+                      })()}
                       {!task.isAllDay && task.startTime && (
                          <div style={{ fontSize: '10.5px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
                       )}
@@ -1286,7 +1293,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                               >
                                 <CalendarDays size={13} />
                               </button>
-                              {userRole !== 'SPV' && (
+                              {hasPermission(roleConfig, 'manage_task', userRole) && (
                                 <>
                                   <button
                                     className="btn btn-secondary"
@@ -1345,8 +1352,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <div 
                 key={task.id} 
                 className="mobile-task-card"
-                onClick={() => setDetailTask(task)}
-                style={{ cursor: 'pointer' }}
+                onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? setDetailTask(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
+                style={{ cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' }}
               >
                 {/* Header Row: Title & Priority */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
@@ -1384,7 +1391,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <CalendarDays size={12} />
-                      <span style={{ fontWeight: 500 }}>{format(new Date(task.endDate), 'dd MMM yyyy')}</span>
+                      {(() => {
+                        const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
+                        return (
+                          <span style={{ fontWeight: isOverdue ? 600 : 500, color: isOverdue ? 'var(--danger, #ef4444)' : 'inherit' }}>
+                            {format(new Date(task.endDate), 'dd MMM yyyy')}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1456,7 +1470,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   >
                     <CalendarDays size={12} /> .ics
                   </button>
-                  {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                  {hasPermission(roleConfig, 'manage_task', userRole) && (
                     <>
                       <button
                         className="btn btn-secondary"

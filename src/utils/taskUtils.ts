@@ -260,7 +260,13 @@ export const getTaskExportRow = (task: any) => {
       const parsed = JSON.parse(task.subTasksJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
         subPekerjaanStr = parsed.map((st: any) => {
-          let str = `[${st.status}] ${st.text}`;
+          let text = st.text || '';
+          // Convert HTML breaks to real newlines to preserve formatting in Excel cell
+          text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '');
+          // Remove trailing/leading spaces but keep \n
+          text = text.trim();
+          
+          let str = `[${st.status}] ${text}`;
           const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
           if (allPics.length > 0) {
             str += ` | PIC: ${allPics.join(', ')}`;
@@ -286,7 +292,7 @@ export const getTaskExportRow = (task: any) => {
     'Jam Selesai': task.endTime || '',
     'Tanggal Mulai': task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
     'Tenggat Waktu': task.endDate ? format(new Date(task.endDate), 'yyyy-MM-dd') : '',
-    'Repetisi': task.repetisi || 'Tidak Berulang',
+    'Repetisi': formatRecurrenceText(task.repetisi),
     'Deskripsi': task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '',
     'Catatan': task.catatan || '',
     'Lokasi Pekerjaan': getTaskLocationString(task),

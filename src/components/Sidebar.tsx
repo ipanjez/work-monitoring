@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare,
@@ -17,7 +18,12 @@ import { useSession, signOut } from 'next-auth/react';
 
 export default function Sidebar() {
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role;
+  const userRole = (session?.user as any)?.role || 'VIEWER';
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   const { masterColors, appName, appSubtitle, appLogo } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
@@ -148,18 +154,20 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { href: '/', label: 'Monitoring Board', icon: Kanban },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ...(hasPermission(roleConfig, 'view_dashboard', userRole) ? [
+      { href: '/', label: 'Monitoring Board', icon: Kanban },
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ] : []),
     { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
     { href: '/calendar', label: 'Kalender', icon: Calendar },
     { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
     { href: '/team', label: 'Manajemen Tim', icon: Users },
-    ...(userRole === 'ADMIN' ? [
+    ...(hasPermission(roleConfig, 'master_data', userRole) ? [
+      { href: '/settings', label: 'Pengaturan', icon: Settings },
+    ] : []),
+    ...(hasPermission(roleConfig, 'user_management', userRole) ? [
       { href: '/users', label: 'Sistem User', icon: UserCog },
-      { href: '/settings', label: 'Pengaturan', icon: Settings },
-    ] : [
-      { href: '/settings', label: 'Pengaturan', icon: Settings },
-    ]),
+    ] : [])
   ];
 
   return (

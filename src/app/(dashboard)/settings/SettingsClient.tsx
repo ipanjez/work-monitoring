@@ -590,6 +590,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   };
 
   const handleBackupDatabase = async () => {
+    const toastId = toast.loading('Sedang mengunduh seluruh data...');
     try {
       const res = await fetch('/api/database');
       if (!res.ok) throw new Error('Gagal mengambil backup');
@@ -602,8 +603,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       a.href = url;
       a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
-      toast.success('Backup berhasil diunduh');
+      toast.dismiss(toastId);
+      toast.success(`Backup berhasil! ${data.tasks?.length || 0} pekerjaan, ${data.users?.length || 0} user, ${data.settings?.length || 0} pengaturan.`);
     } catch (err) {
+      toast.dismiss(toastId);
       toast.error('Gagal mengunduh backup');
     }
   };
@@ -621,6 +624,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       }
 
       setLoading(true);
+      const toastId = toast.loading('Sedang memulihkan database dari backup...');
       try {
         const text = await file.text();
         const data = JSON.parse(text);
@@ -631,14 +635,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           body: JSON.stringify(data)
         });
 
+        toast.dismiss(toastId);
         if (res.ok) {
-          toast.success('Database berhasil dipulihkan!');
+          const result = await res.json();
+          toast.success(result.message || 'Database berhasil dipulihkan!');
           setTimeout(() => window.location.reload(), 1500);
         } else {
           const err = await res.json();
           toast.error(err.error || 'Gagal memulihkan database');
         }
       } catch (err) {
+        toast.dismiss(toastId);
         toast.error('File JSON tidak valid atau rusak');
       } finally {
         setLoading(false);
@@ -1150,14 +1157,28 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             className="btn btn-primary"
-            onClick={() => {
-              const feedUrl = `${window.location.origin}/calendar.ics?token=secure-calendar-token-12345`;
-              import('@/utils/clipboard').then(({ copyToClipboard }) => {
-                copyToClipboard(feedUrl);
-                alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars'\n3. Pilih 'From URL'\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
-              });
+            style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={async () => {
+              const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+              if (isLocal) {
+                alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
+                return;
+              }
+              try {
+                const res = await fetch('/api/calendar/token');
+                const data = await res.json();
+                const feedUrl = `${window.location.origin}/calendar.ics?token=${data.token}`;
+                const input = document.createElement('input');
+                input.value = feedUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('URL Kalender berhasil disalin!');
+              } catch (err) {
+                alert('Gagal mengambil token kalender');
+              }
             }}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <CalendarDays size={16} /> Salin URL Feed Kalender (.ics)
           </button>

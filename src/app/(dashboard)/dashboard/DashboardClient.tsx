@@ -41,6 +41,8 @@ import { useNotifications } from '@/context/NotificationContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useMaster } from '@/context/MasterContext';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 ChartJS.register(
   CategoryScale,
@@ -65,6 +67,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
+  const { roleConfig } = useMaster();
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
   const { 
@@ -958,6 +961,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 

@@ -42,11 +42,20 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
-  const { masterColors } = useMaster();
+
+  const { 
+    masterColors, 
+    masterCats, 
+    masterStatuses, 
+    masterPriorities, 
+    masterPics,
+    roleConfig
+  } = useMaster();
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
     globalPicFilter, setGlobalPicFilter, 
@@ -85,11 +94,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const router = useRouter();
   const attachmentInputRef = useRef<HTMLInputElement>(null);
-
-  const [masterCats, setMasterCats] = useState<string[]>([]);
-  const [masterPics, setMasterPics] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
   const [holidays, setHolidays] = useState<Record<string, string>>({});
   const [fetchedYears, setFetchedYears] = useState<Set<number>>(new Set());
@@ -171,16 +175,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   }, [searchParams]);
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_categories) setMasterCats(data.master_categories);
-        if (data.master_pics) setMasterPics(data.master_pics);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-      })
-      .catch(e => console.error(e));
-  }, []);
+    // Search query from URL is now handled globally, or can be synced if needed
+  }, [searchParams]);
 
   const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
 
@@ -318,7 +314,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
-    if (userRole === 'VIEWER') return;
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
     const endStr = slotInfo.end.toISOString().split('T')[0];
     setEditingTask({
@@ -553,14 +549,26 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
           <button 
             className="btn" 
-            onClick={() => {
-              const feedUrl = `${window.location.origin}/calendar.ics?token=secure-calendar-token-12345`;
-              copyToClipboard(feedUrl);
-              toast.success('URL Kalender berhasil disalin ke clipboard!');
-              alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars' (Kalender Lain)\n3. Pilih 'From URL' (Dari URL)\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
+            onClick={async () => {
+              const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+              if (isLocal) {
+                alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
+                return;
+              }
+              try {
+                const res = await fetch('/api/calendar/token');
+                const data = await res.json();
+                const feedUrl = `${window.location.origin}/calendar.ics?token=${data.token}`;
+                copyToClipboard(feedUrl);
+                toast.success('URL Kalender berhasil disalin ke clipboard!');
+                alert(`URL Sinkronisasi Kalender Berhasil Disalin!\n\n${feedUrl}\n\nCara Pakai di Google Calendar:\n1. Buka Google Calendar\n2. Klik + di samping 'Other calendars' (Kalender Lain)\n3. Pilih 'From URL' (Dari URL)\n4. Tempel (Paste) URL ini & klik 'Add calendar'`);
+              } catch (err) {
+                toast.error('Gagal mengambil token kalender');
+              }
             }}
             title="Salin URL Feed iCal untuk Auto Sinkronisasi"
             style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
@@ -577,7 +585,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           events={events}
           selectable={true}
           onSelectSlot={handleSelectSlot}
-          onSelectEvent={(event) => setSelectedTask(event.resource)}
+          onSelectEvent={(event) => hasPermission(roleConfig, 'view_detail', userRole) ? setSelectedTask(event.resource) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
           startAccessor="start"
           endAccessor="end"
           view={view}

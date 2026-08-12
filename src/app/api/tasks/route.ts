@@ -84,6 +84,7 @@ export async function POST(req: Request) {
           endTime: task.endTime || '17:00',
           subTasksJson: task.subTasksJson || null,
           additionalPics: task.additionalPics || null,
+          repetisi: task.repetisi || null,
           historyLogsJson: initialLog,
           lokasi: task.lokasi || null,
         };

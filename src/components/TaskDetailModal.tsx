@@ -39,10 +39,16 @@ interface TaskDetailModalProps {
 }
 
 import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
+
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+  }, []);
   const { masterColors } = useMaster();
   const router = useRouter();
   const pathname = usePathname();
@@ -377,13 +383,13 @@ ${task!.deskripsi || '-'}`;
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                {onEdit && userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
                   <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
                     <Edit size={16} style={{ marginRight: '6px' }} /> Edit
                   </button>
                 )}
                 
-                {onDelete && userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
                   <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
                     <Trash2 size={16} style={{ marginRight: '6px' }} /> Hapus
                   </button>
@@ -711,7 +717,7 @@ ${task!.deskripsi || '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+                          {hasPermission(roleConfig, 'upload_comment', userRole) && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -729,7 +735,7 @@ ${task!.deskripsi || '-'}`;
                 )}
               </div>
  
-              {userRole !== 'VIEWER' && userRole !== 'SPV' && (
+              {hasPermission(roleConfig, 'upload_comment', userRole) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"

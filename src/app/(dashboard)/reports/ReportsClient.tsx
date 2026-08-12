@@ -25,6 +25,7 @@ import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
 import { getDynamicColor, getTaskExportRow } from '@/utils/taskUtils';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -49,7 +50,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
-  const { masterColors, masterPicAvatars } = useMaster();
+  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   
@@ -581,6 +582,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 

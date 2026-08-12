@@ -19,9 +19,13 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import Avatar from '@/components/Avatar';
+import { useSession } from 'next-auth/react';
+import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
-  const { masterColors, masterPicAvatars } = useMaster();
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
@@ -368,6 +372,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 
