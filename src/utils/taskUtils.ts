@@ -260,7 +260,12 @@ export const getTaskExportRow = (task: any) => {
       const parsed = JSON.parse(task.subTasksJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
         subPekerjaanStr = parsed.map((st: any) => {
-          let str = `[${st.status}] ${st.text}`;
+          let text = st.text || '';
+          // Remove HTML tags and replace newlines with space to prevent import splitting
+          text = text.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ').replace(/<[^>]+>/g, '');
+          text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+          
+          let str = `[${st.status}] ${text}`;
           const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
           if (allPics.length > 0) {
             str += ` | PIC: ${allPics.join(', ')}`;

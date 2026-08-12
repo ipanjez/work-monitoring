@@ -659,54 +659,60 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
             const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
-            const subTasks = lines.map(line => {
+            const subTasks: any[] = [];
+            const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
+
+            for (const line of lines) {
               const match = line.match(/^\[(.*?)\]\s+(.*)/);
-              let status = 'To Do';
-              let text = line.trim();
-              const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
               if (match && validStatuses.includes(match[1])) {
-                status = match[1];
-                text = match[2].trim();
-              } else if (match) {
-                text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
-              }
-              let pic: string | undefined = undefined;
-              let additionalPics: string[] | undefined = undefined;
-              let tenggatWaktu: string | undefined = undefined;
+                let status = match[1];
+                let text = match[2].trim();
+                let pic: string | undefined = undefined;
+                let additionalPics: string[] | undefined = undefined;
+                let tenggatWaktu: string | undefined = undefined;
 
-              // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
-              const picMatch = text.match(/\|\s*PIC\s*:\s*([^|]+)/i);
-              const tenggatMatch = text.match(/\|\s*Tenggat\s*:\s*([^|]+)/i);
+                const picMatch = text.match(/\|\s*PIC\s*:\s*([^|]+)/i);
+                const tenggatMatch = text.match(/\|\s*Tenggat\s*:\s*([^|]+)/i);
 
-              if (picMatch) {
-                const picRaw = picMatch[1].trim();
-                const picParts = picRaw.split(',').map(s => s.trim()).filter(Boolean);
-                if (picParts.length > 0) {
-                  pic = picParts[0];
-                  if (picParts.length > 1) {
-                    additionalPics = picParts.slice(1);
+                if (picMatch) {
+                  const picRaw = picMatch[1].trim();
+                  const picParts = picRaw.split(',').map((s: string) => s.trim()).filter(Boolean);
+                  if (picParts.length > 0) {
+                    pic = picParts[0];
+                    if (picParts.length > 1) {
+                      additionalPics = picParts.slice(1);
+                    }
                   }
+                  text = text.replace(picMatch[0], '').trim();
                 }
-                text = text.replace(picMatch[0], '').trim();
-              }
-              if (tenggatMatch) {
-                tenggatWaktu = tenggatMatch[1].trim();
-                text = text.replace(tenggatMatch[0], '').trim();
-              }
+                if (tenggatMatch) {
+                  tenggatWaktu = tenggatMatch[1].trim();
+                  text = text.replace(tenggatMatch[0], '').trim();
+                }
+                text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
 
-              // Remove any trailing or leading pipe characters left over
-              text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
-
-              return {
-                id: Math.random().toString(36).substring(2, 9),
-                text,
-                status,
-                ...(pic ? { pic } : {}),
-                ...(additionalPics ? { additionalPics } : {}),
-                ...(tenggatWaktu ? { tenggatWaktu } : {}),
-                logs: [{ status, timestamp: new Date().toISOString() }]
-              };
-            });
+                subTasks.push({
+                  id: Math.random().toString(36).substring(2, 9),
+                  text,
+                  status,
+                  ...(pic ? { pic } : {}),
+                  ...(additionalPics ? { additionalPics } : {}),
+                  ...(tenggatWaktu ? { tenggatWaktu } : {}),
+                  logs: [{ status, timestamp: new Date().toISOString() }]
+                });
+              } else {
+                if (subTasks.length > 0) {
+                  subTasks[subTasks.length - 1].text += ' ' + line.trim();
+                } else {
+                  subTasks.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    text: line.trim(),
+                    status: 'To Do',
+                    logs: [{ status: 'To Do', timestamp: new Date().toISOString() }]
+                  });
+                }
+              }
+            }
             if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
 
