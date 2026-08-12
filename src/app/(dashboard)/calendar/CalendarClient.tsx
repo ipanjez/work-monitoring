@@ -52,7 +52,13 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
   }, []);
-  const { masterColors } = useMaster();
+  const { 
+    masterColors, 
+    masterCats, 
+    masterStatuses, 
+    masterPriorities, 
+    masterPics 
+  } = useMaster();
   const { 
     globalTargetFilter, setGlobalTargetFilter, 
     globalPicFilter, setGlobalPicFilter, 
@@ -91,11 +97,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const router = useRouter();
   const attachmentInputRef = useRef<HTMLInputElement>(null);
-
-  const [masterCats, setMasterCats] = useState<string[]>([]);
-  const [masterPics, setMasterPics] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
 
   const [holidays, setHolidays] = useState<Record<string, string>>({});
   const [fetchedYears, setFetchedYears] = useState<Set<number>>(new Set());
@@ -177,16 +178,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   }, [searchParams]);
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_categories) setMasterCats(data.master_categories);
-        if (data.master_pics) setMasterPics(data.master_pics);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-      })
-      .catch(e => console.error(e));
-  }, []);
+    // Search query from URL is now handled globally, or can be synced if needed
+  }, [searchParams]);
 
   const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
 

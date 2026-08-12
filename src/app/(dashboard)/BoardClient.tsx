@@ -29,7 +29,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
   }, []);
-  const { masterColors, masterPicAvatars } = useMaster();
+  const { 
+    masterColors, 
+    masterPicAvatars,
+    masterCats: formCategoryOptions,
+    masterPics: formPicOptions,
+    masterStatuses,
+    masterPriorities
+  } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { 
@@ -55,34 +62,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [commentTask, setCommentTask] = useState<any | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
-
-  const [formPicOptions, setFormPicOptions] = useState<string[]>([]);
-  const [formCategoryOptions, setFormCategoryOptions] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
-
-
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_pics) setFormPicOptions(data.master_pics);
-        if (data.master_categories) setFormCategoryOptions(data.master_categories);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-      })
-      .catch(e => console.error(e));
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(names => {
-        if (Array.isArray(names)) {
-          setFormPicOptions(prev => Array.from(new Set([...prev, ...names])));
-        }
-      })
-      .catch(e => console.error(e));
-  }, []);
 
   useEffect(() => {
     setTasks(initialTasks);

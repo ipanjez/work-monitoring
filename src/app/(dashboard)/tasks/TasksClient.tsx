@@ -35,13 +35,11 @@ type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progres
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
-  const userRole: string = (session?.user as any)?.role || 'PIC';
-
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  const userRole: string = (session?.user as any)?.role || 'PIC';
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
   }, []);
-  const { masterColors, masterPicAvatars } = useMaster();
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -87,36 +85,20 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
-  const [masterCats, setMasterCats] = useState<string[]>([]);
-  const [masterPics, setMasterPics] = useState<string[]>([]);
-  const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
-  const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
-  const [masterLocations, setMasterLocations] = useState<string[]>([]);
-  const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
+  const { 
+    masterColors, 
+    masterPicAvatars, 
+    appName,
+    masterCats,
+    masterStatuses,
+    masterPriorities,
+    masterLocations,
+    masterStatusProgress,
+    masterPics
+  } = useMaster();
+
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
-  const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.master_categories) setMasterCats(data.master_categories);
-        if (data.master_pics) setMasterPics(data.master_pics);
-        if (data.master_statuses) setMasterStatuses(data.master_statuses);
-        if (data.master_priorities) setMasterPriorities(data.master_priorities);
-        if (data.master_locations) setMasterLocations(data.master_locations);
-        if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
-      })
-      .catch(e => console.error(e));
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setRegisteredUserNames(data);
-      })
-      .catch(e => console.error(e));
-  }, []);
 
   useEffect(() => {
     setTasks(initialTasks);
