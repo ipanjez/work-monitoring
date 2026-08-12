@@ -683,8 +683,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               let tenggatWaktu: string | undefined = undefined;
 
               // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
-              const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
-              const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
+              const picMatch = text.match(/\|\s*PIC\s*:\s*([^|]+)/i);
+              const tenggatMatch = text.match(/\|\s*Tenggat\s*:\s*([^|]+)/i);
 
               if (picMatch) {
                 const picRaw = picMatch[1].trim();
