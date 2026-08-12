@@ -144,33 +144,32 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const allPics = getAllPics();
   const emailsTo = allPics.map(p => picEmails[p]).filter(Boolean);
 
-  const handleSendMail = async () => {
-    if (!task) return;
-    
-    setIsSendingMail(true);
-    const toastId = toast.loading('Mengirim email otomatis via Resend...');
-
+  const subject = task ? `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}` : '';
+  const calUrl = task ? getGoogleCalendarUrl(task) : '';
+  
+  let subTasksStr = '';
+  if (task?.subTasksJson) {
     try {
-      const res = await fetch('/api/tasks/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId: task.id })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success('Email berhasil terkirim ke inbox PIC!', { id: toastId });
-      } else {
-        toast.error(data.error || 'Gagal mengirim email', { id: toastId });
+      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
       }
-    } catch (error) {
-      console.error(error);
-      toast.error('Terjadi kesalahan saat mengirim email.', { id: toastId });
-    } finally {
-      setIsSendingMail(false);
-    }
-  };
+    } catch (e) { }
+  }
+
+  const emailBody = task ? `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
+    `Nama Pekerjaan: ${task.nama}\n` +
+    `Kategori: ${task.kategori || 'Umum'}\n` +
+    `Status: ${task.status}\n` +
+    `Prioritas: ${task.prioritas || 'Medium'}\n` +
+    `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
+    `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
+    `${subTasksStr}\n\n` +
+    `---\n` +
+    `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n` : '';
+
+  const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+  const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
     const finalAuthor = session?.user?.name || commentAuthor;
@@ -360,10 +359,12 @@ ${task!.deskripsi || '-'}`;
                     <FileDown size={16} />
                   </button>
                   
-                  <button 
+                  <a 
                     className="btn" 
-                    onClick={handleSendMail}
-                    disabled={isSendingMail}
+                    href={canSendMail ? mailtoLink : '#'}
+                    onClick={e => {
+                      if (!canSendMail) e.preventDefault();
+                    }}
                     style={{ 
                       padding: '6px', 
                       borderRadius: '6px', 
@@ -373,13 +374,14 @@ ${task!.deskripsi || '-'}`;
                       background: '#3b82f6', 
                       color: 'white', 
                       border: 'none',
-                      cursor: isSendingMail ? 'not-allowed' : 'pointer',
-                      opacity: isSendingMail ? 0.7 : 1
+                      cursor: canSendMail ? 'pointer' : 'not-allowed',
+                      opacity: canSendMail ? 1 : 0.6,
+                      textDecoration: 'none'
                     }}
-                    title="Kirim Email Otomatis ke PIC (Resend)"
+                    title="Kirim Email ke PIC"
                   >
                     <Mail size={16} />
-                  </button>
+                  </a>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
