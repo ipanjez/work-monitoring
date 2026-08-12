@@ -138,38 +138,31 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const emailsTo = allPics.map(p => picEmails[p]).filter(Boolean);
   const canSendMail = emailsTo.length > 0;
 
-  const handleSendMail = () => {
-    if (!task || !canSendMail) return;
-    
-    const subject = `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}`;
-    const calUrl = getGoogleCalendarUrl(task);
-    
-    let subTasksStr = '';
-    if (task.subTasksJson) {
-      try {
-        const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-        if (Array.isArray(subTasks) && subTasks.length > 0) {
-          subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
-        }
-      } catch (e) { }
-    }
+  const subject = task ? `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}` : '';
+  const calUrl = task ? getGoogleCalendarUrl(task) : '';
+  
+  let subTasksStr = '';
+  if (task?.subTasksJson) {
+    try {
+      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
+      if (Array.isArray(subTasks) && subTasks.length > 0) {
+        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
+      }
+    } catch (e) { }
+  }
 
-    const body = `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
-      `Nama Pekerjaan: ${task.nama}\n` +
-      `Kategori: ${task.kategori || 'Umum'}\n` +
-      `Status: ${task.status}\n` +
-      `Prioritas: ${task.prioritas || 'Medium'}\n` +
-      `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
-      `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
-      `${subTasksStr}\n\n` +
-      `---\n` +
-      `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n`;
+  const emailBody = task ? `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
+    `Nama Pekerjaan: ${task.nama}\n` +
+    `Kategori: ${task.kategori || 'Umum'}\n` +
+    `Status: ${task.status}\n` +
+    `Prioritas: ${task.prioritas || 'Medium'}\n` +
+    `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
+    `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
+    `${subTasksStr}\n\n` +
+    `---\n` +
+    `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n` : '';
 
-    const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    // Gunakan window.location.href agar tidak membuka tab kosong (untitled)
-    window.location.href = mailtoLink;
-  };
+  const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
 
   const handleAddComment = async () => {
     const finalAuthor = session?.user?.name || commentAuthor;
@@ -359,10 +352,12 @@ ${task!.deskripsi || '-'}`;
                     <FileDown size={16} />
                   </button>
                   
-                  <button 
+                  <a 
                     className="btn" 
-                    onClick={handleSendMail}
-                    disabled={!canSendMail}
+                    href={canSendMail ? mailtoLink : '#'}
+                    onClick={e => {
+                      if (!canSendMail) e.preventDefault();
+                    }}
                     style={{ 
                       padding: '6px', 
                       borderRadius: '6px', 
@@ -373,12 +368,13 @@ ${task!.deskripsi || '-'}`;
                       color: canSendMail ? 'white' : 'var(--text-secondary)', 
                       border: 'none',
                       cursor: canSendMail ? 'pointer' : 'not-allowed',
-                      opacity: canSendMail ? 1 : 0.6
+                      opacity: canSendMail ? 1 : 0.6,
+                      textDecoration: 'none'
                     }}
                     title={canSendMail ? "Kirim Email ke PIC" : "Tidak ada data email PIC untuk pekerjaan ini"}
                   >
                     <Mail size={16} />
-                  </button>
+                  </a>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
