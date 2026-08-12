@@ -702,7 +702,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 });
               } else {
                 if (subTasks.length > 0) {
-                  subTasks[subTasks.length - 1].text += ' ' + line.trim();
+                  // Merge with <br> to preserve the line break that was in the Excel cell
+                  subTasks[subTasks.length - 1].text += '<br>' + line.trim();
                 } else {
                   subTasks.push({
                     id: Math.random().toString(36).substring(2, 9),

@@ -261,9 +261,10 @@ export const getTaskExportRow = (task: any) => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         subPekerjaanStr = parsed.map((st: any) => {
           let text = st.text || '';
-          // Remove HTML tags and replace newlines with space to prevent import splitting
-          text = text.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ').replace(/<[^>]+>/g, '');
-          text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+          // Convert HTML breaks to real newlines to preserve formatting in Excel cell
+          text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '');
+          // Remove trailing/leading spaces but keep \n
+          text = text.trim();
           
           let str = `[${st.status}] ${text}`;
           const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
