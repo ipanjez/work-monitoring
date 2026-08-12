@@ -56,3 +56,6 @@ next-env.d.ts
 *.xlsx
 import_*.js
 generate_excel.js
+
+# Local uploaded files
+public/uploads/
