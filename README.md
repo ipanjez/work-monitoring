@@ -133,9 +133,9 @@ Aplikasi ini dirancang untuk mendukung dua lingkungan secara bersamaan:
 └──────────────────────┴──────────────────────────────┘
 ```
 
-- **`schema.prisma`** di GitHub selalu menggunakan **PostgreSQL** agar Vercel bisa berjalan.
-- Saat menjalankan `npm run dev:local`, script `dev-local.js` **otomatis mengubah** schema ke SQLite, lalu **mengembalikannya** ke PostgreSQL saat server dihentikan.
-- Kedua mode **tidak saling mengganggu**.
+- **`schema.prisma`** di kode sumber selalu dikhususkan untuk **PostgreSQL** agar Vercel berjalan normal tanpa hambatan.
+- Saat Anda menjalankan `npm run dev:local`, script `dev-local.js` tidak akan merusak atau mengedit file asli. Melainkan, ia akan **otomatis membuat file *schema* sementara (`schema.sqlite.prisma`)** secara transparan, lalu mengarahkan mesin Prisma dan Next.js untuk menggunakan file tersebut beserta database `dev.db`.
+- Kedua mode ini sangat stabil, 100% terisolasi, dan **tidak akan memicu konflik Git** ataupun error saat dihentikan secara paksa!
 
 ---
 
