@@ -81,21 +81,21 @@ export default function UniversalFilterBar({
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterStatus !== 'All') }} value={globalFilterStatus} onChange={e => setGlobalFilterStatus(e.target.value)}>
             <option value="All">Semua Status</option>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            {Array.from(new Set(statuses)).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterPriority !== 'All') }} value={globalFilterPriority} onChange={e => setGlobalFilterPriority(e.target.value)}>
             <option value="All">Semua Prioritas</option>
-            {priorities.map(p => <option key={p} value={p}>{p}</option>)}
+            {Array.from(new Set(priorities)).map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterCategory !== 'All') }} value={globalFilterCategory} onChange={e => setGlobalFilterCategory(e.target.value)}>
             <option value="All">Semua Kategori</option>
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {Array.from(new Set(categories)).map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
 
@@ -129,7 +129,7 @@ export default function UniversalFilterBar({
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalPicFilter !== 'Semua PIC') }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
             <option value="Semua PIC">Semua PIC</option>
-            {pics.map(p => <option key={p} value={p}>{p}</option>)}
+            {Array.from(new Set(pics)).map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
 

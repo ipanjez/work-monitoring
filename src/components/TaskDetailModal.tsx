@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
@@ -52,6 +52,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isSendingMail, setIsSendingMail] = useState(false);
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
   const [picEmails, setPicEmails] = useState<Record<string, string>>({});
@@ -136,42 +137,33 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
   const allPics = getAllPics();
   const emailsTo = allPics.map(p => picEmails[p]).filter(Boolean);
-  const canSendMail = emailsTo.length > 0;
 
-  const handleSendMail = () => {
-    if (!task || !canSendMail) return;
+  const handleSendMail = async () => {
+    if (!task) return;
     
-    const subject = `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}`;
-    const calUrl = getGoogleCalendarUrl(task);
-    
-    let subTasksStr = '';
-    if (task.subTasksJson) {
-      try {
-        const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-        if (Array.isArray(subTasks) && subTasks.length > 0) {
-          subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
-        }
-      } catch (e) { }
+    setIsSendingMail(true);
+    const toastId = toast.loading('Mengirim email otomatis via Resend...');
+
+    try {
+      const res = await fetch('/api/tasks/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: task.id })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('Email berhasil terkirim ke inbox PIC!', { id: toastId });
+      } else {
+        toast.error(data.error || 'Gagal mengirim email', { id: toastId });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Terjadi kesalahan saat mengirim email.', { id: toastId });
+    } finally {
+      setIsSendingMail(false);
     }
-
-    const body = `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
-      `Nama Pekerjaan: ${task.nama}\n` +
-      `Kategori: ${task.kategori || 'Umum'}\n` +
-      `Status: ${task.status}\n` +
-      `Prioritas: ${task.prioritas || 'Medium'}\n` +
-      `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
-      `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
-      `${subTasksStr}\n\n` +
-      `---\n` +
-      `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n`;
-
-    const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    const a = document.createElement('a');
-    a.href = mailtoLink;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.click();
   };
 
   const handleAddComment = async () => {
@@ -365,20 +357,20 @@ ${task!.deskripsi || '-'}`;
                   <button 
                     className="btn" 
                     onClick={handleSendMail}
-                    disabled={!canSendMail}
+                    disabled={isSendingMail}
                     style={{ 
                       padding: '6px', 
                       borderRadius: '6px', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      background: canSendMail ? '#3b82f6' : 'var(--border-color)', 
-                      color: canSendMail ? 'white' : 'var(--text-secondary)', 
+                      background: '#3b82f6', 
+                      color: 'white', 
                       border: 'none',
-                      cursor: canSendMail ? 'pointer' : 'not-allowed',
-                      opacity: canSendMail ? 1 : 0.6
+                      cursor: isSendingMail ? 'not-allowed' : 'pointer',
+                      opacity: isSendingMail ? 0.7 : 1
                     }}
-                    title={canSendMail ? "Kirim Email ke PIC" : "Tidak ada data email PIC untuk pekerjaan ini"}
+                    title="Kirim Email Otomatis ke PIC (Resend)"
                   >
                     <Mail size={16} />
                   </button>

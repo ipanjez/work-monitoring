@@ -25,10 +25,13 @@ async function getDynamicOptions() {
 
 export async function GET(req: NextRequest, ctx: any) {
   const options = await getDynamicOptions();
-  return NextAuth(options)(req, ctx);
+  const params = await ctx.params;
+  return NextAuth(options)(req, { ...ctx, params });
 }
 
 export async function POST(req: NextRequest, ctx: any) {
   const options = await getDynamicOptions();
-  return NextAuth(options)(req, ctx);
+  const params = await ctx.params;
+  return NextAuth(options)(req, { ...ctx, params });
 }
+

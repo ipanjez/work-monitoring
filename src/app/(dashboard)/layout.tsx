@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
 import SessionMonitor from '@/components/SessionMonitor';
+import HelpSupportButton from '@/components/HelpSupportButton';
 
 export default function DashboardLayout({
   children,
@@ -49,6 +50,7 @@ export default function DashboardLayout({
         <CopyAgendaButton />
         <GlobalAddButton />
         <NotificationBell />
+        <HelpSupportButton />
         <UserProfileButton />
       </div>
 

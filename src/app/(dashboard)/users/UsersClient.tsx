@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useMaster } from '@/context/MasterContext';
+import * as XLSX from 'xlsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
@@ -33,6 +36,7 @@ const actionLabel: Record<string, string> = {
 };
 
 export default function UsersClient() {
+  const { masterPicAvatars } = useMaster();
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [requests, setRequests] = useState<ResetReq[]>([]);
@@ -40,6 +44,9 @@ export default function UsersClient() {
   const [search, setSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [logPage, setLogPage] = useState(1);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<Partial<UserData & { password: string }> | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -77,11 +84,61 @@ export default function UsersClient() {
     (u.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
+  const LOGS_PER_PAGE = 50;
+
+  useEffect(() => {
+    setLogPage(1);
+  }, [filterType, filterUser, logSearch]);
+
   const filteredLogs = logs.filter(l => {
     const matchSearch = !logSearch || l.message.toLowerCase().includes(logSearch.toLowerCase()) || (l.userName || '').toLowerCase().includes(logSearch.toLowerCase()) || l.action.toLowerCase().includes(logSearch.toLowerCase());
     const matchType = filterType === 'all' || l.type === filterType;
-    return matchSearch && matchType;
+    const matchUser = filterUser === 'all' || l.userName === filterUser;
+    return matchSearch && matchType && matchUser;
   });
+
+  const totalLogPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE) || 1;
+  const paginatedLogs = filteredLogs.slice((logPage - 1) * LOGS_PER_PAGE, logPage * LOGS_PER_PAGE);
+
+  const handleBulkStatus = async (status: 'ACTIVE' | 'INACTIVE') => {
+    if (!confirm(`Ubah status ${selectedUserIds.length} user terpilih menjadi ${status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}?`)) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedUserIds.map(id => 
+        fetch(`/api/users/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        })
+      ));
+      toast.success('Status user terpilih berhasil diperbarui secara massal!');
+      setSelectedUserIds([]);
+      fetchUsers();
+    } catch (e) {
+      toast.error('Gagal memperbarui status user secara massal.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Hapus ${selectedUserIds.length} user terpilih secara permanen? Tindakan ini tidak dapat dibatalkan.`)) return;
+    setLoading(true);
+    try {
+      await Promise.all(selectedUserIds.map(id => 
+        fetch(`/api/users/${id}`, {
+          method: 'DELETE'
+        })
+      ));
+      toast.success('User terpilih berhasil dihapus secara massal!');
+      setSelectedUserIds([]);
+      fetchUsers();
+    } catch (e) {
+      toast.error('Gagal menghapus user secara massal.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openAdd = () => { setEditUser({ ...EMPTY_USER }); setIsNew(true); setShowModal(true); };
   const openEdit = (u: UserData) => { setEditUser({ ...u, password: '' }); setIsNew(false); setShowModal(true); };
@@ -114,10 +171,10 @@ export default function UsersClient() {
   const toggleStatus = async (u: UserData) => {
     const newStatus = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     const res = await fetch(`/api/users/${u.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
-    if (res.ok) { 
+    if (res.ok) {
       const msg = u.status === 'PENDING' ? `Akun ${u.name} berhasil disetujui!` : `Status ${u.name} diubah ke ${newStatus}`;
-      toast.success(msg); 
-      fetchUsers(); 
+      toast.success(msg);
+      fetchUsers();
     }
     else toast.error('Gagal mengubah status.');
   };
@@ -143,7 +200,7 @@ export default function UsersClient() {
       toast.success(`Password ${forceResetUser.name} berhasil diubah secara paksa!`);
       setForceResetUser(null);
       setForceNewPassword('');
-    } catch(err) {
+    } catch (err) {
       console.error(err);
       toast.error('Terjadi kesalahan.');
     } finally {
@@ -182,8 +239,94 @@ export default function UsersClient() {
     } finally { setLoading(false); }
   };
 
-  const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const handleExportExcel = async () => {
+    toast.loading('Mengekspor daftar user...', { id: 'export-excel-users' });
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Daftar User');
 
+      // Define columns
+      worksheet.columns = [
+        { header: 'NPK', key: 'npk', width: 15 },
+        { header: 'Nama Lengkap', key: 'name', width: 30 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Role', key: 'role', width: 15 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Terakhir Dilihat', key: 'lastActive', width: 22 }
+      ];
+
+      // Style header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Calibri' };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF10B981' } // Emerald green
+      };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      headerRow.height = 25;
+
+      // Add data rows
+      users.forEach(u => {
+        const row = worksheet.addRow({
+          npk: u.npk,
+          name: u.name,
+          email: u.email || '—',
+          role: u.role,
+          status: u.status === 'ACTIVE' ? 'Aktif' : u.status === 'INACTIVE' ? 'Nonaktif' : u.status,
+          lastActive: (u as any).lastActive ? new Date((u as any).lastActive).toLocaleString('id-ID') : 'Belum aktif'
+        });
+
+        // Set row heights and alignment
+        row.height = 20;
+        row.getCell('npk').alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell('name').alignment = { horizontal: 'left', vertical: 'middle' };
+        row.getCell('email').alignment = { horizontal: 'left', vertical: 'middle' };
+        row.getCell('role').alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell('status').alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell('lastActive').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Apply borders and fonts to cells
+        row.eachCell((cell) => {
+          cell.font = { size: 10, name: 'Calibri' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+            right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+          };
+        });
+      });
+
+      // Apply borders to header row
+      headerRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF059669' } },
+          left: { style: 'thin', color: { argb: 'FF059669' } },
+          bottom: { style: 'medium', color: { argb: 'FF059669' } },
+          right: { style: 'thin', color: { argb: 'FF059669' } }
+        };
+      });
+
+      // Generate buffer and trigger download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Daftar_User_Monitoring_Kerja_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Daftar user berhasil diekspor ke Excel!', { id: 'export-excel-users' });
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengekspor data ke Excel.', { id: 'export-excel-users' });
+    }
+  };
+
+  const formatDate = (d: string) => new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const statusColor = (s: string) => s === 'PENDING' ? '#f59e0b' : s === 'APPROVED' ? '#22c55e' : '#ef4444';
 
   return (
@@ -237,15 +380,64 @@ export default function UsersClient() {
               <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               <input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari NPK atau Nama..." style={{ paddingLeft: '32px' }} />
             </div>
-            <button className="btn btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 18px' }}>
-              <Plus size={16} /> Tambah User
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button id="users-export-btn" className="btn" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 18px', background: '#16a34a', color: 'white', border: 'none', cursor: 'pointer' }}>
+                <Download size={16} /> Export Excel
+              </button>
+              <button id="users-add-btn" className="btn btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 18px', cursor: 'pointer' }}>
+                <Plus size={16} /> Tambah User
+              </button>
+            </div>
           </div>
+
+          {selectedUserIds.length > 0 && (
+            <div id="users-bulk-bar" style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(59,130,246,0.1)', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(59,130,246,0.2)', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginRight: 'auto' }}>
+                Terpilih: <strong>{selectedUserIds.length}</strong> user
+              </span>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => handleBulkStatus('ACTIVE')}
+                style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(34,197,94,0.15)', color: '#16a34a', border: 'none', cursor: 'pointer', fontWeight: 600, borderRadius: '6px' }}
+              >
+                Aktifkan Semua
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => handleBulkStatus('INACTIVE')}
+                style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239,68,68,0.15)', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600, borderRadius: '6px' }}
+              >
+                Nonaktifkan Semua
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={handleBulkDelete}
+                style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer' }}
+              >
+                Hapus Semua
+              </button>
+            </div>
+          )}
+
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                  {['NPK', 'Nama', 'Role', 'Status', 'Aksi'].map(h => (
+                  <th style={{ padding: '10px 12px', width: '40px', textAlign: 'left' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={filtered.length > 0 && selectedUserIds.length === filtered.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUserIds(filtered.map(u => u.id));
+                        } else {
+                          setSelectedUserIds([]);
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </th>
+                  {['NPK', 'Nama', 'Role', 'Terakhir Dilihat', 'Status', 'Aksi'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -253,12 +445,42 @@ export default function UsersClient() {
               <tbody>
                 {filtered.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-primary)' }}>{u.npk}</td>
+                    <td style={{ padding: '12px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUserIds.includes(u.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUserIds(prev => [...prev, u.id]);
+                          } else {
+                            setSelectedUserIds(prev => prev.filter(id => id !== u.id));
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </td>
+                    <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {masterPicAvatars[u.name] ? (
+                        <img
+                          src={masterPicAvatars[u.name]}
+                          alt={u.name}
+                          style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                          {u.name ? u.name.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                      <span>{u.npk}</span>
+                    </td>
                     <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{u.name}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 600, background: u.role === 'ADMIN' ? 'rgba(139,92,246,0.15)' : 'rgba(59,130,246,0.12)', color: u.role === 'ADMIN' ? '#7c3aed' : '#2563eb' }}>
                         {u.role === 'ADMIN' ? <ShieldCheck size={12} /> : <User size={12} />} {u.role}
                       </span>
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                      {(u as any).lastActive ? new Date((u as any).lastActive).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum aktif'}
                     </td>
                     <td style={{ padding: '12px' }}>
                       {u.status === 'PENDING' ? (
@@ -278,19 +500,19 @@ export default function UsersClient() {
                     </td>
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <button className="btn" onClick={() => openEdit(u)} title="Edit" style={{ padding: '6px 10px', fontSize: '12px' }}><Pencil size={13} /></button>
+                        <button className="btn" onClick={() => openEdit(u)} title="Edit" style={{ padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}><Pencil size={13} /></button>
                         {u.role === 'MEMBER' && (
-                          <button className="btn" onClick={() => setForceResetUser(u)} title="Ganti Password Paksa" style={{ padding: '6px 10px', fontSize: '12px', color: 'var(--accent-primary)' }}>
+                          <button className="btn" onClick={() => setForceResetUser(u)} title="Ganti Password Paksa" style={{ padding: '6px 10px', fontSize: '12px', color: 'var(--accent-primary)', cursor: 'pointer' }}>
                             <KeyRound size={13} />
                           </button>
                         )}
-                        <button className="btn" onClick={() => deleteUser(u)} title="Hapus" style={{ padding: '6px 10px', fontSize: '12px', color: '#ef4444' }}><Trash2 size={13} /></button>
+                        <button className="btn" onClick={() => deleteUser(u)} title="Hapus" style={{ padding: '6px 10px', fontSize: '12px', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={13} /></button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>Tidak ada user ditemukan.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>Tidak ada user ditemukan.</td></tr>
                 )}
               </tbody>
             </table>
@@ -344,56 +566,90 @@ export default function UsersClient() {
         <>
           {/* Filters */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '10px', flex: '1', minWidth: '220px', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', gap: '10px', flex: '1', minWidth: '320px', maxWidth: '640px' }}>
               <div style={{ position: 'relative', flex: '1' }}>
                 <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                 <input className="input" value={logSearch} onChange={e => setLogSearch(e.target.value)} placeholder="Cari log..." style={{ paddingLeft: '32px' }} />
               </div>
-              <select className="input" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: '140px' }}>
+              <select className="input" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: '130px' }}>
                 <option value="all">Semua Tipe</option>
                 <option value="info">Info</option>
                 <option value="success">Success</option>
                 <option value="warning">Warning</option>
                 <option value="error">Error</option>
               </select>
+              <select className="input" value={filterUser} onChange={e => setFilterUser(e.target.value)} style={{ width: '150px' }}>
+                <option value="all">Semua User</option>
+                {Array.from(new Set(users.map(u => u.name).filter(Boolean))).map(uName => (
+                  <option key={uName} value={uName}>{uName}</option>
+                ))}
+              </select>
             </div>
-            <button className="btn" onClick={fetchLogs} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px' }}>
+            <button className="btn" onClick={fetchLogs} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
               <RefreshCw size={14} /> Refresh Logs
             </button>
           </div>
 
           {/* Logs Table */}
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                  {['Waktu', 'User', 'Aksi', 'Detail'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
+                  <th style={{ padding: '10px 12px', width: '160px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Waktu</th>
+                  <th style={{ padding: '10px 12px', width: '150px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>User</th>
+                  <th style={{ padding: '10px 12px', width: '120px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Aksi</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Detail</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredLogs.map(l => (
+                {paginatedLogs.map(l => (
                   <tr key={l.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: '12px' }}>
                       {new Date(l.createdAt).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>{l.userName || '—'}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${typeColor[l.type] || '#6b7280'}20`, color: typeColor[l.type] || '#6b7280', whiteSpace: 'nowrap' }}>
+                      <span 
+                        title={actionLabel[l.action] || l.action}
+                        style={{ display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${typeColor[l.type] || '#6b7280'}20`, color: typeColor[l.type] || '#6b7280', whiteSpace: 'nowrap' }}
+                      >
                         {actionLabel[l.action] || l.action}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>{l.message}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-secondary)', wordBreak: 'break-word', whiteSpace: 'normal' }}>{l.message}</td>
                   </tr>
                 ))}
-                {filteredLogs.length === 0 && (
+                {paginatedLogs.length === 0 && (
                   <tr><td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>Tidak ada log yang ditemukan.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          <p style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '12px' }}>{filteredLogs.length} dari {logs.length} log ditampilkan</p>
+
+          {/* Pagination Controls */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Menampilkan {paginatedLogs.length} dari {filteredLogs.length} log (Halaman {logPage} dari {totalLogPages})
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn" 
+                onClick={() => setLogPage(prev => Math.max(prev - 1, 1))} 
+                disabled={logPage === 1}
+                style={{ padding: '6px 12px', fontSize: '12px', cursor: logPage === 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Sebelumnya
+              </button>
+              <button 
+                className="btn" 
+                onClick={() => setLogPage(prev => Math.min(prev + 1, totalLogPages))} 
+                disabled={logPage === totalLogPages}
+                style={{ padding: '6px 12px', fontSize: '12px', cursor: logPage === totalLogPages ? 'not-allowed' : 'pointer' }}
+              >
+                Selanjutnya
+              </button>
+            </div>
+          </div>
         </>
       )}
 

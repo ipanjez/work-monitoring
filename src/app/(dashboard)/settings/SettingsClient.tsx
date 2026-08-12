@@ -667,7 +667,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Identitas Aplikasi Card */}
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-app-identity" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Layout size={20} color="var(--accent-primary)" /> Identitas Aplikasi
           </h3>
@@ -679,7 +679,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="text" 
                 value={appName} 
                 onChange={e => setAppName(e.target.value)}
-                className="input-field" 
+                className="input" 
                 placeholder="DeptMonitor"
               />
             </div>
@@ -689,7 +689,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 type="text" 
                 value={deptName} 
                 onChange={e => setDeptName(e.target.value)}
-                className="input-field" 
+                className="input" 
                 placeholder="MRK"
               />
             </div>
@@ -851,7 +851,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* Account Settings Card */}
-      <div className="glass" style={{ padding: '24px' }}>
+      <div id="settings-account" className="glass" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Shield size={20} color="var(--accent-primary)" /> Pengaturan Akun
         </h3>
@@ -959,7 +959,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Dropdown Master Categories Manager */}
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-categories" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Dropdown Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
             <Tag size={20} color="var(--accent-primary)" />

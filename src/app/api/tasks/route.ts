@@ -24,7 +24,7 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
     if (setting && setting.value) {
       masterProgress = JSON.parse(setting.value);
     }
-  } catch(e) {}
+  } catch (e) { }
 
   if (subTasksJson) {
     try {
@@ -32,12 +32,12 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
       if (Array.isArray(subTasks) && subTasks.length > 0) {
         let totalScore = 0;
         for (const st of subTasks) {
-           const p = masterProgress[st.status];
-           totalScore += (p !== undefined ? p : (st.status === 'Done' ? 100 : st.status === 'In Progress' ? 50 : 0));
+          const p = masterProgress[st.status];
+          totalScore += (p !== undefined ? p : (st.status === 'Done' ? 100 : st.status === 'In Progress' ? 50 : 0));
         }
         return Math.round(totalScore / subTasks.length);
       }
-    } catch(e) {}
+    } catch (e) { }
   }
   return masterProgress[status] !== undefined ? masterProgress[status] : (status === 'Done' ? 100 : status === 'In Progress' ? 50 : 0);
 };
@@ -88,26 +88,26 @@ export async function POST(req: Request) {
           lokasi: task.lokasi || null,
         };
       }));
-      
+
       const created = await prisma.$transaction(
         tasksToCreate.map(data => prisma.task.create({ data }))
       );
       return NextResponse.json(created);
     }
 
-    const { 
-      nama, pic, status, prioritas, kategori, progress, 
-      deskripsi, catatan, fileUrl, fileName, filesJson, 
-      isAllDay, startTime, endTime, repetisi, additionalPics, 
-      startDate, endDate, subTasksJson, lokasi 
+    const {
+      nama, pic, status, prioritas, kategori, progress,
+      deskripsi, catatan, fileUrl, fileName, filesJson,
+      isAllDay, startTime, endTime, repetisi, additionalPics,
+      startDate, endDate, subTasksJson, lokasi
     } = body;
-    
+
     if (!nama || !pic) {
       return NextResponse.json({ error: 'Nama dan PIC wajib diisi' }, { status: 400 });
     }
 
     const finalStatus = status || 'To Do';
-      const finalProgress = await calculateProgress(finalStatus, subTasksJson);
+    const finalProgress = await calculateProgress(finalStatus, subTasksJson);
 
     try {
       const task = await prisma.task.create({
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       return NextResponse.json(task);
     } catch (createErr: any) {
       console.error('Primary task creation failed, trying fallback 1:', createErr);
-      
+
       try {
         const task = await prisma.task.create({
           data: {
