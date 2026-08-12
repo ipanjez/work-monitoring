@@ -48,7 +48,7 @@ export async function GET(req: Request) {
           {
             action: 'display',
             description: `Reminder: ${task.nama}`,
-            trigger: { minutes: 30, before: true }
+            trigger: { minutes: 5, before: true }
           }
         ]
       };
