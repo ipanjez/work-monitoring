@@ -151,8 +151,20 @@ export default function UserProfileButton() {
                     {(() => {
                       const role = (session.user as any).role;
                       if (role === 'ADMIN') return 'Akses penuh kelola data.';
-                      if (role === 'VIEWER') return 'Read-only (Hanya lihat).';
-                      return 'Akses disesuaikan.';
+                      
+                      const perms = roleConfig.permissions[role] || {};
+                      const labels: string[] = [];
+                      if (perms.view_dashboard) labels.push('Dashboard');
+                      if (perms.view_detail) labels.push('Detail Tugas');
+                      if (perms.manage_task) labels.push('Kelola Tugas');
+                      if (perms.delete_task) labels.push('Hapus Tugas');
+                      if (perms.upload_comment) labels.push('Komentar');
+                      if (perms.master_data) labels.push('Pengaturan');
+                      if (perms.user_management) labels.push('Manajemen User');
+                      if (perms.system_logs) labels.push('Log Sistem');
+                      
+                      if (labels.length === 0) return 'Tidak ada akses spesifik.';
+                      return `Akses: ${labels.join(', ')}`;
                     })()}
                   </span>
                 </div>
