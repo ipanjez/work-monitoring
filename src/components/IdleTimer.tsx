@@ -5,22 +5,27 @@ import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Clock, AlertTriangle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useMaster } from '@/context/MasterContext';
 
 export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [timeLeft, setTimeLeft] = useState(600); // Default 10 minutes in seconds
+  const { sessionTimeout } = useMaster();
+  
+  // Use sessionTimeout (in minutes) or fallback to 10
+  const sessionDurationMs = (sessionTimeout || 10) * 60 * 1000;
+  
+  const [timeLeft, setTimeLeft] = useState(sessionDurationMs / 1000); 
   const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     if (pathname === '/auth/signin' || pathname === '/auth/signup' || pathname === '/auth/forgot') return;
 
     let lastActive = Date.now();
-    let sessionDuration = 600000; // 10 minutes in ms
 
     const handleActivity = () => {
       lastActive = Date.now();
-      setTimeLeft(sessionDuration / 1000);
+      setTimeLeft(sessionDurationMs / 1000);
     };
 
     // Listen to user activity to reset inactivity timer
@@ -32,7 +37,7 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
     const timer = setInterval(() => {
       const now = Date.now();
       const inactiveTime = now - lastActive;
-      const remainingSeconds = Math.max(0, Math.floor((sessionDuration - inactiveTime) / 1000));
+      const remainingSeconds = Math.max(0, Math.floor((sessionDurationMs - inactiveTime) / 1000));
       
       setTimeLeft((prevSeconds) => {
         // If the user extended session manually, sessionDuration might have changed
@@ -141,7 +146,9 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
               zIndex: 100,
               lineHeight: 1.4
             }}>
-              <strong>Info Keamanan:</strong> Walaupun sisa sesi Anda perpanjang, Anda akan <strong>Otomatis Terlogout</strong> jika layar dibiarkan dan tidak ada aktivitas apa pun (mouse/keyboard) selama 10 menit berturut-turut.
+              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(59,130,246,0.1)', borderLeft: '3px solid var(--accent-primary)', borderRadius: '0 8px 8px 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                <strong>Info Keamanan:</strong> Walaupun sisa sesi Anda perpanjang, Anda akan <strong>Otomatis Terlogout</strong> jika layar dibiarkan dan tidak ada aktivitas apa pun (mouse/keyboard) selama {sessionTimeout || 10} menit berturut-turut.
+              </div>
             </div>
           )}
         </div>
