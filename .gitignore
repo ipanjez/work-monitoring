@@ -60,3 +60,8 @@ generate_excel.js
 # Local uploaded files
 public/uploads/
 prisma/schema.sqlite.prisma
+
+# Local testing and export scripts
+check_*.js
+export-db.js
+db-export-*.json
