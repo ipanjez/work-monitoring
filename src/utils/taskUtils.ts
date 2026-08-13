@@ -505,6 +505,9 @@ export const formatLogDetails = (text: string): string => {
   if (!text) return '';
   let formatted = text;
 
+  // Replace HTML breaks with newlines since it's rendered with white-space: pre-wrap
+  formatted = formatted.replace(/<br\s*\/?>/gi, '\n');
+
   // 1. Parse CUSTOM_RECURRENCE JSON
   formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*("?\\?{.*?\\?}"?)/g, (match, jsonStringWithQuotes) => {
     try {

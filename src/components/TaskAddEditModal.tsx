@@ -8,6 +8,8 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Task, FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
+import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -79,6 +81,19 @@ export default function TaskAddEditModal({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
+
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || 'VIEWER';
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  useEffect(() => {
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(setRoleConfig)
+      .catch(() => {});
+  }, []);
+  const canUploadAttachment = hasPermission(roleConfig, 'upload_comment', userRole);
+
+  const [activeTab, setActiveTab] = useState<'info' | 'subtasks' | 'attachments'>('info');
   const [masterLocations, setMasterLocations] = useState<string[]>([]);
 
   const attachmentInputRef = useRef<HTMLInputElement>(null);
@@ -1006,46 +1021,47 @@ export default function TaskAddEditModal({
               </div>
 
               {/* Multiple File Attachments Upload */}
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                  File Lampiran (Bisa Unggah Lebih dari 1 File)
-                </label>
-                <input
-                  type="file"
-                  ref={attachmentInputRef}
-                  style={{ display: 'none' }}
-                  multiple
-                  onChange={handleFileUpload}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div 
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    style={{
-                      border: '2px dashed var(--border-color)',
-                      borderRadius: '8px',
-                      padding: '20px',
-                      textAlign: 'center',
-                      background: 'var(--surface-color)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                    onClick={() => attachmentInputRef.current?.click()}
-                  >
-                    <Paperclip size={24} style={{ color: 'var(--text-secondary)' }} />
-                    <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                      Klik untuk Unggah atau Tarik & Letakkan File di Sini
-                    </span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Mendukung banyak file sekaligus (Maksimal 25MB per file)
-                    </span>
-                    {uploadingFile && <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>Mengunggah...</span>}
-                  </div>
+              {canUploadAttachment && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                    File Lampiran (Bisa Unggah Lebih dari 1 File)
+                  </label>
+                  <input
+                    type="file"
+                    ref={attachmentInputRef}
+                    style={{ display: 'none' }}
+                    multiple
+                    onChange={handleFileUpload}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div 
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      style={{
+                        border: '2px dashed var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '20px',
+                        textAlign: 'center',
+                        background: 'var(--surface-color)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      onClick={() => attachmentInputRef.current?.click()}
+                    >
+                      <Paperclip size={24} style={{ color: 'var(--text-secondary)' }} />
+                      <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>
+                        Klik untuk Unggah atau Tarik & Letakkan File di Sini
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        Mendukung banyak file sekaligus (Maksimal 25MB per file)
+                      </span>
+                      {uploadingFile && <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>Mengunggah...</span>}
+                    </div>
 
-                  {editingTask.filesList && editingTask.filesList.length > 0 && (
+                    {editingTask.filesList && editingTask.filesList.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
                       {editingTask.filesList.map((f, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
@@ -1086,8 +1102,7 @@ export default function TaskAddEditModal({
                     </div>
                   )}
                 </div>
-              </div>
-
+              )}
               <div style={{ 
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 position: 'sticky', bottom: '-24px',
