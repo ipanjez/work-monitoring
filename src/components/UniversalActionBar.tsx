@@ -28,7 +28,7 @@ export default function UniversalActionBar({
   const disabledTitle = 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.';
 
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <div id="universal-action-bar" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
       {!canExport && (
         <span title={disabledTitle} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-secondary)', padding: '4px 8px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
           <Lock size={12} /> Ekspor Dikunci
@@ -41,9 +41,9 @@ export default function UniversalActionBar({
             onClick={canExport ? onExportExcel : undefined}
             title={canExport ? 'Export Excel' : disabledTitle}
             disabled={!canExport}
-            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: 0, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Download size={18} />
+            <Download size={16} />
           </button>
         )}
         {onExportPDF && (
@@ -52,9 +52,9 @@ export default function UniversalActionBar({
             onClick={canExport ? onExportPDF : undefined} 
             disabled={isExportingPdf || !canExport}
             title={canExport ? 'Export PDF' : disabledTitle}
-            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: (isExportingPdf || !canExport) ? 0.7 : 1 }}
+            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: 0, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)', opacity: (isExportingPdf || !canExport) ? 0.7 : 1 }}
           >
-            <FileText size={18} />
+            <FileText size={16} />
           </button>
         )}
         {onCopyImage && (
@@ -63,9 +63,9 @@ export default function UniversalActionBar({
             onClick={canExport ? onCopyImage : undefined}
             title={canExport ? 'Copy as Image' : disabledTitle}
             disabled={!canExport}
-            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
+            style={{ backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: 0, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
           >
-            <Copy size={18} />
+            <Copy size={16} />
           </button>
         )}
         {children && (

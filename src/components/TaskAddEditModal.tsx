@@ -371,7 +371,7 @@ export default function TaskAddEditModal({
                       onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })}
                     >
                       <option value="">-- Pilih PIC Utama --</option>
-                      {formPicOptions.map((p, idx) => (
+                      {formPicOptions.filter(p => p.toLowerCase() !== 'administrator').map((p, idx) => (
                         <option key={idx} value={p}>{p}</option>
                       ))}
                     </select>
@@ -385,7 +385,7 @@ export default function TaskAddEditModal({
                         onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
                       >
                         <option value="">-- Pilih PIC Tambahan --</option>
-                        {formPicOptions.map((p, i) => (
+                        {formPicOptions.filter(p => p.toLowerCase() !== 'administrator').map((p, i) => (
                           <option key={i} value={p}>{p}</option>
                         ))}
                       </select>
@@ -832,7 +832,7 @@ export default function TaskAddEditModal({
                                     setEditingTask({ ...editingTask, subTasksList: updated });
                                   }}
                                 >
-                                  {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                  {formPicOptions.filter(opt => opt.toLowerCase() !== 'administrator').map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
                                 </select>
                                 <button
                                   type="button"
@@ -861,7 +861,7 @@ export default function TaskAddEditModal({
                                       setEditingTask({ ...editingTask, subTasksList: updated });
                                     }}
                                   >
-                                    {formPicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                    {formPicOptions.filter(opt => opt.toLowerCase() !== 'administrator').map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
                                   </select>
                                   <button
                                     type="button"

@@ -968,7 +968,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       {/* Main Report Container for PDF export and image copy */}
       <div id="dashboard-report-container" ref={dashboardRef}>
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        <div id="dashboard-kpi-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
           <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Total Pekerjaan</span>
@@ -1024,7 +1024,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         {/* Charts Container (Responsive) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
           {/* Doughnut Charts (Side-by-Side) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          <div id="dashboard-charts-doughnuts" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
               <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
@@ -1041,7 +1041,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           </div>
 
           {/* Full Width Bar Charts */}
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-pic" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
               <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
@@ -1050,7 +1050,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             </div>
           </div>
 
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-category" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
               <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
@@ -1059,7 +1059,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             </div>
           </div>
 
-          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-timeline" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Line data={timelineData} options={timelineOptions} />
@@ -1123,7 +1123,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         )}
 
         {/* Upcoming Deadline Table Widget */}
-        <div className="glass" style={{ padding: '24px', borderRadius: '16px', marginTop: '32px' }}>
+        <div id="dashboard-active-table" className="glass" style={{ padding: '24px', borderRadius: '16px', marginTop: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Calendar size={20} color="var(--accent-primary)" />

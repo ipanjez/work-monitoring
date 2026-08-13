@@ -253,7 +253,7 @@ Tenggat Waktu: ${format(new Date(task!.endDate), 'dd MMM yyyy')}${!task!.isAllDa
 Lokasi: ${location}
 
 *Deskripsi:*
-${task!.deskripsi || '-'}`;
+${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
       await navigator.clipboard.writeText(textToCopy);
       toast.success('Detail pekerjaan berhasil disalin!');

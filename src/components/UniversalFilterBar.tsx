@@ -40,12 +40,12 @@ export default function UniversalFilterBar({
   } : {};
 
   return (
-    <div className="glass" style={{ padding: '12px 16px', marginBottom: '24px', display: 'flex', gap: '12px', flexWrap: 'nowrap', alignItems: 'center', borderRadius: '12px', overflowX: 'auto' }}>
-      <div style={{ position: 'relative', flex: '1 1 150px', minWidth: '150px' }}>
-        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
+    <div id="universal-filter-bar" className="glass" style={{ padding: '6px 12px', marginBottom: '20px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', borderRadius: '12px', width: '100%' }}>
+      <div style={{ position: 'relative', flex: '0 0 130px', minWidth: '110px' }}>
+        <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
         <input
           className="input"
-          style={{ paddingLeft: '36px', width: '100%', paddingRight: '50px', fontSize: '13px', ...getActiveStyle(globalSearchQuery !== '') }}
+          style={{ paddingLeft: '30px', width: '100%', paddingRight: '45px', fontSize: '12px', ...getActiveStyle(globalSearchQuery !== '') }}
           placeholder="Pencarian..."
           value={globalSearchQuery}
           onChange={e => setGlobalSearchQuery(e.target.value)}
@@ -55,15 +55,15 @@ export default function UniversalFilterBar({
           onClick={() => setGlobalSearchExactMatch(!globalSearchExactMatch)}
           style={{
             position: 'absolute',
-            right: '4px',
+            right: '2px',
             top: '50%',
             transform: 'translateY(-50%)',
             background: globalSearchExactMatch ? 'var(--accent-primary)' : 'transparent',
             border: 'none',
             cursor: 'pointer',
-            padding: '4px 6px',
+            padding: '2px 4px',
             borderRadius: '6px',
-            fontSize: '10px',
+            fontSize: '9px',
             fontWeight: 700,
             color: globalSearchExactMatch ? 'white' : 'var(--text-secondary)',
             display: 'flex',
@@ -77,30 +77,30 @@ export default function UniversalFilterBar({
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterStatus !== 'All') }} value={globalFilterStatus} onChange={e => setGlobalFilterStatus(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', ...getActiveStyle(globalFilterStatus !== 'All') }} value={globalFilterStatus} onChange={e => setGlobalFilterStatus(e.target.value)}>
             <option value="All">Semua Status</option>
             {Array.from(new Set(statuses)).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterPriority !== 'All') }} value={globalFilterPriority} onChange={e => setGlobalFilterPriority(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', ...getActiveStyle(globalFilterPriority !== 'All') }} value={globalFilterPriority} onChange={e => setGlobalFilterPriority(e.target.value)}>
             <option value="All">Semua Prioritas</option>
             {Array.from(new Set(priorities)).map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalFilterCategory !== 'All') }} value={globalFilterCategory} onChange={e => setGlobalFilterCategory(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', ...getActiveStyle(globalFilterCategory !== 'All') }} value={globalFilterCategory} onChange={e => setGlobalFilterCategory(e.target.value)}>
             <option value="All">Semua Kategori</option>
             {Array.from(new Set(categories)).map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalTargetFilter !== 'Semua Waktu') }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', ...getActiveStyle(globalTargetFilter !== 'Semua Waktu') }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
             <option value="Hari Ini">Hari Ini</option>
             <option value="Minggu Ini">Minggu Ini</option>
             <option value="Bulan Ini">Bulan Ini</option>
@@ -113,21 +113,21 @@ export default function UniversalFilterBar({
                 type="date"
                 value={globalCustomStartDate}
                 onChange={(e) => setGlobalCustomStartDate(e.target.value)}
-                style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                style={{ width: 'auto', padding: '4px 6px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
               />
               <span style={{ color: 'var(--text-secondary)' }}>-</span>
               <input
                 type="date"
                 value={globalCustomEndDate}
                 onChange={(e) => setGlobalCustomEndDate(e.target.value)}
-                style={{ width: 'auto', padding: '6px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                style={{ width: 'auto', padding: '4px 6px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
               />
             </div>
           )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select className="input" style={{ width: 'auto', padding: '6px 10px', fontSize: '13px', ...getActiveStyle(globalPicFilter !== 'Semua PIC') }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
+          <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', ...getActiveStyle(globalPicFilter !== 'Semua PIC') }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
             <option value="Semua PIC">Semua PIC</option>
             {Array.from(new Set(pics)).map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -135,7 +135,7 @@ export default function UniversalFilterBar({
 
         {filteredCount !== undefined && totalCount !== undefined && (
           <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px', borderLeft: '1px solid var(--border-color)', marginLeft: '4px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
               Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{filteredCount}</strong> dari {totalCount} data
             </span>
           </div>
@@ -143,7 +143,7 @@ export default function UniversalFilterBar({
       </div>
 
       {children && (
-        <div style={{ marginLeft: 'auto', display: 'flex' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', flexShrink: 0 }}>
           {children}
         </div>
       )}

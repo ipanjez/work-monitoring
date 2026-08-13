@@ -13,12 +13,18 @@ export async function GET() {
     }
 
     const users = await prisma.user.findMany({
-      where: { status: 'ACTIVE' },
+      where: { 
+        status: 'ACTIVE',
+        role: { not: 'ADMIN' }
+      },
       select: { name: true },
       orderBy: { name: 'asc' },
     });
 
-    const names = users.map(u => u.name).filter(Boolean) as string[];
+    const names = users
+      .map(u => u.name)
+      .filter(Boolean)
+      .filter(name => name.toLowerCase() !== 'administrator') as string[];
     return NextResponse.json(names);
   } catch (error: any) {
     console.error('Error fetching registered PIC names:', error);
