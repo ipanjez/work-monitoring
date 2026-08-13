@@ -1,13 +1,13 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import QuickCommentModal from '@/components/QuickCommentModal';
-import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft, CheckSquare, MessageSquare, History, FileText, Download, Filter, ArrowUpDown, Copy, ChevronUp, ChevronDown, Paperclip } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft, CheckSquare, MessageSquare, History, FileText, Download, Filter, ArrowUpDown, Copy, ChevronUp, ChevronDown, Paperclip, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { useFilter } from '@/context/FilterContext';
@@ -59,6 +59,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [commentTask, setCommentTask] = useState<any | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -104,8 +105,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       setIsDetailOpen(false);
       setSelectedTask(null);
       setTasks(prev => prev.filter(t => t.id !== id));
-      router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      });
     } catch (e) {
       toast.error('Gagal menghapus pekerjaan');
     }
@@ -120,8 +123,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
-      router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      });
     } catch (e) {
       console.error('Failed to save reorder', e);
     }
@@ -511,7 +516,25 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   return (
-    <div className="board-container">
+    <div className="board-container" style={{ position: 'relative' }}>
+      {isPending && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
+        }}>
+          <div style={{ 
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
+          }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
+            Menyinkronkan data...
+          </div>
+        </div>
+      )}
       <UniversalFilterBar 
         categories={formCategoryOptions} 
         pics={formPicOptions} 
@@ -829,15 +852,23 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onClose={() => setIsEditOpen(false)}
           taskToEdit={selectedTask}
           onSave={async (payload: any) => {
-            const res = await fetch(`/api/tasks/${selectedTask.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error('Failed to update task');
-            setIsEditOpen(false);
-            router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+            const toastId = toast.loading('Memperbarui data...');
+            try {
+              const res = await fetch(`/api/tasks/${selectedTask.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (!res.ok) throw new Error('Failed to update task');
+              setIsEditOpen(false);
+              toast.success('Berhasil diperbarui', { id: toastId });
+              startTransition(() => {
+                router.refresh();
+                if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+              });
+            } catch (err) {
+              toast.error('Gagal memperbarui', { id: toastId });
+            }
           }}
           formPicOptions={formPicOptions}
           formCategoryOptions={formCategoryOptions}

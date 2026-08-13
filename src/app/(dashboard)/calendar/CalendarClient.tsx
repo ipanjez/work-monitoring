@@ -4,7 +4,7 @@ import { useFilter } from '@/context/FilterContext';
 import { copyToClipboard } from '@/utils/clipboard';
 import { checkSearchMatch } from '@/utils/searchUtils';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Calendar as BigCalendar, dateFnsLocalizer, View, EventProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -13,7 +13,7 @@ import { getTaskComments } from '@/utils/taskUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-override.css';
 import { 
-  ExternalLink, CalendarDays, X, Paperclip, Plus, Pencil, Trash2, File, Eye, Repeat, UserPlus, History, Download, Search, Filter, AlertCircle, Copy, FileText, FileSpreadsheet
+  ExternalLink, CalendarDays, X, Paperclip, Plus, Pencil, Trash2, File, Eye, Repeat, UserPlus, History, Download, Search, Filter, AlertCircle, Copy, FileText, FileSpreadsheet, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
@@ -77,6 +77,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
 
   // Calendar View & Date Controlled State (Fix for Month/Week/Day/Agenda buttons)
@@ -488,8 +489,11 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         const updated = await res.json();
         if (Array.isArray(updated)) setTasks(updated);
       }
-      router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      });
       toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
     } catch (error: any) {
       console.error('Save error:', error);
@@ -507,8 +511,10 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       await fetch(`/api/tasks/${realId}`, { method: 'DELETE' });
       setTasks(prev => prev.filter(t => t.id !== realId));
       setSelectedTask(null);
-      router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      });
       toast.success('Pekerjaan berhasil dihapus dari kalender.');
     } catch (error: any) {
       console.error(error);
@@ -528,7 +534,25 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+      {isPending && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
+        }}>
+          <div style={{ 
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
+          }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
+            Menyinkronkan data...
+          </div>
+        </div>
+      )}
       <datalist id="calendar-pics-list">
         {existingPics.map((p, idx) => (
           <option key={idx} value={p} />
