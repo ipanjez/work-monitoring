@@ -248,21 +248,53 @@ export async function POST(req: Request) {
       return isNaN(parsed.getTime()) ? new Date() : parsed;
     };
 
+    // Helper: rewrite vercel blob URLs to local uploads
+    const rewriteLocalUrl = (url: string | null | undefined) => {
+      if (!isLocal || !url) return url;
+      const match = url.match(/\/([^/]+)$/);
+      if (match) {
+        return `/uploads/${match[1]}`;
+      }
+      return url;
+    };
+
     // Clean tasks: remove id (let autoincrement handle it) and parse dates
     const cleanTasks = tasks.map((t: any) => {
       const { id, createdBy, ...rest } = t;
       
-      let fileUrl = rest.fileUrl;
-      if (isLocal && fileUrl) {
-         const match = fileUrl.match(/\/([^/]+)$/);
-         if (match) {
-           fileUrl = `/uploads/${match[1]}`;
-         }
+      let fileUrl = rewriteLocalUrl(rest.fileUrl);
+      
+      let filesJson = rest.filesJson;
+      if (isLocal && filesJson) {
+        try {
+          const files = JSON.parse(filesJson);
+          if (Array.isArray(files)) {
+            files.forEach(f => {
+              if (f.url) f.url = rewriteLocalUrl(f.url);
+            });
+            filesJson = JSON.stringify(files);
+          }
+        } catch (e) {}
+      }
+
+      let commentsJson = rest.commentsJson;
+      if (isLocal && commentsJson) {
+        try {
+          const comments = JSON.parse(commentsJson);
+          if (Array.isArray(comments)) {
+            comments.forEach(c => {
+              if (c.fileUrl) c.fileUrl = rewriteLocalUrl(c.fileUrl);
+            });
+            commentsJson = JSON.stringify(comments);
+          }
+        } catch (e) {}
       }
 
       return {
         ...rest,
         fileUrl,
+        filesJson,
+        commentsJson,
         startDate: parseDate(rest.startDate),
         endDate: parseDate(rest.endDate),
         createdAt: parseDate(rest.createdAt),
@@ -301,19 +333,12 @@ export async function POST(req: Request) {
     // Insert users first (tasks may reference them)
     if (Array.isArray(users) && users.length > 0) {
       const cleanUsers = users.map((u: any) => {
-        let image = u.image;
-        if (isLocal && image) {
-           const match = image.match(/\/([^/]+)$/);
-           if (match) {
-             image = `/uploads/${match[1]}`;
-           }
-        }
         return {
           id: u.id,
           npk: u.npk,
           name: u.name || null,
           email: u.email || null,
-          image: image || null,
+          image: rewriteLocalUrl(u.image) || null,
           password: u.password || null,
           role: u.role || 'MEMBER',
           status: u.status || 'ACTIVE',
