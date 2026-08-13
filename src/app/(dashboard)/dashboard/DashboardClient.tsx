@@ -233,8 +233,8 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     }
   };
 
-  const categories = Array.from(new Set(['All', ...tasks.map(t => t.kategori || 'Umum'), ...masterCategories]));
-  const pics = Array.from(new Set(['All', ...tasks.map(t => t.pic), ...masterPics, ...(session?.user?.name ? [session.user.name] : [])]));
+  const categories = Array.from(new Set([...masterCategories, ...tasks.map(t => t.kategori || 'Umum')])).filter(Boolean);
+  const pics = Array.from(new Set([...masterPics, ...tasks.map(t => t.pic), ...(session?.user?.name ? [session.user.name] : [])])).filter(Boolean);
 
   const filteredTasks = tasks.filter(t => {
     // 1. Category Filter

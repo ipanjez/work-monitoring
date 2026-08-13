@@ -177,7 +177,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   };
 
   const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
-  const categoriesFilter = ['All', ...allCategoryOptions];
+  const categoriesFilter = [...allCategoryOptions];
 
   // Extract all unique PICs (for filter dropdown)
   const allPicsSet = new Set<string>(masterPics);
@@ -194,7 +194,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     allPicsSet.add(session.user.name);
   }
   const existingPics = Array.from(allPicsSet);
-  const pics = ['All', ...existingPics];
+  const pics = [...existingPics];
 
   // Strictly for Add/Edit Form Dropdowns (Sync with Settings)
   let formCategoryOptions = masterCats.length > 0 ? [...masterCats] : [];
