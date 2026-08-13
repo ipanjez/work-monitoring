@@ -244,7 +244,8 @@ export async function POST(req: Request) {
                 uploadPromises.push(
                   put(fileName, entryData, {
                     access: 'public',
-                    addRandomSuffix: false
+                    addRandomSuffix: false,
+                    allowOverwrite: true
                   }).then(blob => {
                     vercelBlobMap[fileName] = blob.url;
                   })
