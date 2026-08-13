@@ -215,6 +215,18 @@ Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memi
 
 ---
 
+## 📝 Changelog / Riwayat Pembaruan Terkini
+
+Berbagai peningkatan dan perbaikan bug terus dilakukan. Berikut adalah *update* utama yang baru saja diproses ke repositori:
+
+- 🐛 **Fix Filter Dropdown**: Menghapus duplikasi opsi "All" pada filter PIC dan Kategori di Dashboard serta menyelaraskan urutan dropdown agar 100% konsisten dengan pengaturan Master Data.
+- ✨ **Sort Lampiran**: Menambahkan fitur interaktif untuk mengurutkan daftar pekerjaan berdasarkan jumlah lampiran terbanyak/tersedikit secara langsung dari *header* tabel.
+- ⚡ **Optimasi Cloud Restore**: Mencegah *timeout* saat restore database besar dengan memparalelkan proses upload Blob, menambahkan mekanisme *retry* otomatis jika gagal (*blob fetch retry*), dan meningkatkan *maxDuration* fungsi API.
+- 📱 **Mobile UI & Portal**: Menggunakan teknologi React Portals untuk Modal Tambah/Edit Pekerjaan guna mencegah bug hilangnya modal saat transisi UI di layar HP, serta merapikan info profil di tampilan mobile.
+- 🛠️ **Error Handling**: Memperjelas pesan error dari sisi klien jika file ZIP yang direstore korup, log error ekstraksi *blob*, serta memperluas dukungan deteksi *MIME type* ZIP (*cross-platform*).
+
+---
+
 ## 👨‍💻 Kredit & Pembuat
 
 Proyek ini dirancang dan dikembangkan dengan penuh semangat oleh **ipanjez**. 
