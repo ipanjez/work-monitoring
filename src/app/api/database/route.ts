@@ -251,8 +251,18 @@ export async function POST(req: Request) {
     // Clean tasks: remove id (let autoincrement handle it) and parse dates
     const cleanTasks = tasks.map((t: any) => {
       const { id, createdBy, ...rest } = t;
+      
+      let fileUrl = rest.fileUrl;
+      if (isLocal && fileUrl) {
+         const match = fileUrl.match(/\/([^/]+)$/);
+         if (match) {
+           fileUrl = `/uploads/${match[1]}`;
+         }
+      }
+
       return {
         ...rest,
+        fileUrl,
         startDate: parseDate(rest.startDate),
         endDate: parseDate(rest.endDate),
         createdAt: parseDate(rest.createdAt),
@@ -290,16 +300,25 @@ export async function POST(req: Request) {
 
     // Insert users first (tasks may reference them)
     if (Array.isArray(users) && users.length > 0) {
-      const cleanUsers = users.map((u: any) => ({
-        id: u.id,
-        npk: u.npk,
-        name: u.name || null,
-        email: u.email || null,
-        image: u.image || null,
-        password: u.password || null,
-        role: u.role || 'MEMBER',
-        status: u.status || 'ACTIVE',
-      }));
+      const cleanUsers = users.map((u: any) => {
+        let image = u.image;
+        if (isLocal && image) {
+           const match = image.match(/\/([^/]+)$/);
+           if (match) {
+             image = `/uploads/${match[1]}`;
+           }
+        }
+        return {
+          id: u.id,
+          npk: u.npk,
+          name: u.name || null,
+          email: u.email || null,
+          image: image || null,
+          password: u.password || null,
+          role: u.role || 'MEMBER',
+          status: u.status || 'ACTIVE',
+        };
+      });
 
       for (const user of cleanUsers) {
         await prisma.user.create({ data: user });
