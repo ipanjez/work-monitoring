@@ -65,3 +65,6 @@ prisma/schema.sqlite.prisma
 check_*.js
 export-db.js
 db-export-*.json
+Backup_Database_*.zip
+backup_database_*.zip
+*.zip
