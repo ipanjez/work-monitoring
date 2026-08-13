@@ -8,8 +8,11 @@ import path from 'path';
 import { list, put } from '@vercel/blob';
 
 // Import CJS modules dynamically or via require to avoid Turbopack default export errors
-const archiver = require('archiver');
-const AdmZip = require('adm-zip');
+const archiverModule = require('archiver');
+const archiver = typeof archiverModule === 'function' ? archiverModule : archiverModule.default || archiverModule.archiver;
+
+const AdmZipModule = require('adm-zip');
+const AdmZip = typeof AdmZipModule === 'function' ? AdmZipModule : AdmZipModule.default || AdmZipModule.AdmZip;
 
 const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 
