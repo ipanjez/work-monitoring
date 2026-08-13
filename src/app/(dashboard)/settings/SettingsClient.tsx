@@ -640,11 +640,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             body: JSON.stringify(data)
           });
         } else {
-          const formData = new FormData();
-          formData.append('file', file);
           res = await fetch('/api/database', {
             method: 'POST',
-            body: formData
+            headers: {
+              'Content-Type': 'application/zip',
+            },
+            body: file
           });
         }
 

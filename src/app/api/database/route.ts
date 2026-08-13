@@ -149,17 +149,14 @@ export async function POST(req: Request) {
     let dbData: any = null;
     let zipBuffer: Buffer | null = null;
 
-    // Check content type to see if it's JSON (legacy backup) or multipart/form-data (zip backup)
+    // Check content type to see if it's JSON (legacy backup), ZIP, or multipart/form-data
     const contentType = req.headers.get('content-type') || '';
     
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get('file') as File | null;
-      if (!file) {
-        return NextResponse.json({ error: 'No backup file provided' }, { status: 400 });
+    if (contentType.includes('application/zip') || contentType.includes('application/x-zip-compressed')) {
+      const arrayBuffer = await req.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        return NextResponse.json({ error: 'Empty backup file provided' }, { status: 400 });
       }
-      
-      const arrayBuffer = await file.arrayBuffer();
       zipBuffer = Buffer.from(arrayBuffer);
       
       const zip = new AdmZip(zipBuffer);
