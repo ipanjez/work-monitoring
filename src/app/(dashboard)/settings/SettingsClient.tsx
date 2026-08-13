@@ -689,9 +689,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           }
           toast.error(errMsg);
         }
-      } catch (err) {
+      } catch (err: any) {
         toast.dismiss(toastId);
-        toast.error('Gagal memulihkan database');
+        toast.error(`Gagal memulihkan database: ${err.message || err}`);
       } finally {
         setLoading(false);
       }

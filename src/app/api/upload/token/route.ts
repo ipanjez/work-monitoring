@@ -11,7 +11,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       onBeforeGenerateToken: async (pathname) => {
         // Can perform auth checks here if needed
         return {
-          allowedContentTypes: ['application/zip', 'application/x-zip-compressed'],
+          allowedContentTypes: [
+            'application/zip', 
+            'application/x-zip-compressed', 
+            'application/octet-stream', 
+            'multipart/x-zip',
+            'application/zip-compressed'
+          ],
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
