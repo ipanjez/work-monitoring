@@ -31,11 +31,11 @@ export default function UserProfileButton() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   if (!session || !session.user) return null;
 
   const name = session.user.name || 'User';
-  
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
