@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '100mb',
     },
+    middlewareClientMaxBodySize: '100mb',
   },
   serverExternalPackages: ['adm-zip', 'archiver'],
   allowedDevOrigins: ['10.127.30.190'],
