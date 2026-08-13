@@ -42,7 +42,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(720);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
-  const [backupReminderDays, setBackupReminderDays] = useState<number | string>(7);
+  const [backupReminderDays, setBackupReminderDays] = useState<number | string>('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -502,8 +503,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         ))}
       </div>
       <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-        <button type="button" className="btn btn-primary" onClick={handleSaveSettings} disabled={loading}>
-          {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+        <button type="button" className="btn btn-primary" onClick={(e) => handleSaveSettings(e as any)} disabled={isSavingSettings}>
+          {isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
         </button>
       </div>
     </>
@@ -548,8 +549,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveSettings = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setIsSavingSettings(true);
+    const toastId = toast.loading('Menyimpan pengaturan...');
+    
     localStorage.setItem('master_categories', JSON.stringify(categories));
     localStorage.setItem('master_pics', JSON.stringify(pics));
     localStorage.setItem('master_statuses', JSON.stringify(statuses));
@@ -560,39 +564,44 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
     localStorage.setItem('master_pic_avatars', JSON.stringify(masterPicAvatars));
 
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        dept_name: deptName,
-        app_name: appName,
-        app_subtitle: deptName,
-        app_logo: appLogo,
-        master_categories: categories,
-        master_pics: pics,
-        master_statuses: statuses,
-        master_priorities: priorities,
-        master_locations: locations,
-        master_colors: masterColors,
-        master_icons: masterIcons,
-        master_status_progress: masterStatusProgress,
-        master_pic_avatars: masterPicAvatars,
-        max_file_size_mb: Number(maxFileSizeMb) || 25,
-        max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
-        max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
-        session_timeout_hours: Number(sessionTimeoutHours) || 720,
-        session_timeout: Number(sessionTimeoutMinutes) || 10,
-        backup_reminder_days: Number(backupReminderDays) || 0
-      })
-    })
-      .then(() => {
-        setSavedSuccess(true);
-        setTimeout(() => setSavedSuccess(false), 3000);
-        window.dispatchEvent(new Event('deptNameChanged'));
-        if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
-        toast.success('Pengaturan umum berhasil disimpan!');
-      })
-      .catch(console.error);
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dept_name: deptName,
+          app_name: appName,
+          app_subtitle: deptName,
+          app_logo: appLogo,
+          master_categories: categories,
+          master_pics: pics,
+          master_statuses: statuses,
+          master_priorities: priorities,
+          master_locations: locations,
+          master_colors: masterColors,
+          master_icons: masterIcons,
+          master_status_progress: masterStatusProgress,
+          master_pic_avatars: masterPicAvatars,
+          max_file_size_mb: Number(maxFileSizeMb) || 25,
+          max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
+          max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
+          session_timeout_hours: Number(sessionTimeoutHours) || 720,
+          session_timeout: Number(sessionTimeoutMinutes) || 10,
+          backup_reminder_days: Number(backupReminderDays) || 0
+        })
+      });
+      
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+      window.dispatchEvent(new Event('deptNameChanged'));
+      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
+      toast.success('Pengaturan berhasil disimpan!', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan pengaturan.', { id: toastId });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   const handleBackupDatabase = async () => {
@@ -768,8 +777,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Gunakan gambar persegi (rasio 1:1) berukuran minimal 128x128 pixel untuk hasil terbaik.</p>
           </div>
 
-          <button onClick={handleSaveSettings} className="btn btn-primary" style={{ marginTop: '24px' }}>
-            Simpan Identitas Aplikasi
+          <button onClick={(e) => handleSaveSettings(e as any)} className="btn btn-primary" style={{ marginTop: '24px' }} disabled={isSavingSettings}>
+            {isSavingSettings ? 'Menyimpan...' : 'Simpan Identitas Aplikasi'}
           </button>
         </div>
       )}
@@ -1075,7 +1084,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
           </h3>
 
-          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Nama Departemen / Sub-Unit
@@ -1281,10 +1290,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               type="button" 
               className="btn btn-primary" 
               onClick={(e) => handleSaveSettings(e as any)} 
-              disabled={loading}
+              disabled={isSavingSettings}
               style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <Save size={14} /> Simpan Jadwal Pengingat
+              <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Jadwal Pengingat'}
             </button>
           </div>
 
