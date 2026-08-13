@@ -193,16 +193,18 @@ Jika Anda melakukan *deployment* di Vercel, lampiran file (PDF, gambar, dll) aka
 ### Backup & Restore Otomatis (1-Click)
 Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memindahkan data. Gunakan fitur bawaan aplikasi:
 
-**Langkah 1: Export dari Vercel (Neon)**
+**Langkah 1: Export dari Vercel (Neon / Cloud)**
 1. Buka `https://<domain-aplikasi-anda>.vercel.app/settings`
 2. Scroll ke bagian **Cadangan & Export Data Database**
-3. Klik **📥 Unduh Backup** (akan mengunduh file JSON berisi seluruh pekerjaan, pengaturan, user, dan log)
+3. Klik **📥 Unduh Backup** 
+   *(Sistem akan mengunduh file `.zip` yang berisi `database.json` beserta seluruh folder `uploads` yang berisi lampiran file dan foto profil dari Vercel Blob/Server).*
 
-**Langkah 2: Import ke Lokal (SQLite)**
-1. Jalankan `npm run dev:local`
-2. Buka `http://localhost:3000/settings`
+**Langkah 2: Import ke Lokal (SQLite) atau sebaliknya**
+1. Jalankan aplikasi di lingkungan target Anda (misal `npm run dev:local`).
+2. Buka halaman `/settings`.
 3. Scroll ke bagian **Cadangan & Export Data Database**
-4. Klik **📤 Pulihkan dari Backup** dan pilih file JSON yang tadi diunduh.
+4. Klik **📤 Pulihkan dari Backup** dan pilih file `.zip` yang tadi diunduh.
+   *(Sistem akan memulihkan data ke database dan otomatis mengunggah kembali file-file lampiran ke sistem penyimpanan yang aktif).*
 > *Catatan: Jika database lokal masih kosong sama sekali, Anda bisa melakukan import tanpa perlu login.*
 
 ### Import dari Excel
