@@ -143,11 +143,14 @@ export async function POST(req: Request) {
     //   }
     // }
 
-    let dbData: any = null;
     let zipBuffer: Buffer | null = null;
 
     // Check content type to see if it's JSON (legacy backup), ZIP, or multipart/form-data
     const contentType = req.headers.get('content-type') || '';
+    let dbData: any = null;
+    
+    // Record mapped URLs for Vercel Blob uploads
+    const vercelBlobMap: Record<string, string> = {}; 
     
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
@@ -195,9 +198,6 @@ export async function POST(req: Request) {
         }
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
-
-      // Record mapped URLs for Vercel Blob uploads
-      const vercelBlobMap: Record<string, string> = {};
 
       // Extract all files in the "uploads/" folder of the zip
       for (const entry of zipEntries as any[]) {
