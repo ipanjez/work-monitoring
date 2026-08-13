@@ -168,7 +168,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     `---\n` +
     `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n` : '';
 
-  const mailtoLink = `mailto:${emailsTo.join(',')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+  // Use Gmail Web Compose URL explicitly since mailto: is often unreliable or blocked by OS defaults
+  const mailtoLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${emailsTo.join(',')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
   const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
@@ -362,6 +363,8 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <a
                     className="btn"
                     href={canSendMail ? mailtoLink : '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={e => {
                       if (!canSendMail) e.preventDefault();
                     }}
