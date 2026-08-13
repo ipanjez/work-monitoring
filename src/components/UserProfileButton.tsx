@@ -35,9 +35,10 @@ export default function UserProfileButton() {
 
   const name = session.user.name || 'User';
   
-
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     await signOut({ callbackUrl: '/auth/signin' });
   };
 
