@@ -29,7 +29,7 @@ import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran';
 
 
 
@@ -283,6 +283,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } else if (sortField === 'endDate') {
       valA = new Date(a.endDate).getTime();
       valB = new Date(b.endDate).getTime();
+    } else if (sortField === 'lampiran') {
+      valA = getTaskFiles(a).length;
+      valB = getTaskFiles(b).length;
     } else if (typeof valA === 'string') {
       valA = valA.toLowerCase();
       valB = (valB || '').toLowerCase();
@@ -1071,7 +1074,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '8px 6px' }}>Lampiran</th>
+                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lampiran')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Lampiran {renderSortIcon('lampiran')}
+                  </div>
+                </th>
                 <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
