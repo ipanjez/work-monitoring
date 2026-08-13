@@ -86,11 +86,13 @@ export default function TaskAddEditModal({
   const userRole = (session?.user as any)?.role || 'VIEWER';
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {
-    fetch('/api/settings/permissions')
-      .then(res => res.json())
-      .then(setRoleConfig)
-      .catch(() => {});
-  }, []);
+    if (isOpen) {
+      fetch('/api/settings/permissions')
+        .then(res => res.json())
+        .then(setRoleConfig)
+        .catch(() => {});
+    }
+  }, [isOpen]);
   const canUploadAttachment = hasPermission(roleConfig, 'upload_comment', userRole);
 
   const [activeTab, setActiveTab] = useState<'info' | 'subtasks' | 'attachments'>('info');
