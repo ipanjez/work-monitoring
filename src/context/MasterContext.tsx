@@ -143,6 +143,14 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('session_timeout', data.session_timeout.toString());
           changed = true;
         }
+        if (data.master_pics) {
+          setMasterPics(prev => {
+            const combined = Array.from(new Set([...data.master_pics, ...prev]));
+            localStorage.setItem('master_pics', JSON.stringify(combined));
+            return combined;
+          });
+          changed = true;
+        }
         if (changed) {
           window.dispatchEvent(new Event('masterUpdated'));
         }
@@ -153,8 +161,11 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setMasterPics(data);
-          localStorage.setItem('master_pics', JSON.stringify(data));
+          setMasterPics(prev => {
+            const combined = Array.from(new Set([...prev, ...data]));
+            localStorage.setItem('master_pics', JSON.stringify(combined));
+            return combined;
+          });
           window.dispatchEvent(new Event('masterUpdated'));
         }
       })
