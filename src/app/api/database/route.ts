@@ -131,6 +131,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message || 'Failed to export database' }, { status: 500 });
   }
 }
+export const maxDuration = 60; // Max allowed duration on Vercel Hobby (60 seconds)
 
 export async function POST(req: Request) {
   try {
@@ -228,6 +229,7 @@ export async function POST(req: Request) {
       }
 
       // Extract all files in the "uploads/" folder of the zip
+      const uploadPromises = [];
       for (const entry of zipEntries as any[]) {
         if (entry.entryName.startsWith('uploads/') && !entry.isDirectory) {
           const fileName = entry.entryName.replace('uploads/', '');
@@ -238,16 +240,24 @@ export async function POST(req: Request) {
                 const filePath = path.join(uploadsDir, fileName);
                 fs.writeFileSync(filePath, entryData);
               } else {
-                // Upload to Vercel Blob
-                const blob = await put(fileName, entryData, {
-                  access: 'public',
-                  addRandomSuffix: false
-                });
-                vercelBlobMap[fileName] = blob.url;
+                // Parallelize Vercel Blob uploads to avoid hitting 10s Serverless timeout
+                uploadPromises.push(
+                  put(fileName, entryData, {
+                    access: 'public',
+                    addRandomSuffix: false
+                  }).then(blob => {
+                    vercelBlobMap[fileName] = blob.url;
+                  })
+                );
               }
             }
           }
         }
+      }
+      
+      // Wait for all blob uploads to finish (if any)
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
       }
     }
 

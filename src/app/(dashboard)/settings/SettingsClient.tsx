@@ -680,8 +680,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           window.alert(`✅ BERHASIL!\n\n${result.message || 'Database berhasil dipulihkan!'}`);
           window.location.reload();
         } else {
-          const err = await res.json();
-          toast.error(err.error || err.message || 'Gagal memulihkan database');
+          let err: any = {};
+          try { err = await res.json(); } catch(e) { err.message = await res.text(); }
+          
+          let errMsg = err.error || err.message || 'Gagal memulihkan database';
+          if (typeof errMsg === 'object') {
+            errMsg = errMsg.message || JSON.stringify(errMsg);
+          }
+          toast.error(errMsg);
         }
       } catch (err) {
         toast.dismiss(toastId);
