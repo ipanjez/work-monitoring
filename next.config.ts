@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
+  serverExternalPackages: ['adm-zip', 'archiver'],
   allowedDevOrigins: ['10.127.30.190'],
   async rewrites() {
     return [

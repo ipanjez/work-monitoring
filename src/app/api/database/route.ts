@@ -158,11 +158,19 @@ export async function POST(req: Request) {
       const arrayBuffer = await file.arrayBuffer();
       zipBuffer = Buffer.from(arrayBuffer);
     } else if (contentType.includes('application/zip') || contentType.includes('application/x-zip-compressed')) {
-      const arrayBuffer = await req.arrayBuffer();
-      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      const chunks = [];
+      const reader = req.body?.getReader();
+      if (reader) {
+        let result;
+        while (!(result = await reader.read()).done) {
+          chunks.push(result.value);
+        }
+      }
+      zipBuffer = Buffer.concat(chunks);
+      
+      if (!zipBuffer || zipBuffer.length === 0) {
         return NextResponse.json({ error: 'Empty backup file provided' }, { status: 400 });
       }
-      zipBuffer = Buffer.from(arrayBuffer);
     }
 
     if (zipBuffer) {
