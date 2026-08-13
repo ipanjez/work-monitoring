@@ -2,8 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2 } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
@@ -13,6 +14,7 @@ export default function UserProfileButton() {
   const { masterPicAvatars, masterColors } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function UserProfileButton() {
         />
 
         {/* User Name & Role */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div className="profile-info" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
           <span className="profile-name-text" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
             {name}
           </span>
@@ -123,6 +125,8 @@ export default function UserProfileButton() {
             flexDirection: 'column',
             padding: '6px 0',
             animation: 'fadeIn 0.2s ease',
+            zIndex: 99999,
+            pointerEvents: 'auto',
           }}
         >
           <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px' }}>
@@ -166,6 +170,77 @@ export default function UserProfileButton() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Mobile Only Quick Actions */}
+          <div className="mobile-only-menu" style={{ 
+            flexDirection: 'column', 
+            borderBottom: '1px solid var(--border-color)', 
+            paddingBottom: '6px', 
+            marginBottom: '4px' 
+          }}>
+            <div style={{ padding: '6px 16px 4px', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Aksi Cepat (Mobile)</div>
+            {hasPermission(roleConfig, 'manage_task', (session.user as any).role) && (
+              <div
+                onClick={() => {
+                  setIsOpen(false);
+                  window.dispatchEvent(new Event('openGlobalAddTask'));
+                }}
+                style={{
+                  padding: '10px 16px',
+                  fontSize: '13px',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e: any) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                onMouseLeave={(e: any) => e.currentTarget.style.background = 'transparent'}
+              >
+                <Plus size={14} style={{ color: 'var(--accent-primary)' }} />
+                Tambah Pekerjaan
+              </div>
+            )}
+            
+            <Link
+              href="/calendar"
+              onClick={() => setIsOpen(false)}
+              style={{
+                padding: '10px 16px',
+                fontSize: '13px',
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <Calendar size={14} style={{ color: 'var(--text-secondary)' }} />
+              Kalender & Agenda
+            </Link>
+
+            <Link
+              href="/guide"
+              onClick={() => setIsOpen(false)}
+              style={{
+                padding: '10px 16px',
+                fontSize: '13px',
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <BookOpen size={14} style={{ color: 'var(--text-secondary)' }} />
+              Panduan Aplikasi
+            </Link>
           </div>
 
           <Link

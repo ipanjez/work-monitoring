@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Zap, Upload, Download } from 'lucide-react';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
@@ -53,6 +54,34 @@ export default function GlobalAddButton() {
         }
       })
       .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const handleOpen = () => {
+      const today = new Date().toISOString().split('T')[0];
+      setTaskToEdit({
+        nama: '',
+        deskripsi: '',
+        pic: 'Unassigned',
+        kategori: 'Umum',
+        prioritas: 'Medium',
+        status: 'To Do',
+        repetisi: 'Tidak Berulang',
+        filesList: [],
+        additionalPicsList: [],
+        subTasksList: [],
+        isAllDay: false,
+        startTime: '',
+        endTime: '',
+        startDate: today,
+        endDate: today,
+        isCustomCategory: false,
+        isCustomPic: false,
+      });
+      setIsAddModalOpen(true);
+    };
+    window.addEventListener('openGlobalAddTask', handleOpen);
+    return () => window.removeEventListener('openGlobalAddTask', handleOpen);
   }, []);
 
   useEffect(() => {
@@ -706,25 +735,31 @@ export default function GlobalAddButton() {
       <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
 
       {/* Modals rendered outside of dropdown so they don't get unmounted/clipped */}
-      <TaskAddEditModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        taskToEdit={taskToEdit}
-        onSave={handleSaveModal}
-        formCategoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
-        formPicOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
-        formStatusOptions={masterStatuses}
-        formPriorityOptions={masterPriorities}
-        setPreviewFile={() => { }}
-      />
-      <SmartAddModal
-        isOpen={isSmartModalOpen}
-        onClose={() => setIsSmartModalOpen(false)}
-        picOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
-        categoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
-        priorityOptions={masterPriorities}
-        onSaveBulk={handleSaveSmartModal}
-      />
+      {isAddModalOpen && typeof document !== 'undefined' && createPortal(
+        <TaskAddEditModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          taskToEdit={taskToEdit}
+          onSave={handleSaveModal}
+          formCategoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
+          formPicOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
+          formStatusOptions={masterStatuses}
+          formPriorityOptions={masterPriorities}
+          setPreviewFile={() => { }}
+        />,
+        document.body
+      )}
+      {isSmartModalOpen && typeof document !== 'undefined' && createPortal(
+        <SmartAddModal
+          isOpen={isSmartModalOpen}
+          onClose={() => setIsSmartModalOpen(false)}
+          picOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
+          categoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
+          priorityOptions={masterPriorities}
+          onSaveBulk={handleSaveSmartModal}
+        />,
+        document.body
+      )}
     </div>
   );
 }

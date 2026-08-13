@@ -519,21 +519,38 @@ th[style*="cursor: pointer"]:hover,
   transition: all 0.2s ease;
 }
 
+@media (max-width: 1200px) {
+  .realtime-clock-container,
+  .mobile-hide-text {
+    display: none !important;
+  }
+}
+
+/* Mobile-only menu list utility */
+.mobile-only-menu {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
+  .mobile-only-menu {
+    display: flex !important;
+  }
+
+  /* Sembunyikan tombol-tombol lain dari header utama selain profil */
+  .header-actions-container > *:not(#user-profile-btn-container) {
+    display: none !important;
+  }
+
   .header-actions-container {
-    top: 10px !important;
+    top: 8px !important;
     right: 12px !important;
     gap: 8px !important;
     z-index: 100 !important;
   }
 
-  .realtime-clock-container,
-  .mobile-hide-text {
-    display: none !important;
-  }
-
   .profile-name-text,
-  .profile-chevron {
+  .profile-chevron,
+  .profile-info {
     display: none !important;
   }
 
