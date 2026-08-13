@@ -384,7 +384,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       </div>
 
       {/* Tabs */}
-      <div id="users-tabs-container" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
+      <div id="users-tabs-container" className="no-scrollbar" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
         {((['users', 'requests', 'logs', 'roles', ...(userRole === 'ADMIN' ? ['feedbacks'] : [])] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
           <button
             key={t}
@@ -402,6 +402,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              flexShrink: 0
             }}
           >
             {t === 'users' ? (
