@@ -6,13 +6,8 @@ import { PassThrough } from 'stream';
 import fs from 'fs';
 import path from 'path';
 import { list, put } from '@vercel/blob';
-
-// Import CJS modules dynamically or via require to avoid Turbopack default export errors
-const archiverModule = require('archiver');
-const archiver = typeof archiverModule === 'function' ? archiverModule : archiverModule.default || archiverModule.archiver;
-
-const AdmZipModule = require('adm-zip');
-const AdmZip = typeof AdmZipModule === 'function' ? AdmZipModule : AdmZipModule.default || AdmZipModule.AdmZip;
+import { ZipArchive } from 'archiver';
+import AdmZip from 'adm-zip';
 
 const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 
@@ -53,8 +48,8 @@ export async function GET() {
     // Create a PassThrough stream
     const stream = new PassThrough();
 
-    // Create archiver
-    const archive = archiver('zip', {
+    // Create archiver using ZipArchive class directly (archiver v8+)
+    const archive = new ZipArchive({
       zlib: { level: 9 } // Sets the compression level.
     });
 
