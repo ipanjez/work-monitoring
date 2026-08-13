@@ -676,7 +676,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (res.ok) {
           const result = await res.json();
           toast.success(result.message || 'Database berhasil dipulihkan!');
-          setTimeout(() => window.location.reload(), 1500);
+          // Gunakan alert agar pop-up tertahan sampai di-klik OK oleh user (terutama jika di HP)
+          window.alert(`✅ BERHASIL!\n\n${result.message || 'Database berhasil dipulihkan!'}`);
+          window.location.reload();
         } else {
           const err = await res.json();
           toast.error(err.error || err.message || 'Gagal memulihkan database');

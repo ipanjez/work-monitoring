@@ -178,11 +178,16 @@ export async function POST(req: Request) {
       // Legacy JSON backup support OR blobUrl pointer to a zip!
       dbData = await req.json();
       if (dbData && dbData.blobUrl) {
-        // Download the zip from the blob URL
-        const fetchRes = await fetch(dbData.blobUrl);
-        if (!fetchRes.ok) {
-          const text = await fetchRes.text().catch(() => '');
-          return NextResponse.json({ error: `Gagal mengunduh file dari blob: ${fetchRes.status} ${fetchRes.statusText} - ${text.substring(0, 100)}` }, { status: 400 });
+        // Download the zip from the blob URL with retry logic for CDN propagation
+        let fetchRes;
+        for (let i = 0; i < 3; i++) {
+          fetchRes = await fetch(dbData.blobUrl);
+          if (fetchRes.ok) break;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        if (!fetchRes || !fetchRes.ok) {
+          const text = await fetchRes?.text().catch(() => '') || '';
+          return NextResponse.json({ error: `Gagal mengunduh file dari blob: ${fetchRes?.status} ${fetchRes?.statusText} - ${text.substring(0, 100)}` }, { status: 400 });
         }
         const arrayBuffer = await fetchRes.arrayBuffer();
         zipBuffer = Buffer.from(arrayBuffer);
