@@ -527,6 +527,11 @@ th[style*="cursor: pointer"]:hover,
     z-index: 100 !important;
   }
 
+  .realtime-clock-container,
+  .mobile-hide-text {
+    display: none !important;
+  }
+
   .profile-name-text,
   .profile-chevron {
     display: none !important;

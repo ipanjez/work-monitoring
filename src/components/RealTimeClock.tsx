@@ -27,6 +27,7 @@ export default function RealTimeClock() {
 
   return (
     <div 
+      className="realtime-clock-container"
       title="Waktu Perangkat"
       style={{
         display: 'flex',

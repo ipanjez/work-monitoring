@@ -599,7 +599,7 @@ export default function GlobalAddButton() {
         className="btn btn-primary"
         style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
       >
-        <Plus size={18} /> Tambah Pekerjaan
+        <Plus size={18} /> <span className="mobile-hide-text">Tambah Pekerjaan</span>
       </button>
 
       <div style={{
