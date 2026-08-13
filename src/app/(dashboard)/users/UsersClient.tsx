@@ -116,6 +116,18 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
           markAsRead(n.id);
         }
       });
+    } else if (tab === 'users') {
+      notifications.forEach((n: any) => {
+        if (!n.isRead && n.title === 'Registrasi User Baru') {
+          markAsRead(n.id);
+        }
+      });
+    } else if (tab === 'requests') {
+      notifications.forEach((n: any) => {
+        if (!n.isRead && n.title === 'Permintaan Reset Password') {
+          markAsRead(n.id);
+        }
+      });
     }
   }, [tab, fetchFeedbacks, notifications, markAsRead]);
 
