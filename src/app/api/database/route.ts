@@ -311,8 +311,23 @@ export async function POST(req: Request) {
 
     const cleanSettings = settings.map((s: any) => {
       const { id, ...rest } = s;
+      
+      let value = rest.value;
+      if (rest.key === 'master_pic_avatars' && value) {
+        try {
+          const avatars = JSON.parse(value);
+          for (const picName in avatars) {
+            if (avatars[picName]) {
+              avatars[picName] = rewriteUrl(avatars[picName]);
+            }
+          }
+          value = JSON.stringify(avatars);
+        } catch (e) {}
+      }
+
       return {
         ...rest,
+        value,
         updatedAt: parseDate(rest.updatedAt),
       };
     });
