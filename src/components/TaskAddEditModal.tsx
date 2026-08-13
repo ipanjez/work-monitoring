@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { format } from 'date-fns';
