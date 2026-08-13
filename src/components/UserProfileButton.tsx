@@ -83,38 +83,25 @@ export default function UserProfileButton() {
           masterColors={masterColors}
         />
 
-        {/* User Name */}
-        <span
-          className="profile-name-text"
-          style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            maxWidth: '120px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {name}
-        </span>
-
-        <ChevronDown 
-          className="profile-chevron"
-          size={14} 
-          style={{ 
-            color: 'var(--text-secondary)',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s'
+        {/* User Name & Role */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-            {name.length > 12 ? name.substring(0, 12) + '...' : name}
+          <span className="profile-name-text" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+            {name}
           </span>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
             {getRoleLabel(roleConfig, (session.user as any).role)}
           </span>
         </div>
-        <ChevronDown size={14} style={{ color: 'var(--text-secondary)', marginLeft: '4px', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        <ChevronDown 
+          className="profile-chevron"
+          size={14} 
+          style={{ 
+            color: 'var(--text-secondary)', 
+            marginLeft: '4px', 
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
+            transition: 'transform 0.2s' 
+          }} 
+        />
       </button>
 
       {isOpen && (
