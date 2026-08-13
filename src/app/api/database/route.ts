@@ -181,7 +181,8 @@ export async function POST(req: Request) {
         // Download the zip from the blob URL
         const fetchRes = await fetch(dbData.blobUrl);
         if (!fetchRes.ok) {
-          return NextResponse.json({ error: 'Gagal mengunduh file backup dari storage sementara' }, { status: 400 });
+          const text = await fetchRes.text().catch(() => '');
+          return NextResponse.json({ error: `Gagal mengunduh file dari blob: ${fetchRes.status} ${fetchRes.statusText} - ${text.substring(0, 100)}` }, { status: 400 });
         }
         const arrayBuffer = await fetchRes.arrayBuffer();
         zipBuffer = Buffer.from(arrayBuffer);
