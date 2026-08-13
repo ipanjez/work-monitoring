@@ -105,8 +105,10 @@ export const picAvatarXAxisPlugin = {
       // If the avatar image exists but hasn't loaded yet, start loading
       if (avatarSrc && !imageCache.has(avatarSrc)) {
         loadImage(avatarSrc).then(() => {
-          // Re-render chart once the image is loaded
-          chart.draw();
+          // Re-render chart once the image is loaded, only if chart is still active
+          if (chart && chart.ctx) {
+            chart.draw();
+          }
         });
       }
     });
