@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { npk, name, email, password } = body;
+    const { npk, name, email, password, role } = body;
 
     if (!npk || !name || !password) {
       return NextResponse.json({ error: 'NPK, Nama, dan Password wajib diisi.' }, { status: 400 });
@@ -32,6 +32,8 @@ export async function POST(request: Request) {
       }
     }
 
+    const assignedRole = role && role !== 'ADMIN' ? role : 'MEMBER';
+
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
         name: nameTrimmed,
         password: hashed,
         email: email && email.trim() ? email.trim() : null,
-        role: 'MEMBER',
+        role: assignedRole,
         status: 'PENDING',
       },
     });

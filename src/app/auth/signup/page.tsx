@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('MEMBER');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -44,6 +45,7 @@ export default function SignUpPage() {
           name: name.trim(),
           email: email.trim() || undefined,
           password,
+          role,
         }),
       });
 
@@ -181,6 +183,23 @@ export default function SignUpPage() {
               placeholder="Ulangi password"
               required
             />
+          </div>
+
+          {/* Peran / Role */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              <User size={14} /> Pilih Peran / Role *
+            </label>
+            <select
+              className="input"
+              value={role}
+              onChange={e => setRole(e.target.value)}
+              required
+            >
+              <option value="MEMBER">Member (Pengelola & Pelaksana Pekerjaan)</option>
+              <option value="VIEWER">Viewer (Hanya Melihat & Monitoring)</option>
+              <option value="GUEST">Guest (Tamu / Pengunjung Terbatas)</option>
+            </select>
           </div>
 
           {/* Submit */}

@@ -788,7 +788,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   { key: 'master_data', label: 'Akses Pengaturan (Master Data)' },
                   { key: 'user_management', label: 'Manajemen User & Password' },
                   { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' },
-                  { key: 'admin_feedback', label: 'Akses Umpan Balik (Admin)' },
+                  { key: 'admin_feedback', label: 'Akses Umpan Balik' },
                   { key: 'database_backup', label: 'Cadangan & Pulihkan Database' },
                   { key: 'system_config', label: 'Konfigurasi Limit & Sesi (System Config)' }
                 ].map(feature => (

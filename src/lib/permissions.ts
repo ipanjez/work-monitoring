@@ -8,11 +8,12 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ADMIN: 'Admin',
     MEMBER: 'Member',
     VIEWER: 'Viewer',
-    SPV: 'Supervisor'
+    SPV: 'Supervisor',
+    GUEST: 'Guest'
   },
   permissions: {
-    view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV'],
-    view_detail: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV'],
+    view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV', 'GUEST'],
+    view_detail: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV', 'GUEST'],
     manage_task: ['ADMIN', 'MEMBER'],
     delete_task: ['ADMIN', 'MEMBER'],
     upload_comment: ['ADMIN', 'MEMBER'],
