@@ -1102,7 +1102,8 @@ export default function TaskAddEditModal({
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            )}
               <div style={{ 
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 position: 'sticky', bottom: '-24px',
