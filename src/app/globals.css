@@ -696,3 +696,5 @@ th[style*="cursor: pointer"]:hover,
 .driver-overlay {
   opacity: 0.6 !important;
 }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
