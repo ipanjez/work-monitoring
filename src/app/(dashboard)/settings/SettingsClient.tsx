@@ -593,21 +593,19 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   };
 
   const handleBackupDatabase = async () => {
-    const toastId = toast.loading('Sedang mengunduh seluruh data...');
+    const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
     try {
       const res = await fetch('/api/database');
       if (!res.ok) throw new Error('Gagal mengambil backup');
-      const data = await res.json();
       
-      const dataStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
       a.click();
       toast.dismiss(toastId);
-      toast.success(`Backup berhasil! ${data.tasks?.length || 0} pekerjaan, ${data.users?.length || 0} user, ${data.settings?.length || 0} pengaturan.`);
+      toast.success('Backup berhasil diunduh!');
     } catch (err) {
       toast.dismiss(toastId);
       toast.error('Gagal mengunduh backup');
@@ -617,7 +615,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const handleRestoreDatabase = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.zip,.json';
     input.onchange = async (e: any) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -629,14 +627,23 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setLoading(true);
       const toastId = toast.loading('Sedang memulihkan database dari backup...');
       try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        
-        const res = await fetch('/api/database', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
+        let res;
+        if (file.name.endsWith('.json')) {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          res = await fetch('/api/database', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          const formData = new FormData();
+          formData.append('file', file);
+          res = await fetch('/api/database', {
+            method: 'POST',
+            body: formData
+          });
+        }
 
         toast.dismiss(toastId);
         if (res.ok) {
@@ -649,7 +656,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         }
       } catch (err) {
         toast.dismiss(toastId);
-        toast.error('File JSON tidak valid atau rusak');
+        toast.error('Gagal memulihkan database');
       } finally {
         setLoading(false);
       }
@@ -1218,7 +1225,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Download size={16} /> Download Backup (.json)
+              <Download size={16} /> Download Backup (.zip)
             </button>
             <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore Database'}

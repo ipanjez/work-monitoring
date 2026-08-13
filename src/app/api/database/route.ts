@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { PassThrough } from 'stream';
+import fs from 'fs';
+import path from 'path';
+
+// Import CJS modules dynamically or via require to avoid Turbopack default export errors
+const archiver = require('archiver');
+const AdmZip = require('adm-zip');
 
 export const dynamic = 'force-dynamic';
 
@@ -28,14 +35,58 @@ export async function GET() {
     });
     const activityLogs = await prisma.activityLog.findMany();
 
-    return NextResponse.json({
+    const dbData = {
       version: '2.0',
       exportedAt: new Date().toISOString(),
       tasks,
       settings,
       users,
       activityLogs,
+    };
+
+    // Create a PassThrough stream
+    const stream = new PassThrough();
+
+    // Create archiver
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // Sets the compression level.
     });
+
+    // Listen for all archive data to be written
+    archive.on('error', function(err: any) {
+      console.error('Archive error:', err);
+      stream.emit('error', err);
+    });
+
+    // Pipe archive data to the stream
+    archive.pipe(stream);
+
+    // Append database JSON
+    archive.append(JSON.stringify(dbData, null, 2), { name: 'database.json' });
+
+    // Append uploads directory if it exists
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    if (fs.existsSync(uploadsDir)) {
+      archive.directory(uploadsDir, 'uploads');
+    }
+
+    // Finalize the archive (we are done appending files)
+    archive.finalize();
+
+    // In Node.js Next.js API Routes, we can return a Readable stream directly, 
+    // but to be compatible with standard Web Response we convert it.
+    // Node.js >= 17 has stream.Readable.toWeb()
+    const webStream = require('stream').Readable.toWeb(stream);
+
+    const filename = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
+
+    return new NextResponse(webStream, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+
   } catch (error: any) {
     console.error('Error exporting database:', error);
     return NextResponse.json({ error: error.message || 'Failed to export database' }, { status: 500 });
@@ -53,11 +104,67 @@ export async function POST(req: Request) {
       }
     }
 
-    const body = await req.json();
-    const { tasks, settings, users, activityLogs } = body;
+    let dbData: any = null;
+    let zipBuffer: Buffer | null = null;
+
+    // Check content type to see if it's JSON (legacy backup) or multipart/form-data (zip backup)
+    const contentType = req.headers.get('content-type') || '';
+    
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const file = formData.get('file') as File | null;
+      if (!file) {
+        return NextResponse.json({ error: 'No backup file provided' }, { status: 400 });
+      }
+      
+      const arrayBuffer = await file.arrayBuffer();
+      zipBuffer = Buffer.from(arrayBuffer);
+      
+      const zip = new AdmZip(zipBuffer);
+      const zipEntries = zip.getEntries();
+      
+      const dbEntry = zipEntries.find((entry: any) => entry.entryName === 'database.json');
+      if (!dbEntry) {
+        return NextResponse.json({ error: 'Invalid backup: database.json not found inside zip' }, { status: 400 });
+      }
+      
+      const jsonString = zip.readAsText(dbEntry);
+      dbData = JSON.parse(jsonString);
+
+      // Extract uploads directory
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      // Delete old uploads
+      if (fs.existsSync(uploadsDir)) {
+         fs.rmSync(uploadsDir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(uploadsDir, { recursive: true });
+
+      // Extract all files in the "uploads/" folder of the zip
+      for (const entry of zipEntries as any[]) {
+        if (entry.entryName.startsWith('uploads/') && !entry.isDirectory) {
+          const fileName = entry.entryName.replace('uploads/', '');
+          if (fileName) {
+            const entryData = zip.readFile(entry);
+            if (entryData) {
+              const filePath = path.join(uploadsDir, fileName);
+              fs.writeFileSync(filePath, entryData);
+            }
+          }
+        }
+      }
+    } else {
+      // Legacy JSON backup support
+      dbData = await req.json();
+    }
+
+    if (!dbData) {
+       return NextResponse.json({ error: 'Invalid backup format' }, { status: 400 });
+    }
+
+    const { tasks, settings, users, activityLogs } = dbData;
 
     if (!Array.isArray(tasks) || !Array.isArray(settings)) {
-      return NextResponse.json({ error: 'Invalid backup format' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid backup format: tasks or settings missing' }, { status: 400 });
     }
 
     // Helper: parse date fields safely for both PostgreSQL and SQLite
