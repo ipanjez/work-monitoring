@@ -13,7 +13,10 @@ export async function GET() {
     }
 
     const users = await prisma.user.findMany({
-      where: { status: 'ACTIVE' },
+      where: { 
+        status: 'ACTIVE',
+        name: { not: 'Administrator' }
+      },
       select: { name: true },
       orderBy: { name: 'asc' },
     });
