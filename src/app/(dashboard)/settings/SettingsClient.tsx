@@ -596,7 +596,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
     try {
       const res = await fetch('/api/database');
-      if (!res.ok) throw new Error('Gagal mengambil backup');
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Gagal mengambil backup: HTTP ${res.status} ${errText.substring(0, 100)}`);
+      }
       
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -606,9 +609,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       a.click();
       toast.dismiss(toastId);
       toast.success('Backup berhasil diunduh!');
-    } catch (err) {
+    } catch (err: any) {
       toast.dismiss(toastId);
-      toast.error('Gagal mengunduh backup');
+      toast.error(err.message || 'Gagal mengunduh backup');
     }
   };
 

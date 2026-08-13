@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { PassThrough } from 'stream';
 import fs from 'fs';
 import path from 'path';
+import { list, put } from '@vercel/blob';
 
 // Import CJS modules dynamically or via require to avoid Turbopack default export errors
 const archiver = require('archiver');
@@ -77,17 +78,31 @@ export async function GET() {
       // Cloud MODE: Fetch all blobs from Vercel Blob
       (async () => {
         try {
-          const { list } = await import('@vercel/blob');
           let cursor: string | undefined;
           do {
             const listResult: any = await list({ cursor });
-            for (const blob of listResult.blobs) {
-              const res = await fetch(blob.url);
-              if (res.ok) {
-                const arrayBuffer = await res.arrayBuffer();
-                archive.append(Buffer.from(arrayBuffer), { name: `uploads/${blob.pathname}` });
+            
+            // Fetch in parallel
+            const fetchPromises = listResult.blobs.map(async (blob: any) => {
+              try {
+                const res = await fetch(blob.url);
+                if (res.ok) {
+                  const arrayBuffer = await res.arrayBuffer();
+                  return { data: Buffer.from(arrayBuffer), name: `uploads/${blob.pathname}` };
+                }
+              } catch (e) {
+                console.error('Failed to fetch blob:', blob.url, e);
+              }
+              return null;
+            });
+            
+            const results = await Promise.all(fetchPromises);
+            for (const item of results) {
+              if (item) {
+                archive.append(item.data, { name: item.name });
               }
             }
+            
             cursor = listResult.cursor;
           } while (cursor);
         } catch (cloudErr) {
@@ -98,10 +113,14 @@ export async function GET() {
       })();
     }
 
-    // In Node.js Next.js API Routes, we can return a Readable stream directly, 
-    // but to be compatible with standard Web Response we convert it.
-    // Node.js >= 17 has stream.Readable.toWeb()
-    const webStream = require('stream').Readable.toWeb(stream);
+    // Convert Node PassThrough stream to Web ReadableStream
+    const webStream = new ReadableStream({
+      start(controller) {
+        stream.on('data', (chunk) => controller.enqueue(new Uint8Array(chunk)));
+        stream.on('end', () => controller.close());
+        stream.on('error', (err) => controller.error(err));
+      }
+    });
 
     const filename = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
 
@@ -179,7 +198,6 @@ export async function POST(req: Request) {
                 fs.writeFileSync(filePath, entryData);
               } else {
                 // Upload to Vercel Blob
-                const { put } = await import('@vercel/blob');
                 // Ensure unique name or replace existing. Since we're restoring, we might want to keep the exact name.
                 // Vercel blob put allows overwriting if we use exact name, but default put generates random prefix.
                 // To keep the exact name, we can use `addRandomSuffix: false` if supported, or just let it generate.
