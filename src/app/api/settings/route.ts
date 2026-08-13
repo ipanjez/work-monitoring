@@ -28,7 +28,8 @@ export async function GET() {
       app_logo: '',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100,
-      session_timeout_hours: 720
+      session_timeout_hours: 720,
+      session_timeout: 10
     };
 
     settings.forEach(setting => {
@@ -192,6 +193,14 @@ export async function POST(request: Request) {
         where: { key: 'session_timeout_hours' },
         update: { value: String(body.session_timeout_hours) },
         create: { key: 'session_timeout_hours', value: String(body.session_timeout_hours) }
+      });
+    }
+
+    if (body.session_timeout !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'session_timeout' },
+        update: { value: String(body.session_timeout) },
+        create: { key: 'session_timeout', value: String(body.session_timeout) }
       });
     }
 

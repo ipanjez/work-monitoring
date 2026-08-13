@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { format } from 'date-fns';
@@ -70,8 +70,8 @@ export default function TaskAddEditModal({
   onSave,
   formPicOptions = [],
   formCategoryOptions = [],
-  formStatusOptions = [],
-  formPriorityOptions = [],
+  formStatusOptions = ['To Do', 'In Progress', 'Done'],
+  formPriorityOptions = ['Low', 'Medium', 'High', 'Critical'],
   setPreviewFile
 }: TaskAddEditModalProps) {
   const router = useRouter();
@@ -82,6 +82,22 @@ export default function TaskAddEditModal({
   const [masterLocations, setMasterLocations] = useState<string[]>([]);
 
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+  // Robust options ensuring legacy data doesn't get unselected
+  const safePicOptions = useMemo(() => {
+    const opts = Array.from(new Set([...formPicOptions]));
+    if (editingTask?.pic && !opts.includes(editingTask.pic)) opts.push(editingTask.pic);
+    editingTask?.additionalPicsList?.forEach((p: string) => {
+      if (p && !opts.includes(p)) opts.push(p);
+    });
+    return opts;
+  }, [formPicOptions, editingTask]);
+
+  const safeCategoryOptions = useMemo(() => {
+    const opts = Array.from(new Set([...formCategoryOptions]));
+    if (editingTask?.kategori && !opts.includes(editingTask.kategori)) opts.push(editingTask.kategori);
+    return opts;
+  }, [formCategoryOptions, editingTask]);
 
   useEffect(() => {
     if (isOpen) {
@@ -155,6 +171,14 @@ export default function TaskAddEditModal({
       } else if (!Array.isArray(cloned.subTasksList)) {
         console.warn('DEBUG: subTasksList was not an array in cloned taskToEdit!', cloned.subTasksList);
         cloned.subTasksList = [];
+      }
+
+      // Fix date formats for <input type="date"> (expects YYYY-MM-DD)
+      if (cloned.startDate) {
+        cloned.startDate = format(new Date(cloned.startDate), 'yyyy-MM-dd');
+      }
+      if (cloned.endDate) {
+        cloned.endDate = format(new Date(cloned.endDate), 'yyyy-MM-dd');
       }
 
       console.log('DEBUG FINAL CLONED TASK:', cloned);
@@ -371,13 +395,13 @@ export default function TaskAddEditModal({
                       onChange={e => setEditingTask({ ...editingTask, pic: e.target.value })}
                     >
                       <option value="">-- Pilih PIC Utama --</option>
-                      {formPicOptions.filter(p => p.toLowerCase() !== 'administrator').map((p, idx) => (
+                      {safePicOptions.map((p, idx) => (
                         <option key={idx} value={p}>{p}</option>
                       ))}
                     </select>
                   </div>
 
-                  {editingTask.additionalPicsList && editingTask.additionalPicsList.map((extraPic, idx) => (
+                  {editingTask.additionalPicsList && editingTask.additionalPicsList.map((extraPic: string, idx: number) => (
                     <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <select
                         className="input"
@@ -385,7 +409,7 @@ export default function TaskAddEditModal({
                         onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
                       >
                         <option value="">-- Pilih PIC Tambahan --</option>
-                        {formPicOptions.filter(p => p.toLowerCase() !== 'administrator').map((p, i) => (
+                        {safePicOptions.map((p, i) => (
                           <option key={i} value={p}>{p}</option>
                         ))}
                       </select>
@@ -410,11 +434,12 @@ export default function TaskAddEditModal({
                   </label>
                   <select
                     className="input"
-                    value={editingTask.kategori || 'Umum'}
+                    value={editingTask.kategori || ''}
                     onChange={e => setEditingTask({ ...editingTask, kategori: e.target.value })}
                   >
-                    {formCategoryOptions.map((cat, idx) => (
-                      <option key={idx} value={cat}>{cat}</option>
+                    <option value="">-- Kategori --</option>
+                    {safeCategoryOptions.map((c, idx) => (
+                      <option key={idx} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
@@ -790,7 +815,7 @@ export default function TaskAddEditModal({
                         id: Date.now().toString(),
                         text: '',
                         status: formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do',
-                        pic: formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''),
+                        pic: safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''),
                         logs: []
                       };
                       setEditingTask({
@@ -825,14 +850,14 @@ export default function TaskAddEditModal({
                                 <select
                                   className="input"
                                   style={{ width: '100%', fontSize: '13px' }}
-                                  value={subTask.pic || (formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''))}
+                                  value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
                                   onChange={e => {
                                     const updated = [...(editingTask.subTasksList || [])];
                                     updated[idx].pic = e.target.value;
                                     setEditingTask({ ...editingTask, subTasksList: updated });
                                   }}
                                 >
-                                  {formPicOptions.filter(opt => opt.toLowerCase() !== 'administrator').map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                  {safePicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
                                 </select>
                                 <button
                                   type="button"
@@ -842,7 +867,7 @@ export default function TaskAddEditModal({
                                   onClick={() => {
                                     const updated = [...(editingTask.subTasksList || [])];
                                     if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
-                                    updated[idx].additionalPics!.push(formPicOptions.includes('Unassigned') ? 'Unassigned' : (formPicOptions.length > 0 ? formPicOptions[0] : ''));
+                                    updated[idx].additionalPics!.push(safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''));
                                     setEditingTask({ ...editingTask, subTasksList: updated });
                                   }}
                                 >
@@ -861,7 +886,7 @@ export default function TaskAddEditModal({
                                       setEditingTask({ ...editingTask, subTasksList: updated });
                                     }}
                                   >
-                                    {formPicOptions.filter(opt => opt.toLowerCase() !== 'administrator').map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
+                                    {safePicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
                                   </select>
                                   <button
                                     type="button"

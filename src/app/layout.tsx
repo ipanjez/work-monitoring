@@ -10,6 +10,7 @@ import NotificationBell from '@/components/NotificationBell';
 import IdleTimer from '@/components/IdleTimer';
 import FocusModeToggle from '@/components/FocusModeToggle';
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import NextTopLoader from 'nextjs-toploader';
 
 export const metadata: Metadata = {
   title: "Dashboard Monitoring Pekerjaan",
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body suppressHydrationWarning>
+        <NextTopLoader color="var(--accent-primary)" showSpinner={false} height={3} />
         <SessionProviderWrapper>
           <ThemeProvider>
             <MasterProvider>

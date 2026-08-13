@@ -41,6 +41,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(720);
+  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -109,6 +110,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
         if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
+        if (data.session_timeout !== undefined) setSessionTimeoutMinutes(data.session_timeout);
       })
       .catch(e => console.error(e));
 
@@ -576,7 +578,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         max_file_size_mb: Number(maxFileSizeMb) || 25,
         max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
         max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
-        session_timeout_hours: Number(sessionTimeoutHours) || 720
+        session_timeout_hours: Number(sessionTimeoutHours) || 720,
+        session_timeout: Number(sessionTimeoutMinutes) || 10
       })
     })
       .then(() => {
@@ -1066,6 +1069,23 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 placeholder="Contoh: 100"
                 min="1"
               />
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Waktu Sisa Sesi Inaktif (Menit)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={sessionTimeoutMinutes}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSessionTimeoutMinutes(e.target.value)}
+                placeholder="Contoh: 10"
+                min="1"
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                Waktu maksimal (dalam menit) sebelum pengguna di-logout otomatis jika tidak ada aktivitas (mouse/keyboard).
+              </p>
             </div>
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays, Download, FileText, Copy, FileSpreadsheet } from 'lucide-react';
+import { useState, useEffect, useTransition } from 'react';
+import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays, Download, FileText, Copy, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, getTaskExportRow } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
@@ -38,6 +39,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -211,9 +214,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       setIsEditing(false);
       
       // Dispatch event to update other components like Sidebar
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('tasksUpdated'));
-      }
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('tasksUpdated'));
+        }
+      });
     } catch (error) {
       console.error(error);
       alert('Terjadi kesalahan saat menyimpan data');
@@ -233,7 +239,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       if (detailTask && detailTask.id === id) setDetailTask(null);
       
       import('react-hot-toast').then(({ default: toast }) => toast.success('Pekerjaan berhasil dihapus'));
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      startTransition(() => {
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      });
     } catch (error: any) {
       import('react-hot-toast').then(({ default: toast }) => toast.error(error.message || 'Terjadi kesalahan'));
     } finally {
@@ -348,7 +357,25 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div id="team-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div id="team-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+      {isPending && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
+        }}>
+          <div style={{ 
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
+          }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
+            Menyinkronkan data...
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>

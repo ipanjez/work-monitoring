@@ -1,8 +1,8 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, Settings2, Calendar, FileDown, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin } from 'lucide-react';
+import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, Settings2, Calendar, FileDown, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import * as XLSX from 'xlsx';
@@ -40,6 +40,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Search & Filter State
   const router = useRouter();
@@ -110,7 +111,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   }, [tasks, detailTask]);
 
-  const refreshData = () => router.refresh();
+  const refreshData = () => {
+    startTransition(() => {
+      router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+    });
+  };
 
   const handleToggleSelectAll = () => {
     if (selectedTasks.size === processedTasks.length && processedTasks.length > 0) {
@@ -921,7 +927,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   };
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+      {isPending && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
+        }}>
+          <div style={{ 
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid var(--border-color)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
+          }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
+            Menyinkronkan data...
+          </div>
+        </div>
+      )}
       {/* Global Datalist for PIC Auto-suggest */}
       <datalist id="existing-pics-list">
         {existingPics.map((p, idx) => (

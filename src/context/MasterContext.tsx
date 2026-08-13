@@ -17,6 +17,7 @@ interface MasterContextType {
   masterStatusProgress: Record<string, number>;
   masterPics: string[];
   roleConfig: RolePermissionsConfig;
+  sessionTimeout: number;
 }
 
 const MasterContext = createContext<MasterContextType>({ 
@@ -32,7 +33,8 @@ const MasterContext = createContext<MasterContextType>({
   masterLocations: [],
   masterStatusProgress: {},
   masterPics: [],
-  roleConfig: defaultRolePermissions
+  roleConfig: defaultRolePermissions,
+  sessionTimeout: 10
 });
 
 export function MasterProvider({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  const [sessionTimeout, setSessionTimeout] = useState(10);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -70,6 +73,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
       setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
       setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
+      setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
     } catch {}
 
     setMounted(true);
@@ -134,6 +138,19 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('master_status_progress', JSON.stringify(data.master_status_progress));
           changed = true;
         }
+        if (data.session_timeout !== undefined) {
+          setSessionTimeout(data.session_timeout);
+          localStorage.setItem('session_timeout', data.session_timeout.toString());
+          changed = true;
+        }
+        if (data.master_pics) {
+          setMasterPics(prev => {
+            const combined = Array.from(new Set([...data.master_pics, ...prev]));
+            localStorage.setItem('master_pics', JSON.stringify(combined));
+            return combined;
+          });
+          changed = true;
+        }
         if (changed) {
           window.dispatchEvent(new Event('masterUpdated'));
         }
@@ -144,8 +161,11 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setMasterPics(data);
-          localStorage.setItem('master_pics', JSON.stringify(data));
+          setMasterPics(prev => {
+            const combined = Array.from(new Set([...prev, ...data]));
+            localStorage.setItem('master_pics', JSON.stringify(combined));
+            return combined;
+          });
           window.dispatchEvent(new Event('masterUpdated'));
         }
       })
@@ -178,6 +198,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'master_status_progress' && e.newValue) setMasterStatusProgress(JSON.parse(e.newValue));
         if (e.key === 'master_pics' && e.newValue) setMasterPics(JSON.parse(e.newValue));
         if (e.key === 'role_config' && e.newValue) setRoleConfig(JSON.parse(e.newValue));
+        if (e.key === 'session_timeout' && e.newValue) setSessionTimeout(Number(e.newValue));
       } catch (err) {}
     };
     
@@ -186,6 +207,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
         setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
         setAppLogo(localStorage.getItem('app_logo') || '');
+        setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
         try {
             setMasterColors(JSON.parse(localStorage.getItem('master_colors') || '{}'));
             setMasterIcons(JSON.parse(localStorage.getItem('master_icons') || '{}'));
@@ -210,7 +232,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout }}>
       {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}
     </MasterContext.Provider>
   );

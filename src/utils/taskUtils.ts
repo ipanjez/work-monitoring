@@ -506,7 +506,7 @@ export const formatLogDetails = (text: string): string => {
   let formatted = text;
 
   // 1. Parse CUSTOM_RECURRENCE JSON
-  formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*("?\\?{.*?\\?}?"?)/g, (match, jsonStringWithQuotes) => {
+  formatted = formatted.replace(/CUSTOM_RECURRENCE:\s*("?\\?{.*?\\?}"?)/g, (match, jsonStringWithQuotes) => {
     try {
       let cleanStr = jsonStringWithQuotes;
       if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) {
