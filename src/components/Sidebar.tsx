@@ -6,7 +6,7 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare,
-  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban, UserCog
+  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban, UserCog, Loader2
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useTheme } from '@/context/ThemeContext';

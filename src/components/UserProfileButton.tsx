@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
@@ -106,17 +106,25 @@ export default function UserProfileButton() {
             color: 'var(--text-secondary)',
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s'
-          }} 
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+            {name.length > 12 ? name.substring(0, 12) + '...' : name}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+            {getRoleLabel(roleConfig, (session.user as any).role)}
+          </span>
+        </div>
+        <ChevronDown size={14} style={{ color: 'var(--text-secondary)', marginLeft: '4px', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
+          className="dropdown-menu"
           style={{
             position: 'absolute',
-            top: '52px',
-            right: '0',
+            top: '100%',
+            right: 0,
+            marginTop: '8px',
             width: '200px',
             background: 'var(--surface-color)',
             border: '1px solid var(--border-color)',
@@ -173,6 +181,26 @@ export default function UserProfileButton() {
           </div>
 
           <Link
+            href="/users/profile"
+            onClick={() => setIsOpen(false)}
+            style={{
+              padding: '10px 16px',
+              fontSize: '13px',
+              color: 'var(--text-primary)',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <User size={14} style={{ color: 'var(--text-secondary)' }} />
+            Profil Saya
+          </Link>
+
+          <Link
             href="/settings"
             onClick={() => setIsOpen(false)}
             style={{
@@ -183,10 +211,9 @@ export default function UserProfileButton() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              cursor: 'pointer',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--border-color)'}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <Settings size={14} style={{ color: 'var(--text-secondary)' }} />
@@ -195,6 +222,7 @@ export default function UserProfileButton() {
 
           <button
             onClick={handleLogout}
+            disabled={isLoggingOut}
             style={{
               padding: '10px 16px',
               fontSize: '13px',
@@ -205,15 +233,16 @@ export default function UserProfileButton() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              cursor: 'pointer',
+              cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+              opacity: isLoggingOut ? 0.7 : 1,
               width: '100%',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            onMouseEnter={(e) => { if (!isLoggingOut) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)' }}
+            onMouseLeave={(e) => { if (!isLoggingOut) e.currentTarget.style.background = 'transparent' }}
           >
-            <LogOut size={14} />
-            Keluar
+            {isLoggingOut ? <Loader2 size={14} className="spin" /> : <LogOut size={14} />}
+            {isLoggingOut ? 'Keluar...' : 'Keluar'}
           </button>
         </div>
       )}
