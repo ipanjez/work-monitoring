@@ -18,6 +18,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             'multipart/x-zip',
             'application/zip-compressed'
           ],
+          addRandomSuffix: true,
+          maximumSizeInBytes: 100 * 1024 * 1024, // 100MB
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
