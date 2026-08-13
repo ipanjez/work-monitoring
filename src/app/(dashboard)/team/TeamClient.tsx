@@ -404,7 +404,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       </UniversalFilterBar>
 
       {/* Team Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div id="team-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         {picList.map((picName) => {
           const stat = picStatsMap[picName];
           const doneCount = stat.statusCounts['Done'] || 0;
@@ -472,7 +472,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
       {/* Selected PIC Detail Table */}
       {selectedPic && picStatsMap[selectedPic] && (
-        <div className="glass" style={{ padding: '24px', marginTop: '12px' }}>
+        <div id="team-pic-detail-table" className="glass" style={{ padding: '24px', marginTop: '12px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px' }}>
             Daftar Pekerjaan Ditangani oleh: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span> (Klik nama pekerjaan untuk membuka detail)
           </h3>

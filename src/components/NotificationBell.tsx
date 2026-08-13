@@ -33,6 +33,7 @@ export default function NotificationBell() {
 
   return (
     <div 
+      id="notification-bell-container"
       style={{ position: 'relative', zIndex: 1000 }} 
       ref={panelRef}
       onMouseEnter={() => setIsOpen(true)}

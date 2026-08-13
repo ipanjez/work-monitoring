@@ -352,7 +352,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
+      <div id="users-tabs-container" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
         {((['users', 'requests', 'logs', 'roles'] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
           <button
             key={t}
@@ -389,7 +389,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       {tab === 'users' && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: '320px' }}>
+            <div id="users-search-container" style={{ position: 'relative', width: '100%', maxWidth: '320px' }}>
               <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               <input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari NPK atau Nama..." style={{ paddingLeft: '32px' }} />
             </div>
@@ -432,7 +432,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             </div>
           )}
 
-          <div style={{ overflowX: 'auto' }}>
+          <div id="users-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)' }}>

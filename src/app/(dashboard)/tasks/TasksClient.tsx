@@ -989,6 +989,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            id="task-bulk-bar"
             style={{ background: 'var(--surface-color)', border: '1px solid var(--accent-primary)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

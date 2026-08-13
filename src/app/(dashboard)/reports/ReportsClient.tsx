@@ -588,6 +588,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Summary KPI Cards */}
       <motion.div 
+        id="reports-kpi-cards"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -643,42 +644,42 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       {/* Analytics Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
         
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-status" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Status Pekerjaan</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={statusData} options={chartOptions} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-pic" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Beban Kerja per PIC (Top 10)</h3>
           <div style={{ height: '300px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Bar data={picWorkloadData} options={picBarOptions} plugins={[picAvatarXAxisPlugin]} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-priority" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Sebaran Prioritas Pekerjaan</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={priorityData} options={chartOptions} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-category-progress" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Rata-rata Progress per Kategori</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Bar data={catProgressData} options={barOptions} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-deadline" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Kepatuhan Tenggat Waktu</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={deadlineData} options={chartOptions} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="reports-chart-category-distribution" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Distribusi Pekerjaan per Kategori</h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={categoryData} options={chartOptions} />

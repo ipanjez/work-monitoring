@@ -43,6 +43,7 @@ export default function UserProfileButton() {
 
   return (
     <div 
+      id="user-profile-btn-container"
       style={{ position: 'relative' }} 
       ref={dropdownRef}
     >

@@ -18,7 +18,7 @@ export default function GlobalAddButton() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
-  
+
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Done']);
@@ -27,9 +27,9 @@ export default function GlobalAddButton() {
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
-  
+
   const panelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,7 +132,7 @@ export default function GlobalAddButton() {
       try {
         JSON.parse(str);
         return str;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const lower = str.toLowerCase();
@@ -174,7 +174,7 @@ export default function GlobalAddButton() {
   // Helper: normalize date values from Excel (serial number or string) to ISO string
   const normalizeDate = (val: any, fieldName: string, idx: number): string => {
     if (val == null || val === '') return new Date().toISOString();
-    
+
     let date: Date;
     if (typeof val === 'number') {
       // Excel serial date (days since Dec 30, 1899)
@@ -206,7 +206,7 @@ export default function GlobalAddButton() {
         const data = rawData.map((r: any) => {
           const normalized: any = {};
           for (const k in r) {
-             normalized[k.trim().toLowerCase()] = r[k];
+            normalized[k.trim().toLowerCase()] = r[k];
           }
           return normalized;
         }).filter((r: any) => {
@@ -218,65 +218,65 @@ export default function GlobalAddButton() {
           let subTasksJson = null;
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
-             const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
-             const subTasks = lines.map(line => {
-                const match = line.match(/^\[(.*?)\]\s+(.*)/);
-                let status = 'To Do';
-                let text = line.trim();
-                const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
-                if (match && validStatuses.includes(match[1])) {
-                   status = match[1];
-                   text = match[2].trim();
-                } else if (match) {
-                   text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
+            const lines = subPekerjaanRaw.split('\n').filter(s => s.trim());
+            const subTasks = lines.map(line => {
+              const match = line.match(/^\[(.*?)\]\s+(.*)/);
+              let status = 'To Do';
+              let text = line.trim();
+              const validStatuses = masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Done'];
+              if (match && validStatuses.includes(match[1])) {
+                status = match[1];
+                text = match[2].trim();
+              } else if (match) {
+                text = line.replace(/^\[.*?\]\s*/, '').trim() || line.trim();
+              }
+              let pic: string | undefined = undefined;
+              let additionalPics: string[] | undefined = undefined;
+              let tenggatWaktu: string | undefined = undefined;
+
+              // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
+              const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
+              const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
+
+              if (picMatch) {
+                const picRaw = picMatch[1].trim();
+                const picParts = picRaw.split(',').map(s => s.trim()).filter(Boolean);
+                if (picParts.length > 0) {
+                  pic = picParts[0];
+                  if (picParts.length > 1) {
+                    additionalPics = picParts.slice(1);
+                  }
                 }
-                 let pic: string | undefined = undefined;
-                 let additionalPics: string[] | undefined = undefined;
-                 let tenggatWaktu: string | undefined = undefined;
+                text = text.replace(picMatch[0], '').trim();
+              }
+              if (tenggatMatch) {
+                tenggatWaktu = tenggatMatch[1].trim();
+                text = text.replace(tenggatMatch[0], '').trim();
+              }
 
-                 // Parse extra fields like | PIC: Name1, Name2 | Tenggat: 2026-08-15
-                 const picMatch = text.match(/\|\s*PIC:\s*([^|]+)/i);
-                 const tenggatMatch = text.match(/\|\s*Tenggat:\s*([^|]+)/i);
+              // Remove any trailing or leading pipe characters left over
+              text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
 
-                 if (picMatch) {
-                   const picRaw = picMatch[1].trim();
-                   const picParts = picRaw.split(',').map(s => s.trim()).filter(Boolean);
-                   if (picParts.length > 0) {
-                     pic = picParts[0];
-                     if (picParts.length > 1) {
-                       additionalPics = picParts.slice(1);
-                     }
-                   }
-                   text = text.replace(picMatch[0], '').trim();
-                 }
-                 if (tenggatMatch) {
-                   tenggatWaktu = tenggatMatch[1].trim();
-                   text = text.replace(tenggatMatch[0], '').trim();
-                 }
-
-                 // Remove any trailing or leading pipe characters left over
-                 text = text.replace(/^[|\s]+|[|\s]+$/g, '').trim();
-
-                 return {
-                    id: Math.random().toString(36).substring(2, 9),
-                    text,
-                    status,
-                    ...(pic ? { pic } : {}),
-                    ...(additionalPics ? { additionalPics } : {}),
-                    ...(tenggatWaktu ? { tenggatWaktu } : {}),
-                    logs: [{ status, timestamp: new Date().toISOString() }]
-                 };
-             });
-             if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
+              return {
+                id: Math.random().toString(36).substring(2, 9),
+                text,
+                status,
+                ...(pic ? { pic } : {}),
+                ...(additionalPics ? { additionalPics } : {}),
+                ...(tenggatWaktu ? { tenggatWaktu } : {}),
+                logs: [{ status, timestamp: new Date().toISOString() }]
+              };
+            });
+            if (subTasks.length > 0) subTasksJson = JSON.stringify(subTasks);
           }
-          
+
           const additionalPicsStr = row['pic tambahan'] || row['pictambahan'] || '';
           let additionalPicsJson = null;
           if (additionalPicsStr) {
             const picsArr = additionalPicsStr.split(',').map((s: string) => s.trim()).filter(Boolean);
             if (picsArr.length > 0) additionalPicsJson = JSON.stringify(picsArr);
           }
-          
+
           const isAllDayStr = (row['sepanjang hari'] || row['isallday'] || 'Ya').toString().toLowerCase();
           const isAllDay = isAllDayStr === 'ya' || isAllDayStr === 'true' || isAllDayStr === '1' || isAllDayStr === 'yes';
 
@@ -453,14 +453,14 @@ export default function GlobalAddButton() {
         worksheet.getCell(`E${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(latestPriorities.length > 0 ? latestPriorities : ['Low','Medium','High','Urgent']).join(',')}"`]
+          formulae: [`"${(latestPriorities.length > 0 ? latestPriorities : ['Low', 'Medium', 'High', 'Urgent']).join(',')}"`]
         };
 
         // Status
         worksheet.getCell(`F${i}`).dataValidation = {
           type: 'list',
           allowBlank: true,
-          formulae: [`"${(latestStatuses.length > 0 ? latestStatuses : ['To Do','In Progress','Done']).join(',')}"`]
+          formulae: [`"${(latestStatuses.length > 0 ? latestStatuses : ['To Do', 'In Progress', 'Done']).join(',')}"`]
         };
 
         // Sepanjang Hari (Ya/Tidak)
@@ -587,13 +587,14 @@ export default function GlobalAddButton() {
   if ((session?.user as any)?.role === 'VIEWER') return null;
 
   return (
-    <div 
-      style={{ position: 'relative', zIndex: 1000 }} 
+    <div
+      id="global-add-btn-container"
+      style={{ position: 'relative', zIndex: 1000 }}
       ref={panelRef}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="btn btn-primary"
         style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
@@ -601,105 +602,105 @@ export default function GlobalAddButton() {
         <Plus size={18} /> Tambah Pekerjaan
       </button>
 
-      {isOpen && (
-        <>
-          <div 
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
-            onClick={() => setIsOpen(false)}
-          />
-          <div style={{
-            position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 100,
-            background: 'var(--surface-color)', borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
-            width: '260px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px'
-          }}>
-            <div 
-              style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-              onClick={() => {
-                const today = new Date().toISOString().split('T')[0];
-                setTaskToEdit({
-                  nama: '',
-                  deskripsi: '',
-                  pic: 'Unassigned',
-                  kategori: 'Umum',
-                  prioritas: 'Medium',
-                  status: 'To Do',
-                  repetisi: 'Tidak Berulang',
-                  filesList: [],
-                  additionalPicsList: [],
-                  subTasksList: [],
-                  isAllDay: false,
-                  startTime: '',
-                  endTime: '',
-                  startDate: today,
-                  endDate: today,
-                  isCustomCategory: false,
-                  isCustomPic: false,
-                });
-                setIsOpen(false);
-                setIsAddModalOpen(true);
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Plus size={16} color="var(--accent-primary)" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Manual</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Isi form lengkap secara manual</div>
-              </div>
+      <div style={{
+        position: 'absolute', top: '100%', right: 0, zIndex: 100,
+        paddingTop: '8px', // Invisible bridge for hover continuity
+        opacity: isOpen ? 1 : 0,
+        transform: isOpen ? 'translateY(0)' : 'translateY(-10px)',
+        pointerEvents: isOpen ? 'auto' : 'none',
+        transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
+        <div style={{
+          background: 'var(--surface-color)', borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
+          width: '260px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px'
+        }}>
+          <div
+            style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setTaskToEdit({
+                nama: '',
+                deskripsi: '',
+                pic: 'Unassigned',
+                kategori: 'Umum',
+                prioritas: 'Medium',
+                status: 'To Do',
+                repetisi: 'Tidak Berulang',
+                filesList: [],
+                additionalPicsList: [],
+                subTasksList: [],
+                isAllDay: false,
+                startTime: '',
+                endTime: '',
+                startDate: today,
+                endDate: today,
+                isCustomCategory: false,
+                isCustomPic: false,
+              });
+              setIsOpen(false);
+              setIsAddModalOpen(true);
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, var(--accent-primary) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={16} color="var(--accent-primary)" />
             </div>
-
-            <div 
-              style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-              onClick={() => { setIsOpen(false); setIsSmartModalOpen(true); }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #f59e0b 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Zap size={16} color="#f59e0b" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Cepat (Smart)</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Tambah cepat berbasis teks / AI</div>
-              </div>
-            </div>
-
-            <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
-
-            <div 
-              style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-              onClick={() => { setIsOpen(false); handleDownloadTemplate(); }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #3b82f6 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Download size={16} color="#3b82f6" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Unduh Template Excel</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Download format excel untuk import</div>
-              </div>
-            </div>
-
-            <div 
-              style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
-              onClick={() => { setIsOpen(false); fileInputRef.current?.click(); }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #10b981 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Upload size={16} color="#10b981" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Import dari Excel</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Unggah data pekerjaan sekaligus</div>
-              </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Manual</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Isi form lengkap secara manual</div>
             </div>
           </div>
-        </>
-      )}
+
+          <div
+            style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+            onClick={() => { setIsOpen(false); setIsSmartModalOpen(true); }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #f59e0b 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={16} color="#f59e0b" />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Tambah Cepat (Smart)</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Tambah cepat berbasis teks / AI</div>
+            </div>
+          </div>
+
+          <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
+
+          <div
+            style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+            onClick={() => { setIsOpen(false); handleDownloadTemplate(); }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #3b82f6 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Download size={16} color="#3b82f6" />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Unduh Template Excel</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Download format excel untuk import</div>
+            </div>
+          </div>
+
+          <div
+            style={{ padding: '10px 12px', cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.2s' }}
+            onClick={() => { setIsOpen(false); fileInputRef.current?.click(); }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'color-mix(in srgb, #10b981 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Upload size={16} color="#10b981" />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Import dari Excel</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Unggah data pekerjaan sekaligus</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Render file input outside so it doesn't get destroyed when dropdown closes */}
       <input type="file" accept=".xlsx, .csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleImportExcel} />
@@ -714,9 +715,9 @@ export default function GlobalAddButton() {
         formPicOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
         formStatusOptions={masterStatuses}
         formPriorityOptions={masterPriorities}
-        setPreviewFile={() => {}}
+        setPreviewFile={() => { }}
       />
-      <SmartAddModal 
+      <SmartAddModal
         isOpen={isSmartModalOpen}
         onClose={() => setIsSmartModalOpen(false)}
         picOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}

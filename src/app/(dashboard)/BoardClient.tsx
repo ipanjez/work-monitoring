@@ -415,21 +415,54 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         return;
       }
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const originalStyle = element.style.cssText;
-      element.style.width = 'max-content';
-      element.style.height = 'max-content';
-      element.style.overflow = 'visible';
-
       const canvas = await html2canvas(element, { 
-        scale: 1, 
+        scale: 2, 
         useCORS: true, 
-        backgroundColor: '#ffffff'
-      });
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('kanban-board-container');
+          if (clonedElement) {
+            clonedElement.style.setProperty('width', '1600px', 'important');
+            clonedElement.style.setProperty('height', 'auto', 'important');
+            clonedElement.style.setProperty('overflow', 'visible', 'important');
+            clonedElement.style.setProperty('display', 'grid', 'important');
+            clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
+            clonedElement.style.setProperty('gap', '16px', 'important');
+            clonedElement.style.setProperty('min-height', '0', 'important');
+            clonedElement.style.setProperty('flex', 'none', 'important');
 
-      element.style.cssText = originalStyle;
+            const cols = clonedElement.querySelectorAll('.kanban-col');
+            cols.forEach((col: any) => {
+              col.style.setProperty('height', 'auto', 'important');
+              col.style.setProperty('max-height', 'none', 'important');
+              col.style.setProperty('overflow', 'visible', 'important');
+              col.style.setProperty('display', 'flex', 'important');
+              col.style.setProperty('flex-direction', 'column', 'important');
+            });
+
+            const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
+            cardsContainers.forEach((container: any) => {
+              container.style.setProperty('height', 'auto', 'important');
+              container.style.setProperty('max-height', 'none', 'important');
+              container.style.setProperty('overflow', 'visible', 'important');
+            });
+
+            // Resolve color-mix parsing crash
+            const badges = clonedElement.querySelectorAll('.badge, [class*="badge"], [style*="color-mix"]');
+            badges.forEach((badge: any) => {
+              const bg = badge.style.backgroundColor;
+              if (bg && bg.includes('color-mix')) {
+                const colorVal = badge.style.color;
+                if (colorVal && colorVal.startsWith('#')) {
+                  badge.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
+                } else {
+                  badge.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+                }
+              }
+            });
+          }
+        }
+      });
       
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
@@ -456,36 +489,67 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('kanban-board-container');
       if (!element) return;
-      
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const originalStyle = element.style.cssText;
-      element.style.width = 'max-content';
-      element.style.height = 'max-content';
-      element.style.overflow = 'visible';
 
       const canvas = await html2canvas(element, { 
-        scale: 1, 
+        scale: 2, 
         useCORS: true, 
-        backgroundColor: '#ffffff'
-      });
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('kanban-board-container');
+          if (clonedElement) {
+            clonedElement.style.setProperty('width', '1600px', 'important');
+            clonedElement.style.setProperty('height', 'auto', 'important');
+            clonedElement.style.setProperty('overflow', 'visible', 'important');
+            clonedElement.style.setProperty('display', 'grid', 'important');
+            clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
+            clonedElement.style.setProperty('gap', '16px', 'important');
+            clonedElement.style.setProperty('min-height', '0', 'important');
+            clonedElement.style.setProperty('flex', 'none', 'important');
 
-      element.style.cssText = originalStyle;
-      
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            toast.success('Gambar board disalin ke clipboard');
-          } catch(err) {
-            console.error(err);
-            toast.error('Gagal menyalin gambar, izin ditolak.');
+            const cols = clonedElement.querySelectorAll('.kanban-col');
+            cols.forEach((col: any) => {
+              col.style.setProperty('height', 'auto', 'important');
+              col.style.setProperty('max-height', 'none', 'important');
+              col.style.setProperty('overflow', 'visible', 'important');
+              col.style.setProperty('display', 'flex', 'important');
+              col.style.setProperty('flex-direction', 'column', 'important');
+            });
+
+            const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
+            cardsContainers.forEach((container: any) => {
+              container.style.setProperty('height', 'auto', 'important');
+              container.style.setProperty('max-height', 'none', 'important');
+              container.style.setProperty('overflow', 'visible', 'important');
+            });
+
+            // Resolve color-mix parsing crash
+            const badges = clonedElement.querySelectorAll('.badge, [class*="badge"], [style*="color-mix"]');
+            badges.forEach((badge: any) => {
+              const bg = badge.style.backgroundColor;
+              if (bg && bg.includes('color-mix')) {
+                const colorVal = badge.style.color;
+                if (colorVal && colorVal.startsWith('#')) {
+                  badge.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
+                } else {
+                  badge.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+                }
+              }
+            });
           }
         }
-      }, 'image/png');
+      });
+
+      const blobPromise = new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error('Canvas toBlob returned null'));
+        }, 'image/png');
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blobPromise })
+      ]);
+      toast.success('Gambar board disalin ke clipboard');
     } catch (err) {
       console.error('Copy Image error:', err);
       toast.error('Gagal menyalin gambar');

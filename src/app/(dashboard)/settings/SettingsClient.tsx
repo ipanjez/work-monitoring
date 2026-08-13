@@ -730,7 +730,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Theme Settings Card */}
-      <div className="glass" style={{ padding: '24px' }}>
+      <div id="settings-theme" className="glass" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {theme === 'dark' ? <Moon size={20} color="#f59e0b" /> : <Sun size={20} color="#f59e0b" />} Tampilan & Tema
         </h3>
@@ -982,7 +982,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Dropdown Master PIC Manager */}
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-pics" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Dropdown PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
             <Users size={20} color="var(--accent-primary)" />
@@ -994,7 +994,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-statuses" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
             <Tag size={20} color="var(--accent-primary)" />
@@ -1004,7 +1004,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-priorities" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
             <Tag size={20} color="var(--accent-primary)" />
@@ -1014,7 +1014,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-locations" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Lokasi Pekerjaan", 'location', locations, newLocationInput, setNewLocationInput,
             <MapPin size={20} color="var(--accent-primary)" />
@@ -1025,7 +1025,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* General Settings */}
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-general" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
           </h3>
@@ -1166,7 +1166,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Auto Sync Google Calendar / iCal Feed */}
-      <div className="glass" style={{ padding: '24px' }}>
+      <div id="settings-calendar-sync" className="glass" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CalendarDays size={20} color="#4285F4" /> Sinkronisasi Otomatis Google Calendar / Outlook (URL Feed)
         </h3>
@@ -1207,7 +1207,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Backup & Export Database */}
       {isAdmin && (
-        <div className="glass" style={{ padding: '24px' }}>
+        <div id="settings-backup" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Database size={20} color="var(--success)" /> Cadangan & Export Data Database
           </h3>
