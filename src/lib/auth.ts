@@ -68,6 +68,19 @@ export const authOptions: NextAuthOptions = {
         token.npk = (user as any).npk;
         token.id = user.id;
         token.loginAt = Date.now();
+      } else if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, name: true }
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.name = dbUser.name;
+          }
+        } catch (error) {
+          console.error("Error fetching user in jwt callback:", error);
+        }
       }
       if (trigger === 'update' && session?.name) {
         token.name = session.name;
