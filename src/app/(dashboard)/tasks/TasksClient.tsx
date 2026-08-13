@@ -268,8 +268,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   }).sort((a, b) => {
     if (!sortField) return 0;
 
-    let valA: any = a[sortField];
-    let valB: any = b[sortField];
+    let valA: any = (a as any)[sortField];
+    let valB: any = (b as any)[sortField];
 
     if (sortField === 'prioritas') {
       valA = priorityWeight[a.prioritas || 'Medium'] || 0;
