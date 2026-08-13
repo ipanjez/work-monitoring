@@ -640,14 +640,36 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             body: JSON.stringify(data)
           });
         } else {
-          const arrayBuffer = await file.arrayBuffer();
-          res = await fetch('/api/database', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/zip',
-            },
-            body: arrayBuffer
-          });
+          // Check if we are on Vercel (not localhost)
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          
+          if (!isLocalhost && file.size > 4 * 1024 * 1024) {
+            // Cloud Mode (Vercel) & File > 4MB: Use Vercel Blob Client Upload to bypass 4.5MB Serverless limit
+            const { upload } = await import('@vercel/blob/client');
+            toast.loading('Mengunggah file backup (tahap 1/2)...', { id: toastId });
+            
+            const blob = await upload(file.name, file, {
+              access: 'public',
+              handleUploadUrl: '/api/upload/token',
+            });
+            
+            toast.loading('Memulihkan database (tahap 2/2)...', { id: toastId });
+            res = await fetch('/api/database', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ blobUrl: blob.url })
+            });
+          } else {
+            // Local Mode or Small File: Direct upload
+            const arrayBuffer = await file.arrayBuffer();
+            res = await fetch('/api/database', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/zip',
+              },
+              body: arrayBuffer
+            });
+          }
         }
 
         toast.dismiss(toastId);

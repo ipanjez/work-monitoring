@@ -174,6 +174,28 @@ export async function POST(req: Request) {
       if (!zipBuffer || zipBuffer.length === 0) {
         return NextResponse.json({ error: 'Empty backup file provided' }, { status: 400 });
       }
+    } else if (contentType.includes('application/json')) {
+      // Legacy JSON backup support OR blobUrl pointer to a zip!
+      dbData = await req.json();
+      if (dbData && dbData.blobUrl) {
+        // Download the zip from the blob URL
+        const fetchRes = await fetch(dbData.blobUrl);
+        if (!fetchRes.ok) {
+          return NextResponse.json({ error: 'Gagal mengunduh file backup dari storage sementara' }, { status: 400 });
+        }
+        const arrayBuffer = await fetchRes.arrayBuffer();
+        zipBuffer = Buffer.from(arrayBuffer);
+        
+        // Clean up the temporary blob
+        try {
+          const { del } = await import('@vercel/blob');
+          await del(dbData.blobUrl);
+        } catch (e) {
+          console.error('Failed to delete temp blob', e);
+        }
+        
+        dbData = null; // Reset dbData so it will be extracted from the zip!
+      }
     }
 
     if (zipBuffer) {
@@ -221,12 +243,9 @@ export async function POST(req: Request) {
           }
         }
       }
-    } else {
-      // Legacy JSON backup support
-      dbData = await req.json();
     }
 
-    if (!dbData) {
+    if (!dbData && !zipBuffer) {
        return NextResponse.json({ error: 'Invalid backup format' }, { status: 400 });
     }
 
