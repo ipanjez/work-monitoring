@@ -119,6 +119,13 @@ export async function GET() {
 
     const filename = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
 
+    // Update last backup date
+    await prisma.appSetting.upsert({
+      where: { key: 'last_backup_date' },
+      update: { value: new Date().toISOString() },
+      create: { key: 'last_backup_date', value: new Date().toISOString() }
+    });
+
     return new NextResponse(webStream, {
       headers: {
         'Content-Type': 'application/zip',

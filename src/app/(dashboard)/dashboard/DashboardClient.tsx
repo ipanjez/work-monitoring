@@ -97,6 +97,10 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   
+  const [backupReminderDays, setBackupReminderDays] = useState<number>(0);
+  const [lastBackupDate, setLastBackupDate] = useState<string>('');
+  const [showBackupReminder, setShowBackupReminder] = useState<boolean>(false);
+  
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -115,6 +119,29 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           if (data.master_priorities) setMasterPriorities(data.master_priorities);
           if (data.master_colors) setMasterColors(data.master_colors);
           if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
+          
+          if (data.backup_reminder_days !== undefined) {
+            const days = Number(data.backup_reminder_days) || 0;
+            setBackupReminderDays(days);
+            
+            if (days > 0) {
+              const lastDateStr = data.last_backup_date;
+              setLastBackupDate(lastDateStr || '');
+              
+              if (!lastDateStr) {
+                setShowBackupReminder(true);
+              } else {
+                const lastDate = new Date(lastDateStr);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays >= days) {
+                  setShowBackupReminder(true);
+                }
+              }
+            }
+          }
         })
         .catch(e => console.error(e));
     };
@@ -779,7 +806,32 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     return acc;
   }, {} as Record<string, number>);
 
-    const handleExportPDF = () => {
+  const handleDownloadBackup = async () => {
+    const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
+    try {
+      const res = await fetch('/api/database');
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Gagal mengambil backup: HTTP ${res.status} ${errText.substring(0, 100)}`);
+      }
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
+      a.click();
+      toast.dismiss(toastId);
+      toast.success('Backup berhasil diunduh!');
+      setShowBackupReminder(false);
+      setLastBackupDate(new Date().toISOString());
+    } catch (err: any) {
+      toast.dismiss(toastId);
+      toast.error(err.message || 'Gagal mengunduh backup');
+    }
+  };
+
+  const handleExportPDF = () => {
     try {
       if (addActivityLog) {
         addActivityLog('EXPORT_PDF', 'Export Laporan', 'Mengekspor laporan Dashboard ke format PDF', 'info');
@@ -947,6 +999,28 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
+      {showBackupReminder && (
+        <div style={{ background: 'var(--accent-primary)', color: 'white', padding: '16px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertTriangle size={24} />
+            <div>
+              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Saatnya Backup Data Anda!</h4>
+              <p style={{ margin: 0, fontSize: '13px', opacity: 0.9, marginTop: '2px' }}>
+                {lastBackupDate ? `Sudah ${backupReminderDays} hari atau lebih sejak pencadangan terakhir Anda pada ${new Date(lastBackupDate).toLocaleDateString('id-ID')}.` : `Anda belum pernah melakukan pencadangan database.`}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => setShowBackupReminder(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', padding: '8px 16px', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: '0.2s' }}>
+              Nanti Saja
+            </button>
+            <button onClick={handleDownloadBackup} style={{ background: 'white', color: 'var(--accent-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}>
+              <Download size={14} /> Download Backup Sekarang
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Controls */}
       <UniversalFilterBar 
         categories={['Umum', ...categories]} 

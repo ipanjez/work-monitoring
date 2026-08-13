@@ -29,7 +29,9 @@ export async function GET() {
       max_file_size_mb: 25,
       max_task_files_size_mb: 100,
       session_timeout_hours: 720,
-      session_timeout: 10
+      session_timeout: 10,
+      backup_reminder_days: 7,
+      last_backup_date: ''
     };
 
     settings.forEach(setting => {
@@ -201,6 +203,14 @@ export async function POST(request: Request) {
         where: { key: 'session_timeout' },
         update: { value: String(body.session_timeout) },
         create: { key: 'session_timeout', value: String(body.session_timeout) }
+      });
+    }
+
+    if (body.backup_reminder_days !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'backup_reminder_days' },
+        update: { value: String(body.backup_reminder_days) },
+        create: { key: 'backup_reminder_days', value: String(body.backup_reminder_days) }
       });
     }
 

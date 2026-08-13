@@ -42,6 +42,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(720);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
+  const [backupReminderDays, setBackupReminderDays] = useState<number | string>(7);
 
   // Master State
   const [categories, setCategories] = useState<string[]>([]);
@@ -111,6 +112,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
         if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
         if (data.session_timeout !== undefined) setSessionTimeoutMinutes(data.session_timeout);
+        if (data.backup_reminder_days !== undefined) setBackupReminderDays(data.backup_reminder_days);
       })
       .catch(e => console.error(e));
 
@@ -579,7 +581,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
         max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
         session_timeout_hours: Number(sessionTimeoutHours) || 720,
-        session_timeout: Number(sessionTimeoutMinutes) || 10
+        session_timeout: Number(sessionTimeoutMinutes) || 10,
+        backup_reminder_days: Number(backupReminderDays) || 0
       })
     })
       .then(() => {
@@ -1257,6 +1260,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
             Unduh seluruh salinan data pekerjaan dan pengaturan dalam format JSON untuk cadangan (*backup*) aman, atau pulihkan dari cadangan sebelumnya.
           </p>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              Jadwal Pengingat Backup (Hari)
+            </label>
+            <input 
+              type="number" 
+              className="input" 
+              value={backupReminderDays} 
+              onChange={e => setBackupReminderDays(e.target.value)}
+              placeholder="Misal: 7"
+              min="0"
+              style={{ width: '120px' }}
+            />
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Isi 0 untuk menonaktifkan pengingat. (Tekan tombol Simpan Pengaturan Umum di kanan bawah untuk menyimpan)
+            </p>
+          </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
