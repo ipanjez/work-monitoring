@@ -22,7 +22,7 @@ interface NotificationContextType {
   markAsRead: (id: number) => void;
   markAllAsRead: () => void;
   clearAll: () => void;
-  addActivityLog?: (action: string, title: string, message: string, type?: 'info'|'success'|'warning'|'danger') => Promise<void>;
+  addActivityLog?: (action: string, title: string, message: string, type?: 'info' | 'success' | 'warning' | 'danger') => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -31,14 +31,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const { data: session, status } = useSession();
   const userId = (session?.user as any)?.id || session?.user?.email || 'guest';
-  
+
   const storageKey = `dashboard_notifications_${userId}`;
   const clearedAtKey = `dashboard_notifications_cleared_at_${userId}`;
-  
+
   // Use refs to avoid stale closures in setInterval and to prevent side-effects in render
   const notificationsRef = useRef<NotificationItem[]>([]);
   const lastCheckTimeRef = useRef<Date>(new Date());
-  
+
   // Keep ref synced with state
   useEffect(() => {
     notificationsRef.current = notifications;
@@ -47,13 +47,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Load local state on mount or user change
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     const saved = localStorage.getItem(storageKey);
     let initialNotifs: NotificationItem[] = [];
     if (saved) {
       try {
         initialNotifs = JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     setNotifications(initialNotifs);
     notificationsRef.current = initialNotifs;
@@ -70,7 +70,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Polling logic for activities
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     let isMounted = true;
 
     const fetchActivities = async () => {
@@ -78,7 +78,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const res = await fetch('/api/activities');
         if (!res.ok) return;
         const activities = await res.json();
-        
+
         if (!isMounted) return;
 
         const prev = notificationsRef.current;
@@ -86,7 +86,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         activities.forEach((act: any) => {
           const actTime = new Date(act.createdAt);
-          
+
           if (actTime > lastCheckTimeRef.current) {
             const existing = prev.find(p => p.id === act.id);
             if (!existing) {
@@ -98,7 +98,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 updatedAt: act.createdAt,
                 isRead: false
               });
-              
+
               // Show toast for new activity
               toast.custom((t) => (
                 <div
@@ -133,7 +133,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           const merged = [...newNotifs, ...prev.filter(p => !newNotifs.find(n => n.id === p.id))];
           setNotifications(merged.slice(0, 50).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
         }
-        
+
         lastCheckTimeRef.current = new Date();
       } catch (e) {
         console.error('Polling error:', e);
@@ -146,10 +146,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const res = await fetch('/api/activities');
         if (res.ok) {
           const activities = await res.json();
-          
+
           const clearedAtStr = localStorage.getItem(clearedAtKey);
           const clearedAt = clearedAtStr ? new Date(clearedAtStr).getTime() : 0;
-          
+
           const initialNotifs = activities
             .filter((act: any) => new Date(act.createdAt).getTime() > clearedAt)
             .map((act: any) => ({
@@ -160,12 +160,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               updatedAt: act.createdAt,
               isRead: false // Assume unread for new session if not in localStorage
             }));
-          
+
           if (notificationsRef.current.length === 0 && initialNotifs.length > 0) {
             setNotifications(initialNotifs.slice(0, 50));
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     // If local storage didn't have any notifications, try to fetch recent ones
@@ -195,12 +195,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     localStorage.setItem(clearedAtKey, new Date().toISOString());
   };
 
-  const addActivityLog = async (action: string, title: string, message: string, type: 'info'|'success'|'warning'|'danger' = 'info') => {
+  const addActivityLog = async (action: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'danger' = 'info', taskId?: number, linkUrl?: string) => {
     try {
       await fetch('/api/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, title, message, type })
+        body: JSON.stringify({ action, title, message, type, taskId: taskId ?? null, linkUrl: linkUrl ?? null })
       });
     } catch (e) {
       console.error('Failed to log activity', e);

@@ -47,7 +47,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
   const { masterColors } = useMaster();
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const savedAuthor = localStorage.getItem('commentAuthor');
       if (savedAuthor) setCommentAuthor(savedAuthor);
     }
-    
+
     const loadSettings = async () => {
       try {
         const res = await fetch('/api/settings');
@@ -81,7 +81,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         console.error('Failed to load settings:', err);
       }
     };
-    
+
     const loadPicEmails = async () => {
       try {
         const res = await fetch('/api/users/emails');
@@ -107,7 +107,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
       });
       router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Komentar dihapus');
     } catch {
       toast.error('Gagal menghapus komentar');
@@ -120,14 +120,14 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     if (!task) return [];
     const pics = new Set<string>();
     if (task.pic) pics.add(task.pic);
-    
+
     if (task.additionalPics) {
       try {
         const arr = JSON.parse(task.additionalPics);
         if (Array.isArray(arr)) arr.forEach((p: string) => pics.add(p));
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     if (task.subTasksJson) {
       try {
         const arr = JSON.parse(task.subTasksJson);
@@ -136,7 +136,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
             if (st.pic) pics.add(st.pic);
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return Array.from(pics);
   };
@@ -146,7 +146,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
   const subject = task ? `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}` : '';
   const calUrl = task ? getGoogleCalendarUrl(task) : '';
-  
+
   let subTasksStr = '';
   if (task?.subTasksJson) {
     try {
@@ -177,7 +177,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       toast.error('Nama dan komentar tidak boleh kosong');
       return;
     }
-    
+
     localStorage.setItem('commentAuthor', finalAuthor.trim());
 
     const comment: CommentItem = {
@@ -239,7 +239,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
           } else if (loc.tipe === 'offline') {
             location = `Offline: ${loc.lokasiFisik || ''}`;
           }
-        } catch(e) { location = task!.lokasi; }
+        } catch (e) { location = task!.lokasi; }
       }
 
       const textToCopy = `*Detail Pekerjaan:*
@@ -277,13 +277,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={e => e.stopPropagation()}
         >
-          <div style={{ 
-            position: 'sticky', 
-            top: '-24px', 
-            background: 'var(--modal-bg, var(--surface-color))', 
-            zIndex: 10, 
-            padding: '24px 24px 16px 24px', 
-            margin: '-24px -24px 20px -24px', 
+          <div style={{
+            position: 'sticky',
+            top: '-24px',
+            background: 'var(--modal-bg, var(--surface-color))',
+            zIndex: 10,
+            padding: '24px 24px 16px 24px',
+            margin: '-24px -24px 20px -24px',
             borderBottom: '1px solid var(--border-color)',
             borderTopLeftRadius: '20px',
             borderTopRightRadius: '20px'
@@ -298,12 +298,12 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     </span>
                   );
                 })()}
-                
+
                 <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>{task.nama}</h2>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <button 
-                    className="btn btn-secondary" 
+                  <button
+                    className="btn btn-secondary"
                     style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={handleCopyTaskDetails}
                     title="Salin Detail Pekerjaan ke Teks"
@@ -321,18 +321,18 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   >
                     <ExternalLink size={16} />
                   </a>
-                  
-                  <button 
-                    className="btn btn-secondary" 
+
+                  <button
+                    className="btn btn-secondary"
                     onClick={() => handleExportICS(task)}
                     style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Download .ics"
                   >
                     <CalendarDays size={16} />
                   </button>
-                  
+
                   {pathname !== '/calendar' && (
-                    <button 
+                    <button
                       className="btn btn-secondary"
                       onClick={() => {
                         onClose();
@@ -345,8 +345,8 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     </button>
                   )}
 
-                  <button 
-                    className="btn" 
+                  <button
+                    className="btn"
                     onClick={() => {
                       const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
                       const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
@@ -358,21 +358,21 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   >
                     <FileDown size={16} />
                   </button>
-                  
-                  <a 
-                    className="btn" 
+
+                  <a
+                    className="btn"
                     href={canSendMail ? mailtoLink : '#'}
                     onClick={e => {
                       if (!canSendMail) e.preventDefault();
                     }}
-                    style={{ 
-                      padding: '6px', 
-                      borderRadius: '6px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      background: '#3b82f6', 
-                      color: 'white', 
+                    style={{
+                      padding: '6px',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#3b82f6',
+                      color: 'white',
                       border: 'none',
                       cursor: canSendMail ? 'pointer' : 'not-allowed',
                       opacity: canSendMail ? 1 : 0.6,
@@ -390,7 +390,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     <Edit size={16} style={{ marginRight: '6px' }} /> Edit
                   </button>
                 )}
-                
+
                 {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
                   <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
                     <Trash2 size={16} style={{ marginRight: '6px' }} /> Hapus
@@ -406,10 +406,10 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             </div>
           </div>
 
-          <TaskTimeline 
-            startDate={task.startDate} 
-            endDate={task.endDate || task.startDate} 
-            subTasks={task.subTasksJson ? JSON.parse(task.subTasksJson) : []} 
+          <TaskTimeline
+            startDate={task.startDate}
+            endDate={task.endDate || task.startDate}
+            subTasks={task.subTasksJson ? JSON.parse(task.subTasksJson) : []}
             masterColors={masterColors}
             mainPic={task.pic}
           />
@@ -563,7 +563,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             {task.deskripsi && (
               <div>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Deskripsi</h4>
-                <div 
+                <div
                   style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--input-bg)', padding: '12px', borderRadius: '8px', overflowX: 'auto', maxHeight: '150px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}
                   dangerouslySetInnerHTML={{ __html: formatDescription(task.deskripsi) }}
                 />
@@ -573,7 +573,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             {task.catatan && (
               <div style={{ marginTop: '8px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Catatan Tambahan</h4>
-                <div 
+                <div
                   style={{ color: 'var(--text-primary)', lineHeight: 1.5, background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', overflowX: 'auto', whiteSpace: 'pre-wrap', border: '1px solid var(--border-color)', borderLeft: '3px solid var(--accent-primary)' }}
                 >
                   {task.catatan}
@@ -594,7 +594,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 acc[st.status] = (acc[st.status] || 0) + 1;
                 return acc;
               }, {} as Record<string, number>);
-              
+
               const statusSummary = Object.entries(statusCounts)
                 .map(([status, count]) => `${count} ${status}`)
                 .join(', ');
@@ -618,39 +618,39 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     {Object.entries(groupedSubTasks)
                       .sort(([dateA], [dateB]) => dateA === 'Tanpa Tenggat Waktu' ? 1 : dateB === 'Tanpa Tenggat Waktu' ? -1 : dateA.localeCompare(dateB))
                       .map(([dateKey, tasksGroup]) => (
-                      <div key={dateKey} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
-                          {dateKey === 'Tanpa Tenggat Waktu' ? 'Tanpa Tenggat Waktu' : `Tenggat Waktu: ${format(new Date(dateKey), 'dd MMM yyyy')}`}
-                        </div>
-                        {tasksGroup.map(subTask => (
-                          <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
-                                {subTask.pic && (
-                                  <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      <User size={12} /> {subTask.pic}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              {(() => {
-                                const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
-                                return (
-                                  <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
-                                    {subTask.status}
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                            {subTask.logs && subTask.logs.length > 0 && (
-                              <SubTaskLogViewer logs={subTask.logs} />
-                            )}
+                        <div key={dateKey} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
+                            {dateKey === 'Tanpa Tenggat Waktu' ? 'Tanpa Tenggat Waktu' : `Tenggat Waktu: ${format(new Date(dateKey), 'dd MMM yyyy')}`}
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                          {tasksGroup.map(subTask => (
+                            <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
+                                  {subTask.pic && (
+                                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <User size={12} /> {subTask.pic}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {(() => {
+                                  const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
+                                  return (
+                                    <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
+                                      {subTask.status}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              {subTask.logs && subTask.logs.length > 0 && (
+                                <SubTaskLogViewer logs={subTask.logs} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                   </div>
                 </div>
               );
@@ -694,7 +694,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         )}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` (${(f.size / (1024*1024)).toFixed(2)} MB)` : ''}</span>}
+                        {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` (${(f.size / (1024 * 1024)).toFixed(2)} MB)` : ''}</span>}
                         {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
                       </div>
                     </div>
@@ -736,7 +736,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   ))
                 )}
               </div>
- 
+
               {hasPermission(roleConfig, 'upload_comment', userRole) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
@@ -768,7 +768,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 </div>
               )}
             </div>
- 
+
           </div>
         </motion.div>
       </div>

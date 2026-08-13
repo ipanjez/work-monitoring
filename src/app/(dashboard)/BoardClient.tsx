@@ -25,8 +25,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
-  const { 
-    masterColors, 
+  const {
+    masterColors,
     masterPicAvatars,
     masterCats: formCategoryOptions,
     masterPics: formPicOptions,
@@ -36,10 +36,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { 
-    globalTargetFilter, setGlobalTargetFilter, 
-    globalPicFilter, setGlobalPicFilter, 
-    globalCustomStartDate, setGlobalCustomStartDate, 
+  const {
+    globalTargetFilter, setGlobalTargetFilter,
+    globalPicFilter, setGlobalPicFilter,
+    globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
     globalFilterCategory: filterCategory,
@@ -373,7 +373,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
     return matchSearch && matchCategory && matchPic && matchDate && matchStatus && matchPriority;
   }).sort((a, b) => {
-    if (a.orderIndex === b.orderIndex) return b.id - a.id; 
+    if (a.orderIndex === b.orderIndex) return b.id - a.id;
     return (a.orderIndex || 0) - (b.orderIndex || 0);
   });
 
@@ -415,9 +415,9 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         return;
       }
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById('kanban-board-container');
@@ -463,7 +463,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           }
         }
       });
-      
+
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
       const imgData = canvas.toDataURL('image/png');
@@ -475,7 +475,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       });
       pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
       pdf.save(`Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      
+
       setIsExportingPdf(false);
     } catch (err) {
       console.error('PDF Export error:', err);
@@ -490,9 +490,9 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       const element = document.getElementById('kanban-board-container');
       if (!element) return;
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById('kanban-board-container');
@@ -587,8 +587,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
           alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
         }}>
-          <div style={{ 
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+          <div style={{
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)',
             borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             border: '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', gap: '8px',
@@ -599,15 +599,15 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           </div>
         </div>
       )}
-      <UniversalFilterBar 
-        categories={formCategoryOptions} 
-        pics={formPicOptions} 
-        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
-        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      <UniversalFilterBar
+        categories={formCategoryOptions}
+        pics={formPicOptions}
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined}
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined}
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
       >
-        <UniversalActionBar 
+        <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
@@ -620,7 +620,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
           let columnTasks = filteredTasks.filter((t: any) => t.status === col);
           const sortType = colSorts[col] || 'default';
-          
+
           if (sortType === 'endDate') {
             columnTasks.sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
           } else if (sortType === 'priority') {
@@ -671,12 +671,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     {columnTasks.length}
                   </span>
                 </div>
-                
-                <select 
+
+                <select
                   className="input"
                   style={{ padding: '2px 4px', fontSize: '11px', width: 'auto', minWidth: '70px', borderRadius: '4px', backgroundColor: 'var(--background)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer' }}
                   value={colSorts[col] || 'default'}
-                  onChange={(e) => setColSorts({...colSorts, [col]: e.target.value})}
+                  onChange={(e) => setColSorts({ ...colSorts, [col]: e.target.value })}
                   title="Urutkan"
                 >
                   <option value="default">Urutan Default</option>
@@ -699,7 +699,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     try {
                       const extra = JSON.parse(task.additionalPics || '[]');
                       if (Array.isArray(extra) && extra.includes(session.user.name)) return true;
-                    } catch (e) {}
+                    } catch (e) { }
                     return false;
                   };
 
@@ -830,60 +830,60 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                           )}
 
                         </div>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {(() => {
-                          let addPics: string[] = [];
-                          if (task.additionalPics) {
-                            try {
-                              addPics = JSON.parse(task.additionalPics);
-                            } catch(e) {}
-                          }
-                          const allPics = [task.pic, ...addPics].filter(Boolean);
-                          const displayPics = allPics.slice(0, 3);
-                          const extraCount = allPics.length - 3;
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          {(() => {
+                            let addPics: string[] = [];
+                            if (task.additionalPics) {
+                              try {
+                                addPics = JSON.parse(task.additionalPics);
+                              } catch (e) { }
+                            }
+                            const allPics = [task.pic, ...addPics].filter(Boolean);
+                            const displayPics = allPics.slice(0, 3);
+                            const extraCount = allPics.length - 3;
 
-                          return (
-                            <>
-                              {displayPics.map((p, i) => (
-                                <div key={i} style={{ 
-                                  marginLeft: i > 0 ? '-8px' : '0', 
-                                  border: '2px solid var(--surface-color)', 
-                                  borderRadius: '50%',
-                                  zIndex: displayPics.length - i,
-                                  position: 'relative'
-                                }} title={p}>
-                                  <Avatar 
-                                    name={p} 
-                                    src={masterPicAvatars?.[p]} 
-                                    size={24} 
-                                    masterColors={masterColors} 
-                                  />
-                                </div>
-                              ))}
-                              {extraCount > 0 && (
-                                <div style={{ 
-                                  marginLeft: '-8px',
-                                  border: '2px solid var(--surface-color)',
-                                  borderRadius: '50%',
-                                  width: '24px',
-                                  height: '24px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  backgroundColor: 'var(--bg-hover)',
-                                  color: 'var(--text-secondary)',
-                                  fontSize: '10px',
-                                  fontWeight: 'bold',
-                                  zIndex: 0,
-                                  position: 'relative'
-                                }} title={`${extraCount} PIC lainnya`}>
-                                  +{extraCount}
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
+                            return (
+                              <>
+                                {displayPics.map((p, i) => (
+                                  <div key={i} style={{
+                                    marginLeft: i > 0 ? '-8px' : '0',
+                                    border: '2px solid var(--surface-color)',
+                                    borderRadius: '50%',
+                                    zIndex: displayPics.length - i,
+                                    position: 'relative'
+                                  }} title={p}>
+                                    <Avatar
+                                      name={p}
+                                      src={masterPicAvatars?.[p]}
+                                      size={24}
+                                      masterColors={masterColors}
+                                    />
+                                  </div>
+                                ))}
+                                {extraCount > 0 && (
+                                  <div style={{
+                                    marginLeft: '-8px',
+                                    border: '2px solid var(--surface-color)',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: 'var(--bg-hover)',
+                                    color: 'var(--text-secondary)',
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    zIndex: 0,
+                                    position: 'relative'
+                                  }} title={`${extraCount} PIC lainnya`}>
+                                    +{extraCount}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   );

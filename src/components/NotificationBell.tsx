@@ -32,17 +32,17 @@ export default function NotificationBell() {
   }, [isOpen]);
 
   return (
-    <div 
+    <div
       id="notification-bell-container"
-      style={{ position: 'relative', zIndex: 1000 }} 
+      style={{ position: 'relative', zIndex: 1000 }}
       ref={panelRef}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          width: '45px', height: '45px', borderRadius: '50%', background: 'var(--surface-color)', 
+          width: '45px', height: '45px', borderRadius: '50%', background: 'var(--surface-color)',
           border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', position: 'relative', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}
@@ -59,7 +59,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <div 
+      <div
         style={{
           position: 'absolute', top: '45px', right: '0', width: '350px', background: 'var(--surface-color)',
           border: '1px solid var(--border-color)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
@@ -74,7 +74,7 @@ export default function NotificationBell() {
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Notifikasi Pembaruan</h3>
           <div style={{ display: 'flex', gap: '12px' }}>
             {unreadCount > 0 && (
-              <button 
+              <button
                 onClick={markAllAsRead}
                 style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
@@ -82,7 +82,7 @@ export default function NotificationBell() {
               </button>
             )}
             {notifications.length > 0 && (
-              <button 
+              <button
                 onClick={clearAll}
                 style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
@@ -91,7 +91,7 @@ export default function NotificationBell() {
             )}
           </div>
         </div>
-        
+
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
           <button
             onClick={() => setFilter('all')}
@@ -119,11 +119,11 @@ export default function NotificationBell() {
 
         {uniqueActions.length > 0 && (
           <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
-            <select 
-              value={actionFilter} 
+            <select
+              value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              style={{ 
-                width: '100%', padding: '6px 8px', borderRadius: '6px', 
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: '6px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-color)',
                 color: 'var(--text-primary)', fontSize: '12px'
               }}
@@ -148,7 +148,7 @@ export default function NotificationBell() {
             </div>
           ) : (
             finalFiltered.map(notif => (
-              <div 
+              <div
                 key={notif.id}
                 style={{
                   padding: '12px 16px', borderBottom: '1px solid var(--border-color)',
@@ -162,7 +162,7 @@ export default function NotificationBell() {
                     {notif.title && <div style={{ fontWeight: 600, color: notif.type === 'danger' ? 'var(--danger)' : notif.type === 'success' ? '#10b981' : 'var(--accent-primary)', marginBottom: '2px' }}>{notif.title}</div>}
                     <div style={{ whiteSpace: 'pre-wrap' }}>{notif.message ? formatLogDetails(notif.message) : (
                       <>
-                        <span style={{ fontWeight: 600 }}>{notif.pic}</span> memperbarui pekerjaan 
+                        <span style={{ fontWeight: 600 }}>{notif.pic}</span> memperbarui pekerjaan
                         <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}> {notif.nama}</span>
                         {notif.status && <span> menjadi status <span className={`badge ${notif.status === 'Done' ? 'badge-success' : notif.status === 'In Progress' ? 'badge-warning' : 'badge-todo'}`}>{notif.status}</span></span>}
                       </>
@@ -173,7 +173,7 @@ export default function NotificationBell() {
                   </div>
                 </div>
                 {!notif.isRead && (
-                  <button 
+                  <button
                     onClick={() => markAsRead(notif.id)}
                     title="Tandai sudah dibaca"
                     style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }}

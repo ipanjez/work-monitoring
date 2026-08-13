@@ -14,6 +14,7 @@ import { useFilter } from '@/context/FilterContext';
 import { useMaster } from '@/context/MasterContext';
 import IdleTimer from './IdleTimer';
 import { useSession, signOut } from 'next-auth/react';
+import { useNotifications } from '@/context/NotificationContext';
 
 
 export default function Sidebar() {
@@ -170,6 +171,15 @@ export default function Sidebar() {
     ] : [])
   ];
 
+  const { notifications } = useNotifications();
+  const systemUserUnreads = userRole === 'ADMIN' ? notifications.filter(n =>
+    !n.isRead && (
+      n.title === 'Registrasi User Baru' ||
+      n.title === 'Permintaan Reset Password' ||
+      n.title === 'Umpan Balik Baru'
+    )
+  ).length : 0;
+
   return (
     <>
       <div
@@ -194,16 +204,17 @@ export default function Sidebar() {
                 </div>
               )}
             </div>
-
+ 
             <button className={styles.toggleBtn} onClick={toggleSidebar} title={isSidebarCollapsed ? "Buka Sidebar" : "Lipat Sidebar"}>
               {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
           </div>
-
+ 
           <nav className={styles.nav}>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+              const hasBadge = item.href === '/users' && systemUserUnreads > 0;
               return (
                 <Link
                   id={`menu-${item.href === '/' ? 'monitoring' : item.href.split('/').pop()}`}
@@ -211,9 +222,20 @@ export default function Sidebar() {
                   href={item.href}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={isSidebarCollapsed ? item.label : undefined}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
                 >
-                  <Icon size={20} style={{ flexShrink: 0 }} />
-                  {!isSidebarCollapsed && <span className={styles.navText}>{item.label}</span>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Icon size={20} style={{ flexShrink: 0 }} />
+                    {!isSidebarCollapsed && <span className={styles.navText}>{item.label}</span>}
+                  </div>
+                  {hasBadge && !isSidebarCollapsed && (
+                    <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                      {systemUserUnreads}
+                    </span>
+                  )}
+                  {hasBadge && isSidebarCollapsed && (
+                    <div style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }} />
+                  )}
                 </Link>
               );
             })}

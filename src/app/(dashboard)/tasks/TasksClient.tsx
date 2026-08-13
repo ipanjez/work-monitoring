@@ -48,10 +48,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   // Search & Filter State (Initialized from URL if present)
   // Search & Filter State (Initialized from URL if present)
-  const { 
-    globalTargetFilter, setGlobalTargetFilter, 
-    globalPicFilter, setGlobalPicFilter, 
-    globalCustomStartDate, setGlobalCustomStartDate, 
+  const {
+    globalTargetFilter, setGlobalTargetFilter,
+    globalPicFilter, setGlobalPicFilter,
+    globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
     globalFilterStatus: filterStatus,
@@ -82,9 +82,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
-  const { 
-    masterColors, 
-    masterPicAvatars, 
+  const {
+    masterColors,
+    masterPicAvatars,
     appName,
     masterCats,
     masterStatuses,
@@ -260,7 +260,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       matchesTarget = true;
     } else {
       if (end >= startBoundary && end <= endBoundary) {
-         matchesTarget = true;
+        matchesTarget = true;
       }
     }
 
@@ -347,7 +347,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       } else if (Array.isArray(task.subTasksJson)) {
         parsedSubTasks = task.subTasksJson;
       }
-      
+
       if (!Array.isArray(parsedSubTasks)) {
         parsedSubTasks = [];
       }
@@ -429,7 +429,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         subTasksJson: processedSubTasks.length > 0 ? JSON.stringify(processedSubTasks) : null,
         additionalPics: filteredExtraPics.length > 0 ? JSON.stringify(filteredExtraPics) : null,
       };
-      
+
       delete finalPayload.customRecurrenceSettings;
 
       const saveRes = await fetch(url, {
@@ -582,7 +582,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       try {
         JSON.parse(str);
         return str;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const lower = str.toLowerCase();
@@ -620,7 +620,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   // Helper: normalize date values from Excel (serial number or string) to ISO string
   const normalizeDate = (val: any, fieldName: string, idx: number): string => {
     if (val == null || val === '') return new Date().toISOString();
-    
+
     let date: Date;
     if (typeof val === 'number') {
       date = new Date(Math.round((val - 25569) * 86400 * 1000));
@@ -816,13 +816,13 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       const element = document.getElementById('task-table-container');
       if (!element) return;
-      
+
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         windowWidth: width,
         windowHeight: height,
@@ -849,20 +849,20 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('task-table-container');
       if (!element) return;
-      
+
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         windowWidth: width,
         windowHeight: height,
         width: width,
         height: height
       });
-      
+
       canvas.toBlob(async (blob) => {
         if (blob) {
           try {
@@ -870,7 +870,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               new ClipboardItem({ 'image/png': blob })
             ]);
             toast.success('Gambar berhasil disalin ke clipboard');
-          } catch(err) {
+          } catch (err) {
             console.error(err);
             toast.error('Gagal menyalin gambar, izin ditolak.');
           }
@@ -934,8 +934,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
           alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
         }}>
-          <div style={{ 
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+          <div style={{
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)',
             borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             border: '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', gap: '8px',
@@ -954,22 +954,22 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </datalist>
 
       {/* Action Bar & Filter Bar */}
-      <UniversalFilterBar 
-        categories={['Umum', ...masterCats]} 
-        pics={existingPics} 
-        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
-        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      <UniversalFilterBar
+        categories={['Umum', ...masterCats]}
+        pics={existingPics}
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined}
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined}
         filteredCount={processedTasks.length}
         totalCount={tasks.length}
       >
-        <UniversalActionBar 
+        <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           onCopyImage={handleCopyImage}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             onClick={handleExportAllICS}
             title="Export .ics untuk semua pekerjaan"
             style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
@@ -1124,8 +1124,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         <span>Dibuat: {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy, HH:mm') : '-'}</span>
                         <span>Diperbarui: {task.updatedAt ? format(new Date(task.updatedAt), 'dd MMM yyyy, HH:mm') : '-'}</span>
                       </div>
-                     </td>
-                     <td className="hide-tablet" style={{ padding: '8px 6px', maxWidth: '130px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    </td>
+                    <td className="hide-tablet" style={{ padding: '8px 6px', maxWidth: '130px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       <div style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -1137,7 +1137,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         {task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}
                       </div>
                     </td>
-                     <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       {task.subTasksJson ? (() => {
                         try {
                           const st = JSON.parse(task.subTasksJson);
@@ -1147,7 +1147,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         } catch (e) { return '-'; }
                       })() : '-'}
                     </td>
-                     <td style={{ padding: '8px 6px', fontWeight: '500' }}>
+                    <td style={{ padding: '8px 6px', fontWeight: '500' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Avatar name={task.pic} src={masterPicAvatars?.[task.pic]} size={20} masterColors={masterColors} />
@@ -1161,23 +1161,23 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         ))}
                       </div>
                     </td>
-                     <td className="hide-mobile" style={{ padding: '8px 6px' }}>
+                    <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       {(() => {
                         const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
                         return (
-                           <span className={badge.className} style={Object.assign({ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }, badge.style)}>
+                          <span className={badge.className} style={Object.assign({ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }, badge.style)}>
                             {task.kategori || 'Umum'}
                           </span>
                         );
                       })()}
                     </td>
-                     <td style={{ padding: '8px 6px' }}>
-                       <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)} style={Object.assign({ fontSize: '11px' }, getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors).style)}>
+                    <td style={{ padding: '8px 6px' }}>
+                      <span {...getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)} style={Object.assign({ fontSize: '11px' }, getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors).style)}>
                         {task.prioritas || 'Medium'}
                       </span>
                     </td>
-                     <td style={{ padding: '8px 6px', minWidth: '110px' }}>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
+                    <td style={{ padding: '8px 6px', minWidth: '110px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
                         {(() => {
                           const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
                           return (
@@ -1198,15 +1198,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </div>
                     </td>
-                     <td className="hide-mobile" style={{ padding: '8px 6px' }}>
+                    <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {taskFiles.length > 0 ? taskFiles.map((f, i) => (
-                          <div 
+                          <div
                             key={i}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
                             onClick={(e) => {
-                               e.stopPropagation();
-                               hasPermission(roleConfig, 'view_detail', userRole) ? setPreviewFile(f) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                              e.stopPropagation();
+                              hasPermission(roleConfig, 'view_detail', userRole) ? setPreviewFile(f) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
                             }}
                           >
                             <Paperclip size={14} /> {f.name}
@@ -1214,7 +1214,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         )) : '-'}
                       </div>
                     </td>
-                     <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       {(() => {
                         const isOverdue = task.status !== 'Done' && new Date(task.endDate).setHours(23, 59, 59, 999) < new Date().getTime();
                         return (
@@ -1224,10 +1224,10 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         );
                       })()}
                       {!task.isAllDay && task.startTime && (
-                         <div style={{ fontSize: '10.5px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
+                        <div style={{ fontSize: '10.5px', opacity: 0.8 }}>{task.startTime} - {task.endTime}</div>
                       )}
                     </td>
-                     <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    <td className="hide-tablet" style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                       {(() => {
                         if (!task.lokasi) return '-';
                         try {
@@ -1255,7 +1255,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         }
                       })()}
                     </td>
-                     <td style={{ padding: '8px 4px', textAlign: 'center', position: 'relative', width: '40px' }}>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', position: 'relative', width: '40px' }}>
                       <div style={{ display: 'inline-block' }}>
                         <button
                           type="button"
@@ -1374,8 +1374,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             const badgeCat = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
 
             return (
-              <div 
-                key={task.id} 
+              <div
+                key={task.id}
                 className="mobile-task-card"
                 onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? setDetailTask(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
                 style={{ cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' }}
@@ -1413,7 +1413,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         {task.kategori || 'Umum'}
                       </span>
                     </div>
-                    
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <CalendarDays size={12} />
                       {(() => {
@@ -1452,7 +1452,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                           </div>
                         );
                       }
-                    } catch (e) {}
+                    } catch (e) { }
                     return null;
                   })()}
                 </div>
@@ -1553,7 +1553,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         setPreviewFile={setPreviewFile}
       />
 
-      <SmartAddModal 
+      <SmartAddModal
         isOpen={isSmartModalOpen}
         onClose={() => setIsSmartModalOpen(false)}
         picOptions={formPicOptions}
