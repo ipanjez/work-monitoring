@@ -657,7 +657,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           setTimeout(() => window.location.reload(), 1500);
         } else {
           const err = await res.json();
-          toast.error(err.error || 'Gagal memulihkan database');
+          toast.error(err.error || err.message || 'Gagal memulihkan database');
         }
       } catch (err) {
         toast.dismiss(toastId);
