@@ -1274,9 +1274,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               min="0"
               style={{ width: '120px' }}
             />
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Isi 0 untuk menonaktifkan pengingat. (Tekan tombol Simpan Pengaturan Umum di kanan bawah untuk menyimpan)
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '8px' }}>
+              Isi 0 untuk menonaktifkan pengingat.
             </p>
+            <button 
+              type="button" 
+              className="btn btn-primary" 
+              onClick={(e) => handleSaveSettings(e as any)} 
+              disabled={loading}
+              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Save size={14} /> Simpan Jadwal Pengingat
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
