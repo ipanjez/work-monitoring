@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     const body = await request.json();
     const { action, title, message, type } = body;
-    
+
     if (!action || !title || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }

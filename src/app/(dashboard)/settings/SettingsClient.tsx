@@ -67,7 +67,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Edit State
   const [editingItem, setEditingItem] = useState<{ type: ListType, oldVal: string } | null>(null);
   const [editInputValue, setEditInputValue] = useState('');
-  
+
   // Avatar Cropper State
   const [activePicForAvatar, setActivePicForAvatar] = useState<string | null>(null);
   const [isAppLogoCropperOpen, setIsAppLogoCropperOpen] = useState(false);
@@ -82,9 +82,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
 
   const PRESET_COLORS = [
-    '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', 
-    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', 
-    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', 
+    '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
     '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
   ];
 
@@ -144,12 +144,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     if (type === 'priority') key = 'master_priorities';
     if (type === 'location') key = 'master_locations';
 
-    const setFunc = 
-      type === 'cat' ? setCategories : 
-      type === 'pic' ? setPics : 
-      type === 'status' ? setStatuses : 
-      type === 'priority' ? setPriorities :
-      setLocations;
+    const setFunc =
+      type === 'cat' ? setCategories :
+        type === 'pic' ? setPics :
+          type === 'status' ? setStatuses :
+            type === 'priority' ? setPriorities :
+              setLocations;
 
     (setFunc as React.Dispatch<React.SetStateAction<string[]>>)((prev: string[]) => {
       const next = updater(prev as any);
@@ -244,15 +244,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setEditingItem(null);
       return;
     }
-    
+
     // Optimistic UI update
-    const setFunc = 
-      type === 'cat' ? setCategories : 
-      type === 'pic' ? setPics : 
-      type === 'status' ? setStatuses : 
-      type === 'priority' ? setPriorities :
-      setLocations;
-    
+    const setFunc =
+      type === 'cat' ? setCategories :
+        type === 'pic' ? setPics :
+          type === 'status' ? setStatuses :
+            type === 'priority' ? setPriorities :
+              setLocations;
+
     (setFunc as React.Dispatch<React.SetStateAction<string[]>>)(prev => {
       const arr = [...prev];
       const index = arr.indexOf(oldVal);
@@ -410,7 +410,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             ) : (
               <>{s}</>
             )}
-            
+
             {type === 'status' && (
               <input
                 type="number"
@@ -422,7 +422,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 title="Persentase Progress Otomatis (0-100)"
               />
             )}
-            
+
             {editingItem?.type !== type || editingItem?.oldVal !== s ? (
               <>
                 {type === 'pic' && (
@@ -438,11 +438,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     title="Ubah Foto Profil PIC"
                   >
                     {masterPicAvatars[s] ? (
-                       <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
-                         <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                       </div>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
+                        <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
                     ) : (
-                       <Camera size={14} />
+                      <Camera size={14} />
                     )}
                   </button>
                 )}
@@ -598,7 +598,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       const res = await fetch('/api/database');
       if (!res.ok) throw new Error('Gagal mengambil backup');
       const data = await res.json();
-      
+
       const dataStr = JSON.stringify(data, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -631,7 +631,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        
+
         const res = await fetch('/api/database', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -685,21 +685,21 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Aplikasi</label>
-              <input 
-                type="text" 
-                value={appName} 
+              <input
+                type="text"
+                value={appName}
                 onChange={e => setAppName(e.target.value)}
-                className="input" 
+                className="input"
                 placeholder="DeptMonitor"
               />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Subjudul / Departemen</label>
-              <input 
-                type="text" 
-                value={deptName} 
+              <input
+                type="text"
+                value={deptName}
                 onChange={e => setDeptName(e.target.value)}
-                className="input" 
+                className="input"
                 placeholder="MRK"
               />
             </div>
@@ -1100,15 +1100,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 placeholder="Contoh: 5000"
                 min="1"
               />
-              
+
               <div style={{ marginTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>
                   <span>Penyimpanan Terpakai: {storageUsedMb.toFixed(2)} MB</span>
                   <span>Maks: {maxTotalStorageMb} MB</span>
                 </div>
                 <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ 
-                    height: '100%', 
+                  <div style={{
+                    height: '100%',
                     background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
                     width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
                     transition: 'width 0.3s'
@@ -1138,7 +1138,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                 Jika pengguna tidak aktif / menutup aplikasi melampaui batas waktu ini, sistem akan otomatis mengeluarkan (logout) pengguna tersebut.
               </p>
-              
+
               {session?.user && (session.user as any).loginAt && (
                 <div style={{ marginTop: '12px', padding: '12px', background: 'var(--background-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
                   <strong>Informasi Sesi Anda:</strong><br />
@@ -1226,8 +1226,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           </div>
         </div>
       )}
-      
-      <AvatarCropperModal 
+
+      <AvatarCropperModal
         isOpen={!!activePicForAvatar}
         onClose={() => setActivePicForAvatar(null)}
         onSave={handleAvatarSave}

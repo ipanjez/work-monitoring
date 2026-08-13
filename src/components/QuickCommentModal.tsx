@@ -38,7 +38,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
       toast.error('Nama dan komentar tidak boleh kosong');
       return;
     }
-    
+
     localStorage.setItem('commentAuthor', finalAuthor.trim());
 
     const comment: CommentItem = {
@@ -63,8 +63,8 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
       toast.success('Komentar berhasil dikirim');
       if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${finalAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
       router.refresh();
-            if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-    } catch(e) {
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+    } catch (e) {
       toast.error('Gagal menyimpan komentar');
       setLocalComments(localComments); // revert
     } finally {
@@ -77,7 +77,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
   return (
     <AnimatePresence>
       <div className="modal-overlay" style={{ zIndex: 1100 }}>
-        <motion.div 
+        <motion.div
           className="modal-content"
           style={{ maxWidth: '500px', width: '100%' }}
           initial={{ scale: 0.9, opacity: 0 }}
@@ -94,7 +94,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
               <X size={16} />
             </button>
           </div>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '300px', overflowY: 'auto' }}>
             {localComments.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>Belum ada komentar untuk pekerjaan ini.</div>
@@ -112,25 +112,25 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-            <input 
-              type="text" 
-              className="input" 
-              placeholder="Nama Anda..." 
+            <input
+              type="text"
+              className="input"
+              placeholder="Nama Anda..."
               value={session?.user?.name || commentAuthor}
               readOnly
               style={{ fontSize: '13px', padding: '10px 12px', background: 'var(--surface-color)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
             />
             <div style={{ display: 'flex', gap: '8px' }}>
-              <textarea 
-                className="input" 
-                placeholder="Tulis komentar..." 
+              <textarea
+                className="input"
+                placeholder="Tulis komentar..."
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
                 rows={3}
                 style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '10px 12px' }}
               />
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={handleAddComment}
                 disabled={isSubmitting || !newComment.trim() || !(session?.user?.name || commentAuthor).trim()}
                 style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

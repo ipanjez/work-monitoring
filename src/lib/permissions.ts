@@ -19,13 +19,16 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     export_data: ['ADMIN', 'MEMBER'],
     master_data: ['ADMIN'],
     user_management: ['ADMIN'],
-    system_logs: ['ADMIN']
+    system_logs: ['ADMIN'],
+    admin_feedback: ['ADMIN'],
+    database_backup: ['ADMIN'],
+    system_config: ['ADMIN']
   }
 };
 
 export const hasPermission = (
-  config: RolePermissionsConfig | null | undefined, 
-  feature: string, 
+  config: RolePermissionsConfig | null | undefined,
+  feature: string,
   userRole: string
 ): boolean => {
   if (!config) config = defaultRolePermissions;

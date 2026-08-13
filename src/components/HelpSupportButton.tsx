@@ -670,17 +670,16 @@ export default function HelpSupportButton() {
 
     try {
       if (addActivityLog) {
-        const userEmail = feedbackEmail.trim() || session?.user?.email || 'Anonim';
+        const sender = session?.user?.name ? `${session.user.name} (${(session.user as any)?.npk || ''})` : 'Anonim';
         await addActivityLog(
           'SUBMIT_FEEDBACK', 
           'Umpan Balik Baru', 
-          `Feedback dari ${userEmail}: "${feedbackText.trim()}"`, 
+          `Feedback dari ${sender}: "${feedbackText.trim()}"`, 
           'success'
         );
       }
       toast.success('Umpan balik Anda telah berhasil dikirim! Terima kasih.');
       setFeedbackText('');
-      setFeedbackEmail('');
       setIsFeedbackOpen(false);
     } catch (err) {
       console.error(err);
@@ -908,21 +907,22 @@ export default function HelpSupportButton() {
 
               <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>Email Anda (Opsional)</label>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>Pengirim</label>
                   <input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={feedbackEmail}
-                    onChange={(e) => setFeedbackEmail(e.target.value)}
+                    type="text"
+                    value={session?.user?.name ? `${session.user.name} (${(session.user as any)?.npk || ''})` : 'Anonim'}
+                    disabled
                     style={{
                       width: '100%',
                       padding: '10px 14px',
                       borderRadius: '10px',
                       background: 'var(--input-bg)',
                       border: '1px solid var(--border-color)',
-                      color: 'var(--text-primary)',
+                      color: 'var(--text-secondary)',
                       fontSize: '13px',
-                      outline: 'none'
+                      outline: 'none',
+                      cursor: 'not-allowed',
+                      opacity: 0.8
                     }}
                   />
                 </div>

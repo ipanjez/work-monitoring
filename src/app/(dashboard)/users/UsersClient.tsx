@@ -8,11 +8,12 @@ import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
+import { useNotifications } from '@/context/NotificationContext';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
 type Log = { id: number; action: string; title: string; message: string; type: string; userId?: string; userName?: string; createdAt: string };
-type Tab = 'users' | 'requests' | 'logs' | 'roles';
+type Tab = 'users' | 'requests' | 'logs' | 'roles' | 'feedbacks';
 
 const EMPTY_USER: Partial<UserData & { password: string }> = { npk: '', name: '', role: 'MEMBER', status: 'ACTIVE', password: '', email: '' };
 
@@ -39,10 +40,12 @@ const actionLabel: Record<string, string> = {
 
 export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string }) {
   const { masterPicAvatars } = useMaster();
+  const { addActivityLog, notifications, markAsRead } = useNotifications();
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [requests, setRequests] = useState<ResetReq[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -60,6 +63,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [savingRoles, setSavingRoles] = useState(false);
+
+  const fetchFeedbacks = useCallback(async () => {
+    const res = await fetch('/api/admin/feedbacks');
+    if (res.ok) setFeedbacks(await res.json());
+  }, []);
+
 
   const fetchUsers = useCallback(async () => {
     const res = await fetch('/api/users');
@@ -100,6 +109,17 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   const LOGS_PER_PAGE = 50;
 
   useEffect(() => {
+    if (tab === 'feedbacks') {
+      fetchFeedbacks();
+      notifications.forEach((n: any) => {
+        if (!n.isRead && n.title === 'Umpan Balik Baru') {
+          markAsRead(n.id);
+        }
+      });
+    }
+  }, [tab, fetchFeedbacks, notifications, markAsRead]);
+
+  useEffect(() => {
     setLogPage(1);
   }, [filterType, filterUser, logSearch]);
 
@@ -117,7 +137,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
     if (!confirm(`Ubah status ${selectedUserIds.length} user terpilih menjadi ${status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}?`)) return;
     setLoading(true);
     try {
-      await Promise.all(selectedUserIds.map(id => 
+      await Promise.all(selectedUserIds.map(id =>
         fetch(`/api/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -138,7 +158,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
     if (!confirm(`Hapus ${selectedUserIds.length} user terpilih secara permanen? Tindakan ini tidak dapat dibatalkan.`)) return;
     setLoading(true);
     try {
-      await Promise.all(selectedUserIds.map(id => 
+      await Promise.all(selectedUserIds.map(id =>
         fetch(`/api/users/${id}`, {
           method: 'DELETE'
         })
@@ -331,7 +351,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       a.download = `Daftar_User_Monitoring_Kerja_${new Date().toISOString().split('T')[0]}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Daftar user berhasil diekspor ke Excel!', { id: 'export-excel-users' });
     } catch (e) {
       console.error(e);
@@ -353,7 +373,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
       {/* Tabs */}
       <div id="users-tabs-container" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0' }}>
-        {((['users', 'requests', 'logs', 'roles'] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
+        {((['users', 'requests', 'logs', 'roles', ...(userRole === 'ADMIN' ? ['feedbacks'] : [])] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -373,13 +393,15 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             }}
           >
             {t === 'users' ? (
-              <><User size={15} /> Daftar User</>
+              <><User size={15} /> Daftar User {users.filter(u => u.status === 'PENDING').length > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 7px', fontSize: '11px' }}>{users.filter(u => u.status === 'PENDING').length}</span>}</>
             ) : t === 'requests' ? (
               <><KeyRound size={15} /> Reset Requests {pendingCount > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 7px', fontSize: '11px' }}>{pendingCount}</span>}</>
             ) : t === 'logs' ? (
               <><ScrollText size={15} /> Sistem Logs</>
-            ) : (
+            ) : t === 'roles' ? (
               <><ShieldCheck size={15} /> Edit Role</>
+            ) : (
+              <><ScrollText size={15} /> Log Umpan Balik {notifications.filter((n: any) => !n.isRead && n.title === 'Umpan Balik Baru').length > 0 && <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 7px', fontSize: '11px' }}>{notifications.filter((n: any) => !n.isRead && n.title === 'Umpan Balik Baru').length}</span>}</>
             )}
           </button>
         ))}
@@ -408,22 +430,22 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginRight: 'auto' }}>
                 Terpilih: <strong>{selectedUserIds.length}</strong> user
               </span>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => handleBulkStatus('ACTIVE')}
                 style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(34,197,94,0.15)', color: '#16a34a', border: 'none', cursor: 'pointer', fontWeight: 600, borderRadius: '6px' }}
               >
                 Aktifkan Semua
               </button>
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => handleBulkStatus('INACTIVE')}
                 style={{ padding: '6px 12px', fontSize: '12px', background: 'rgba(239,68,68,0.15)', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600, borderRadius: '6px' }}
               >
                 Nonaktifkan Semua
               </button>
-              <button 
-                className="btn btn-danger" 
+              <button
+                className="btn btn-danger"
                 onClick={handleBulkDelete}
                 style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer' }}
               >
@@ -437,8 +459,8 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
                   <th style={{ padding: '10px 12px', width: '40px', textAlign: 'left' }}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={filtered.length > 0 && selectedUserIds.length === filtered.length}
                       onChange={(e) => {
                         if (e.target.checked) {
@@ -459,8 +481,8 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 {filtered.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '12px' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={selectedUserIds.includes(u.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -622,7 +644,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>{l.userName || '—'}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span 
+                      <span
                         title={actionLabel[l.action] || l.action}
                         style={{ display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: `${typeColor[l.type] || '#6b7280'}20`, color: typeColor[l.type] || '#6b7280', whiteSpace: 'nowrap' }}
                       >
@@ -645,17 +667,17 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               Menampilkan {paginatedLogs.length} dari {filteredLogs.length} log (Halaman {logPage} dari {totalLogPages})
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="btn" 
-                onClick={() => setLogPage(prev => Math.max(prev - 1, 1))} 
+              <button
+                className="btn"
+                onClick={() => setLogPage(prev => Math.max(prev - 1, 1))}
                 disabled={logPage === 1}
                 style={{ padding: '6px 12px', fontSize: '12px', cursor: logPage === 1 ? 'not-allowed' : 'pointer' }}
               >
                 Sebelumnya
               </button>
-              <button 
-                className="btn" 
-                onClick={() => setLogPage(prev => Math.min(prev + 1, totalLogPages))} 
+              <button
+                className="btn"
+                onClick={() => setLogPage(prev => Math.min(prev + 1, totalLogPages))}
                 disabled={logPage === totalLogPages}
                 style={{ padding: '6px 12px', fontSize: '12px', cursor: logPage === totalLogPages ? 'not-allowed' : 'pointer' }}
               >
@@ -676,21 +698,21 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               </h2>
               {userRole === 'ADMIN' && (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    className="btn btn-secondary" 
+                  <button
+                    className="btn btn-secondary"
                     onClick={() => {
                       const newKey = `ROLE_${Date.now()}`;
                       setRoleConfig(prev => ({
                         ...prev,
                         labels: { ...prev.labels, [newKey]: 'Role Baru' }
                       }));
-                    }} 
+                    }}
                     disabled={savingRoles}
                   >
                     <Plus size={16} style={{ marginRight: '4px' }} /> Tambah Role
                   </button>
-                  <button 
-                    className="btn btn-primary" 
+                  <button
+                    className="btn btn-primary"
                     onClick={async () => {
                       setSavingRoles(true);
                       try {
@@ -706,7 +728,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       } finally {
                         setSavingRoles(false);
                       }
-                    }} 
+                    }}
                     disabled={savingRoles}
                   >
                     {savingRoles ? 'Menyimpan...' : 'Simpan Perubahan'}
@@ -722,8 +744,8 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                     <th key={rk} style={{ padding: '12px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)' }}>
                       {userRole === 'ADMIN' ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                          <input 
-                            className="input" 
+                          <input
+                            className="input"
                             style={{ padding: '4px 8px', fontSize: '13px', textAlign: 'center', width: '100px', fontWeight: 600 }}
                             value={roleConfig.labels[rk] || ''}
                             onChange={(e) => {
@@ -734,7 +756,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                             }}
                           />
                           {rk !== 'ADMIN' && (
-                            <button 
+                            <button
                               onClick={() => {
                                 if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
                                   const newLabels = { ...roleConfig.labels };
@@ -765,17 +787,20 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   { key: 'export_data', label: 'Export Data (Excel, PDF, Salin Gambar)' },
                   { key: 'master_data', label: 'Akses Pengaturan (Master Data)' },
                   { key: 'user_management', label: 'Manajemen User & Password' },
-                  { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' }
+                  { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' },
+                  { key: 'admin_feedback', label: 'Akses Umpan Balik (Admin)' },
+                  { key: 'database_backup', label: 'Cadangan & Pulihkan Database' },
+                  { key: 'system_config', label: 'Konfigurasi Limit & Sesi (System Config)' }
                 ].map(feature => (
                   <tr key={feature.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>{feature.label}</strong></td>
                     {Object.keys(roleConfig.labels).map(rk => {
-                      const hasPerm = roleConfig.permissions[feature.key]?.includes(rk);
+                      const hasPerm = !!roleConfig.permissions[feature.key]?.includes(rk);
                       return (
                         <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
                           {userRole === 'ADMIN' ? (
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={hasPerm}
                               style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                               onChange={(e) => {
@@ -802,6 +827,58 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Feedbacks Tab */}
+      {tab === 'feedbacks' && userRole === 'ADMIN' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ScrollText size={20} style={{ color: 'var(--accent-primary)' }} /> Log Umpan Balik Pengguna
+            </h2>
+            {feedbacks.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                Belum ada umpan balik yang dikirimkan.
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Tanggal</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Pengirim (Email / User)</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Pesan Umpan Balik</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedbacks.map((f: any) => {
+                    let sender = f.userName || 'Anonim';
+                    let cleanMsg = f.message;
+                    const matches = f.message.match(/Feedback dari ([^:]+): "([\s\S]+)"/);
+                    if (matches) {
+                      sender = matches[1];
+                      cleanMsg = matches[2];
+                    }
+                    return (
+                      <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {new Date(f.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                          <span className={`badge ${sender === 'Anonim' ? 'badge-todo' : 'badge-success'}`}>
+                            {sender}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                          {cleanMsg}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
