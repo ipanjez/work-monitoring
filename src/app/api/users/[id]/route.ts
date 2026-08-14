@@ -27,10 +27,65 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     updateData.password = await bcrypt.hash(password, 10);
   }
 
+  // Find original user for sync check
+  const originalUser = await prisma.user.findUnique({
+    where: { id }
+  });
+  if (!originalUser) {
+    return NextResponse.json({ error: 'User tidak ditemukan.' }, { status: 404 });
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
   });
+
+  // Sync profile photo (image) and name changes to master settings (master_pic_avatars)
+  try {
+    const settingsRecord = await prisma.setting.findUnique({
+      where: { key: 'master_pic_avatars' }
+    });
+    let avatars: Record<string, string> = {};
+    if (settingsRecord && settingsRecord.value) {
+      avatars = JSON.parse(settingsRecord.value);
+    }
+
+    // Sync old name mapping
+    if (originalUser.name && originalUser.name !== user.name) {
+      const userImage = avatars[originalUser.name] || user.image;
+      delete avatars[originalUser.name];
+      if (userImage) {
+        avatars[user.name || ''] = userImage;
+      }
+    } else if (user.image) {
+      avatars[user.name || ''] = user.image;
+    }
+
+    await prisma.setting.upsert({
+      where: { key: 'master_pic_avatars' },
+      update: { value: JSON.stringify(avatars) },
+      create: { key: 'master_pic_avatars', value: JSON.stringify(avatars) }
+    });
+
+    // Also sync the name change in master_pics list
+    const picsRecord = await prisma.setting.findUnique({
+      where: { key: 'master_pics' }
+    });
+    if (picsRecord && picsRecord.value) {
+      let pics: string[] = JSON.parse(picsRecord.value);
+      if (originalUser.name && pics.includes(originalUser.name)) {
+        pics = pics.map(p => p === originalUser.name ? (user.name || '') : p);
+      } else if (user.name && !pics.includes(user.name)) {
+        pics.push(user.name);
+      }
+      await prisma.setting.update({
+        where: { key: 'master_pics' },
+        data: { value: JSON.stringify(pics) }
+      });
+    }
+  } catch (syncErr) {
+    console.error('Failed to sync admin user update with master settings:', syncErr);
+  }
 
   await prisma.activityLog.create({
     data: {

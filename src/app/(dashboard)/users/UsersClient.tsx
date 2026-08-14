@@ -734,8 +734,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify(roleConfig)
                         });
-                        if (res.ok) toast.success('Matriks Role berhasil disimpan');
-                        else toast.error('Gagal menyimpan matriks role');
+                        if (res.ok) {
+                          toast.success('Matriks Role berhasil disimpan');
+                          window.dispatchEvent(new Event('masterUpdated'));
+                        } else {
+                          toast.error('Gagal menyimpan matriks role');
+                        }
                       } catch (e) {
                         toast.error('Gagal menyimpan matriks role');
                       } finally {

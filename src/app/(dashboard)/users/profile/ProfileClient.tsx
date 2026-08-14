@@ -89,6 +89,7 @@ export default function ProfileClient() {
         
         // Dispatch event so layout and clock avatars update immediately
         window.dispatchEvent(new Event('profileUpdated'));
+        window.dispatchEvent(new Event('masterUpdated'));
       } else {
         toast.error(data.error || 'Gagal memperbarui profil.');
       }

@@ -78,6 +78,54 @@ export async function PUT(request: Request) {
     data: updateData,
   });
 
+  // Sync profile photo (image) and name changes to master settings (master_pic_avatars)
+  try {
+    const settingsRecord = await prisma.setting.findUnique({
+      where: { key: 'master_pic_avatars' }
+    });
+    let avatars: Record<string, string> = {};
+    if (settingsRecord && settingsRecord.value) {
+      avatars = JSON.parse(settingsRecord.value);
+    }
+
+    // If name changed, remove the old name mapping
+    if (user.name && user.name !== updatedUser.name) {
+      delete avatars[user.name];
+    }
+
+    // Update avatar image mapping
+    if (updatedUser.image) {
+      avatars[updatedUser.name || ''] = updatedUser.image;
+    } else {
+      delete avatars[updatedUser.name || ''];
+    }
+
+    await prisma.setting.upsert({
+      where: { key: 'master_pic_avatars' },
+      update: { value: JSON.stringify(avatars) },
+      create: { key: 'master_pic_avatars', value: JSON.stringify(avatars) }
+    });
+
+    // Also sync the name change in master_pics list
+    const picsRecord = await prisma.setting.findUnique({
+      where: { key: 'master_pics' }
+    });
+    if (picsRecord && picsRecord.value) {
+      let pics: string[] = JSON.parse(picsRecord.value);
+      if (user.name && pics.includes(user.name)) {
+        pics = pics.map(p => p === user.name ? (updatedUser.name || '') : p);
+      } else if (updatedUser.name && !pics.includes(updatedUser.name)) {
+        pics.push(updatedUser.name);
+      }
+      await prisma.setting.update({
+        where: { key: 'master_pics' },
+        data: { value: JSON.stringify(pics) }
+      });
+    }
+  } catch (syncErr) {
+    console.error('Failed to sync profile change with master settings:', syncErr);
+  }
+
   // Log activity
   await prisma.activityLog.create({
     data: {
@@ -97,6 +145,7 @@ export async function PUT(request: Request) {
       npk: updatedUser.npk,
       name: updatedUser.name,
       email: updatedUser.email,
+      image: updatedUser.image,
     }
   });
 }
