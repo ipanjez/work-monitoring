@@ -505,7 +505,15 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      doc.save(`Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pdfUrl);
     } catch (error) {
       console.error('PDF Export error:', error);
     } finally {

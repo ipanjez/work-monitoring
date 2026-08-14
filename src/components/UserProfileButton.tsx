@@ -10,15 +10,42 @@ import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
 
 export default function UserProfileButton() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const { masterPicAvatars, masterColors } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const [displayName, setDisplayName] = useState('');
+  const [displayImage, setDisplayImage] = useState('');
+
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  
   useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
+    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
+  }, []);
+
+  const loadUserData = () => {
+    fetch('/api/users/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.name) setDisplayName(data.name);
+        if (data.image) setDisplayImage(data.image);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      setDisplayName(session.user.name || 'User');
+      setDisplayImage(session.user.image || '');
+      loadUserData();
+    }
+  }, [session]);
+
+  useEffect(() => {
+    window.addEventListener('profileUpdated', loadUserData);
+    return () => window.removeEventListener('profileUpdated', loadUserData);
   }, []);
 
   useEffect(() => {
@@ -37,17 +64,15 @@ export default function UserProfileButton() {
 
   if (!session || !session.user) return null;
 
-  const name = session.user.name || 'User';
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await signOut({ callbackUrl: '/auth/signin' });
   };
 
   return (
-    <div 
+    <div
       id="user-profile-btn-container"
-      style={{ position: 'relative' }} 
+      style={{ position: 'relative' }}
       ref={dropdownRef}
     >
       <button
@@ -79,9 +104,9 @@ export default function UserProfileButton() {
         }}
       >
         {/* Avatar Circle */}
-        <Avatar 
-          name={name}
-          src={masterPicAvatars[name]}
+        <Avatar
+          name={displayName}
+          src={displayImage || masterPicAvatars[displayName]}
           size={34}
           masterColors={masterColors}
         />
@@ -89,21 +114,21 @@ export default function UserProfileButton() {
         {/* User Name & Role */}
         <div className="profile-info" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
           <span className="profile-name-text" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
-            {name}
+            {displayName}
           </span>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
             {getRoleLabel(roleConfig, (session.user as any).role)}
           </span>
         </div>
-        <ChevronDown 
+        <ChevronDown
           className="profile-chevron"
-          size={14} 
-          style={{ 
-            color: 'var(--text-secondary)', 
-            marginLeft: '4px', 
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
-            transition: 'transform 0.2s' 
-          }} 
+          size={14}
+          style={{
+            color: 'var(--text-secondary)',
+            marginLeft: '4px',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s'
+          }}
         />
       </button>
 
@@ -134,7 +159,7 @@ export default function UserProfileButton() {
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
               {(session.user as any).npk || '—'}
             </div>
-            
+
             <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Role Akses</div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -152,7 +177,7 @@ export default function UserProfileButton() {
                     {(() => {
                       const role = (session.user as any).role;
                       if (role === 'ADMIN') return 'Akses penuh kelola data.';
-                      
+
                       const labels: string[] = [];
                       if (hasPermission(roleConfig, 'view_dashboard', role)) labels.push('Dashboard');
                       if (hasPermission(roleConfig, 'view_detail', role)) labels.push('Detail Tugas');
@@ -162,7 +187,7 @@ export default function UserProfileButton() {
                       if (hasPermission(roleConfig, 'master_data', role)) labels.push('Pengaturan');
                       if (hasPermission(roleConfig, 'user_management', role)) labels.push('Manajemen User');
                       if (hasPermission(roleConfig, 'system_logs', role)) labels.push('Log Sistem');
-                      
+
                       if (labels.length === 0) return 'Tidak ada akses spesifik.';
                       return `Akses: ${labels.join(', ')}`;
                     })()}
@@ -172,76 +197,7 @@ export default function UserProfileButton() {
             </div>
           </div>
 
-          {/* Mobile Only Quick Actions */}
-          <div className="mobile-only-menu" style={{ 
-            flexDirection: 'column', 
-            borderBottom: '1px solid var(--border-color)', 
-            paddingBottom: '6px', 
-            marginBottom: '4px' 
-          }}>
-            <div style={{ padding: '6px 16px 4px', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Aksi Cepat (Mobile)</div>
-            {hasPermission(roleConfig, 'manage_task', (session.user as any).role) && (
-              <div
-                onClick={() => {
-                  setIsOpen(false);
-                  window.dispatchEvent(new Event('openGlobalAddTask'));
-                }}
-                style={{
-                  padding: '10px 16px',
-                  fontSize: '13px',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={(e: any) => e.currentTarget.style.background = 'var(--surface-hover)'}
-                onMouseLeave={(e: any) => e.currentTarget.style.background = 'transparent'}
-              >
-                <Plus size={14} style={{ color: 'var(--accent-primary)' }} />
-                Tambah Pekerjaan
-              </div>
-            )}
-            
-            <Link
-              href="/calendar"
-              onClick={() => setIsOpen(false)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '13px',
-                color: 'var(--text-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <Calendar size={14} style={{ color: 'var(--text-secondary)' }} />
-              Kalender & Agenda
-            </Link>
 
-            <Link
-              href="/guide"
-              onClick={() => setIsOpen(false)}
-              style={{
-                padding: '10px 16px',
-                fontSize: '13px',
-                color: 'var(--text-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <BookOpen size={14} style={{ color: 'var(--text-secondary)' }} />
-              Panduan Aplikasi
-            </Link>
-          </div>
 
           <Link
             href="/users/profile"

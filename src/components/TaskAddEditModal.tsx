@@ -24,7 +24,7 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
       {visibleLogs.map((log: any, lidx: number) => (
         <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
           <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-          <span 
+          <span
             style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
             dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
           />
@@ -90,7 +90,7 @@ export default function TaskAddEditModal({
       fetch('/api/settings/permissions')
         .then(res => res.json())
         .then(setRoleConfig)
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isOpen]);
   const canUploadAttachment = hasPermission(roleConfig, 'upload_comment', userRole);
@@ -138,7 +138,7 @@ export default function TaskAddEditModal({
     if (isOpen && taskToEdit) {
       console.log('DEBUG taskToEdit:', taskToEdit);
       const cloned = JSON.parse(JSON.stringify(taskToEdit));
-      
+
       if (cloned.repetisi && cloned.repetisi.startsWith('CUSTOM_RECURRENCE:')) {
         try {
           let jsonStr = cloned.repetisi.replace('CUSTOM_RECURRENCE:', '');
@@ -177,7 +177,7 @@ export default function TaskAddEditModal({
           if (Array.isArray(parsed) && parsed.length > 0) {
             cloned.subTasksList = parsed;
           }
-        } catch(e) {
+        } catch (e) {
           console.error("Failed to parse subTasksJson in modal", e);
         }
       }
@@ -354,7 +354,7 @@ export default function TaskAddEditModal({
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ 
+            <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               position: 'sticky', top: '-24px',
               background: 'var(--modal-bg, var(--surface-color))',
@@ -613,20 +613,20 @@ export default function TaskAddEditModal({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam Mulai</label>
-                      <input 
-                        type="time" 
-                        className="input" 
-                        value={editingTask.startTime || '08:00'} 
-                        onChange={e => setEditingTask({ ...editingTask, startTime: e.target.value })} 
+                      <input
+                        type="time"
+                        className="input"
+                        value={editingTask.startTime || '08:00'}
+                        onChange={e => setEditingTask({ ...editingTask, startTime: e.target.value })}
                       />
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Jam Selesai</label>
-                      <input 
-                        type="time" 
-                        className="input" 
-                        value={editingTask.endTime || '17:00'} 
-                        onChange={e => setEditingTask({ ...editingTask, endTime: e.target.value })} 
+                      <input
+                        type="time"
+                        className="input"
+                        value={editingTask.endTime || '17:00'}
+                        onChange={e => setEditingTask({ ...editingTask, endTime: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1036,7 +1036,7 @@ export default function TaskAddEditModal({
                     onChange={handleFileUpload}
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div 
+                    <div
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       style={{
@@ -1064,49 +1064,49 @@ export default function TaskAddEditModal({
                     </div>
 
                     {editingTask.filesList && editingTask.filesList.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
-                      {editingTask.filesList.map((f, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile?.(f)}>
-                              <File size={15} />
-                              <span style={{ fontWeight: 500 }}>{f.name}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
+                        {editingTask.filesList.map((f, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile?.(f)}>
+                                <File size={15} />
+                                <span style={{ fontWeight: 500 }}>{f.name}</span>
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` • ${(f.size / (1024 * 1024)).toFixed(2)} MB` : ''}</span>}
+                                {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                              {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` • ${(f.size / (1024*1024)).toFixed(2)} MB` : ''}</span>}
-                              {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {!f.isDeleted && (
+                                <>
+                                  <button
+                                    type="button"
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
+                                    onClick={() => setPreviewFile?.(f)}
+                                    title="Pratinjau File"
+                                  >
+                                    <Eye size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
+                                    onClick={() => handleRemoveFileFromEdit(idx)}
+                                    title="Hapus Lampiran Ini"
+                                  >
+                                    <X size={15} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {!f.isDeleted && (
-                              <>
-                                <button
-                                  type="button"
-                                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
-                                  onClick={() => setPreviewFile?.(f)}
-                                  title="Pratinjau File"
-                                >
-                                  <Eye size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
-                                  onClick={() => handleRemoveFileFromEdit(idx)}
-                                  title="Hapus Lampiran Ini"
-                                >
-                                  <X size={15} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-              <div style={{ 
+              )}
+              <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 position: 'sticky', bottom: '-24px',
                 background: 'var(--modal-bg, var(--surface-color))',
@@ -1119,8 +1119,8 @@ export default function TaskAddEditModal({
               }}>
                 <div>
                   {editingTask && editingTask.id !== undefined && (
-                    <button 
-                      className="btn" 
+                    <button
+                      className="btn"
                       style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
                       onClick={() => {
                         onClose();

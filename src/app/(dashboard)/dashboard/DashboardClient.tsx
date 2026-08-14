@@ -884,7 +884,15 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         }
       });
 
-      doc.save(`Dashboard_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `Dashboard_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pdfUrl);
     } catch (error) {
       console.error('PDF Export error:', error);
     }

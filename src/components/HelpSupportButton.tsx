@@ -549,14 +549,6 @@ export default function HelpSupportButton() {
           }
         },
         {
-          element: '#settings-account',
-          popover: {
-            title: 'Profil & Keamanan Akun',
-            description: 'Perbarui nama lengkap profil Anda serta ubah password masuk akun secara berkala untuk keamanan.',
-            side: 'bottom'
-          }
-        },
-        {
           element: '#settings-categories',
           popover: {
             title: 'Master Kategori Dropdown',
@@ -578,21 +570,11 @@ export default function HelpSupportButton() {
             title: 'Master Status Pekerjaan',
             description: 'Atur tahapan progress kerja (Kanban columns). Anda dapat menambah status baru, menyusun urutan prioritas kolom, serta memetakan bobot persentase progress default masing-masing status.',
             side: 'bottom'
-          }
         },
-        {
           element: '#settings-priorities',
           popover: {
             title: 'Master Prioritas Pekerjaan',
             description: 'Kelola pilihan tingkat urgensi pekerjaan (seperti Low, Medium, High, Critical) dalam form tugas.',
-            side: 'bottom'
-          }
-        },
-        {
-          element: '#settings-locations',
-          popover: {
-            title: 'Master Opsi Lokasi',
-            description: 'Mengatur opsi isian lokasi pengerjaan default (misalnya Zoom Link, Meeting Room, Pabrik) untuk mempermudah pengerjaan form.',
             side: 'bottom'
           }
         },
@@ -617,6 +599,33 @@ export default function HelpSupportButton() {
           popover: {
             title: 'Cadangan & Pemulihan Database',
             description: 'Ekspor database lengkap ke file JSON untuk cadangan berkala yang aman, atau pulihkan (restore) database dari file backup yang telah diunduh sebelumnya.',
+            side: 'top'
+          }
+        }
+      ];
+    } else if (pathname === '/users/profile') {
+      steps = [
+        {
+          element: '#user-profile-btn-container',
+          popover: {
+            title: 'Profil Saya',
+            description: 'Halaman aktif saat ini. Kelola informasi data personal dan keamanan akses Anda.',
+            side: 'bottom'
+          }
+        },
+        {
+          element: '.glass:first-of-type',
+          popover: {
+            title: 'Foto Profil',
+            description: 'Ubah atau ganti foto profil Anda di sini. Cukup klik tombol kamera atau Unggah Foto Baru untuk memotong dan memperbarui avatar secara instan.',
+            side: 'bottom'
+          }
+        },
+        {
+          element: '#settings-account',
+          popover: {
+            title: 'Formulir Data Diri',
+            description: 'Perbarui nama lengkap, verifikasi NPK Anda, atau ubah kata sandi dengan mengisi kolom password baru beserta konfirmasinya di sini.',
             side: 'top'
           }
         }
@@ -691,7 +700,7 @@ export default function HelpSupportButton() {
 
   return (
     <>
-      <div style={{ position: 'relative' }} ref={dropdownRef}>
+      <div id="help-support-btn-container" style={{ position: 'relative' }} ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           style={{

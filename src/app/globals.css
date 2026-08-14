@@ -109,6 +109,19 @@ button {
   font-family: inherit;
 }
 
+/* Fluid Typography */
+h1 {
+  font-size: clamp(20px, 3.5vw, 32px) !important;
+}
+
+h2 {
+  font-size: clamp(16px, 2.5vw, 24px) !important;
+}
+
+h3 {
+  font-size: clamp(14px, 2vw, 18px) !important;
+}
+
 /* Main Layout */
 .main-content {
   margin-left: 260px;
@@ -131,7 +144,7 @@ button {
   display: none !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .main-content {
     margin-left: 0;
     padding: 16px;
@@ -178,7 +191,7 @@ button {
   overflow-y: auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .mobile-header {
     display: flex;
   }
@@ -192,17 +205,21 @@ button {
 .no-scrollbar::-webkit-scrollbar {
   display: none !important;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
 
 /* Responsive grid overrides */
-@media (max-width: 640px) {
-  .grid-2-col, .grid-3-col, .grid-4-col {
+@media (max-width: 992px) {
+
+  .grid-2-col,
+  .grid-3-col,
+  .grid-4-col {
     grid-template-columns: 1fr !important;
   }
-  
+
   /* Tables wrapper for horizontal scroll */
   .table-responsive {
     overflow-x: auto !important;
@@ -484,7 +501,7 @@ th[style*="cursor: pointer"]:hover,
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .kanban-board-wrapper {
     display: flex !important;
     flex-direction: row !important;
@@ -519,35 +536,7 @@ th[style*="cursor: pointer"]:hover,
   transition: all 0.2s ease;
 }
 
-@media (max-width: 1200px) {
-  .realtime-clock-container,
-  .mobile-hide-text {
-    display: none !important;
-  }
-}
-
-/* Mobile-only menu list utility */
-.mobile-only-menu {
-  display: none !important;
-}
-
-@media (max-width: 768px) {
-  .mobile-only-menu {
-    display: flex !important;
-  }
-
-  /* Sembunyikan tombol-tombol lain dari header utama selain profil */
-  .header-actions-container > *:not(#user-profile-btn-container) {
-    display: none !important;
-  }
-
-  .header-actions-container {
-    top: 8px !important;
-    right: 12px !important;
-    gap: 8px !important;
-    z-index: 100 !important;
-  }
-
+@media (max-width: 1100px) {
   .profile-name-text,
   .profile-chevron,
   .profile-info {
@@ -563,6 +552,63 @@ th[style*="cursor: pointer"]:hover,
     gap: 0 !important;
   }
 
+  /* Biarkan tombol Tambah Kerja, Tourguide, & Lonceng Notifikasi tetap tampil sebagai lingkaran */
+  .header-actions-container>*:not(#user-profile-btn-container):not(#global-add-btn-container):not(#help-support-btn-container):not(#notification-bell-container) {
+    display: none !important;
+  }
+
+  /* Style tombol Tambah Kerja (GlobalAddButton) di mobile */
+  #global-add-btn-container > button {
+    padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  #global-add-btn-container .mobile-hide-text {
+    display: none !important;
+  }
+
+  /* Style tombol Tourguide (HelpSupportButton) di mobile */
+  #help-support-btn-container > button {
+    padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  #help-support-btn-container span {
+    display: none !important;
+  }
+
+  /* Style Lonceng Notifikasi (NotificationBell) di mobile */
+  #notification-bell-container > button {
+    padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  #notification-bell-container div[style*="width: 350px"] {
+    width: 300px !important;
+    max-width: 90vw !important;
+  }
+
+  .header-actions-container {
+    top: 8px !important;
+    right: 12px !important;
+    gap: 8px !important;
+    z-index: 100 !important;
+  }
+}
+
+@media (max-width: 992px) {
   /* Generic Responsive Modals */
   .modal-overlay {
     padding: 10px !important;
@@ -617,7 +663,7 @@ th[style*="cursor: pointer"]:hover,
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .desktop-table-view {
     display: none !important;
   }
@@ -713,7 +759,8 @@ th[style*="cursor: pointer"]:hover,
 }
 
 /* Primary/Next/Done Button */
-.driver-popover-next-btn, .driver-popover-close-btn.driver-popover-btn-primary {
+.driver-popover-next-btn,
+.driver-popover-close-btn.driver-popover-btn-primary {
   background-color: var(--accent-primary) !important;
   color: #ffffff !important;
   border: 1px solid var(--accent-primary) !important;
@@ -742,5 +789,17 @@ th[style*="cursor: pointer"]:hover,
 .driver-overlay {
   opacity: 0.6 !important;
 }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

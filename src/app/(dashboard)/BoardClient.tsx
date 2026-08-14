@@ -474,8 +474,17 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         format: [canvasWidth, canvasHeight]
       });
       pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
-      pdf.save(`Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-
+      
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pdfUrl);
+      
       setIsExportingPdf(false);
     } catch (err) {
       console.error('PDF Export error:', err);

@@ -399,7 +399,15 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         format: [width, height]
       });
       pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pdfUrl);
       
       setIsExportingPdf(false);
     } catch (err) {

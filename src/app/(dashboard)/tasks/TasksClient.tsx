@@ -840,7 +840,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         format: [width, height]
       });
       pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Tabel_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = `Tabel_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(pdfUrl);
     } catch (err) {
       console.error('PDF Export error:', err);
       toast.error('Gagal mengekspor PDF');

@@ -21,6 +21,7 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      image: true,
     },
   });
 
@@ -40,7 +41,7 @@ export async function PUT(request: Request) {
 
   const userId = (session.user as any).id;
   const body = await request.json();
-  const { name, email, currentPassword, newPassword } = body;
+  const { name, email, currentPassword, newPassword, image } = body;
 
   if (!name) {
     return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 });
@@ -56,6 +57,9 @@ export async function PUT(request: Request) {
   }
 
   const updateData: any = { name, email: email || null };
+  if (image !== undefined) {
+    updateData.image = image;
+  }
 
   // If changing password
   if (newPassword && newPassword.trim() !== '') {
