@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 import { useNotifications } from '@/context/NotificationContext';
 
-type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string };
+type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
 type Log = { id: number; action: string; title: string; message: string; type: string; userId?: string; userName?: string; createdAt: string };
 type Tab = 'users' | 'requests' | 'logs' | 'roles' | 'feedbacks';
@@ -508,9 +508,9 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       />
                     </td>
                     <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {masterPicAvatars[u.name] ? (
+                      {u.image || masterPicAvatars[u.name] ? (
                         <img
-                          src={masterPicAvatars[u.name]}
+                          src={u.image || masterPicAvatars[u.name]}
                           alt={u.name}
                           style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                         />

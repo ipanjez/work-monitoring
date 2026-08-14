@@ -44,7 +44,7 @@ export async function proxy(request: NextRequest) {
 
   // RBAC: Protect admin-only routes
   const isAdminOnlyPath = 
-    pathname.startsWith('/users') ||
+    (pathname.startsWith('/users') && pathname !== '/users/profile') ||
     pathname.startsWith('/logs') ||
     pathname.startsWith('/api/logs') ||
     (pathname.startsWith('/api/users') && 
