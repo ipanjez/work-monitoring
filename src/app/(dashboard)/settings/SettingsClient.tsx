@@ -896,6 +896,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
+      window.dispatchEvent(new Event('backupReminderChanged'));
+      window.dispatchEvent(new Event('masterUpdated'));
       if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
       toast.success('Pengaturan berhasil disimpan!', { id: toastId });
     } catch (err) {

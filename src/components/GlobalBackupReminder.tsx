@@ -76,6 +76,12 @@ export default function GlobalBackupReminder() {
     };
 
     checkBackupStatus();
+    window.addEventListener('backupReminderChanged', checkBackupStatus);
+    window.addEventListener('masterUpdated', checkBackupStatus);
+    return () => {
+      window.removeEventListener('backupReminderChanged', checkBackupStatus);
+      window.removeEventListener('masterUpdated', checkBackupStatus);
+    };
   }, [status, canBackup]);
 
   const handleDismiss = () => {
