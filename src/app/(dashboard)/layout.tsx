@@ -23,7 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { toggleMobileMenu } = useTheme();
-  const { appName } = useMaster();
+  const { appName, appLogo } = useMaster();
   const router = useRouter();
   useEffect(() => {
     const handleRefresh = () => router.refresh();
@@ -36,10 +36,15 @@ export default function DashboardLayout({
       <SessionMonitor />
       {/* Mobile Header */}
       <div className="mobile-header glass">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <Menu size={24} />
           </button>
+          {appLogo && (
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          )}
           <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{appName}</div>
         </div>
       </div>
