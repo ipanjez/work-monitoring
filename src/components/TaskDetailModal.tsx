@@ -303,27 +303,60 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             borderTopLeftRadius: '20px',
             borderTopRightRadius: '20px'
           }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', width: '100%' }}>
-              <div style={{ width: '100%', paddingRight: '40px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', width: '100%' }}>
+              {/* Top Row: Priority Badge & Close Button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 {(() => {
                   const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
                   return (
-                    <span className={badge.className} style={{ ...badge.style, marginBottom: '8px', display: 'inline-block' }}>
+                    <span className={badge.className} style={{ ...badge.style, display: 'inline-block' }}>
                       {task.prioritas || 'Medium'}
                     </span>
                   );
                 })()}
 
-                <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px', lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal' }}>{task.nama}</h2>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ 
+                    padding: '6px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-secondary)',
+                    flexShrink: 0
+                  }} 
+                  onClick={onClose} 
+                  title="Tutup"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
+              {/* Task Title */}
+              <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                {task.nama}
+              </h2>
+
+              {/* Unified Action Bar: Utility Actions & Management Actions Aligned */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                gap: '8px', 
+                flexWrap: 'wrap',
+                paddingTop: '6px',
+                width: '100%'
+              }}>
+                {/* Utility / Export Group */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-secondary"
-                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '7px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={handleCopyTaskDetails}
                     title="Salin Detail Pekerjaan ke Teks"
                   >
-                    <Copy size={16} />
+                    <Copy size={15} />
                   </button>
 
                   <a
@@ -331,19 +364,19 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary"
-                    style={{ padding: '8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '7px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Tambah ke Google Calendar"
                   >
-                    <ExternalLink size={16} />
+                    <ExternalLink size={15} />
                   </a>
 
                   <button
                     className="btn btn-secondary"
                     onClick={() => handleExportICS(task)}
-                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '7px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Download .ics"
                   >
-                    <CalendarDays size={16} />
+                    <CalendarDays size={15} />
                   </button>
 
                   {pathname !== '/calendar' && (
@@ -353,10 +386,10 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         onClose();
                         router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
                       }}
-                      style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '7px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Pergi ke Kalender"
                     >
-                      <Eye size={16} />
+                      <Eye size={15} />
                     </button>
                   )}
 
@@ -368,17 +401,17 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       exportTaskPdf(task, currentAppName, siteUrl);
                       toast.success('PDF berhasil di-download!');
                     }}
-                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
+                    style={{ padding: '7px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
                     title="Export PDF"
                   >
-                    <FileDown size={16} />
+                    <FileDown size={15} />
                   </button>
 
                   <button
                     className="btn"
                     onClick={() => setIsEmailModalOpen(true)}
                     style={{
-                      padding: '8px',
+                      padding: '7px 10px',
                       borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
@@ -391,56 +424,30 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     }}
                     title="Kirim & Salin Format Email Pekerjaan (HTML & Teks)"
                   >
-                    <Mail size={16} />
+                    <Mail size={15} />
                   </button>
                 </div>
-              </div>
-              <div style={{ 
-                display: 'flex', 
-                gap: '8px', 
-                flexShrink: 0, 
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                marginTop: '4px',
-                borderTop: '1px solid var(--border-color)',
-                paddingTop: '12px',
-                width: '100%'
-              }}>
-                <div style={{ display: 'flex', gap: '6px', flex: isMobile ? 1 : 'none', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+
+                {/* Management Actions (Duplikasi, Edit, Hapus) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: isMobile ? 1 : 'none', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
                   {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                    <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
                       <Copy size={14} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
                     </button>
                   )}
 
                   {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                    <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onEdit} title="Edit Pekerjaan Ini">
                       <Edit size={14} style={{ marginRight: '4px' }} /> Edit
                     </button>
                   )}
 
                   {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
-                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDelete} title="Hapus Pekerjaan">
+                    <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDelete} title="Hapus Pekerjaan">
                       <Trash2 size={14} style={{ marginRight: '4px' }} /> Hapus
                     </button>
                   )}
                 </div>
-
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ 
-                    padding: '6px',
-                    position: 'absolute',
-                    top: '0px',
-                    right: '-12px',
-                    borderRadius: '50%',
-                    zIndex: 15
-                  }} 
-                  onClick={onClose} 
-                  title="Tutup"
-                >
-                  <X size={18} />
-                </button>
               </div>
             </div>
           </div>
