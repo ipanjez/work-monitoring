@@ -222,7 +222,7 @@
 /* Responsive adjustments for mobile viewport */
 @media (max-width: 768px) {
   #calendar-container {
-    padding: 12px !important;
+    padding: 12px 12px 90px 12px !important;
     margin: 0 -24px !important;
     border-radius: 0 !important;
     border-left: none !important;
