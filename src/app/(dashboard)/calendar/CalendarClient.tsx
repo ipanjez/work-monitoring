@@ -660,7 +660,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
             month: "Bulan",
             week: "Minggu",
             day: "Hari",
-            agenda: "Agenda"
+            agenda: "Agenda",
+            showMore: (total) => `+${total}`
           }}
         />
       </div>

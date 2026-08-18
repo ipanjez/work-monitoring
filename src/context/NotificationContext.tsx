@@ -173,6 +173,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const actTime = new Date(act.createdAt);
         if (actTime.getTime() <= clearedAt) return;
 
+        // Skip login notification logs for non-admin roles (member, staff, guest, viewer/view)
+        const userRole = (session?.user as any)?.role?.toLowerCase() || 'guest';
+        const isLoginAct = act.action === 'LOGIN' || (act.title && act.title.toLowerCase().includes('login'));
+        if (isLoginAct && userRole !== 'admin') {
+          return;
+        }
+
         if (isInitial) {
           // Initial population without toasts
           const existing = prev.find(p => p.id === act.id);

@@ -146,6 +146,7 @@ export default function NotificationBell() {
 
       {/* Notification Dropdown Panel */}
       <div
+        className="notification-dropdown-panel"
         style={{
           position: 'absolute',
           top: '50px',

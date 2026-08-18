@@ -1,6 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
@@ -17,6 +17,7 @@ import { checkSearchMatch } from '@/utils/searchUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
+import EmptyState from '@/components/EmptyState';
 
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
@@ -49,6 +50,13 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   } = useFilter();
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  
+  // Touch Drag-and-Drop States for Mobile HP
+  const [touchActive, setTouchActive] = useState(false);
+  const [touchPos, setTouchPos] = useState({ x: 0, y: 0 });
+  const [touchCardLabel, setTouchCardLabel] = useState('');
+  const touchOffset = useRef({ x: 0, y: 0 });
+
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [colSorts, setColSorts] = useState<Record<string, string>>({});
 
@@ -100,6 +108,117 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const handleDragLeave = (e: React.DragEvent) => {
     setDragOverColumn(null);
     setDragOverCardId(null);
+  };
+
+  // Mobile Touch Drag-and-Drop Handlers
+  const handleTouchStart = (e: React.TouchEvent, task: any) => {
+    const touch = e.touches[0];
+    const cardEl = e.currentTarget as HTMLElement;
+    const rect = cardEl.getBoundingClientRect();
+    
+    // Save offset of touch relative to card top-left corner
+    touchOffset.current = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    };
+    
+    setDraggedTaskId(task.id);
+    setTouchCardLabel(task.nama);
+    setTouchPos({ x: touch.clientX, y: touch.clientY });
+    setTouchActive(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchActive) return;
+    const touch = e.touches[0];
+    setTouchPos({ x: touch.clientX, y: touch.clientY });
+
+    // Prevent screen scroll while dragging a card
+    if (e.cancelable) e.preventDefault();
+
+    // Find the element at the current touch point
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!element) return;
+
+    // Traverse up to find a column or card
+    const colEl = element.closest('.kanban-col') as HTMLElement;
+    const cardEl = element.closest('.kanban-card') as HTMLElement;
+
+    if (colEl) {
+      const colName = colEl.getAttribute('data-column-name');
+      if (colName) setDragOverColumn(colName);
+    } else {
+      setDragOverColumn(null);
+    }
+
+    if (cardEl) {
+      const cardIdAttr = cardEl.getAttribute('data-card-id');
+      if (cardIdAttr) {
+        const id = parseInt(cardIdAttr, 10);
+        if (id !== draggedTaskId) setDragOverCardId(id);
+      }
+    } else {
+      setDragOverCardId(null);
+    }
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    if (!touchActive || !draggedTaskId) return;
+
+    setTouchActive(false);
+    const prevDraggedId = draggedTaskId;
+    setDraggedTaskId(null);
+
+    const touch = e.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    setDragOverColumn(null);
+    setDragOverCardId(null);
+
+    if (!element) return;
+
+    const colEl = element.closest('.kanban-col') as HTMLElement;
+    const cardEl = element.closest('.kanban-card') as HTMLElement;
+
+    const taskToUpdate = tasks.find(t => t.id === prevDraggedId);
+    if (!taskToUpdate) return;
+
+    // Determine target status and card
+    let targetStatus = '';
+    let targetCardId: number | null = null;
+
+    if (colEl) {
+      targetStatus = colEl.getAttribute('data-column-name') || '';
+    }
+    if (cardEl) {
+      const cardIdAttr = cardEl.getAttribute('data-card-id');
+      if (cardIdAttr) {
+        targetCardId = parseInt(cardIdAttr, 10);
+      }
+      const cardColEl = cardEl.closest('.kanban-col') as HTMLElement;
+      if (cardColEl) {
+        targetStatus = cardColEl.getAttribute('data-column-name') || '';
+      }
+    }
+
+    if (!targetStatus) return;
+
+    if (targetStatus === taskToUpdate.status && !targetCardId) return;
+    if (targetCardId === prevDraggedId) return;
+
+    const fakeDragEvent = {
+      preventDefault: () => {},
+      stopPropagation: () => {},
+      dataTransfer: {
+        getData: (format: string) => format === 'text/plain' ? prevDraggedId.toString() : ''
+      }
+    } as any;
+
+    if (targetCardId) {
+      await handleDropCard(fakeDragEvent, targetStatus, targetCardId);
+    } else {
+      await handleDropColumn(fakeDragEvent, targetStatus);
+    }
   };
 
   const handleDeleteTask = async (id: number) => {
@@ -710,7 +829,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         />
       </UniversalFilterBar>
 
-      <div id="kanban-board-container" className="kanban-board-wrapper">
+      {filteredTasks.length === 0 ? (
+        <div className="glass" style={{ padding: '40px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <EmptyState />
+        </div>
+      ) : (
+        <div id="kanban-board-container" className="kanban-board-wrapper">
         {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
           let columnTasks = filteredTasks.filter((t: any) => t.status === col);
           const sortType = colSorts[col] || 'default';
@@ -729,6 +853,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
             <div
               key={col}
               className="kanban-col glass"
+              data-column-name={col}
               onDragOver={(e) => handleDragOverColumn(e, col)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDropColumn(e, col)}
@@ -803,6 +928,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                     <div
                       key={task.id}
                       className="kanban-card"
+                      data-card-id={task.id}
                       draggable={canDrag}
                       onDragStart={(e) => {
                         if (!canDrag) {
@@ -813,6 +939,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       }}
                       onDragOver={(e) => handleDragOverCard(e, task.id)}
                       onDrop={(e) => handleDropCard(e, col, task.id)}
+                      onTouchStart={(e) => {
+                        if (!canDrag) return;
+                        handleTouchStart(e, task);
+                      }}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? openTaskDetail(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
                       style={{
                         backgroundColor: 'var(--surface-color)',
@@ -993,6 +1125,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           );
         })}
       </div>
+      )}
 
       {isDetailOpen && selectedTask && (
         <TaskDetailModal
@@ -1047,6 +1180,33 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         />
       )}
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
+
+      {/* Floating touch ghost card for mobile drag-and-drop */}
+      {touchActive && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${touchPos.x - touchOffset.current.x}px`,
+            top: `${touchPos.y - touchOffset.current.y}px`,
+            width: '240px',
+            padding: '12px',
+            borderRadius: '10px',
+            backgroundColor: 'var(--surface-color)',
+            border: '2px solid var(--accent-primary)',
+            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
+            zIndex: 99999,
+            pointerEvents: 'none',
+            opacity: 0.9,
+            transform: 'scale(1.05)',
+            transition: 'transform 0.05s ease-out'
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {touchCardLabel}
+          </div>
+          <span style={{ fontSize: '10px', color: 'var(--accent-primary)', fontWeight: 600 }}>Menggeser...</span>
+        </div>
+      )}
     </div>
   );
 }

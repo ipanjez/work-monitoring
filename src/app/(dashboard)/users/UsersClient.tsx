@@ -713,7 +713,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       {/* Roles Tab */}
       {tab === 'roles' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -724,7 +724,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 </p>
               </div>
               {userRole === 'ADMIN' && (
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
                     className="btn btn-secondary"
                     onClick={() => {
@@ -735,8 +735,9 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       }));
                     }}
                     disabled={savingRoles}
+                    style={{ padding: '6px 12px', fontSize: '12px', height: '32px', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    <Plus size={16} style={{ marginRight: '4px' }} /> Tambah Role
+                    <Plus size={14} /> Tambah Role
                   </button>
                   <button
                     className="btn btn-primary"
@@ -761,6 +762,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       }
                     }}
                     disabled={savingRoles}
+                    style={{ padding: '6px 12px', fontSize: '12px', height: '32px', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     {savingRoles ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
@@ -768,7 +770,8 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               )}
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', margin: '0 -24px', padding: '0 24px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)', width: '380px', minWidth: '320px' }}>
@@ -932,6 +935,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             </table>
           </div>
         </div>
+      </div>
       )}
 
       {/* Feature Information Modal */}

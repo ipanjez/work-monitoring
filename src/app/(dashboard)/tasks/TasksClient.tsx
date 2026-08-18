@@ -20,6 +20,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 import { exportToRichExcel } from '@/utils/excelExport';
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
+import EmptyState from '@/components/EmptyState';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
 import { checkSearchMatch } from '@/utils/searchUtils';
@@ -1432,8 +1433,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
               {processedTasks.length === 0 && (
                 <tr>
-                  <td colSpan={11} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    Tidak ada pekerjaan yang sesuai dengan filter atau pencarian Anda.
+                  <td colSpan={11} style={{ padding: '24px' }}>
+                    <EmptyState />
                   </td>
                 </tr>
               )}
@@ -1595,9 +1596,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             );
           })}
 
-          {processedTasks.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', background: 'var(--surface-color)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-              Tidak ada pekerjaan yang sesuai dengan filter atau pencarian Anda.
+           {processedTasks.length === 0 && (
+            <div className="glass" style={{ padding: '24px', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <EmptyState />
             </div>
           )}
         </div>
