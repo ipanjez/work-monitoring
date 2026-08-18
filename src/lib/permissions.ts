@@ -92,20 +92,20 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
   {
     key: 'master_data',
     category: 'SETTINGS',
-    label: 'Kelola Master Data (Opsi Dropdown)',
-    shortLabel: 'Master Data',
+    label: 'Kelola Master Data & Warna (Dropdown, Status, PIC, Kategori & Lokasi)',
+    shortLabel: 'Master Data & Warna',
     menuLocation: 'Menu Pengaturan (/settings) > Master Data',
-    description: 'Mengelola daftar opsi dropdown: Kategori, PIC departemen, Status, Prioritas, dan Lokasi pekerjaan.',
+    description: 'Mengelola daftar opsi dropdown serta palet warna kustom tema untuk Kategori, PIC departemen & foto avatar, Status & progress %, Prioritas, dan Lokasi pekerjaan.',
     impact: 'Jika tidak dicentang, bagian Master Data di menu Pengaturan disembunyikan.'
   },
   {
     key: 'system_config',
     category: 'SETTINGS',
-    label: 'Konfigurasi Sistem, Sesi & Batas File',
-    shortLabel: 'Konfigurasi Sistem',
-    menuLocation: 'Menu Pengaturan (/settings) > Pengaturan Umum',
-    description: 'Mengatur nama departemen, logo aplikasi, batas sesi login (auto-logout), waktu inaktif, dan kapasitas maksimal storage.',
-    impact: 'Jika tidak dicentang, form Pengaturan Umum disembunyikan (otomatis mengikuti nilai default sistem).'
+    label: 'Identitas Aplikasi (Nama & Logo), Batas Sesi & Kapasitas File',
+    shortLabel: 'Identitas & Konfigurasi',
+    menuLocation: 'Menu Pengaturan (/settings) > Identitas Aplikasi & Pengaturan Umum',
+    description: 'Mengatur Identitas Aplikasi (Nama Aplikasi, Singkatan Nama Departemen, dan Logo Aplikasi), batas sesi login (auto-logout), waktu inaktif, dan kapasitas maksimal penyimpanan berkas.',
+    impact: 'Jika tidak dicentang, bagian Identitas Aplikasi & Pengaturan Umum disembunyikan (otomatis mengikuti nilai default sistem).'
   },
   {
     key: 'database_backup',
