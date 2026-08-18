@@ -465,11 +465,13 @@ th[style*="cursor: pointer"]:hover,
 
 .kanban-board-wrapper {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(280px, 1fr));
   gap: 16px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
 }
 
 .kanban-col {
@@ -487,17 +489,11 @@ th[style*="cursor: pointer"]:hover,
   padding: 4px;
 }
 
-/* Kanban board responsiveness for zoom >110% (screen max-width: 1400px) */
-@media (max-width: 1400px) {
-  .kanban-board-wrapper {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    overflow-y: auto;
-    height: calc(100vh - 130px);
-  }
-
-  .kanban-col {
-    max-height: 380px;
+@media (min-width: 1101px) {
+  /* Prevent page headers from colliding with the fixed top-right actions */
+  .main-content h1,
+  .main-content h1 + p {
+    padding-right: 365px !important;
   }
 }
 
