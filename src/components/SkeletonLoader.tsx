@@ -1,11 +1,15 @@
 'use client';
 import React from 'react';
+import { useMaster } from '@/context/MasterContext';
+import { CheckSquare } from 'lucide-react';
 
 interface SkeletonLoaderProps {
   showCards?: boolean;
 }
 
 export default function SkeletonLoader({ showCards = true }: SkeletonLoaderProps) {
+  const { appLogo } = useMaster();
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -17,24 +21,41 @@ export default function SkeletonLoader({ showCards = true }: SkeletonLoaderProps
       justifyContent: 'center', 
       alignItems: 'center' 
     }}>
-      {/* Central Pulsating PKT Logo */}
+      {/* Central Pulsating App Logo matching Sidebar */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0' }}>
-        <div className="pkt-loader-pulse" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <svg width="100" height="100" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Outer ring */}
+        <div className="pkt-loader-pulse" style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          position: 'relative',
+          width: '100px',
+          height: '100px'
+        }}>
+          {/* Outer ring */}
+          <svg width="100" height="100" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute' }}>
             <circle cx="100" cy="100" r="90" stroke="var(--accent-primary)" strokeWidth="6" strokeDasharray="40 15" className="pkt-loader-spin" />
-            {/* Abstract Seedling / Growth leaf representing Pupuk Kaltim */}
-            <path d="M70 130C70 100 90 80 100 60C110 80 130 100 130 130C130 146.569 116.569 160 100 160C83.4315 160 70 146.569 70 130Z" fill="url(#pktLeafGrad)" />
-            {/* Bold PKT Text */}
-            <text x="100" y="138" fill="white" fontSize="24" fontWeight="900" textAnchor="middle" fontFamily="'Outfit', 'Inter', sans-serif">PKT</text>
-            
-            <defs>
-              <linearGradient id="pktLeafGrad" x1="100" y1="60" x2="100" y2="160" gradientUnits="userSpaceOnUse">
-                <stop stopColor="var(--accent-primary)" />
-                <stop offset="1" stopColor="#10b981" />
-              </linearGradient>
-            </defs>
           </svg>
+          
+          {/* Inner Logo Image / Fallback Icon matching sidebar */}
+          <div style={{ 
+            width: '54px', 
+            height: '54px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            borderRadius: '50%', 
+            overflow: 'hidden',
+            backgroundColor: appLogo ? 'transparent' : 'var(--accent-primary)',
+            color: 'white',
+            padding: appLogo ? '0' : '10px',
+            zIndex: 2
+          }}>
+            {appLogo ? (
+              <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <CheckSquare size={32} />
+            )}
+          </div>
         </div>
       </div>
 
