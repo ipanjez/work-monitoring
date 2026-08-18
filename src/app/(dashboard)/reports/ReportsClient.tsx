@@ -1,13 +1,17 @@
 'use client';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { 
-  TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, Filter, Copy, FileText, FileSpreadsheet
+  TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, 
+  Filter, Copy, FileText, FileSpreadsheet, Award, Users, ArrowUpDown,
+  ChevronDown, ChevronUp, BarChart3, PieChart, ShieldAlert, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, startOfDay } from 'date-fns';
 import { 
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement 
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, 
+  Tooltip, Legend, ArcElement, LineElement, PointElement 
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import * as XLSX from 'xlsx';
@@ -24,8 +28,9 @@ import { exportToRichExcel } from '@/utils/excelExport';
 import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
-import { getDynamicColor, getTaskExportRow } from '@/utils/taskUtils';
+import { getDynamicColor, getTaskExportRow, getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
+import Avatar from '@/components/Avatar';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -45,6 +50,9 @@ type Task = {
   lokasi?: string | null;
 };
 
+type SortField = 'pic' | 'total' | 'done' | 'inProgress' | 'overdue' | 'avgProgress' | 'score';
+type SortOrder = 'asc' | 'desc';
+
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MEMBER';
@@ -57,6 +65,10 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Review', 'Done']);
   const [masterPriorities, setMasterPriorities] = useState<string[]>(['Urgent', 'High', 'Medium', 'Low']);
   const [masterCats, setMasterCats] = useState<string[]>([]);
+  
+  // Sorting state for Staff Performance Table
+  const [sortField, setSortField] = useState<SortField>('score');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   useEffect(() => {
     fetch('/api/settings')
@@ -70,19 +82,18 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   }, []);
   
   const { 
-    globalTargetFilter, setGlobalTargetFilter, 
-    globalPicFilter, setGlobalPicFilter, 
-    globalCustomStartDate, setGlobalCustomStartDate,
-    globalCustomEndDate, setGlobalCustomEndDate,
+    globalTargetFilter, 
+    globalPicFilter, 
+    globalCustomStartDate, 
+    globalCustomEndDate, 
     globalFilterCategory: reportCategoryFilter,
-    setGlobalFilterCategory: setReportCategoryFilter,
     globalFilterStatus,
     globalFilterPriority,
     globalSearchQuery,
     globalSearchExactMatch
   } = useFilter();
 
-  // Extract unique categories and PICs from all tasks for the dropdowns
+  // Extract unique categories and PICs from all tasks
   const allCategories = useMemo(() => Array.from(new Set(tasks.map((t: Task) => t.kategori || 'Umum'))).sort(), [tasks]);
   const allPics = useMemo(() => {
     const pics = new Set<string>();
@@ -109,7 +120,6 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       const taskDate = new Date(t.endDate).getTime();
       const now = new Date();
       now.setHours(0,0,0,0);
-      const todayTime = now.getTime();
       
       if (globalTargetFilter === 'Hari Ini') {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -172,31 +182,56 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   }, [tasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate, reportCategoryFilter, globalFilterStatus, globalFilterPriority, globalSearchQuery, globalSearchExactMatch]);
 
   const totalTasks = filteredTasks.length;
-  
-  const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Selesai';
-  const completedTasks = masterStatuses.length > 0 ? filteredTasks.filter((t: Task) => t.status === completedLabel).length : 0;
+  const completedLabel = masterStatuses.length > 0 ? masterStatuses[masterStatuses.length - 1] : 'Done';
+  const completedTasks = filteredTasks.filter((t: Task) => t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai').length;
+  const inProgressTasks = filteredTasks.filter((t: Task) => t.status === 'In Progress' || t.status === 'Sedang Dikerjakan').length;
 
+  const todayStart = startOfDay(new Date()).getTime();
+  let overdueCount = 0;
+  let dueTodayCount = 0;
+  let upcomingCount = 0;
 
-  const statusCounts = masterStatuses.map((status: string) => {
-    return filteredTasks.filter((t: Task) => t.status === status).length;
+  filteredTasks.forEach(t => {
+    const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+    if (!isDone) {
+      const end = startOfDay(new Date(t.endDate)).getTime();
+      if (end < todayStart) overdueCount++;
+      else if (end === todayStart) dueTodayCount++;
+      else upcomingCount++;
+    }
   });
 
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const avgProgress = totalTasks > 0 ? Math.round(filteredTasks.reduce((acc: number, curr: Task) => acc + (curr.progress || 0), 0) / totalTasks) : 0;
 
+  // Chart Options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom' as const, labels: { color: theme === 'dark' ? '#cbd5e1' : '#475569' } }
+      legend: { 
+        position: 'bottom' as const, 
+        labels: { 
+          color: theme === 'dark' ? '#cbd5e1' : '#475569',
+          font: { size: 11, weight: 'bold' as const },
+          boxWidth: 12,
+          padding: 12
+        } 
+      }
     }
   };
 
   const barOptions = {
     ...chartOptions,
     scales: {
-      y: { ticks: { color: theme === 'dark' ? '#cbd5e1' : '#475569' }, grid: { color: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' } },
-      x: { ticks: { color: theme === 'dark' ? '#cbd5e1' : '#475569' }, grid: { display: false } }
+      y: { 
+        ticks: { color: theme === 'dark' ? '#94a3b8' : '#64748b', font: { size: 11 } }, 
+        grid: { color: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' } 
+      },
+      x: { 
+        ticks: { color: theme === 'dark' ? '#94a3b8' : '#64748b', font: { size: 11 } }, 
+        grid: { display: false } 
+      }
     }
   };
 
@@ -204,93 +239,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     ...barOptions,
     scales: {
       ...barOptions.scales,
-      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.height += 40; } },
+      x: { stacked: true, ticks: { display: false }, grid: { display: false }, afterFit(axis: any) { axis.height += 42; } },
       y: { stacked: true, ...barOptions.scales.y }
     },
     plugins: {
       ...barOptions.plugins,
       picAvatarXAxis: { avatars: masterPicAvatars, masterColors, size: 28 },
-      tooltip: {
-        enabled: false,
-        external: function (context: any) {
-          let tooltipEl = document.getElementById('chartjs-tooltip-reports');
-          if (!tooltipEl) {
-            tooltipEl = document.createElement('div');
-            tooltipEl.id = 'chartjs-tooltip-reports';
-            tooltipEl.innerHTML = '<table></table>';
-            document.body.appendChild(tooltipEl);
-          }
-
-          const tooltipModel = context.tooltip;
-          if (tooltipModel.opacity === 0) {
-            tooltipEl.style.opacity = '0';
-            return;
-          }
-
-          tooltipEl.classList.remove('above', 'below', 'no-transform');
-          if (tooltipModel.yAlign) {
-            tooltipEl.classList.add(tooltipModel.yAlign);
-          } else {
-            tooltipEl.classList.add('no-transform');
-          }
-
-          if (tooltipModel.body) {
-            const titleLines = tooltipModel.title || [];
-            const bodyLines = tooltipModel.body.map((b: any) => b.lines);
-            
-            const picName = titleLines[0] || '';
-            const avatarSrc = masterPicAvatars?.[picName];
-            
-            let innerHtml = '<thead>';
-
-            if (avatarSrc) {
-               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><img src="${avatarSrc}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"/> <span>${picName}</span></div></th></tr>`;
-            } else {
-               const c = masterColors[`pic_${picName}`] || 'var(--accent-primary)';
-               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: ${c}; color: white; display: flex; align-items:center; justify-content:center; font-size: 10px;">${picName.substring(0,2).toUpperCase()}</div> <span>${picName}</span></div></th></tr>`;
-            }
-            
-            innerHtml += '</thead><tbody>';
-
-            bodyLines.forEach(function (body: any, i: number) {
-              const colors = tooltipModel.labelColors[i];
-              let style = 'background:' + colors.backgroundColor;
-              style += '; border-color:' + colors.borderColor;
-              style += '; border-width: 2px';
-              const span = '<span style="' + style + '; display:inline-block; width:10px; height:10px; margin-right:6px; border-radius:50%;"></span>';
-              innerHtml += '<tr><td style="padding-top:4px;">' + span + body + '</td></tr>';
-            });
-            innerHtml += '</tbody>';
-
-            let tableRoot = tooltipEl.querySelector('table');
-            if (tableRoot) tableRoot.innerHTML = innerHtml;
-          }
-
-          const position = context.chart.canvas.getBoundingClientRect();
-
-          tooltipEl.style.opacity = '1';
-          tooltipEl.style.position = 'absolute';
-          tooltipEl.style.left = position.left + window.scrollX + tooltipModel.caretX + 'px';
-          tooltipEl.style.top = position.top + window.scrollY + tooltipModel.caretY + 'px';
-          tooltipEl.style.font = tooltipModel.options.bodyFont.string;
-          tooltipEl.style.padding = tooltipModel.options.padding + 'px ' + tooltipModel.options.padding + 'px';
-          tooltipEl.style.pointerEvents = 'none';
-          tooltipEl.style.background = 'var(--surface-color)';
-          tooltipEl.style.border = '1px solid var(--border-color)';
-          tooltipEl.style.borderRadius = '8px';
-          tooltipEl.style.color = 'var(--text-primary)';
-          tooltipEl.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-          tooltipEl.style.zIndex = '9999';
-          tooltipEl.style.transition = 'all 0.1s ease';
-          tooltipEl.style.transform = 'translate(-50%, -100%)';
-          tooltipEl.style.marginTop = '-8px';
-        }
-      }
     }
   };
 
+  // 1. Status Doughnut Data
+  const statusCounts = masterStatuses.map((status: string) => {
+    return filteredTasks.filter((t: Task) => t.status === status).length;
+  });
 
-  // 1. Status Pekerjaan (Doughnut)
   const statusData = {
     labels: masterStatuses,
     datasets: [{
@@ -300,7 +262,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }]
   };
 
-  // 2. Distribusi Prioritas (Doughnut)
+  // 2. Priority Doughnut Data
   const priorityCounts = masterPriorities.map((prio: string) => {
     return filteredTasks.filter((t: Task) => t.prioritas === prio || (!t.prioritas && prio === 'Medium')).length;
   });
@@ -314,9 +276,14 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }]
   };
 
-  // 3. Beban Kerja PIC (Bar)
+  // 3. Workload per PIC
   const picStats: Record<string, Record<string, number>> = {};
+  const picDetails: Record<string, { total: number; done: number; inProgress: number; overdue: number; totalProgress: number }> = {};
+
   filteredTasks.forEach(t => {
+    const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+
     const processPic = (p: string) => {
       if (!picStats[p]) {
         picStats[p] = {};
@@ -325,11 +292,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       if (picStats[p][t.status] !== undefined) {
         picStats[p][t.status]++;
       } else {
-        // Fallback if status doesn't match master statuses
         const lastStatus = masterStatuses[masterStatuses.length - 1];
         if (picStats[p][lastStatus] !== undefined) picStats[p][lastStatus]++;
       }
+
+      if (!picDetails[p]) {
+        picDetails[p] = { total: 0, done: 0, inProgress: 0, overdue: 0, totalProgress: 0 };
+      }
+      picDetails[p].total++;
+      if (isDone) picDetails[p].done++;
+      if (t.status === 'In Progress' || t.status === 'Sedang Dikerjakan') picDetails[p].inProgress++;
+      if (isOverdue) picDetails[p].overdue++;
+      picDetails[p].totalProgress += (t.progress || 0);
     };
+
     if (t.pic) processPic(t.pic);
     if (t.additionalPics) {
       try {
@@ -343,7 +319,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     const sumA = Object.values(picStats[a]).reduce((acc: number, curr: number) => acc + curr, 0);
     const sumB = Object.values(picStats[b]).reduce((acc: number, curr: number) => acc + curr, 0);
     return sumB - sumA;
-  }).slice(0, 10); // Top 10
+  }).slice(0, 10);
 
   const picWorkloadData = {
     labels: sortedPics,
@@ -354,7 +330,42 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }))
   };
 
-  // 4. Progress Rata-rata per Kategori (Bar)
+  // Staff Performance Table Dataset
+  const staffPerformanceList = useMemo(() => {
+    return Object.keys(picDetails).map(picName => {
+      const d = picDetails[picName];
+      const avgProg = d.total > 0 ? Math.round(d.totalProgress / d.total) : 0;
+      const doneRate = d.total > 0 ? (d.done / d.total) : 0;
+      // Score calculation: 60% completion rate + 40% avg progress - 10% penalty per overdue
+      const rawScore = (doneRate * 60) + (avgProg * 0.4) - (d.overdue * 5);
+      const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+
+      return {
+        pic: picName,
+        total: d.total,
+        done: d.done,
+        inProgress: d.inProgress,
+        overdue: d.overdue,
+        avgProgress: avgProg,
+        score: score
+      };
+    }).sort((a, b) => {
+      const multiplier = sortOrder === 'asc' ? 1 : -1;
+      if (sortField === 'pic') return a.pic.localeCompare(b.pic) * multiplier;
+      return (a[sortField] - b[sortField]) * multiplier;
+    });
+  }, [picDetails, sortField, sortOrder]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  // 4. Progress Rata-rata per Kategori
   const catProgress: Record<string, { totalProgress: number, count: number }> = {};
   filteredTasks.forEach(t => {
     const cat = t.kategori || 'Umum';
@@ -369,38 +380,21 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       label: 'Rata-rata Progress (%)',
       data: Object.keys(catProgress).map(c => Math.round(catProgress[c].totalProgress / catProgress[c].count)),
       backgroundColor: Object.keys(catProgress).map(c => masterColors[`kategori_${c}`] || '#3b82f6'),
-      borderRadius: 4
+      borderRadius: 6
     }]
   };
 
-  // 5. Kepatuhan Tenggat Waktu (Doughnut)
-  let overdueCount = 0;
-  let dueTodayCount = 0;
-  let upcomingCount = 0;
-  let doneCountForDeadline = 0;
-
-  const todayStart = startOfDay(new Date()).getTime();
-  filteredTasks.forEach(t => {
-    if (t.status === 'Done') {
-      doneCountForDeadline++;
-      return;
-    }
-    const end = startOfDay(new Date(t.endDate)).getTime();
-    if (end < todayStart) overdueCount++;
-    else if (end === todayStart) dueTodayCount++;
-    else upcomingCount++;
-  });
-
+  // 5. Deadline Compliance Doughnut
   const deadlineData = {
     labels: ['Terlewat (Overdue)', 'Hari Ini', 'Akan Datang', 'Selesai'],
     datasets: [{
-      data: [overdueCount, dueTodayCount, upcomingCount, doneCountForDeadline],
+      data: [overdueCount, dueTodayCount, upcomingCount, completedTasks],
       backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
       borderWidth: 0,
     }]
   };
 
-  // 6. Distribusi Pekerjaan per Kategori (Doughnut)
+  // 6. Category Distribution
   const catDistribution: Record<string, number> = {};
   filteredTasks.forEach(t => {
     const cat = (t.kategori || 'Umum').trim();
@@ -437,7 +431,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         false
       );
       if (success) {
-        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-report' });
+        toast.success('Laporan Kinerja berhasil diekspor 📊', { id: 'export-excel-report' });
         addActivityLog?.('Export', 'Download Excel', `Mengunduh Laporan Kinerja Excel (${filteredTasks.length} pekerjaan)`, 'success');
       } else {
         toast.error('Gagal mengekspor Excel', { id: 'export-excel-report' });
@@ -454,68 +448,40 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     try {
       const doc = new jsPDF('landscape');
       doc.setFontSize(16);
-      doc.text('Laporan Kinerja Departemen', 14, 20);
+      doc.text('Laporan Analisis Kinerja & Manajemen Pekerjaan', 14, 18);
       doc.setFontSize(10);
-      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 28);
+      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm')} | Total Pekerjaan: ${filteredTasks.length} | Tingkat Penyelesaian: ${completionRate}%`, 14, 26);
       
-      const tableColumn = ['Pekerjaan', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat', 'PIC', 'Lokasi'];
+      const tableColumn = ['No', 'Nama Pekerjaan', 'PIC', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat Waktu'];
       const tableRows: any[] = [];
- 
-      filteredTasks.forEach(t => {
-        const extraPicsStr = (() => {
-          try {
-            const arr = JSON.parse(t.additionalPics || '[]');
-            return Array.isArray(arr) && arr.length > 0 ? ` (+${arr.join(', ')})` : '';
-          } catch(e) { return ''; }
-        })();
 
-        let lokasiStr = '';
-        if (t.lokasi) {
-          try {
-            const parsedLoc = JSON.parse(t.lokasi);
-            if (parsedLoc.tipe === 'online') {
-              lokasiStr = `Online: ${parsedLoc.linkZoom || ''}`;
-            } else if (parsedLoc.tipe === 'offline') {
-              lokasiStr = `Offline: ${parsedLoc.lokasiFisik || ''}`;
-            }
-          } catch (e) {
-            lokasiStr = t.lokasi;
-          }
-        }
-
-        const row = [
+      filteredTasks.forEach((t, idx) => {
+        tableRows.push([
+          idx + 1,
           t.nama,
+          t.pic || '-',
           t.kategori || 'Umum',
           t.prioritas || 'Medium',
           t.status,
           `${t.progress || 0}%`,
-          format(new Date(t.endDate), 'dd MMM yyyy'),
-          `${t.pic}${extraPicsStr}`,
-          lokasiStr || '-'
-        ];
-        tableRows.push(row);
+          format(new Date(t.endDate), 'dd MMM yyyy')
+        ]);
       });
- 
+
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
-        startY: 35,
+        startY: 32,
         theme: 'grid',
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(pdfUrl);
+      doc.save(`Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('Laporan PDF berhasil diunduh 📄');
     } catch (error) {
       console.error('PDF Export error:', error);
+      toast.error('Gagal membuat PDF');
     } finally {
       setIsExportingPdf(false);
     }
@@ -525,30 +491,19 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     if (!reportsRef.current) return;
     try {
       addActivityLog?.('Export', 'Copy Image', 'Menyalin gambar laporan kinerja ke clipboard', 'info');
-      
       const element = reportsRef.current;
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
       });
       canvas.toBlob(async (blob) => {
         if (blob) {
           try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            import('react-hot-toast').then(({ default: toast }) => toast.success('Gambar laporan disalin ke clipboard'));
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            toast.success('Gambar laporan berhasil disalin ke clipboard! 📋');
           } catch (err) {
-            console.error('Clipboard write error:', err);
-            import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar, izin ditolak.'));
+            toast.error('Gagal menyalin gambar.');
           }
         }
       });
@@ -559,7 +514,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   return (
     <motion.div 
-      style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -568,15 +523,17 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Analisis & Laporan Kinerja</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-            Rangkuman performa penyelesaian pekerjaan secara komprehensif.
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <BarChart3 size={26} color="var(--accent-primary)" />
+            Analisis & Laporan Kinerja
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '4px' }}>
+            Analisis komprehensif metrik efektivitas kerja, kepatuhan tenggat waktu, dan distribusi beban tim.
           </p>
         </div>
-
       </div>
 
-      {/* Global Filters Synchronized */}
+      {/* Global Synchronized Filters */}
       <UniversalFilterBar 
         categories={masterCats.length > 0 ? masterCats : allCategories} 
         pics={allPics} 
@@ -594,104 +551,287 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
         />
       </UniversalFilterBar>
 
-      {/* Summary KPI Cards */}
+      {/* Modern Executive KPI Metric Cards */}
       <motion.div 
         id="reports-kpi-cards"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
-        initial={{ opacity: 0, scale: 0.95 }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <div className="glass" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Tingkat Penyelesaian</span>
-            <TrendingUp size={20} color="var(--success)" />
+        {/* KPI 1: Completion Rate */}
+        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tingkat Penyelesaian</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+              <CheckCircle2 size={18} />
+            </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{completionRate}%</div>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {completedTasks} dari {totalTasks} pekerjaan
-          </p>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{completionRate}%</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontWeight: 700, color: '#10b981' }}>{completedTasks}</span> selesai dari <span style={{ fontWeight: 600 }}>{totalTasks}</span> tugas
+          </div>
         </div>
 
-        <div className="glass" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Rata-rata Progress</span>
-            <TrendingUp size={20} color="var(--accent-primary)" />
+        {/* KPI 2: Average Progress */}
+        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Rata-rata Progress</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+              <TrendingUp size={18} />
+            </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{avgProgress}%</div>
-          <div className="progress-container" style={{ marginTop: '8px', height: '6px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent-primary)' }}>{avgProgress}%</div>
+          <div className="progress-container" style={{ marginTop: '8px', height: '6px', borderRadius: '4px' }}>
             <div className="progress-bar" style={{ width: `${avgProgress}%`, backgroundColor: 'var(--accent-primary)' }} />
           </div>
         </div>
 
-        <div className="glass" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {masterStatuses.map((s: string, i: number) => (
-                <span key={s}>
-                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{s}</span>
-                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
-                </span>
-              ))}
-            </span>
+        {/* KPI 3: In Progress Workload */}
+        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Sedang Dikerjakan</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+              <Clock size={18} />
+            </div>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {masterStatuses.map((s: string, i: number) => {
-              const count = filteredTasks.filter((t: Task) => t.status === s).length;
-              return (
-                <span key={s}>
-                  <span style={{ color: masterColors[`status_${s}`] || 'var(--text-secondary)' }}>{count}</span>
-                  {i < masterStatuses.length - 1 && <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>/</span>}
-                </span>
-              );
-            })}
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b' }}>{inProgressTasks}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+            Pekerjaan aktif dalam penanganan tim
+          </div>
+        </div>
+
+        {/* KPI 4: Overdue Alert */}
+        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Terlewat (Overdue)</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: overdueCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: overdueCount > 0 ? '#ef4444' : '#10b981' }}>
+              {overdueCount > 0 ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+            </div>
+          </div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: overdueCount > 0 ? 'var(--danger)' : '#10b981' }}>
+            {overdueCount}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+            {overdueCount > 0 ? 'Tugas melewati batas tenggat' : 'Semua tugas tepat jadwal 👍'}
           </div>
         </div>
       </motion.div>
 
       {/* Analytics Charts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         
-        <div id="reports-chart-status" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Status Pekerjaan</h3>
+        {/* 1. Status Doughnut */}
+        <div id="reports-chart-status" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PieChart size={18} color="var(--accent-primary)" />
+            Distribusi Status Pekerjaan
+          </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={statusData} options={chartOptions} />
           </div>
         </div>
 
-        <div id="reports-chart-pic" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Beban Kerja per PIC (Top 10)</h3>
-          <div style={{ height: '300px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+        {/* 2. Top PIC Workload */}
+        <div id="reports-chart-pic" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={18} color="var(--accent-primary)" />
+            Beban Kerja per PIC (Top 10)
+          </h3>
+          <div style={{ height: '290px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Bar data={picWorkloadData} options={picBarOptions} plugins={[picAvatarXAxisPlugin]} />
           </div>
         </div>
 
-        <div id="reports-chart-priority" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Sebaran Prioritas Pekerjaan</h3>
+        {/* 3. Priority Breakdown */}
+        <div id="reports-chart-priority" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldAlert size={18} color="#f59e0b" />
+            Sebaran Prioritas Pekerjaan
+          </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={priorityData} options={chartOptions} />
           </div>
         </div>
 
-        <div id="reports-chart-category-progress" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Rata-rata Progress per Kategori</h3>
+        {/* 4. Category Progress */}
+        <div id="reports-chart-category-progress" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TrendingUp size={18} color="#3b82f6" />
+            Rata-rata Progress per Kategori
+          </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Bar data={catProgressData} options={barOptions} />
           </div>
         </div>
 
-        <div id="reports-chart-deadline" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Kepatuhan Tenggat Waktu</h3>
+        {/* 5. Deadline Compliance */}
+        <div id="reports-chart-deadline" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={18} color="#10b981" />
+            Kepatuhan Tenggat Waktu
+          </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={deadlineData} options={chartOptions} />
           </div>
         </div>
 
-        <div id="reports-chart-category-distribution" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Distribusi Pekerjaan per Kategori</h3>
+        {/* 6. Category Distribution */}
+        <div id="reports-chart-category-distribution" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChart3 size={18} color="#8b5cf6" />
+            Distribusi per Kategori
+          </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
             <Doughnut data={categoryData} options={chartOptions} />
           </div>
+        </div>
+      </div>
+
+      {/* Staff Performance & Analytics Matrix Table */}
+      <div className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Award size={20} color="#f59e0b" />
+              Rekapitulasi Kinerja & Beban Anggota Tim (PIC)
+            </h3>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '3px', margin: 0 }}>
+              Peringkat efektivitas kinerja dihitung berdasarkan persentase penyelesaian, rata-rata progres, dan penalti keterlambatan.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
+                <th style={{ padding: '12px 14px', borderRadius: '8px 0 0 8px', cursor: 'pointer' }} onClick={() => handleSort('pic')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    PIC {sortField === 'pic' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('total')}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Total Tugas {sortField === 'total' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('done')}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Selesai {sortField === 'done' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('inProgress')}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    On Progress {sortField === 'inProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('overdue')}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Overdue {sortField === 'overdue' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => handleSort('avgProgress')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    Rata-rata Progress {sortField === 'avgProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+                <th style={{ padding: '12px 14px', borderRadius: '0 8px 8px 0', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('score')}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Skor Kinerja {sortField === 'score' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {staffPerformanceList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    Tidak ada data performa PIC pada rentang filter ini.
+                  </td>
+                </tr>
+              ) : (
+                staffPerformanceList.map((item, idx) => {
+                  const isTop3 = idx < 3 && sortField === 'score' && sortOrder === 'desc';
+                  const scoreColor = item.score >= 80 ? '#10b981' : item.score >= 50 ? '#3b82f6' : item.score >= 30 ? '#f59e0b' : '#ef4444';
+
+                  return (
+                    <tr 
+                      key={item.pic} 
+                      style={{ 
+                        borderBottom: '1px solid var(--border-color)',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Avatar 
+                            name={item.pic} 
+                            src={masterPicAvatars?.[item.pic]} 
+                            size={32} 
+                            masterColors={masterColors} 
+                          />
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {item.pic}
+                              {isTop3 && (
+                                <span title="Top Performer" style={{ fontSize: '11px' }}>
+                                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Staff PIC</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>
+                        {item.total}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center', color: '#10b981', fontWeight: 700 }}>
+                        {item.done}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center', color: '#3b82f6', fontWeight: 600 }}>
+                        {item.inProgress}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        {item.overdue > 0 ? (
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700, fontSize: '11.5px' }}>
+                            {item.overdue}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>0</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div className="progress-container" style={{ flex: 1, height: '6px', borderRadius: '3px' }}>
+                            <div className="progress-bar" style={{ width: `${item.avgProgress}%`, backgroundColor: item.avgProgress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', width: '36px', textAlign: 'right' }}>
+                            {item.avgProgress}%
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <span style={{
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                          background: `${scoreColor}18`,
+                          color: scoreColor,
+                          fontWeight: 800,
+                          fontSize: '12.5px'
+                        }}>
+                          {item.score} / 100
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </motion.div>

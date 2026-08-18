@@ -1,15 +1,24 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
-import { Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, CalendarDays, Download, FileText, Copy, FileSpreadsheet, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useEffect, useTransition, useMemo } from 'react';
+import { 
+  Users, UserCheck, CheckCircle2, Clock, Activity, ShieldCheck, 
+  Mail, Phone, ExternalLink, X, History, Paperclip, Eye, File, 
+  CalendarDays, Download, FileText, Copy, FileSpreadsheet, Loader2,
+  Plus, AlertTriangle, Sparkles, Filter, ChevronRight, Share2, Award
+} from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, getTaskExportRow } from '@/utils/taskUtils';
+import { 
+  Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, 
+  getHistoryLogs, getPriorityBadgeClass, getDynamicBadgeStyle, 
+  getGoogleCalendarUrl, handleExportICS, getTaskExportRow 
+} from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
@@ -22,6 +31,10 @@ import { checkSearchMatch } from '@/utils/searchUtils';
 import Avatar from '@/components/Avatar';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
+import { copyToClipboard } from '@/utils/clipboard';
+
+type WorkloadFilter = 'all' | 'high' | 'optimal' | 'low';
+type TaskTabFilter = 'all' | 'in_progress' | 'done' | 'urgent';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
@@ -31,8 +44,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
   } = useFilter();
+  
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
+  const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
+  const [taskTabFilter, setTaskTabFilter] = useState<TaskTabFilter>('all');
+  
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -65,18 +82,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       fetch('/api/settings')
         .then(res => res.json())
         .then(data => {
-          if (data.master_pics) {
-            setMasterPics(data.master_pics);
-          }
-          if (data.master_statuses) {
-            setMasterStatuses(data.master_statuses);
-          }
-          if (data.master_priorities) {
-            setMasterPriorities(data.master_priorities);
-          }
-          if (data.master_categories) {
-            setMasterCategories(data.master_categories);
-          }
+          if (data.master_pics) setMasterPics(data.master_pics);
+          if (data.master_statuses) setMasterStatuses(data.master_statuses);
+          if (data.master_priorities) setMasterPriorities(data.master_priorities);
+          if (data.master_categories) setMasterCategories(data.master_categories);
         })
         .catch(e => console.error(e));
     };
@@ -85,74 +94,79 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     return () => window.removeEventListener('tasksUpdated', loadMasterPics);
   }, []);
 
+  const todayStart = startOfDay(new Date()).getTime();
+
+  // Filter tasks based on global universal filters
+  const filteredTasks = useMemo(() => {
+    return localTasks.filter(t => {
+      // Filter PIC
+      if (globalPicFilter !== 'Semua PIC') {
+        let isMatch = false;
+        if (t.pic === globalPicFilter) isMatch = true;
+        if (t.additionalPics) {
+          try {
+            const arr = JSON.parse(t.additionalPics);
+            if (Array.isArray(arr) && arr.includes(globalPicFilter)) isMatch = true;
+          } catch (e) {}
+        }
+        if (!isMatch) return false;
+      }
+
+      // Filter Tanggal
+      const taskEnd = new Date(t.endDate).getTime();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      let startBoundary = today.getTime();
+      let endBoundary = today.getTime() + 86400000 - 1;
+
+      if (globalTargetFilter === 'Minggu Ini') {
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(new Date(today).setDate(diff));
+        startBoundary = monday.getTime();
+        endBoundary = startBoundary + (7 * 86400000) - 1;
+      } else if (globalTargetFilter === 'Bulan Ini') {
+        startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+        startBoundary = new Date(globalCustomStartDate).getTime();
+        endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
+      }
+
+      let matchesTarget = false;
+      if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+        matchesTarget = true;
+      } else {
+        if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
+          matchesTarget = true;
+        }
+      }
+      if (!matchesTarget) return false;
+
+      // Status Filter
+      if (globalFilterStatus !== 'All' && t.status !== globalFilterStatus) return false;
+
+      // Priority Filter
+      if (globalFilterPriority !== 'All' && (t.prioritas || 'Medium') !== globalFilterPriority) return false;
+
+      // Category Filter
+      if (globalFilterCategory !== 'All' && (t.kategori || 'Umum') !== globalFilterCategory) return false;
+
+      // Search Filter
+      if (globalSearchQuery) {
+        if (!checkSearchMatch(t, globalSearchQuery, globalSearchExactMatch)) return false;
+      }
+
+      return true;
+    });
+  }, [localTasks, globalPicFilter, globalTargetFilter, globalCustomStartDate, globalCustomEndDate, globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch]);
+
   // Group tasks by PIC
-  const picStatsMap: Record<string, { total: number; urgent: number; tasks: Task[]; statusCounts: Record<string, number> }> = {};
+  const picStatsMap: Record<string, { total: number; urgent: number; done: number; inProgress: number; overdue: number; tasks: Task[]; statusCounts: Record<string, number> }> = {};
   
   masterPics.forEach(pic => {
-    picStatsMap[pic] = { total: 0, urgent: 0, tasks: [], statusCounts: {} };
-  });
-
-  const filteredTasks = localTasks.filter(t => {
-    // Filter PIC
-    if (globalPicFilter !== 'Semua PIC') {
-      let isMatch = false;
-      if (t.pic === globalPicFilter) isMatch = true;
-      if (t.additionalPics) {
-        try {
-          const arr = JSON.parse(t.additionalPics);
-          if (Array.isArray(arr) && arr.includes(globalPicFilter)) isMatch = true;
-        } catch (e) {}
-      }
-      if (!isMatch) return false;
-    }
-
-    // Filter Tanggal
-    const taskEnd = new Date(t.endDate).getTime();
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let startBoundary = today.getTime();
-    let endBoundary = today.getTime() + 86400000 - 1;
-
-    if (globalTargetFilter === 'Minggu Ini') {
-      const day = today.getDay();
-      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(new Date(today).setDate(diff));
-      startBoundary = monday.getTime();
-      endBoundary = startBoundary + (7 * 86400000) - 1;
-    } else if (globalTargetFilter === 'Bulan Ini') {
-      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
-      startBoundary = new Date(globalCustomStartDate).getTime();
-      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-    }
-
-    let matchesTarget = false;
-    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-      matchesTarget = true;
-    } else {
-      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
-         matchesTarget = true;
-      }
-    }
-    if (!matchesTarget) return false;
-
-    // Status Filter
-    if (globalFilterStatus !== 'All' && t.status !== globalFilterStatus) return false;
-
-    // Priority Filter
-    if (globalFilterPriority !== 'All' && (t.prioritas || 'Medium') !== globalFilterPriority) return false;
-
-    // Category Filter
-    if (globalFilterCategory !== 'All' && (t.kategori || 'Umum') !== globalFilterCategory) return false;
-
-    // Search Filter
-    if (globalSearchQuery) {
-      if (!checkSearchMatch(t, globalSearchQuery, globalSearchExactMatch)) return false;
-    }
-
-    return true;
+    picStatsMap[pic] = { total: 0, urgent: 0, done: 0, inProgress: 0, overdue: 0, tasks: [], statusCounts: {} };
   });
 
   filteredTasks.forEach(t => {
@@ -165,11 +179,14 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         }
       } catch(e) {}
     }
-    picNames = Array.from(new Set(picNames)); // remove duplicates
+    picNames = Array.from(new Set(picNames));
+
+    const isDone = t.status === 'Done' || t.status === 'Selesai';
+    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
 
     picNames.forEach(picName => {
       if (!picStatsMap[picName]) {
-        picStatsMap[picName] = { total: 0, urgent: 0, tasks: [], statusCounts: {} };
+        picStatsMap[picName] = { total: 0, urgent: 0, done: 0, inProgress: 0, overdue: 0, tasks: [], statusCounts: {} };
       }
       const stat = picStatsMap[picName];
       stat.total += 1;
@@ -178,6 +195,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       stat.statusCounts[status] = (stat.statusCounts[status] || 0) + 1;
 
       if (t.prioritas === 'Urgent') stat.urgent += 1;
+      if (isDone) stat.done += 1;
+      if (t.status === 'In Progress' || t.status === 'Sedang Dikerjakan') stat.inProgress += 1;
+      if (isOverdue) stat.overdue += 1;
+
       stat.tasks.push(t);
     });
   });
@@ -187,6 +208,23 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     picList = picList.filter(p => p === globalPicFilter || (picStatsMap[p] && picStatsMap[p].total > 0));
   }
 
+  // Workload Capacity Filter
+  const filteredPicList = useMemo(() => {
+    return picList.filter(picName => {
+      const activeTasks = (picStatsMap[picName]?.total || 0) - (picStatsMap[picName]?.done || 0);
+      if (workloadFilter === 'high') return activeTasks > 5;
+      if (workloadFilter === 'optimal') return activeTasks >= 2 && activeTasks <= 5;
+      if (workloadFilter === 'low') return activeTasks <= 1;
+      return true;
+    });
+  }, [picList, picStatsMap, workloadFilter]);
+
+  // Overall Team KPI metrics
+  const totalPicsCount = picList.length;
+  const activePicsCount = picList.filter(p => (picStatsMap[p]?.inProgress || 0) > 0 || (picStatsMap[p]?.total || 0) > 0).length;
+  const totalTeamTasks = filteredTasks.length;
+  const totalTeamDone = filteredTasks.filter(t => t.status === 'Done' || t.status === 'Selesai').length;
+  const teamDoneRate = totalTeamTasks > 0 ? Math.round((totalTeamDone / totalTeamTasks) * 100) : 0;
 
   const handleSaveEdit = async () => {
     setLoading(true);
@@ -208,10 +246,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       });
 
       if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
-      
       const savedTask = await res.json();
       
-      // Update local state
       if (isNew) {
         setLocalTasks(prev => [savedTask, ...prev]);
       } else {
@@ -221,12 +257,9 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       setIsEditing(false);
       toast.success(isNew ? 'Pekerjaan baru berhasil dibuat' : 'Pekerjaan berhasil diperbarui');
       
-      // Dispatch event to update other components like Sidebar
       startTransition(() => {
         router.refresh();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('tasksUpdated'));
-        }
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       });
     } catch (error) {
       console.error(error);
@@ -275,7 +308,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     } as any);
     setDetailTask(null);
     setIsEditing(true);
-    toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
+    toast.success('Pekerjaan berhasil diduplikasi.');
   };
 
   const handleDeleteTask = async (id: number) => {
@@ -288,13 +321,13 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       setLocalTasks(prev => prev.filter(t => t.id !== id));
       if (detailTask && detailTask.id === id) setDetailTask(null);
       
-      import('react-hot-toast').then(({ default: toast }) => toast.success('Pekerjaan berhasil dihapus'));
+      toast.success('Pekerjaan berhasil dihapus');
       startTransition(() => {
         router.refresh();
         if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       });
     } catch (error: any) {
-      import('react-hot-toast').then(({ default: toast }) => toast.error(error.message || 'Terjadi kesalahan'));
+      toast.error(error.message || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }
@@ -307,16 +340,16 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         filteredTasks,
         {
           pics: masterPics,
-          categories: [],
+          categories: masterCategories,
           locations: [],
-          priorities: [],
+          priorities: masterPriorities,
           statuses: masterStatuses
         },
         `Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.xlsx`,
         false
       );
       if (success) {
-        toast.success('Pekerjaan berhasil diekspor', { id: 'export-excel-team' });
+        toast.success('Manajemen Tim berhasil diekspor 📊', { id: 'export-excel-team' });
       } else {
         toast.error('Gagal mengekspor Excel', { id: 'export-excel-team' });
       }
@@ -338,114 +371,119 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         return;
       }
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF({
-        orientation: width > height ? 'l' : 'p',
-        unit: 'px',
-        format: [width, height]
-      });
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(pdfUrl);
-      
+      const pdf = new jsPDF('landscape');
+      pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
+      pdf.save(`Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('Laporan PDF Tim berhasil diunduh 📄');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal membuat PDF');
+    } finally {
       setIsExportingPdf(false);
-    } catch (err) {
-      console.error('PDF Export error:', err);
-      setIsExportingPdf(false);
-      import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal mengekspor PDF'));
     }
   };
 
   const handleCopyImage = async () => {
+    const element = document.getElementById('team-container');
+    if (!element) return;
     try {
       const html2canvas = (await import('html2canvas')).default;
-      const element = document.getElementById('team-container');
-      if (!element) return;
-      
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-      
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
       canvas.toBlob(async (blob) => {
         if (blob) {
           try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            import('react-hot-toast').then(({ default: toast }) => toast.success('Gambar tim disalin ke clipboard'));
-          } catch(err) {
-            console.error(err);
-            import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar, izin ditolak.'));
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            toast.success('Gambar tim berhasil disalin ke clipboard! 📋');
+          } catch (err) {
+            toast.error('Gagal menyalin gambar.');
           }
         }
-      }, 'image/png');
-    } catch (err) {
-      console.error('Copy Image error:', err);
-      import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar'));
+      });
+    } catch (e) {
+      console.error(e);
     }
   };
 
+  const handleAddNewTaskForPic = (picName: string) => {
+    setEditForm({
+      nama: '',
+      pic: picName,
+      status: masterStatuses[0] || 'To Do',
+      prioritas: 'Medium',
+      kategori: 'Umum',
+      progress: 0,
+      deskripsi: '',
+      catatan: '',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+      filesList: [],
+      additionalPicsList: [],
+      subTasksList: []
+    });
+    setIsEditing(true);
+  };
+
   return (
-    <div id="team-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
-      {isPending && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
-        }}>
-          <div style={{ 
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
-            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            border: '1px solid var(--border-color)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
-          }}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
-            Menyinkronkan data...
-          </div>
-        </div>
-      )}
+    <div id="team-container" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Manajemen Tim & PIC</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-            Direktori personil penanggung jawab (PIC) serta pemantauan produktivitas & beban kerja tim.
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Users size={26} color="var(--accent-primary)" />
+            Manajemen Tim & Distribusi Beban Kerja
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '4px' }}>
+            Monitoring kapasitas kerja, penugasan pekerjaan, dan progres performa seluruh personil (PIC).
           </p>
         </div>
       </div>
-      {/* Header Controls */}
+
+      {/* Team KPI Quick Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div className="glass" style={{ padding: '16px 20px', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Personil PIC</span>
+            <Users size={18} color="var(--accent-primary)" />
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)' }}>{totalPicsCount}</div>
+          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{activePicsCount} personil memiliki tugas aktif</span>
+        </div>
+
+        <div className="glass" style={{ padding: '16px 20px', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pekerjaan Ditangani</span>
+            <Activity size={18} color="#3b82f6" />
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#3b82f6' }}>{totalTeamTasks}</div>
+          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Total beban kerja tim saat ini</span>
+        </div>
+
+        <div className="glass" style={{ padding: '16px 20px', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Penyelesaian Tugas</span>
+            <CheckCircle2 size={18} color="#10b981" />
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#10b981' }}>{teamDoneRate}%</div>
+          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{totalTeamDone} dari {totalTeamTasks} tugas terselesaikan</span>
+        </div>
+
+        <div className="glass" style={{ padding: '16px 20px', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Rata-rata Beban</span>
+            <Clock size={18} color="#f59e0b" />
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#f59e0b' }}>
+            {totalPicsCount > 0 ? (totalTeamTasks / totalPicsCount).toFixed(1) : '0'}
+          </div>
+          <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Tugas per personil PIC</span>
+        </div>
+      </div>
+
+      {/* Global Synchronized Filters */}
       <UniversalFilterBar 
-        categories={masterCategories.length > 0 ? masterCategories : undefined} 
+        categories={masterCategories} 
         pics={masterPics} 
         statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
         priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
@@ -461,13 +499,56 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         />
       </UniversalFilterBar>
 
+      {/* Workload Matrix Filter Tabs */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-secondary)', marginRight: '4px' }}>
+          Kapasitas Beban:
+        </span>
+        {[
+          { id: 'all', label: 'Semua Anggota', count: picList.length },
+          { id: 'high', label: '🔴 Beban Tinggi (>5)', count: picList.filter(p => ((picStatsMap[p]?.total || 0) - (picStatsMap[p]?.done || 0)) > 5).length },
+          { id: 'optimal', label: '🟡 Optimal (2-5)', count: picList.filter(p => { const a = (picStatsMap[p]?.total || 0) - (picStatsMap[p]?.done || 0); return a >= 2 && a <= 5; }).length },
+          { id: 'low', label: '🟢 Ringan / Kosong (0-1)', count: picList.filter(p => ((picStatsMap[p]?.total || 0) - (picStatsMap[p]?.done || 0)) <= 1).length },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setWorkloadFilter(tab.id as WorkloadFilter)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: workloadFilter === tab.id ? 'var(--accent-primary)' : 'var(--border-color)',
+              background: workloadFilter === tab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-color)',
+              color: workloadFilter === tab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: workloadFilter === tab.id ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span>{tab.label}</span>
+            <span style={{ fontSize: '11px', opacity: 0.8 }}>({tab.count})</span>
+          </button>
+        ))}
+      </div>
+
       {/* Team Cards Grid */}
-      <div id="team-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-        {picList.map((picName) => {
-          const stat = picStatsMap[picName];
-          const doneCount = stat.statusCounts['Done'] || 0;
-          const rate = stat.total > 0 ? Math.round((doneCount / stat.total) * 100) : 0;
+      <div id="team-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
+        {filteredPicList.map((picName) => {
+          const stat = picStatsMap[picName] || { total: 0, done: 0, inProgress: 0, urgent: 0, overdue: 0, tasks: [], statusCounts: {} };
+          const activeTasks = stat.total - stat.done;
+          const rate = stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
           const isSelected = selectedPic === picName;
+          
+          // Capacity Tag
+          const capacityStatus = activeTasks > 5 
+            ? { label: 'Beban Tinggi', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
+            : activeTasks >= 2 
+            ? { label: 'Optimal', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' }
+            : { label: 'Kapasitas Tersedia', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' };
 
           return (
             <div 
@@ -475,135 +556,274 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
               className="glass" 
               style={{ 
                 padding: '20px', 
-                border: isSelected ? `2px solid ${getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)'}` : '1px solid var(--border-color)',
+                borderRadius: '14px',
+                border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                boxShadow: isSelected ? '0 8px 24px rgba(59, 130, 246, 0.15)' : 'none'
               }}
               onClick={() => setSelectedPic(isSelected ? null : picName)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-                <Avatar
-                  name={picName}
-                  src={masterPicAvatars?.[picName]}
-                  size={48}
-                  masterColors={masterColors}
-                />
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{picName}</h3>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Person In Charge</span>
+              {/* Header Info */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Avatar
+                    name={picName}
+                    src={masterPicAvatars?.[picName]}
+                    size={46}
+                    masterColors={masterColors}
+                  />
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{picName}</h3>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Person In Charge</span>
+                  </div>
                 </div>
+
+                <span style={{
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  background: capacityStatus.bg,
+                  color: capacityStatus.color,
+                  fontSize: '11px',
+                  fontWeight: 700
+                }}>
+                  {capacityStatus.label}
+                </span>
               </div>
 
-              {/* Progress & Stats */}
+              {/* Progress Bar */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Penyelesaian Tugas</span>
-                  <span style={{ fontWeight: 'bold', color: getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)' }}>{rate}%</span>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Tingkat Selesai: <strong style={{ color: 'var(--text-primary)' }}>{stat.done}/{stat.total}</strong></span>
+                  <span style={{ fontWeight: 800, color: rate === 100 ? '#10b981' : 'var(--accent-primary)' }}>{rate}%</span>
                 </div>
-                <div className="progress-container">
-                  <div className="progress-bar" style={{ width: `${rate}%`, backgroundColor: rate === 100 ? 'var(--success)' : (getDynamicBadgeStyle('pic', picName, '', masterColors).style?.color || 'var(--accent-primary)') }} />
+                <div className="progress-container" style={{ height: '7px', borderRadius: '4px' }}>
+                  <div className="progress-bar" style={{ width: `${rate}%`, backgroundColor: rate === 100 ? '#10b981' : 'var(--accent-primary)' }} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', textAlign: 'center', background: 'var(--input-bg)', padding: '10px', borderRadius: '10px' }}>
-                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stat.statusCounts)).map((statusName) => {
-                  const color = masterColors[`status_${statusName}`] ? masterColors[`status_${statusName}`].substring(0,7) : 'var(--text-primary)';
-                  if (!stat.statusCounts[statusName]) return null; // Only show statuses that have count > 0 for this PIC
-                  return (
-                    <div key={statusName}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={statusName}>{statusName}</span>
-                      <span style={{ fontWeight: 'bold', color: color }}>{stat.statusCounts[statusName] || 0}</span>
-                    </div>
-                  );
-                })}
+              {/* Status Mini Badges Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', textAlign: 'center', background: 'var(--input-bg)', padding: '8px', borderRadius: '8px', marginBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'block' }}>Total</span>
+                  <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-primary)' }}>{stat.total}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'block' }}>Selesai</span>
+                  <span style={{ fontWeight: 800, fontSize: '13px', color: '#10b981' }}>{stat.done}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'block' }}>Proses</span>
+                  <span style={{ fontWeight: 800, fontSize: '13px', color: '#3b82f6' }}>{stat.inProgress}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'block' }}>Overdue</span>
+                  <span style={{ fontWeight: 800, fontSize: '13px', color: stat.overdue > 0 ? '#ef4444' : 'var(--text-secondary)' }}>{stat.overdue}</span>
+                </div>
+              </div>
+
+              {/* Quick Actions Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11.5px', color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {isSelected ? 'Tutup Daftar Tugas ▲' : 'Lihat Daftar Tugas ▼'}
+                </span>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddNewTaskForPic(picName);
+                  }}
+                  title={`Tambah pekerjaan untuk ${picName}`}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent-primary)',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 6px',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <Plus size={13} /> Tugas Baru
+                </button>
               </div>
             </div>
           );
         })}
 
-        {picList.length === 0 && (
-          <div className="glass" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
-            Belum ada PIC yang terdaftar di dalam sistem.
+        {filteredPicList.length === 0 && (
+          <div className="glass" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-secondary)', gridColumn: '1 / -1', borderRadius: '14px' }}>
+            <Users size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+            <p style={{ fontSize: '13.5px', margin: 0, fontWeight: 600 }}>Tidak ada personil PIC pada filter kapasitas ini.</p>
           </div>
         )}
       </div>
 
-      {/* Selected PIC Detail Table */}
+      {/* Selected PIC Detail Table Section */}
       {selectedPic && picStatsMap[selectedPic] && (
-        <div id="team-pic-detail-table" className="glass" style={{ padding: '24px', marginTop: '12px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px' }}>
-            Daftar Pekerjaan Ditangani oleh: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
-            {hasPermission(roleConfig, 'view_detail', userRole) && (
-              <span style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '8px' }}>
-                (Klik nama pekerjaan untuk membuka detail)
-              </span>
-            )}
-          </h3>
+        <motion.div 
+          id="team-pic-detail-table" 
+          className="glass" 
+          style={{ padding: '22px', borderRadius: '14px' }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Avatar 
+                name={selectedPic} 
+                src={masterPicAvatars?.[selectedPic]} 
+                size={36} 
+                masterColors={masterColors} 
+              />
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  Daftar Pekerjaan Ditangani: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
+                </h3>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Total {picStatsMap[selectedPic].tasks.length} pekerjaan terdaftar
+                </span>
+              </div>
+            </div>
+
+            {/* Task Status Filters */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[
+                { id: 'all', label: 'Semua', count: picStatsMap[selectedPic].tasks.length },
+                { id: 'in_progress', label: 'On Progress', count: picStatsMap[selectedPic].inProgress },
+                { id: 'done', label: 'Selesai', count: picStatsMap[selectedPic].done },
+                { id: 'urgent', label: 'Urgent/Overdue', count: picStatsMap[selectedPic].urgent + picStatsMap[selectedPic].overdue },
+              ].map(tTab => (
+                <button
+                  key={tTab.id}
+                  onClick={() => setTaskTabFilter(tTab.id as TaskTabFilter)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--border-color)',
+                    background: taskTabFilter === tTab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--input-bg)',
+                    color: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    fontSize: '11.5px',
+                    fontWeight: taskTabFilter === tTab.id ? 700 : 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tTab.label} ({tTab.count})
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '12px' }}>Nama Pekerjaan</th>
-                  <th style={{ padding: '12px' }}>Kategori</th>
-                  <th style={{ padding: '12px' }}>Prioritas</th>
-                  <th style={{ padding: '12px' }}>Status & Progress</th>
-                  <th style={{ padding: '12px' }}>Tenggat Waktu</th>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
+                  <th style={{ padding: '10px 12px', borderRadius: '6px 0 0 6px' }}>Nama Pekerjaan</th>
+                  <th style={{ padding: '10px 12px' }}>Kategori</th>
+                  <th style={{ padding: '10px 12px' }}>Prioritas</th>
+                  <th style={{ padding: '10px 12px' }}>Status</th>
+                  <th style={{ padding: '10px 12px' }}>Progress</th>
+                  <th style={{ padding: '10px 12px' }}>Tenggat Waktu</th>
                   {hasPermission(roleConfig, 'view_detail', userRole) && (
-                    <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Aksi</th>
                   )}
                 </tr>
               </thead>
               <tbody>
-                {picStatsMap[selectedPic].tasks.map(t => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    <td 
-                      style={{ 
-                        padding: '12px', 
-                        fontWeight: 600, 
-                        color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
-                        cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
-                      }} 
-                      onClick={() => { 
-                        if (hasPermission(roleConfig, 'view_detail', userRole)) {
-                          setDetailTask(t); 
-                          setEditForm(t); 
-                          setIsEditing(false); 
-                        } else {
-                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
-                        }
-                      }}
-                    >
-                      {t.nama}
-                    </td>
-                    <td style={{ padding: '12px' }}>{t.kategori || 'Umum'}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
-                        {t.prioritas || 'Medium'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
-                        {t.status}
-                      </span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '6px' }}>({t.progress || 0}%)</span>
-                    </td>
-                    <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}</td>
-                    {hasPermission(roleConfig, 'view_detail', userRole) && (
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
-                          Detail Pekerjaan
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
+                {picStatsMap[selectedPic].tasks
+                  .filter(t => {
+                    const isDone = t.status === 'Done' || t.status === 'Selesai';
+                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+                    if (taskTabFilter === 'in_progress') return t.status === 'In Progress' || t.status === 'Sedang Dikerjakan';
+                    if (taskTabFilter === 'done') return isDone;
+                    if (taskTabFilter === 'urgent') return t.prioritas === 'Urgent' || isOverdue;
+                    return true;
+                  })
+                  .map(t => {
+                    const isDone = t.status === 'Done' || t.status === 'Selesai';
+                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+
+                    return (
+                      <tr 
+                        key={t.id} 
+                        style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s ease' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td 
+                          style={{ 
+                            padding: '11px 12px', 
+                            fontWeight: 600, 
+                            color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
+                            cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                          }} 
+                          onClick={() => { 
+                            if (hasPermission(roleConfig, 'view_detail', userRole)) {
+                              setDetailTask(t); 
+                              setEditForm(t); 
+                              setIsEditing(false); 
+                            }
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{t.nama}</span>
+                            {isOverdue && (
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}>
+                                Terlewat
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>{t.kategori || 'Umum'}</td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
+                            {t.prioritas || 'Medium'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div className="progress-container" style={{ width: '60px', height: '6px', borderRadius: '3px' }}>
+                              <div className="progress-bar" style={{ width: `${t.progress || 0}%`, backgroundColor: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
+                            </div>
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: '12px' }}>
+                          {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
+                        </td>
+                        {hasPermission(roleConfig, 'view_detail', userRole) && (
+                          <td style={{ padding: '11px 12px', textAlign: 'right' }}>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '4px 8px', fontSize: '11.5px' }} 
+                              onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}
+                            >
+                              Detail
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
 
+      {/* Task Modals */}
       <TaskDetailModal
         task={detailTask}
         onClose={() => setDetailTask(null)}
@@ -613,7 +833,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         }}
         onEdit={() => {
           let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
-      
           let parsedSubTasks: SubTask[] = [];
           if (detailTask!.subTasksJson) {
             try {
@@ -643,9 +862,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         taskToEdit={editForm as Task}
         onSave={handleSaveEdit}
         formPicOptions={[...masterPics]}
-        formCategoryOptions={[]} 
+        formCategoryOptions={masterCategories} 
         setPreviewFile={setPreviewFile}
       />
+      
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );
