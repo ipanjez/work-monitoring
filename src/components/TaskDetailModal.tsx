@@ -66,6 +66,14 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
   const [picEmails, setPicEmails] = useState<Record<string, string>>({});
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (task) {
@@ -295,23 +303,23 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             borderTopLeftRadius: '20px',
             borderTopRightRadius: '20px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1, paddingRight: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', width: '100%' }}>
+              <div style={{ width: '100%', paddingRight: '40px' }}>
                 {(() => {
                   const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
                   return (
-                    <span className={badge.className} style={{ ...badge.style, marginBottom: '12px', display: 'inline-block' }}>
+                    <span className={badge.className} style={{ ...badge.style, marginBottom: '8px', display: 'inline-block' }}>
                       {task.prioritas || 'Medium'}
                     </span>
                   );
                 })()}
 
-                <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>{task.nama}</h2>
+                <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px', lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal' }}>{task.nama}</h2>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-secondary"
-                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={handleCopyTaskDetails}
                     title="Salin Detail Pekerjaan ke Teks"
                   >
@@ -323,7 +331,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary"
-                    style={{ padding: '6px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Tambah ke Google Calendar"
                   >
                     <ExternalLink size={16} />
@@ -332,7 +340,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <button
                     className="btn btn-secondary"
                     onClick={() => handleExportICS(task)}
-                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Download .ics"
                   >
                     <CalendarDays size={16} />
@@ -345,7 +353,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         onClose();
                         router.push(`/calendar?search=${encodeURIComponent(task.nama)}`);
                       }}
-                      style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Pergi ke Kalender"
                     >
                       <Eye size={16} />
@@ -360,7 +368,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       exportTaskPdf(task, currentAppName, siteUrl);
                       toast.success('PDF berhasil di-download!');
                     }}
-                    style={{ padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
+                    style={{ padding: '8px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
                     title="Export PDF"
                   >
                     <FileDown size={16} />
@@ -370,7 +378,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     className="btn"
                     onClick={() => setIsEmailModalOpen(true)}
                     style={{
-                      padding: '6px',
+                      padding: '8px',
                       borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
@@ -387,28 +395,50 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   </button>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
-                    <Copy size={16} style={{ marginRight: '6px', color: 'var(--accent-primary)' }} /> Duplikasi
-                  </button>
-                )}
+              <div style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                flexShrink: 0, 
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                marginTop: '4px',
+                borderTop: '1px solid var(--border-color)',
+                paddingTop: '12px',
+                width: '100%'
+              }}>
+                <div style={{ display: 'flex', gap: '6px', flex: isMobile ? 1 : 'none', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                      <Copy size={14} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
+                    </button>
+                  )}
 
-                {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
-                    <Edit size={16} style={{ marginRight: '6px' }} /> Edit
-                  </button>
-                )}
+                  {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                      <Edit size={14} style={{ marginRight: '4px' }} /> Edit
+                    </button>
+                  )}
 
-                {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
-                  <button className="btn btn-danger" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
-                    <Trash2 size={16} style={{ marginRight: '6px' }} /> Hapus
-                  </button>
-                )}
+                  {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
+                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500, flex: isMobile ? 1 : 'none' }} onClick={onDelete} title="Hapus Pekerjaan">
+                      <Trash2 size={14} style={{ marginRight: '4px' }} /> Hapus
+                    </button>
+                  )}
+                </div>
 
-                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }}></div>
-
-                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={onClose} title="Tutup">
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ 
+                    padding: '6px',
+                    position: 'absolute',
+                    top: '0px',
+                    right: '-12px',
+                    borderRadius: '50%',
+                    zIndex: 15
+                  }} 
+                  onClick={onClose} 
+                  title="Tutup"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -631,8 +661,8 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                           <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
                             {dateKey === 'Tanpa Tenggat Waktu' ? 'Tanpa Tenggat Waktu' : `Tenggat Waktu: ${format(new Date(dateKey), 'dd MMM yyyy')}`}
                           </div>
-                          {tasksGroup.map(subTask => (
-                            <div key={subTask.id} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                          {tasksGroup.map((subTask, sidx) => (
+                            <div key={subTask.id ? `${subTask.id}-${sidx}` : `subtask-${sidx}`} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                   <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
@@ -722,8 +752,8 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 {localComments.length === 0 ? (
                   <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textAlign: 'center', padding: '12px 0' }}>Belum ada komentar.</div>
                 ) : (
-                  localComments.map(comment => (
-                    <div key={comment.id} style={{ background: 'var(--bg-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  localComments.map((comment, cidx) => (
+                    <div key={comment.id ? `${comment.id}-${cidx}` : `comment-${cidx}`} style={{ background: 'var(--bg-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

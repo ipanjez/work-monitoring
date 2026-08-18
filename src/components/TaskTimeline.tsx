@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SubTask, formatDescription } from '@/utils/taskUtils';
 import { User } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
@@ -25,6 +25,14 @@ interface TimelineEvent {
 export default function TaskTimeline({ startDate, endDate, subTasks, masterColors, mainPic }: TaskTimelineProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!startDate) return null;
 
@@ -63,24 +71,27 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
       type: 'end',
       date: end,
       title: 'Batas Waktu',
-      color: 'var(--text-secondary)'
+      color: '#dc2626'
     });
   }
 
-  events.push({
-    id: 'today',
-    type: 'today',
-    date: today,
-    title: 'Hari Ini',
-    color: 'var(--accent-primary)'
-  });
+  if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
+    events.push({
+      id: 'today',
+      type: 'today',
+      date: today,
+      title: 'Hari Ini',
+      color: 'var(--accent-primary)'
+    });
+  }
 
-  subTasks.forEach(st => {
+  subTasks.forEach((st) => {
     if (st.tenggatWaktu) {
+      const sdate = startOfDay(new Date(st.tenggatWaktu));
       events.push({
-        id: `subtask-${st.id}`,
+        id: st.id || `subtask-${Math.random()}`,
         type: 'subtask',
-        date: startOfDay(new Date(st.tenggatWaktu)),
+        date: sdate,
         title: st.text,
         status: st.status,
         color: getStatusColor(st.status),
@@ -90,63 +101,136 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     }
   });
 
-  const typeOrder = {
-    start: 1,
-    today: 2,
-    subtask: 3,
-    end: 4
-  };
+  events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // Sort chronologically and by type priority
-  events.sort((a, b) => {
-    const timeDiff = a.date.getTime() - b.date.getTime();
-    if (timeDiff !== 0) return timeDiff;
-    return typeOrder[a.type] - typeOrder[b.type];
+  const groupedEvents: { id: string; date: Date; color: string; isSpecial: boolean; events: TimelineEvent[] }[] = [];
+  events.forEach((ev) => {
+    const key = format(ev.date, 'yyyy-MM-dd');
+    let group = groupedEvents.find(g => format(g.date, 'yyyy-MM-dd') === key);
+    if (!group) {
+      const isSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
+      group = {
+        id: key,
+        date: ev.date,
+        color: ev.color,
+        isSpecial,
+        events: []
+      };
+      groupedEvents.push(group);
+    }
+    group.events.push(ev);
+    if (ev.type === 'today' || ev.type === 'end') {
+      group.color = ev.color;
+      group.isSpecial = true;
+    }
   });
 
   const statusCounts = subTasks.reduce((acc, st) => {
     acc[st.status] = (acc[st.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
   const statusSummary = Object.entries(statusCounts)
     .map(([status, count]) => `${count} ${status}`)
     .join(', ');
 
-  const groupedEvents: { date: Date; events: TimelineEvent[], isSpecial: boolean, id: string, color: string }[] = [];
-  events.forEach(ev => {
-    const time = ev.date.getTime();
-    const isSpecial = ev.type !== 'subtask';
-    const lastGroup = groupedEvents[groupedEvents.length - 1];
-    
-    if (lastGroup && lastGroup.date.getTime() === time && lastGroup.isSpecial === isSpecial) {
-      lastGroup.events.push(ev);
-    } else {
-      groupedEvents.push({ 
-        date: ev.date, 
-        events: [ev], 
-        isSpecial, 
-        id: ev.id,
-        color: ev.color || '#3b82f6'
-      });
-    }
-  });
-
   return (
-    <div style={{ padding: '24px 16px 24px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+    <div style={{ padding: isMobile ? '16px 12px' : '24px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
       <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px', textAlign: 'center' }}>
         Alur Timeline Pekerjaan
       </h4>
-      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '32px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: isMobile ? '20px' : '32px' }}>
         {statusSummary ? `(${statusSummary})` : ''}
       </div>
       
       <div style={{ position: 'relative', margin: '0 auto', width: '100%', maxWidth: '600px', maxHeight: isTimelineExpanded ? 'none' : '300px', overflowY: 'hidden', transition: 'max-height 0.3s ease-in-out' }}>
         {/* Central Vertical Line */}
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: '10px', bottom: '10px', width: '2px', background: 'var(--border-color)' }} />
+        <div style={{ 
+          position: 'absolute', 
+          left: isMobile ? '16px' : '50%', 
+          transform: isMobile ? 'none' : 'translateX(-50%)', 
+          top: '10px', 
+          bottom: '10px', 
+          width: '2px', 
+          background: 'var(--border-color)' 
+        }} />
 
         {groupedEvents.map((group, index) => {
           const isLeft = index % 2 === 0;
           const isSpecial = group.isSpecial;
+
+          if (isMobile) {
+            return (
+              <div key={group.id} style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px', position: 'relative', width: '100%', paddingLeft: '36px' }}>
+                {/* Left Dot */}
+                <div style={{ 
+                  position: 'absolute', 
+                  left: '16px', 
+                  top: '6px', 
+                  transform: 'translateX(-50%)', 
+                  width: isSpecial ? '12px' : '16px', 
+                  height: isSpecial ? '12px' : '16px', 
+                  borderRadius: '50%', 
+                  background: group.color, 
+                  border: '2px solid var(--surface-color)', 
+                  boxShadow: '0 0 0 2px var(--border-color), 0 2px 4px rgba(0,0,0,0.1)', 
+                  zIndex: 2 
+                }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', textAlign: 'left' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    {format(group.date, 'dd MMM yyyy')}
+                  </span>
+                  {group.events.map(ev => (
+                    <div 
+                      key={ev.id}
+                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
+                      style={{ 
+                        background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
+                        border: isSpecial ? 'none' : '1px solid var(--border-color)', 
+                        padding: isSpecial ? 0 : '8px 10px', 
+                        borderRadius: '8px',
+                        color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                        fontWeight: isSpecial ? 600 : 500,
+                        fontSize: '12px',
+                        width: '100%',
+                        boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                        cursor: isSpecial ? 'default' : 'pointer'
+                      }}>
+                      <div 
+                        style={{ 
+                          wordBreak: 'break-word', 
+                          whiteSpace: 'normal', 
+                          lineHeight: 1.5,
+                          display: isSpecial ? 'block' : '-webkit-box',
+                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                        }}
+                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                      >
+                        {isSpecial ? ev.title : null}
+                      </div>
+                      {!isSpecial && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          {ev.status && (
+                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                              {ev.status}
+                            </span>
+                          )}
+                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              <User size={10} /> {p}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div key={group.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', position: 'relative', width: '100%' }}>
