@@ -14,6 +14,7 @@ interface SmartAddModalProps {
   picOptions?: string[];
   categoryOptions?: string[];
   priorityOptions?: string[];
+  locationOptions?: string[];
   onSaveBulk: (tasks: ParsedTask[]) => void;
 }
 
@@ -64,6 +65,7 @@ export default function SmartAddModal({
   picOptions = [],
   categoryOptions = [],
   priorityOptions = [],
+  locationOptions = [],
   onSaveBulk
 }: SmartAddModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
@@ -79,7 +81,7 @@ export default function SmartAddModal({
 
   const handleParse = () => {
     if (!rawText.trim()) return;
-    const result = parseAgendaText(rawText, picOptions, categoryOptions, priorityOptions);
+    const result = parseAgendaText(rawText, picOptions, categoryOptions, priorityOptions, locationOptions);
     if (result.length === 0) {
       toast.error('Tidak ada pekerjaan yang dapat dikenali. Silakan periksa format teks.');
       return;
@@ -433,21 +435,81 @@ export default function SmartAddModal({
 
                       <div>
                         <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>PIC Tambahan</label>
-                        <input 
-                          type="text"
-                          className="input"
-                          value={(() => {
-                            try {
-                              return task.additionalPics ? JSON.parse(task.additionalPics).join(', ') : '';
-                            } catch(e) { return ''; }
-                          })()}
-                          onChange={(e) => {
-                             const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                             updateTask(idx, 'additionalPics', val.length > 0 ? JSON.stringify(val) : undefined);
-                          }}
-                          style={{ width: '100%', fontSize: '12.5px' }}
-                          placeholder="Pisahkan koma (Budi, Siti)"
-                        />
+                        {(() => {
+                          let currentPics: string[] = [];
+                          try {
+                            if (task.additionalPics) {
+                              const parsed = JSON.parse(task.additionalPics);
+                              if (Array.isArray(parsed)) currentPics = parsed;
+                            }
+                          } catch (e) {}
+
+                          const availablePics = picOptions.filter(p => p && p !== task.pic && !currentPics.includes(p));
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              <select 
+                                className="input" 
+                                value="" 
+                                onChange={(e) => {
+                                  const selected = e.target.value;
+                                  if (selected && !currentPics.includes(selected)) {
+                                    const updated = [...currentPics, selected];
+                                    updateTask(idx, 'additionalPics', JSON.stringify(updated));
+                                  }
+                                }} 
+                                style={{ width: '100%', fontSize: '12.5px' }}
+                              >
+                                <option value="">-- Pilih PIC Tambahan --</option>
+                                {availablePics.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+
+                              {currentPics.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {currentPics.map((pName, pIdx) => (
+                                    <span 
+                                      key={pIdx} 
+                                      style={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        gap: '4px', 
+                                        padding: '2px 8px', 
+                                        borderRadius: '6px', 
+                                        fontSize: '11.5px', 
+                                        background: 'var(--bg-secondary, rgba(0,0,0,0.06))', 
+                                        border: '1px solid var(--border-color)', 
+                                        color: 'var(--text-primary)',
+                                        fontWeight: 500
+                                      }}
+                                    >
+                                      {pName}
+                                      <button 
+                                        type="button" 
+                                        onClick={() => {
+                                          const updated = currentPics.filter((_, i) => i !== pIdx);
+                                          updateTask(idx, 'additionalPics', updated.length > 0 ? JSON.stringify(updated) : undefined);
+                                        }} 
+                                        style={{ 
+                                          background: 'none', 
+                                          border: 'none', 
+                                          padding: 0, 
+                                          cursor: 'pointer', 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          color: 'var(--text-secondary)',
+                                          lineHeight: 1
+                                        }}
+                                        title={`Hapus ${pName}`}
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div>
@@ -536,34 +598,62 @@ export default function SmartAddModal({
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
                       <div>
                         <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Lokasi / Link Zoom</label>
-                        <input 
-                          className="input" 
-                          placeholder="Ruang Rapat atau Link Zoom (https://...)"
-                          value={task.lokasi ? (() => {
-                            try {
-                              const parsed = JSON.parse(task.lokasi);
-                              return parsed.tipe === 'online' ? (parsed.linkZoom || '') : (parsed.lokasiFisik || '');
-                            } catch (e) {
-                              return task.lokasi;
-                            }
-                          })() : ''} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const lower = val.toLowerCase();
-                            let lokasiJson = '';
-                            if (val.trim()) {
-                              if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft') || lower.startsWith('online:')) {
-                                const clean = val.replace(/^online:\s*/i, '').trim();
-                                lokasiJson = JSON.stringify({ tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' });
-                              } else {
-                                const clean = val.replace(/^offline:\s*/i, '').trim();
-                                lokasiJson = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' });
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          {locationOptions && locationOptions.length > 0 && (
+                            <select
+                              className="input"
+                              value=""
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (!val) return;
+                                const lower = val.toLowerCase();
+                                let lokasiJson = '';
+                                if (lower.startsWith('online:') || lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft')) {
+                                  const clean = val.replace(/^online:\s*/i, '').trim();
+                                  lokasiJson = JSON.stringify({ tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' });
+                                } else {
+                                  const clean = val.replace(/^offline:\s*/i, '').trim();
+                                  lokasiJson = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' });
+                                }
+                                updateTask(idx, 'lokasi', lokasiJson);
+                              }}
+                              style={{ width: '100%', fontSize: '11.5px' }}
+                            >
+                              <option value="">-- Pilih dari Master Lokasi --</option>
+                              {locationOptions.map((loc, lIdx) => (
+                                <option key={lIdx} value={loc}>{loc}</option>
+                              ))}
+                            </select>
+                          )}
+                          <input 
+                            className="input" 
+                            placeholder="Ruang Rapat atau Link Zoom (https://...)"
+                            value={task.lokasi ? (() => {
+                              try {
+                                const parsed = JSON.parse(task.lokasi);
+                                return parsed.tipe === 'online' ? (parsed.linkZoom || '') : (parsed.lokasiFisik || '');
+                              } catch (e) {
+                                return task.lokasi;
                               }
-                            }
-                            updateTask(idx, 'lokasi', lokasiJson);
-                          }} 
-                          style={{ width: '100%', fontSize: '12.5px' }}
-                        />
+                            })() : ''} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const lower = val.toLowerCase();
+                              let lokasiJson = '';
+                              if (val.trim()) {
+                                if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft') || lower.startsWith('online:')) {
+                                  const clean = val.replace(/^online:\s*/i, '').trim();
+                                  lokasiJson = JSON.stringify({ tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' });
+                                } else {
+                                  const clean = val.replace(/^offline:\s*/i, '').trim();
+                                  lokasiJson = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' });
+                                }
+                              }
+                              updateTask(idx, 'lokasi', lokasiJson);
+                            }} 
+                            style={{ width: '100%', fontSize: '12.5px' }}
+                          />
+                        </div>
                       </div>
 
                       <div>

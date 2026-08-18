@@ -58,15 +58,6 @@ export default function GlobalAddButton() {
         if (data.master_locations) setMasterLocations(data.master_locations);
       })
       .catch(console.error);
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(names => {
-        if (Array.isArray(names)) {
-          setMasterPics(prev => Array.from(new Set([...prev, ...names])));
-        }
-      })
-      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -807,6 +798,7 @@ export default function GlobalAddButton() {
           picOptions={masterPics.length > 0 ? masterPics : ['Unassigned']}
           categoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
           priorityOptions={masterPriorities}
+          locationOptions={masterLocations}
           onSaveBulk={handleSaveSmartModal}
         />,
         document.body
@@ -818,6 +810,7 @@ export default function GlobalAddButton() {
           tasks={excelPreviewTasks}
           onConfirmImport={handleConfirmImportFromExcel}
           fileName={excelFileName}
+          masterLocations={masterLocations}
         />,
         document.body
       )}

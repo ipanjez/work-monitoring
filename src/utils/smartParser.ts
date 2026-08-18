@@ -83,7 +83,7 @@ function extractTimes(line: string): { start: string, end: string | null } {
   return { start: '', end: null };
 }
 
-export function parseAgendaText(rawText: string, picOptions: string[] = [], categoryOptions: string[] = [], priorityOptions: string[] = []): ParsedTask[] {
+export function parseAgendaText(rawText: string, picOptions: string[] = [], categoryOptions: string[] = [], priorityOptions: string[] = [], locationOptions: string[] = []): ParsedTask[] {
   // Pre-process rawText to handle single-line PDF pastes by inserting newlines before key fields
   const processedText = rawText.replace(/(Hari\/Tanggal|Waktu|Tempat|Agenda)\s*:/gi, '\n$1 :');
   const lines = processedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -112,40 +112,77 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
     lokasi: ''
   };
   let currentDescription: string[] = [];
-  let isFirstTaskNameFound = false;
-
-  const saveCurrentTask = () => {
-    if (currentTask && (isFirstTaskNameFound || currentDescription.length > 0)) {
-      currentTask.deskripsi = currentDescription.join('\n').trim();
-      tasks.push(currentTask as ParsedTask);
-    }
-  };
-
-  const isNewTaskLine = (line: string) => {
-    return /^\d+[\.\)]\s/.test(line) || line.startsWith('🗒️') || /^agenda\s*:/i.test(line);
-  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    // Check if line looks like the start of a new task
-    if (isNewTaskLine(line)) {
-      let name = line.replace(/^\d+[\.\)]\s/, '').replace(/^[•\-\*]\s/, '').trim();
-      if (line.startsWith('🗒️')) {
-        name = line.replace(/^🗒️\s*[:\-]?\s*/, '').trim();
-      } else if (/^agenda\s*:/i.test(line)) {
-        name = line.replace(/^agenda\s*[:\-]?\s*/i, '').trim();
+    // Check if new numbered item starts (e.g. "1. ", "2. ", "1) ")
+    const itemMatch = line.match(/^(\d+)[\.\)]\s+(.*)/);
+    if (itemMatch) {
+      // Save previous task if exists
+      if (currentTask.nama && currentTask.nama !== 'Pekerjaan Baru') {
+        currentTask.deskripsi = currentDescription.join('\n').trim();
+        tasks.push(currentTask as ParsedTask);
       }
-      
-      if (!isFirstTaskNameFound) {
-        currentTask.nama = name;
-        isFirstTaskNameFound = true;
-      } else {
-        saveCurrentTask();
+
+      currentTask = {
+        nama: itemMatch[2].trim(),
+        pic: '',
+        kategori: categoryOptions.length > 0 ? categoryOptions[0] : 'Umum',
+        prioritas: priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium',
+        startDate: globalStartDate,
+        endDate: globalEndDate,
+        startTime: '08:00',
+        endTime: '17:00',
+        deskripsi: '',
+        lokasi: ''
+      };
+      currentDescription = [];
+      continue;
+    }
+
+    // Check if line starts with specific keyword like "Agenda:", "Kegiatan:", "Judul:"
+    const keywordMatch = line.match(/^(agenda|kegiatan|judul|nama pekerjaan)\s*:\s*(.*)/i);
+    if (keywordMatch) {
+      if (currentTask.nama && currentTask.nama !== 'Pekerjaan Baru' && !currentTask.nama.includes(keywordMatch[2].trim())) {
+        // If currentTask already has details, this might be a new task without numbers
+        currentTask.deskripsi = currentDescription.join('\n').trim();
+        tasks.push(currentTask as ParsedTask);
+
         currentTask = {
-          nama: name,
+          nama: keywordMatch[2].trim(),
           pic: '',
+          kategori: categoryOptions.length > 0 ? categoryOptions[0] : 'Umum',
+          prioritas: priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium',
+          startDate: globalStartDate,
+          endDate: globalEndDate,
+          startTime: '08:00',
+          endTime: '17:00',
+          deskripsi: '',
+          lokasi: ''
+        };
+        currentDescription = [];
+      } else {
+        currentTask.nama = keywordMatch[2].trim();
+      }
+      continue;
+    }
+
+    // Check if line indicates an agenda header like "1. Rapat..." without standard numbering
+    if (/^(rapat|meeting|agenda|pembahasan|sosialisasi|pelatihan|workshop|focus group discussion|fgd|review|evaluasi)\b/i.test(line) && line.length < 100) {
+      if (!currentTask.nama || currentTask.nama === 'Pekerjaan Baru') {
+        currentTask.nama = line;
+      } else if (currentTask.nama && currentTask.pic) {
+        // We already have a full task, so this begins a new one
+        currentTask.deskripsi = currentDescription.join('\n').trim();
+        tasks.push(currentTask as ParsedTask);
+
+        currentTask = {
+          nama: line,
+          pic: '',
+          kategori: categoryOptions.length > 0 ? categoryOptions[0] : 'Umum',
+          prioritas: priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium',
           startDate: globalStartDate,
           endDate: globalEndDate,
           startTime: '08:00',
@@ -155,6 +192,7 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
         };
         currentDescription = [];
       }
+      currentDescription.push(line);
       continue;
     }
 
@@ -185,8 +223,14 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
       currentDescription.push(line); // Also keep in description for context
     } 
     // Location parsing
-    else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || /tempat\s*:/i.test(line) || /lokasi\s*:/i.test(line) || /ruang\s*:/i.test(line) || /link\s*:/i.test(line)) {
-      const cleanLoc = line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
+    else if (lowerLine.includes('🏩') || lowerLine.includes('📍') || lowerLine.includes('🏢') || /tempat\s*:/i.test(line) || /lokasi\s*:/i.test(line) || /ruang\s*:/i.test(line) || /link\s*:/i.test(line) || locationOptions.some(l => lowerLine.includes(l.toLowerCase().replace(/^(online|offline):\s*/i, '').trim()))) {
+      const matchedMaster = locationOptions.find(l => {
+        const clean = l.toLowerCase().replace(/^(online|offline):\s*/i, '').trim();
+        return clean.length > 2 && lowerLine.includes(clean);
+      });
+
+      let rawLoc = matchedMaster || line.replace(/^[🏩📍🏢\s]+[:\-]?\s*/, '').replace(/^(tempat|lokasi|ruang|link)\s*[:\-]?\s*/i, '').trim();
+      const cleanLoc = rawLoc.trim();
       if (cleanLoc) {
         const locLower = cleanLoc.toLowerCase();
         if (locLower.startsWith('http://') || locLower.startsWith('https://') || locLower.includes('zoom.us') || locLower.includes('meet.google.com') || locLower.includes('teams.live.com') || locLower.includes('teams.microsoft') || locLower.startsWith('online:')) {
@@ -249,7 +293,10 @@ export function parseAgendaText(rawText: string, picOptions: string[] = [], cate
   }
 
   // Save the last one
-  saveCurrentTask();
+  if (currentTask.nama) {
+    currentTask.deskripsi = currentDescription.join('\n').trim();
+    tasks.push(currentTask as ParsedTask);
+  }
   
   return tasks;
 }

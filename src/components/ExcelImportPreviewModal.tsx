@@ -32,6 +32,7 @@ interface ExcelImportPreviewModalProps {
   tasks: ExcelParsedTask[];
   onConfirmImport: (tasks: ExcelParsedTask[]) => Promise<void>;
   fileName?: string;
+  masterLocations?: string[];
 }
 
 export default function ExcelImportPreviewModal({
@@ -39,7 +40,8 @@ export default function ExcelImportPreviewModal({
   onClose,
   tasks: initialTasks,
   onConfirmImport,
-  fileName = 'file.xlsx'
+  fileName = 'file.xlsx',
+  masterLocations = []
 }: ExcelImportPreviewModalProps) {
   const [tasks, setTasks] = useState<ExcelParsedTask[]>(initialTasks);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -280,8 +282,48 @@ export default function ExcelImportPreviewModal({
                           <Clock size={11} /> {timeDisplay}
                         </div>
                       </td>
-                      <td style={{ padding: '10px 12px', fontSize: '11.5px', color: 'var(--text-secondary)', maxWidth: '160px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {parseLocationText(task.lokasi)}
+                      <td style={{ padding: '8px 12px', fontSize: '11.5px', minWidth: '150px' }}>
+                        {masterLocations && masterLocations.length > 0 ? (
+                          <select
+                            className="input"
+                            value={(() => {
+                              if (!task.lokasi) return '';
+                              try {
+                                const parsed = JSON.parse(task.lokasi);
+                                const val = (parsed.tipe === 'online' ? parsed.linkZoom : parsed.lokasiFisik) || '';
+                                if (!val) return '';
+                                return masterLocations.find(l => l.includes(val) || val.includes(l.replace(/^(online|offline):\s*/i, '').trim())) || '';
+                              } catch {
+                                return '';
+                              }
+                            })()}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const lower = val.toLowerCase();
+                              let newLokasi = null;
+                              if (val) {
+                                if (lower.startsWith('online:') || lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft')) {
+                                  const clean = val.replace(/^online:\s*/i, '').trim();
+                                  newLokasi = JSON.stringify({ tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' });
+                                } else {
+                                  const clean = val.replace(/^offline:\s*/i, '').trim();
+                                  newLokasi = JSON.stringify({ tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' });
+                                }
+                              }
+                              const updated = [...tasks];
+                              updated[idx] = { ...updated[idx], lokasi: newLokasi };
+                              setTasks(updated);
+                            }}
+                            style={{ width: '100%', fontSize: '11px', padding: '3px 6px', height: '28px' }}
+                          >
+                            <option value="">{task.lokasi ? parseLocationText(task.lokasi) : '-- Tanpa Lokasi --'}</option>
+                            {masterLocations.map((l, lIdx) => (
+                              <option key={lIdx} value={l}>{l}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          parseLocationText(task.lokasi)
+                        )}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         {subCount > 0 ? (

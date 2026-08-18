@@ -1636,6 +1636,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         picOptions={formPicOptions}
         categoryOptions={formCategoryOptions}
         priorityOptions={masterPriorities}
+        locationOptions={masterLocations}
         onSaveBulk={async (tasks) => {
           setIsSmartModalOpen(false);
           setLoading(true);

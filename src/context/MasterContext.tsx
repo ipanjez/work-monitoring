@@ -144,11 +144,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           changed = true;
         }
         if (data.master_pics) {
-          setMasterPics(prev => {
-            const combined = Array.from(new Set([...data.master_pics, ...prev]));
-            localStorage.setItem('master_pics', JSON.stringify(combined));
-            return combined;
-          });
+          setMasterPics(data.master_pics);
+          localStorage.setItem('master_pics', JSON.stringify(data.master_pics));
           changed = true;
         }
         if (changed) {
@@ -156,20 +153,6 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(console.error);
-
-    fetch('/api/users/pics')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setMasterPics(prev => {
-            const combined = Array.from(new Set([...prev, ...data]));
-            localStorage.setItem('master_pics', JSON.stringify(combined));
-            return combined;
-          });
-          window.dispatchEvent(new Event('masterUpdated'));
-        }
-      })
-      .catch(() => {});
 
     fetch('/api/settings/permissions')
       .then(res => res.json())

@@ -121,6 +121,8 @@ export default function TaskAddEditModal({
       try {
         const cached = localStorage.getItem('master_status_progress');
         if (cached) setMasterProgressMap(JSON.parse(cached));
+        const cachedLoc = localStorage.getItem('master_locations');
+        if (cachedLoc) setMasterLocations(JSON.parse(cachedLoc));
       } catch (e) { }
       fetch('/api/settings').then(r => r.json()).then(data => {
         if (data.master_status_progress) {
@@ -129,6 +131,7 @@ export default function TaskAddEditModal({
         }
         if (data.master_locations) {
           setMasterLocations(data.master_locations);
+          localStorage.setItem('master_locations', JSON.stringify(data.master_locations));
         }
       }).catch(() => { });
     }
@@ -495,7 +498,43 @@ export default function TaskAddEditModal({
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
 
-                <div style={{ display: 'flex', gap: '12px' }}>
+                {masterLocations.length > 0 && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                      Pilih dari Master Lokasi:
+                    </label>
+                    <select
+                      className="input"
+                      value=""
+                      onChange={(e) => {
+                        const selected = e.target.value;
+                        if (!selected) return;
+                        const lower = selected.toLowerCase();
+                        if (lower.startsWith('online:') || lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft')) {
+                          const clean = selected.replace(/^online:\s*/i, '').trim();
+                          setEditingTask({
+                            ...editingTask,
+                            lokasiData: { tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' } as any
+                          });
+                        } else {
+                          const clean = selected.replace(/^offline:\s*/i, '').trim();
+                          setEditingTask({
+                            ...editingTask,
+                            lokasiData: { tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' } as any
+                          });
+                        }
+                      }}
+                      style={{ width: '100%', fontSize: '12.5px' }}
+                    >
+                      <option value="">-- Pilih dari Master Lokasi --</option>
+                      {masterLocations.map((loc, idx) => (
+                        <option key={idx} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
                     <input
                       type="radio"
@@ -524,11 +563,11 @@ export default function TaskAddEditModal({
 
                 {editingTask.lokasiData?.tipe === 'online' && (
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom</label>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom / Meeting</label>
                     <input
                       type="text"
                       className="input"
-                      placeholder="https://zoom.us/j/..."
+                      placeholder="https://zoom.us/j/... atau Online Meeting"
                       list="online-locations-list"
                       value={editingTask.lokasiData?.linkZoom || ''}
                       onChange={e => setEditingTask({
@@ -554,7 +593,7 @@ export default function TaskAddEditModal({
                     <input
                       type="text"
                       className="input"
-                      placeholder="Contoh: R.R Komp TKMR / KPJ"
+                      placeholder="Contoh: R.R Komp TKMR / Gedung Utama"
                       list="offline-locations-list"
                       value={editingTask.lokasiData?.lokasiFisik || ''}
                       onChange={e => setEditingTask({
