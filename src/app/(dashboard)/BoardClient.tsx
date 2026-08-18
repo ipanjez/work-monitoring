@@ -66,6 +66,12 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   }, [initialTasks]);
 
   useEffect(() => {
+    if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
+      router.replace('/tasks');
+    }
+  }, [session, roleConfig, userRole, router]);
+
+  useEffect(() => {
     if (selectedTask) {
       const updated = tasks.find(t => t.id === selectedTask.id);
       if (updated && updated !== selectedTask) {
@@ -587,6 +593,14 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       default: return 0;
     }
   };
+
+  if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: '14px' }}>Mengarahkan ke Daftar Pekerjaan...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="board-container" style={{ position: 'relative' }}>

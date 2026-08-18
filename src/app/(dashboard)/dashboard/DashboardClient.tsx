@@ -85,6 +85,12 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
+      router.replace('/tasks');
+    }
+  }, [session, roleConfig, userRole, router]);
+
   const [tableSearch, setTableSearch] = useState('');
   const [sortField, setSortField] = useState<'endDate' | 'nama' | 'pic' | 'kategori' | 'status'>('endDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -948,6 +954,14 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       return 0;
     })
     .slice(0, 15); // Show up to 15 items in dashboard table
+
+  if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: '14px' }}>Mengarahkan ke Daftar Pekerjaan...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
