@@ -325,7 +325,7 @@ export default function CalendarSyncModal({
                 <li>Tempel (Paste) URL tadi dan klik <strong>Add calendar (Tambahkan kalender)</strong>.</li>
               </ol>
               <div style={{ borderTop: '1px dashed rgba(59, 130, 246, 0.2)', paddingTop: '8px', fontSize: '11.5px' }}>
-                🔔 <strong>Pengingat Notifikasi:</strong> Untuk menyalakan alarm notifikasi jadwal di ponsel, buka Google Calendar $\rightarrow$ Setelan Kalender $\rightarrow$ Tambahkan <em>Event notifications</em> (misal: 15 menit sebelum acara).
+                🔔 <strong>Pengingat Notifikasi:</strong> Untuk menyalakan alarm notifikasi jadwal di ponsel, buka Google Calendar → Setelan Kalender → Tambahkan <em>Event notifications</em> (misal: 15 menit sebelum acara).
               </div>
             </div>
 

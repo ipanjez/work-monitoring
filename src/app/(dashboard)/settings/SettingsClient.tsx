@@ -1705,18 +1705,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           );
         })()}
-
-        {/* Tips & Instructions Box */}
-        <div style={{ background: 'color-mix(in srgb, var(--accent-primary) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent)', borderRadius: '10px', padding: '14px 16px' }}>
-          <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Sparkles size={15} /> Fitur & Petunjuk Penting:
-          </h4>
-          <ul style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingLeft: '18px', margin: 0, lineHeight: 1.6 }}>
-            <li><strong>Tampilan Kalender Rapi (All-Day Header):</strong> Tugas jangka panjang (tahunan/multi-hari tanpa jam spesifik) otomatis diformat sebagai acara seharian penuh (*All-Day*), sehingga tampil rapi di baris atas kalender dan tidak memblokir grid jam harian.</li>
-            <li><strong>Mengaktifkan Pengingat (Reminder):</strong> Google Calendar secara default mematikan alarm kalender dari link luar demi keamanan. Untuk menyalakan pengingat, buka Google Calendar $\rightarrow$ klik titik tiga (<strong>⋮</strong>) pada kalender di bilah kiri $\rightarrow$ <strong>Settings</strong> $\rightarrow$ Gulir ke <strong>Event notifications</strong> $\rightarrow$ Klik <strong>Add notification</strong> (misal: 15 menit sebelumnya).</li>
-            <li><strong>Sinkronisasi & Pembaruan Otomatis:</strong> Google Calendar & Outlook akan memperbarui (*sync*) data kalender secara berkala (dilengkapi dukungan caching cepat <em>ETag / RFC 5545</em>).</li>
-          </ul>
-        </div>
       </div>
 
       {/* Backup & Export Database */}
