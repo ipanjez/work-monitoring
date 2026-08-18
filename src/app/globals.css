@@ -229,6 +229,10 @@ h3 {
     display: block !important;
     WebkitOverflowScrolling: 'touch';
   }
+
+  .hide-mobile {
+    display: none !important;
+  }
 }
 
 /* Glassmorphism utilities */
