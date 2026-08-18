@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Plus, Zap, Upload, Download } from 'lucide-react';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
 import SmartAddModal from '@/components/SmartAddModal';
+import ExcelImportPreviewModal, { ExcelParsedTask } from '@/components/ExcelImportPreviewModal';
 import * as XLSX from 'xlsx';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
@@ -19,6 +20,9 @@ export default function GlobalAddButton() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
+  const [isExcelPreviewOpen, setIsExcelPreviewOpen] = useState(false);
+  const [excelPreviewTasks, setExcelPreviewTasks] = useState<ExcelParsedTask[]>([]);
+  const [excelFileName, setExcelFileName] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -233,7 +237,7 @@ export default function GlobalAddButton() {
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
-      const toastId = toast.loading('Sedang memproses dan menyimpan data...');
+      const toastId = toast.loading('Sedang membaca dan memvalidasi file Excel...');
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
@@ -252,7 +256,7 @@ export default function GlobalAddButton() {
           return !nama.includes('Contoh Pekerjaan A');
         });
 
-        const formattedData = data.map((row: any, idx: number) => {
+        const formattedData: ExcelParsedTask[] = data.map((row: any, idx: number) => {
           let subTasksJson = null;
           const subPekerjaanRaw = row['sub pekerjaan'] || row['subpekerjaan'];
           if (subPekerjaanRaw && typeof subPekerjaanRaw === 'string') {
@@ -339,37 +343,59 @@ export default function GlobalAddButton() {
         }).filter((d: any) => d.nama !== 'Tanpa Nama' || d.pic !== 'Unassigned');
 
         if (formattedData.length === 0) {
+          toast.dismiss(toastId);
           toast.error('Tidak ada data valid di Excel. Pastikan header sesuai template.');
           return;
         }
 
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedData),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Terjadi kesalahan di server saat menyimpan data.');
-        }
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('tasksUpdated'));
-        }
-
         toast.dismiss(toastId);
-        toast.success(`Berhasil mengimpor ${formattedData.length} data pekerjaan dari Excel!`);
+        setExcelPreviewTasks(formattedData);
+        setExcelFileName(file.name);
+        setIsExcelPreviewOpen(true);
         setIsOpen(false);
       } catch (err: any) {
         console.error(err);
         toast.dismiss(toastId);
-        toast.error(`Gagal mengimpor file Excel: ${err?.message || err}`);
+        toast.error(`Gagal membaca file Excel: ${err?.message || err}`);
       }
     };
     reader.readAsBinaryString(file);
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleConfirmImportFromExcel = async (tasksToSave: ExcelParsedTask[]) => {
+    const toastId = toast.loading(`Sedang menyimpan ${tasksToSave.length} data pekerjaan ke server...`);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tasksToSave),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Terjadi kesalahan di server saat menyimpan data.');
+      }
+
+      const savedList = await res.json();
+      if (addActivityLog && Array.isArray(savedList)) {
+        const currentUser = (session?.user as any)?.name || 'Sistem';
+        addActivityLog('IMPORT_EXCEL', 'Impor Excel', `${savedList.length} pekerjaan diimpor dari file "${excelFileName}" oleh ${currentUser}.`, 'success');
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('tasksUpdated'));
+      }
+
+      toast.dismiss(toastId);
+      toast.success(`Berhasil mengimpor ${tasksToSave.length} data pekerjaan!`);
+      setIsExcelPreviewOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.dismiss(toastId);
+      toast.error(`Gagal menyimpan data impor: ${err?.message || err}`);
+    }
   };
 
   const handleDownloadTemplate = async () => {
@@ -782,6 +808,16 @@ export default function GlobalAddButton() {
           categoryOptions={masterCats.length > 0 ? masterCats : ['Umum']}
           priorityOptions={masterPriorities}
           onSaveBulk={handleSaveSmartModal}
+        />,
+        document.body
+      )}
+      {isExcelPreviewOpen && typeof document !== 'undefined' && createPortal(
+        <ExcelImportPreviewModal
+          isOpen={isExcelPreviewOpen}
+          onClose={() => setIsExcelPreviewOpen(false)}
+          tasks={excelPreviewTasks}
+          onConfirmImport={handleConfirmImportFromExcel}
+          fileName={excelFileName}
         />,
         document.body
       )}

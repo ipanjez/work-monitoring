@@ -1,6 +1,8 @@
+'use client';
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Save, CheckCircle, Edit2, AlertCircle, Copy } from 'lucide-react';
+import { X, Zap, Save, CheckCircle, Edit2, AlertCircle, Copy, Trash2, Plus, Users, Tag, AlertTriangle, Layers, Calendar, Clock, MapPin } from 'lucide-react';
 import { parseAgendaText, ParsedTask } from '@/utils/smartParser';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -15,16 +17,73 @@ interface SmartAddModalProps {
   onSaveBulk: (tasks: ParsedTask[]) => void;
 }
 
-export default function SmartAddModal({ isOpen, onClose, picOptions = [], categoryOptions = [], priorityOptions = [], onSaveBulk }: SmartAddModalProps) {
+const SAMPLE_TEXTS = [
+  {
+    title: '📋 Agenda Rapat Rutin',
+    text: `1. Rapat Pleno Koordinasi Mingguan
+Hari/Tanggal : Senin, 24 Agustus 2026
+Waktu : 09:00 - 11:30 WITA
+Tempat : Ruang Rapat Komp TKMR
+PIC : Alvi, Putri
+Kategori : Rapat
+Prioritas : High
+Deskripsi : Evaluasi pencapaian target bulanan dan perencanaan sprint baru.
+
+2. Review Laporan Anggaran Q3
+Hari/Tanggal : Selasa, 25 Agustus 2026
+Waktu : 13:30 - 15:00 WITA
+Tempat : Online (https://zoom.us/j/987654321)
+PIC : Farhan
+Kategori : Anggaran
+Prioritas : Medium
+Deskripsi : Pembahasan realisasi anggaran dan persiapan audit semester.`
+  },
+  {
+    title: '📅 Memo Tindak Lanjut',
+    text: `1. Pengumpulan Dokumen ISO 27001
+Tanggal : 20 s.d. 22 Agustus 2026
+Waktu : 08:00 - 17:00
+PIC : Budi
+Kategori : Compliance
+Prioritas : High
+Deskripsi : Lengkapi seluruh eviden keamanan informasi sebelum audit eksternal.
+
+2. Finalisasi Modul Monitoring
+Tanggal : 26 Agustus 2026
+Waktu : 10:00 - 16:00
+PIC : Alvi
+Kategori : IT & Software
+Prioritas : Critical
+Deskripsi : Testing fitur sinkronisasi kalender dan backup otomatis.`
+  }
+];
+
+export default function SmartAddModal({
+  isOpen,
+  onClose,
+  picOptions = [],
+  categoryOptions = [],
+  priorityOptions = [],
+  onSaveBulk
+}: SmartAddModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [rawText, setRawText] = useState('');
   const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
+
+  // Bulk Edit Bar states in Step 2
+  const [bulkPic, setBulkPic] = useState('');
+  const [bulkCategory, setBulkCategory] = useState('');
+  const [bulkPriority, setBulkPriority] = useState('');
 
   if (!isOpen) return null;
 
   const handleParse = () => {
     if (!rawText.trim()) return;
     const result = parseAgendaText(rawText, picOptions, categoryOptions, priorityOptions);
+    if (result.length === 0) {
+      toast.error('Tidak ada pekerjaan yang dapat dikenali. Silakan periksa format teks.');
+      return;
+    }
     setParsedTasks(result);
     setStep(2);
   };
@@ -35,9 +94,65 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
     setParsedTasks(updated);
   };
 
+  const handleAddTaskRow = () => {
+    const today = new Date();
+    const newTask: ParsedTask = {
+      nama: `Pekerjaan Baru #${parsedTasks.length + 1}`,
+      pic: picOptions[0] || 'Unassigned',
+      kategori: categoryOptions[0] || 'Umum',
+      prioritas: priorityOptions[1] || 'Medium',
+      startDate: today,
+      endDate: today,
+      startTime: '08:00',
+      endTime: '17:00',
+      deskripsi: '',
+      lokasi: ''
+    };
+    setParsedTasks(prev => [...prev, newTask]);
+    toast.success('Baris pekerjaan baru ditambahkan');
+  };
+
+  const handleDeleteTask = (index: number) => {
+    setParsedTasks(prev => prev.filter((_, idx) => idx !== index));
+    toast.success('Pekerjaan dihapus dari daftar');
+  };
+
+  const handleDuplicateTask = (index: number) => {
+    const target = parsedTasks[index];
+    if (!target) return;
+    const duplicated: ParsedTask = {
+      ...JSON.parse(JSON.stringify(target)),
+      startDate: new Date(target.startDate),
+      endDate: new Date(target.endDate),
+      nama: `${target.nama} (Salinan)`
+    };
+    const next = [...parsedTasks];
+    next.splice(index + 1, 0, duplicated);
+    setParsedTasks(next);
+    toast.success('Pekerjaan berhasil diduplikasi');
+  };
+
+  const handleApplyBulkPic = () => {
+    if (!bulkPic) return;
+    setParsedTasks(prev => prev.map(t => ({ ...t, pic: bulkPic })));
+    toast.success(`PIC "${bulkPic}" diterapkan ke semua (${parsedTasks.length}) pekerjaan`);
+  };
+
+  const handleApplyBulkCategory = () => {
+    if (!bulkCategory) return;
+    setParsedTasks(prev => prev.map(t => ({ ...t, kategori: bulkCategory })));
+    toast.success(`Kategori "${bulkCategory}" diterapkan ke semua pekerjaan`);
+  };
+
+  const handleApplyBulkPriority = () => {
+    if (!bulkPriority) return;
+    setParsedTasks(prev => prev.map(t => ({ ...t, prioritas: bulkPriority })));
+    toast.success(`Prioritas "${bulkPriority}" diterapkan ke semua pekerjaan`);
+  };
+
   const handleSave = () => {
+    if (parsedTasks.length === 0) return;
     onSaveBulk(parsedTasks);
-    // Reset state after save will be handled by parent closing modal or we do it here:
     setStep(1);
     setRawText('');
     setParsedTasks([]);
@@ -72,232 +187,358 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
     }
 
     navigator.clipboard.writeText(lines.join('\n'));
-    toast.success('Pekerjaan berhasil disalin');
+    toast.success('Detail pekerjaan berhasil disalin ke clipboard');
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1050 }}>
+    <div className="modal-overlay" style={{ zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <motion.div 
         className="modal-content"
-        style={{ maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
-        initial={{ scale: 0.9, opacity: 0 }}
+        style={{
+          width: '100%',
+          maxWidth: '960px',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '24px',
+          background: 'var(--surface-color)',
+          borderRadius: '16px',
+          border: '1px solid var(--border-color)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+          overflow: 'hidden'
+        }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        exit={{ scale: 0.95, opacity: 0 }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Modal Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={20} color="var(--accent-primary)" /> 
-            Tambah Pekerjaan Cepat (Smart Add)
-          </h2>
+          <div>
+            <h2 style={{ fontSize: '19px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={22} color="#f59e0b" /> 
+              Tambah Pekerjaan Cepat (Smart Add / AI Parser)
+            </h2>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+              {step === 1 
+                ? 'Salin atau ketik teks agenda/memo bebas di bawah untuk diubah otomatis menjadi pekerjaan terstruktur.' 
+                : `Tinjau dan edit ${parsedTasks.length} pekerjaan yang berhasil diekstrak sebelum disimpan.`}
+            </p>
+          </div>
+
           <button className="btn btn-secondary" onClick={handleCancel} style={{ padding: '6px' }}>
             <X size={18} />
           </button>
         </div>
 
+        {/* STEP 1: INPUT TEXT & SAMPLES */}
         {step === 1 && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px' }}>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--accent-primary)' }} />
-                <p style={{ margin: 0 }}>
-                  <strong>Panduan Format Teks:</strong> Sistem akan secara otomatis memecah teks menjadi beberapa pekerjaan berdasarkan hal-hal berikut:
-                </p>
-              </div>
-              <ul style={{ margin: '0 0 0 24px', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <li><strong>Judul Pekerjaan/Agenda:</strong> Terdeteksi dari format penomoran (1., 2., 3...), kata "Agenda :", atau ikon 🗒️.</li>
-                <li><strong>Tanggal:</strong> Terdeteksi otomatis dari tulisan "Hari/Tanggal :" atau format tanggal. Bisa mendeteksi dua rentang tanggal (misal: "10 s.d. 13 Agustus 2026" atau "1 Januari 2026 - 2 Februari 2026"). Jika hanya 1 tanggal, Tanggal Mulai dan Tenggat Waktu otomatis disamakan.</li>
-                <li><strong>Jam:</strong> Terdeteksi dari kata "Waktu :", ikon ⏰, atau format XX:XX. Jika ada dua jam yang dihubungkan (misal 09:00 - 11:00), diset sebagai Jam Mulai dan Selesai.</li>
-                <li><strong>Lokasi/Deskripsi:</strong> Teks dari kata "Tempat :", ikon 🏩, 📍, 🏢, atau baris baru lainnya otomatis diisi sebagai lokasi/deskripsi.</li>
-                <li><strong>PIC/Kategori/Prioritas:</strong> Terdeteksi otomatis dari penyebutan di teks. Sebutkan beberapa nama PIC sekaligus untuk mengisi PIC Utama dan Tambahan (misal: Budi, Siti). Gunakan format "Prioritas: High" atau "Kategori: Umum" untuk prioritas dan kategori.</li>
-              </ul>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', minHeight: 0 }}>
+            {/* Quick Sample Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Contoh Template Cepat:</span>
+              {SAMPLE_TEXTS.map((sample, sIdx) => (
+                <button
+                  key={sIdx}
+                  type="button"
+                  onClick={() => setRawText(sample.text)}
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 10px', fontSize: '11.5px', borderRadius: '12px' }}
+                >
+                  {sample.title}
+                </button>
+              ))}
+              {rawText && (
+                <button
+                  type="button"
+                  onClick={() => setRawText('')}
+                  style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '11.5px', cursor: 'pointer', marginLeft: 'auto' }}
+                >
+                  Bersihkan Teks
+                </button>
+              )}
             </div>
-            
+
             <SmartAddTemplateManager onCopy={(content) => {
               setRawText(prev => prev ? prev + '\n\n' + content : content);
             }} />
             
-            <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Konten Pekerjaan</span>
-                <span title="Bisa menggunakan shortcut keyboard saat mengetik di dalam kotak:&#10;• Ctrl+B (Tebal / Bold)&#10;• Ctrl+I (Miring / Italic)&#10;• Ctrl+U (Garis Bawah / Underline)&#10;• Ctrl+Shift+X (Coret / Strikethrough)&#10;Atau ketik manual sintaksnya seperti **tebal** atau *miring*." style={{ display: 'inline-flex', color: 'var(--accent-primary)', cursor: 'help', fontSize: '12px', alignItems: 'center', gap: '4px' }}>
-                  <AlertCircle size={14} /> Format Teks
-                </span>
-              </div>
+            <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '260px' }}>
               <textarea
                 className="input"
-                style={{ flex: 1, minHeight: '300px', resize: 'vertical', fontFamily: 'monospace' }}
-                placeholder={`Ketik atau salin teks agenda ke sini...`}
+                style={{ flex: 1, minHeight: '260px', resize: 'vertical', fontFamily: 'monospace', fontSize: '13px', lineHeight: 1.5, padding: '12px' }}
+                placeholder={`Contoh teks agenda:\n1. Rapat Koordinasi Mingguan\nTanggal : 24 Agustus 2026\nWaktu : 09:00 - 11:30\nTempat : Ruang Rapat Komp TKMR\nPIC : Alvi, Putri\nDeskripsi : Pembahasan progres proyek...`}
                 value={rawText}
                 onChange={e => setRawText(e.target.value)}
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button className="btn btn-secondary" onClick={handleCancel}>Batal</button>
-              <button className="btn btn-primary" onClick={handleParse} disabled={!rawText.trim()}>
-                <Zap size={16} /> Proses Data
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                💡 <em>Format otomatis mengenali nomor, kata "Hari/Tanggal:", "Waktu:", "Tempat:", "PIC:", "Prioritas:", dan tautan Zoom.</em>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="btn btn-secondary" onClick={handleCancel}>Batal</button>
+                <button className="btn btn-primary" onClick={handleParse} disabled={!rawText.trim()} style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }}>
+                  <Zap size={16} /> Ekstrak & Tinjau Pekerjaan
+                </button>
+              </div>
             </div>
           </div>
         )}
 
+        {/* STEP 2: REVIEW, BULK ACTIONS & EDIT */}
         {step === 2 && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden' }}>
-            <div style={{ background: 'var(--success)', color: '#fff', padding: '10px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 500 }}>
-              <CheckCircle size={18} />
-              Berhasil mendeteksi {parsedTasks.length} pekerjaan. Silakan tinjau dan edit jika perlu sebelum menyimpan.
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', overflow: 'hidden', minHeight: 0 }}>
+            {/* Step 2 Banner & Toolbar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px 14px', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
+                <CheckCircle size={18} />
+                <span>{parsedTasks.length} Pekerjaan Terdeteksi</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleAddTaskRow}
+                style={{ padding: '4px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Plus size={14} /> Tambah Baris Manual
+              </button>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
-              {parsedTasks.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                  Tidak ada pekerjaan yang terdeteksi dari teks yang diberikan.
+            {/* Bulk Apply Bar */}
+            {parsedTasks.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', background: 'var(--bg-secondary, rgba(0,0,0,0.03))', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Layers size={14} /> Aksi Massal:
+                </span>
+
+                {/* Bulk PIC */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <select
+                    className="input"
+                    value={bulkPic}
+                    onChange={e => setBulkPic(e.target.value)}
+                    style={{ padding: '3px 8px', fontSize: '11.5px', height: '28px' }}
+                  >
+                    <option value="">-- Pilih PIC Semua --</option>
+                    {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <button type="button" onClick={handleApplyBulkPic} disabled={!bulkPic} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '11px', height: '28px' }}>
+                    Terapkan
+                  </button>
                 </div>
-              ) : (
-                parsedTasks.map((task, idx) => (
-                  <div key={idx} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Nama Pekerjaan</label>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            onClick={() => handleCopyTask(task)}
-                            title="Salin Detail Pekerjaan"
-                          >
-                            <Copy size={14} /> Salin
-                          </button>
-                        </div>
-                        <input 
+
+                {/* Bulk Category */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <select
+                    className="input"
+                    value={bulkCategory}
+                    onChange={e => setBulkCategory(e.target.value)}
+                    style={{ padding: '3px 8px', fontSize: '11.5px', height: '28px' }}
+                  >
+                    <option value="">-- Pilih Kategori Semua --</option>
+                    {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <button type="button" onClick={handleApplyBulkCategory} disabled={!bulkCategory} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '11px', height: '28px' }}>
+                    Terapkan
+                  </button>
+                </div>
+
+                {/* Bulk Priority */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <select
+                    className="input"
+                    value={bulkPriority}
+                    onChange={e => setBulkPriority(e.target.value)}
+                    style={{ padding: '3px 8px', fontSize: '11.5px', height: '28px' }}
+                  >
+                    <option value="">-- Prioritas Semua --</option>
+                    {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <button type="button" onClick={handleApplyBulkPriority} disabled={!bulkPriority} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '11px', height: '28px' }}>
+                    Terapkan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List of Tasks */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+              {parsedTasks.map((task, idx) => (
+                <div key={idx} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', position: 'relative' }}>
+                  {/* Card Header with Badges & Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: 'var(--accent-primary)', color: '#fff' }}>
+                      Pekerjaan #{idx + 1}
+                    </span>
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => handleCopyTask(task)}
+                        style={{ padding: '3px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Salin Teks Ringkasan"
+                      >
+                        <Copy size={12} /> Salin
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => handleDuplicateTask(idx)}
+                        style={{ padding: '3px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Duplikasi Baris Ini"
+                      >
+                        <Plus size={12} /> Duplikasi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(idx)}
+                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
+                        title="Hapus Pekerjaan Ini"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Task Title */}
+                    <div>
+                      <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Nama Pekerjaan *</label>
+                      <input 
+                        className="input" 
+                        value={task.nama} 
+                        onChange={(e) => updateTask(idx, 'nama', e.target.value)} 
+                        style={{ width: '100%', fontSize: '13px', fontWeight: 600 }}
+                        placeholder="Nama pekerjaan..."
+                      />
+                    </div>
+                    
+                    {/* PIC, Category, Priority Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>PIC Utama</label>
+                        <select 
                           className="input" 
-                          value={task.nama} 
-                          onChange={(e) => updateTask(idx, 'nama', e.target.value)} 
-                          style={{ padding: '6px 10px' }}
+                          value={task.pic || ''} 
+                          onChange={(e) => updateTask(idx, 'pic', e.target.value)} 
+                          style={{ width: '100%', fontSize: '12.5px' }}
+                        >
+                          <option value="">-- Pilih PIC --</option>
+                          {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>PIC Tambahan</label>
+                        <input 
+                          type="text"
+                          className="input"
+                          value={(() => {
+                            try {
+                              return task.additionalPics ? JSON.parse(task.additionalPics).join(', ') : '';
+                            } catch(e) { return ''; }
+                          })()}
+                          onChange={(e) => {
+                             const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                             updateTask(idx, 'additionalPics', val.length > 0 ? JSON.stringify(val) : undefined);
+                          }}
+                          style={{ width: '100%', fontSize: '12.5px' }}
+                          placeholder="Pisahkan koma (Budi, Siti)"
                         />
                       </div>
-                      
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>PIC Utama</label>
-                          <select 
-                            className="input" 
-                            value={task.pic || ''} 
-                            onChange={(e) => updateTask(idx, 'pic', e.target.value)} 
-                            style={{ padding: '6px 10px' }}
-                          >
-                            <option value="">-- Pilih PIC --</option>
-                            {picOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>PIC Tambahan</label>
-                          <input 
-                            type="text"
-                            className="input"
-                            value={(() => {
-                              try {
-                                return task.additionalPics ? JSON.parse(task.additionalPics).join(', ') : '';
-                              } catch(e) { return ''; }
-                            })()}
-                            onChange={(e) => {
-                               const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                               updateTask(idx, 'additionalPics', val.length > 0 ? JSON.stringify(val) : undefined);
-                            }}
-                            style={{ padding: '6px 10px' }}
-                            placeholder="Pisahkan koma"
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Kategori</label>
-                          <select 
-                            className="input" 
-                            value={task.kategori || (categoryOptions.length > 0 ? categoryOptions[0] : 'Umum')} 
-                            onChange={(e) => updateTask(idx, 'kategori', e.target.value)} 
-                            style={{ padding: '6px 10px' }}
-                          >
-                            {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Prioritas</label>
-                          <select 
-                            className="input" 
-                            value={task.prioritas || (priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium')} 
-                            onChange={(e) => updateTask(idx, 'prioritas', e.target.value)} 
-                            style={{ padding: '6px 10px' }}
-                          >
-                            {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
+
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Kategori</label>
+                        <select 
+                          className="input" 
+                          value={task.kategori || (categoryOptions.length > 0 ? categoryOptions[0] : 'Umum')} 
+                          onChange={(e) => updateTask(idx, 'kategori', e.target.value)} 
+                          style={{ width: '100%', fontSize: '12.5px' }}
+                        >
+                          {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tanggal Mulai</label>
-                          <input 
-                            type="date" 
-                            className="input" 
-                            value={task.startDate && !isNaN(task.startDate.getTime()) ? format(task.startDate, 'yyyy-MM-dd') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val) {
-                                const d = new Date(val + 'T00:00:00');
-                                updateTask(idx, 'startDate', d);
-                              } else {
-                                updateTask(idx, 'startDate', new Date(NaN));
-                              }
-                            }} 
-                            style={{ padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tenggat Waktu</label>
-                          <input 
-                            type="date" 
-                            className="input" 
-                            value={task.endDate && !isNaN(task.endDate.getTime()) ? format(task.endDate, 'yyyy-MM-dd') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val) {
-                                const d = new Date(val + 'T00:00:00');
-                                updateTask(idx, 'endDate', d);
-                              } else {
-                                updateTask(idx, 'endDate', new Date(NaN));
-                              }
-                            }} 
-                            style={{ padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Jam Mulai</label>
-                          <input 
-                            type="time" 
-                            className="input" 
-                            value={task.startTime} 
-                            onChange={(e) => updateTask(idx, 'startTime', e.target.value)} 
-                            style={{ padding: '6px 10px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Jam Selesai</label>
-                          <input 
-                            type="time" 
-                            className="input" 
-                            value={task.endTime} 
-                            onChange={(e) => updateTask(idx, 'endTime', e.target.value)} 
-                            style={{ padding: '6px 10px' }}
-                          />
-                        </div>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Prioritas</label>
+                        <select 
+                          className="input" 
+                          value={task.prioritas || (priorityOptions.length > 0 ? (priorityOptions[1] || priorityOptions[0]) : 'Medium')} 
+                          onChange={(e) => updateTask(idx, 'prioritas', e.target.value)} 
+                          style={{ width: '100%', fontSize: '12.5px' }}
+                        >
+                          {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Dates & Times */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Tanggal Mulai</label>
+                        <input 
+                          type="date" 
+                          className="input" 
+                          value={task.startDate && !isNaN(task.startDate.getTime()) ? format(task.startDate, 'yyyy-MM-dd') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val) {
+                              updateTask(idx, 'startDate', new Date(val + 'T00:00:00'));
+                            }
+                          }} 
+                          style={{ width: '100%', fontSize: '12px' }}
+                        />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</label>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Tenggat Waktu</label>
+                        <input 
+                          type="date" 
+                          className="input" 
+                          value={task.endDate && !isNaN(task.endDate.getTime()) ? format(task.endDate, 'yyyy-MM-dd') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val) {
+                              updateTask(idx, 'endDate', new Date(val + 'T00:00:00'));
+                            }
+                          }} 
+                          style={{ width: '100%', fontSize: '12px' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Jam Mulai</label>
+                        <input 
+                          type="time" 
+                          className="input" 
+                          value={task.startTime} 
+                          onChange={(e) => updateTask(idx, 'startTime', e.target.value)} 
+                          style={{ width: '100%', fontSize: '12px' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Jam Selesai</label>
+                        <input 
+                          type="time" 
+                          className="input" 
+                          value={task.endTime} 
+                          onChange={(e) => updateTask(idx, 'endTime', e.target.value)} 
+                          style={{ width: '100%', fontSize: '12px' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Location & Description */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Lokasi / Link Zoom</label>
                         <input 
                           className="input" 
-                          placeholder="Contoh: Ruang Rapat Lt. 2 ATAU Link Zoom (https://...)"
+                          placeholder="Ruang Rapat atau Link Zoom (https://...)"
                           value={task.lokasi ? (() => {
                             try {
                               const parsed = JSON.parse(task.lokasi);
@@ -321,33 +562,35 @@ export default function SmartAddModal({ isOpen, onClose, picOptions = [], catego
                             }
                             updateTask(idx, 'lokasi', lokasiJson);
                           }} 
-                          style={{ padding: '6px 10px' }}
+                          style={{ width: '100%', fontSize: '12.5px' }}
                         />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Deskripsi</label>
-                        <textarea 
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '3px', display: 'block' }}>Deskripsi Ringkas</label>
+                        <input 
                           className="input" 
                           value={task.deskripsi} 
                           onChange={(e) => updateTask(idx, 'deskripsi', e.target.value)} 
-                          style={{ padding: '6px 10px', minHeight: '60px', resize: 'vertical' }}
+                          style={{ width: '100%', fontSize: '12.5px' }}
+                          placeholder="Deskripsi detail..."
                         />
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
-              <button className="btn btn-secondary" onClick={() => setStep(1)}>
-                <Edit2 size={16} /> Kembali Edit Teks
+            {/* Step 2 Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+              <button className="btn btn-secondary" onClick={() => setStep(1)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Edit2 size={15} /> Kembali Edit Teks
               </button>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn btn-secondary" onClick={handleCancel}>Batal</button>
-                <button className="btn btn-primary" onClick={handleSave} disabled={parsedTasks.length === 0}>
-                  <Save size={16} /> Simpan Semua ({parsedTasks.length})
+                <button className="btn btn-primary" onClick={handleSave} disabled={parsedTasks.length === 0} style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#fff' }}>
+                  <Save size={16} /> Simpan Semua ({parsedTasks.length}) ke Database
                 </button>
               </div>
             </div>

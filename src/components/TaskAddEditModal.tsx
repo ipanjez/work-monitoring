@@ -609,6 +609,87 @@ export default function TaskAddEditModal({
                   </div>
                 </div>
 
+                {/* Quick Date Presets */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '-4px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pintasan:</span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const todayStr = format(new Date(), 'yyyy-MM-dd');
+                      setEditingTask(prev => prev ? { ...prev, startDate: todayStr, endDate: todayStr } : null);
+                    }}
+                  >
+                    Hari Ini
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      const s = format(d, 'yyyy-MM-dd');
+                      setEditingTask(prev => prev ? { ...prev, startDate: s, endDate: s } : null);
+                    }}
+                  >
+                    Besok
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const now = new Date();
+                      const end = new Date(now);
+                      end.setDate(end.getDate() + 3);
+                      setEditingTask(prev => prev ? { ...prev, startDate: format(now, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') } : null);
+                    }}
+                  >
+                    +3 Hari
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const now = new Date();
+                      const end = new Date(now);
+                      end.setDate(end.getDate() + 7);
+                      setEditingTask(prev => prev ? { ...prev, startDate: format(now, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') } : null);
+                    }}
+                  >
+                    +1 Minggu
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const now = new Date();
+                      const end = new Date(now);
+                      end.setMonth(end.getMonth() + 1);
+                      setEditingTask(prev => prev ? { ...prev, startDate: format(now, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') } : null);
+                    }}
+                  >
+                    +1 Bulan
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '12px' }}
+                    onClick={() => {
+                      const now = new Date();
+                      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                      setEditingTask(prev => prev ? { ...prev, startDate: format(start, 'yyyy-MM-dd'), endDate: format(end, 'yyyy-MM-dd') } : null);
+                    }}
+                  >
+                    Bulan Ini
+                  </button>
+                </div>
+
                 {!editingTask.isAllDay && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
