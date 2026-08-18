@@ -145,6 +145,7 @@ h3 {
 }
 
 @media (max-width: 1100px) {
+
   .main-content,
   [data-sidebar="collapsed"] .main-content {
     margin-left: 0 !important;
@@ -491,9 +492,10 @@ th[style*="cursor: pointer"]:hover,
 }
 
 @media (min-width: 1101px) {
+
   /* Prevent page headers from colliding with the fixed top-right actions */
   .main-content h1,
-  .main-content h1 + p {
+  .main-content h1+p {
     padding-right: 365px !important;
   }
 }
@@ -534,6 +536,7 @@ th[style*="cursor: pointer"]:hover,
 }
 
 @media (max-width: 1100px) {
+
   .profile-name-text,
   .profile-chevron,
   .profile-info {
@@ -555,7 +558,7 @@ th[style*="cursor: pointer"]:hover,
   }
 
   /* Style tombol Tambah Kerja (GlobalAddButton) di mobile */
-  #global-add-btn-container > button:not(.mobile-fab) {
+  #global-add-btn-container>button:not(.mobile-fab) {
     padding: 4px !important;
     height: 40px !important;
     width: 40px !important;
@@ -569,7 +572,7 @@ th[style*="cursor: pointer"]:hover,
   }
 
   /* Style tombol Tourguide (HelpSupportButton) di mobile */
-  #help-support-btn-container > button {
+  #help-support-btn-container>button {
     padding: 4px !important;
     height: 40px !important;
     width: 40px !important;
@@ -583,7 +586,7 @@ th[style*="cursor: pointer"]:hover,
   }
 
   /* Style Lonceng Notifikasi (NotificationBell) di mobile */
-  #notification-bell-container > button {
+  #notification-bell-container>button {
     padding: 4px !important;
     height: 40px !important;
     width: 40px !important;
@@ -606,6 +609,7 @@ th[style*="cursor: pointer"]:hover,
 }
 
 @media (max-width: 992px) {
+
   /* Generic Responsive Modals */
   .modal-overlay {
     padding: 10px !important;
@@ -843,13 +847,13 @@ th[style*="cursor: pointer"]:hover,
     gap: 8px !important;
     border-radius: 10px !important;
   }
-  
+
   .mobile-task-card h4 {
     font-size: 13px !important;
     line-height: 1.3 !important;
   }
-  
-  .mobile-task-card span, 
+
+  .mobile-task-card span,
   .mobile-task-card div {
     font-size: 11px !important;
   }
@@ -874,7 +878,7 @@ th[style*="cursor: pointer"]:hover,
     align-items: flex-end !important;
     padding: 0 !important;
   }
-  
+
   .modal-content {
     max-height: 85vh !important;
     border-radius: 20px 20px 0 0 !important;
@@ -902,6 +906,7 @@ th[style*="cursor: pointer"]:hover,
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -909,29 +914,54 @@ th[style*="cursor: pointer"]:hover,
 
 /* Custom scrollbar for mobile overflow containers to show they can scroll */
 @media (max-width: 992px) {
-  .desktop-table-view, 
-  .table-responsive, 
+
+  .desktop-table-view,
+  .table-responsive,
   div[style*="overflow-x: auto"],
   div[style*="overflowX: auto"] {
     scrollbar-width: thin !important;
     scrollbar-color: var(--accent-primary) transparent !important;
   }
-  
+
   /* Webkit custom scrollbar to show it clearly */
-  .desktop-table-view::-webkit-scrollbar, 
+  .desktop-table-view::-webkit-scrollbar,
   .table-responsive::-webkit-scrollbar,
   div[style*="overflow-x: auto"]::-webkit-scrollbar,
   div[style*="overflowX: auto"]::-webkit-scrollbar {
     height: 5px !important;
     display: block !important;
   }
-  
-  .desktop-table-view::-webkit-scrollbar-thumb, 
+
+  .desktop-table-view::-webkit-scrollbar-thumb,
   .table-responsive::-webkit-scrollbar-thumb,
   div[style*="overflow-x: auto"]::-webkit-scrollbar-thumb,
   div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
     background: var(--accent-primary) !important;
     border-radius: 10px !important;
+  }
+}
+
+/* Minimalist Mobile Progress Bar styling */
+.mobile-progress-container {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .mobile-progress-container {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--border-color);
+    overflow: hidden;
+  }
+
+  .mobile-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-primary) 0%, #10b981 100%);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -967,6 +997,7 @@ th[style*="cursor: pointer"]:hover,
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -982,10 +1013,13 @@ th[style*="cursor: pointer"]:hover,
 }
 
 @keyframes pktPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(0.95);
     filter: drop-shadow(0 0 5px rgba(37, 99, 235, 0.2));
   }
+
   50% {
     transform: scale(1.05);
     filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.6));
@@ -1005,7 +1039,7 @@ th[style*="cursor: pointer"]:hover,
   gap: 24px;
 }
 
-.dashboard-charts-carousel > .full-width-chart {
+.dashboard-charts-carousel>.full-width-chart {
   grid-column: span 2;
 }
 
@@ -1019,8 +1053,8 @@ th[style*="cursor: pointer"]:hover,
     padding: 8px 4px 16px 4px !important;
     width: 100% !important;
   }
-  
-  .dashboard-charts-carousel > div {
+
+  .dashboard-charts-carousel>div {
     flex: 0 0 85vw !important;
     grid-column: auto !important;
     scroll-snap-align: center !important;
@@ -1033,11 +1067,11 @@ th[style*="cursor: pointer"]:hover,
   .mobile-filter-toggle-btn {
     display: flex !important;
   }
-  
+
   .filter-bar-actions-desktop {
     display: none !important;
   }
-  
+
   .filter-bar-actions-mobile {
     display: flex !important;
     flex-wrap: wrap;
@@ -1066,16 +1100,16 @@ th[style*="cursor: pointer"]:hover,
     width: 100% !important;
   }
 
-  .filter-options-grid > div {
+  .filter-options-grid>div {
     width: 100% !important;
   }
 
-  .filter-options-grid select, 
+  .filter-options-grid select,
   .filter-options-grid input {
     width: 100% !important;
     height: 38px !important;
   }
-  
+
   .filter-count-label {
     grid-column: span 2;
     border-left: none !important;

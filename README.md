@@ -1,33 +1,31 @@
 # 📊 Dashboard Monitoring Pekerjaan 📋
 
-Selamat datang di **Dashboard Monitoring Pekerjaan**! Sebuah aplikasi web fullstack modern dan responsif yang dirancang untuk memonitor, mengelola, dan melacak daftar pekerjaan harian, sub-tugas proyek, serta aktivitas tim secara efisien dan real-time. 🚀
+Selamat datang di **Dashboard Monitoring Pekerjaan**! Sebuah aplikasi web modern dan responsif yang dirancang untuk memonitor, mengelola, dan melacak daftar pekerjaan harian, proyek, serta aktivitas tim secara efisien. 🚀
 
-Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neon PostgreSQL, maupun server lokal berbasis SQLite untuk jaringan LAN kantor. Dilengkapi dengan antarmuka yang sangat estetik (*Glassmorphism*, Dark/Light mode), manajemen master data terpusat, fitur ekstraksi teks cerdas (*AI Parser Smart Add*), serta integrasi kalender dan Excel interaktif. 🏆
+Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neon PostgreSQL, maupun server lokal berbasis SQLite untuk jaringan LAN kantor. Dilengkapi dengan antarmuka yang sangat estetik, manajemen data terpusat melalui API, serta fitur penjadwalan dan pelaporan *real-time* untuk membantu tim Anda tetap produktif. 🏆
 
 ---
 
 ## ✨ Fitur Unggulan
 
-- ⚡ **Tambah Cepat (Smart Add / AI Parser):** Ekstraksi teks agenda/memo bebas secara otomatis menjadi daftar tugas terstruktur, mencakup Tanggal, Jam Kerja, PIC Utama, PIC Tambahan, Master Lokasi (Zoom/Ruang Rapat), Kategori, dan Prioritas. Dilengkapi template cepat dan aksi massal.
-- 👥 **Kolaborasi Multi-PIC & Chip Tag:** Penugasan pekerjaan ke satu PIC Utama beserta banyak PIC Tambahan berbasis tag interaktif, lengkap dengan kalkulasi beban kerja tim secara otomatis dan adil.
-- 📍 **Integrasi Master Lokasi Pintar:** Master lokasi terpusat dengan deteksi otomatis tipe Online (Link Zoom / Google Meet / Teams) vs Offline (Ruang Rapat / Gedung Fisik) pada form manual, Smart Add, dan Excel.
-- 📊 **Rich Excel Template & Interactive Import Preview:**
-  - Unduh template Excel dengan *Data Validation Dropdown* otomatis untuk PIC, Kategori, Prioritas, Status, dan Lokasi.
-  - Pratinjau impor Excel interaktif dengan dropdown untuk koreksi lokasi atau penghapusan baris keliru sebelum disimpan ke database.
-  - Ekspor Excel berwarna dengan format warna dinamis sesuai status dan prioritas tugas.
-- 🎮 **Monitoring Board (Kanban) & Daftar Pekerjaan:** Mengelola tugas dengan *kanban drag & drop*, filter universal, sorting dinamis, sub-tugas (*checklist* bertingkat), duplikasi 1-ke-1, dan *multi-file attachments*.
-- 📅 **Kalender Interaktif & Google Calendar Sync:** Tampilan kalender multi-mode (Bulan, Minggu, Hari, Agenda), penandaan otomatis Hari Libur Nasional Indonesia, serta sinkronisasi ke Google Calendar dan file `.ics`.
+- 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif. Kini dengan fitur unggah *multiple file attachments* yang dinamis.
+- 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
 - ☁️ **Dual-Mode Database & Storage:** 
   - **Cloud (Vercel):** Menggunakan PostgreSQL (Neon) & Vercel Blob untuk penyimpanan file online.
-  - **Lokal (LAN):** Menggunakan SQLite & *Local Disk Storage* (file tersimpan langsung di hard disk, 100% independen tanpa kuota internet).
-  - Keduanya terisolasi dan bisa dijalankan bergantian dengan aman (`npm run dev:local` untuk lokal).
-- 🔒 **Keamanan & Otorisasi Enterprise (RBAC):** 
-  - *Role-Based Access Control* (Admin, Member, Viewer) dengan Matriks Hak Akses (*Role Permissions Matrix*) yang dapat dikonfigurasi.
-  - Sistem autentikasi berbasis NPK dengan fitur alur Reset Password ke panel Admin.
-  - *Global Middleware / Proxy Route Protection* untuk mengamankan API rahasia.
-  - Sanitasi HTML (Anti-XSS DOMPurify) dan *whitelist* ekstensi file unggahan.
-- 📖 **Buku Panduan Terintegrasi & Ekspor PDF:** Halaman panduan interaktif lengkap dengan navigasi bab dan fungsi cetak/unduh PDF resmi (`window.print`) berformat A4 yang siap dicetak.
-- 📦 **Backup & Restore 1-Klik:** Unduh cadangan database dan file lampiran dalam satu file `.zip` serta pemulihan instan kapan saja.
+  - **Lokal (LAN):** Menggunakan SQLite & *Local Disk Storage* (file tersimpan langsung di hard disk laptop Anda, 100% independen tanpa internet).
+  - Keduanya bisa berjalan bersamaan tanpa konfigurasi manual (cukup jalankan `npm run dev:local` untuk lokal).
+- 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
+- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), integrasi feed Google Calendar yang dilindungi Token Rahasia, serta **Kirim Email Otomatis** ke seluruh PIC langsung dari detail pekerjaan.
+- 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security):** 
+  - *Role-Based Access Control* (RBAC) dengan pemisahan akses Admin, Member, dan Viewer.
+  - *Global Middleware / Proxy Route Protection* untuk mengunci API rahasia.
+  - Sanitasi HTML (Anti-XSS) dengan DOMPurify.
+  - *Whitelist* ekstensi file pada fitur unggah (Anti-Malware).
+  - Enjeksi *HTTP Security Headers* (Anti-Clickjacking & MIME-sniffing).
+  - *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan.
+- 🔑 **Kustomisasi Global Password & Pengaturan:** Anda dapat mengubah kata sandi masuk (Global Password) dan mengelola akun PIC/User (termasuk Role & Email) secara langsung melalui menu Pengaturan tanpa mengubah kode sumber.
+- ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan tersimpan otomatis tanpa perlu memuat ulang halaman (*real-time update*).
+- 🧪 **Impor Excel Pintar & Otomatis:** Saat mengimpor Excel, apabila terdapat Nama PIC atau Kategori yang belum terdaftar di pengaturan, sistem akan **secara otomatis mendaftarkannya** ke dalam Master Data Pengaturan Anda. Template Excel beserta lembar panduannya dapat Anda unduh langsung dari dalam aplikasi.
 
 ---
 
@@ -35,15 +33,13 @@ Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neo
 
 | Teknologi | Fungsi |
 |-----------|--------|
-| **Next.js (React 19 / App Router)** | Framework Fullstack (Frontend UI + API Routes) |
-| **Prisma ORM** | Abstraksi Database (PostgreSQL & SQLite) |
-| **PostgreSQL (Neon)** | Database Cloud untuk Deployment Vercel |
-| **SQLite** | Database Lokal untuk Server LAN Kantor |
-| **NextAuth.js** | Autentikasi Berbasis Sesi & NPK |
-| **Framer Motion** | Animasi & Transisi Interaktif Halus |
-| **Lucide React** | Ikon Modern & Konsisten |
-| **XLSX (SheetJS)** | Pengolahan, Validasi, & Ekspor/Impor Rich Excel |
-| **Vanilla CSS** | Styling Modern (Glassmorphism, Dark/Light Theme) |
+| **Next.js (React)** | Framework fullstack (frontend + API routes) |
+| **Prisma ORM** | Abstraksi database (PostgreSQL & SQLite) |
+| **PostgreSQL (Neon)** | Database cloud untuk Vercel |
+| **SQLite** | Database lokal untuk server LAN |
+| **NextAuth.js** | Autentikasi & manajemen sesi |
+| **Vercel** | Hosting & deployment otomatis |
+| **Vanilla CSS** | Styling (Glassmorphism, Dark Mode, animasi) |
 
 ---
 
@@ -93,7 +89,7 @@ Terdapat **dua mode** menjalankan server:
 
 | Perintah | Mode | Database | Keterangan |
 |----------|------|----------|------------|
-| `npm run dev:local` | 🖥️ **Lokal (LAN)** | SQLite | Data tersimpan di laptop/server kantor, otomatis bisa diakses via LAN. Tidak butuh internet. |
+| `npm run dev:local` | 🖥️ **Lokal (LAN)** | SQLite | Data tersimpan di laptop, otomatis bisa diakses via LAN. Tidak butuh internet. |
 | `npm run dev` | 🌐 **Cloud** | PostgreSQL (Neon) | Data tersimpan di cloud Neon. Butuh koneksi internet. |
 
 **Untuk server lokal (direkomendasikan untuk jaringan kantor):**
@@ -211,26 +207,18 @@ Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memi
    *(Sistem akan memulihkan data ke database dan otomatis mengunggah kembali file-file lampiran ke sistem penyimpanan yang aktif).*
 > *Catatan: Jika database lokal masih kosong sama sekali, Anda bisa melakukan import tanpa perlu login.*
 
----
-
-## 🧪 Import & Export Excel Pintar
-
-1. **Unduh Template:** Buka aplikasi, klik tombol **+** (Tambah Cepat / Tambah Pekerjaan) → **Download Template Excel**.
-2. **Dropdown Otomatis:** Template Excel otomatis dilengkapi dropdown validasi data untuk PIC, Kategori, Prioritas, Status, dan Lokasi.
-3. **Format Sub-Pekerjaan & Multi-PIC:** Tuliskan sub-pekerjaan dengan format `[Status] Nama Sub | PIC: Nama | Tenggat: YYYY-MM-DD` di kolom Sub-Pekerjaan.
-4. **Pratinjau Impor Interaktif:** Klik **Import dari Excel** → pilih file Excel Anda. Sistem akan menampilkan pratinjau tabel validasi lengkap dengan dropdown pengubah lokasi per baris sebelum disimpan ke database.
+### Import dari Excel
+1. Buka aplikasi di browser.
+2. Klik tombol **+** (Tambah Pekerjaan) → **Download Template Excel**.
+3. Isi data sesuai format template.
+4. Klik tombol **+** → **Import dari Excel** → pilih file Anda.
 
 ---
 
 ## 📝 Changelog / Riwayat Pembaruan Terkini
 
-Berbagai peningkatan dan perbaikan terus dilakukan. Berikut adalah rangkuman *update* utama:
+Berbagai peningkatan dan perbaikan bug terus dilakukan. Berikut adalah *update* utama yang baru saja diproses ke repositori:
 
-- ✨ **Smart Add & Multi-PIC Tag Dropdown:** Penambahan selector dropdown PIC Tambahan dengan chip tag dan integrasi master lokasi otomatis pada AI Parser.
-- 📍 **Master Lokasi Terintegrasi:** Deteksi cerdas Online (Zoom) vs Offline (Ruang Rapat) di seluruh form manual, Smart Add, dan modal pratinjau impor Excel.
-- 📊 **Excel Data Validation & Preview Modal:** Template Excel kini memuat dropdown validasi data otomatis untuk Master PIC, Kategori, Prioritas, Status, dan Lokasi. Pratinjau impor dilengkapi dropdown pengeditan langsung.
-- 🔒 **Role Permissions Matrix & User PIC Sync:** Pemisahan ketat antara Master PIC kerja dan akun login pengguna untuk integritas data tim.
-- 📖 **Buku Panduan Lengkap & Cetak PDF:** Penyempurnaan 9 bab panduan aplikasi serta layout cetak PDF resmi berstandar A4.
 - 🐛 **Fix Filter Dropdown**: Menghapus duplikasi opsi "All" pada filter PIC dan Kategori di Dashboard serta menyelaraskan urutan dropdown agar 100% konsisten dengan pengaturan Master Data.
 - ✨ **Sort Lampiran**: Menambahkan fitur interaktif untuk mengurutkan daftar pekerjaan berdasarkan jumlah lampiran terbanyak/tersedikit secara langsung dari *header* tabel.
 - ⚡ **Optimasi Cloud Restore**: Mencegah *timeout* saat restore database besar dengan memparalelkan proses upload Blob, menambahkan mekanisme *retry* otomatis jika gagal (*blob fetch retry*), dan meningkatkan *maxDuration* fungsi API.
@@ -241,7 +229,7 @@ Berbagai peningkatan dan perbaikan terus dilakukan. Berikut adalah rangkuman *up
 
 ## 👨‍💻 Kredit & Pembuat
 
-Proyek ini dirancang dan dikembangkan secara kolaboratif dengan penuh semangat oleh **ipanjez** dan **Syahmi Rianta**. 
+Proyek ini dirancang dan dikembangkan dengan penuh semangat oleh **ipanjez**. 
 
 Mari terhubung, berdiskusi, dan berkolaborasi bersama saya melalui platform di bawah ini:
 

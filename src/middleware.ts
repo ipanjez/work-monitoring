@@ -6,7 +6,7 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow static assets, favicon, calendar exports, auth, settings, and reset requests (for forgot password page)
@@ -44,14 +44,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // RBAC: Protect admin-only routes
-  const isAdminOnlyPath = 
+  const isAdminOnlyPath =
     (pathname.startsWith('/users') && pathname !== '/users/profile') ||
     pathname.startsWith('/logs') ||
     pathname.startsWith('/api/logs') ||
-    (pathname.startsWith('/api/users') && 
-     pathname !== '/api/users/profile' && 
-     pathname !== '/api/users/pics' && 
-     !pathname.startsWith('/api/users/reset-requests'));
+    (pathname.startsWith('/api/users') &&
+      pathname !== '/api/users/profile' &&
+      pathname !== '/api/users/pics' &&
+      !pathname.startsWith('/api/users/reset-requests'));
 
   if (isAdminOnlyPath && (session as any)?.role !== 'ADMIN') {
     if (pathname.startsWith('/api/')) {

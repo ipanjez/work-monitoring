@@ -12,7 +12,7 @@ import { id } from 'date-fns/locale';
 import { getTaskComments } from '@/utils/taskUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar-override.css';
-import { 
+import {
   ExternalLink, CalendarDays, X, Paperclip, Plus, Pencil, Trash2, File, Eye, Repeat, UserPlus, History, Download, Search, Filter, AlertCircle, Copy, FileText, FileSpreadsheet, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,18 +48,18 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
-  const { 
-    masterColors, 
-    masterCats, 
-    masterStatuses, 
-    masterPriorities, 
+  const {
+    masterColors,
+    masterCats,
+    masterStatuses,
+    masterPriorities,
     masterPics,
     roleConfig
   } = useMaster();
-  const { 
-    globalTargetFilter, setGlobalTargetFilter, 
-    globalPicFilter, setGlobalPicFilter, 
-    globalCustomStartDate, setGlobalCustomStartDate, 
+  const {
+    globalTargetFilter, setGlobalTargetFilter,
+    globalPicFilter, setGlobalPicFilter,
+    globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
     globalFilterStatus: filterStatus,
@@ -69,7 +69,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   } = useFilter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -188,7 +188,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       try {
         const arr = JSON.parse(t.additionalPics);
         if (Array.isArray(arr)) arr.forEach((p: string) => p && allPicsSet.add(p));
-      } catch (e) {}
+      } catch (e) { }
     }
   });
   const existingPics = Array.from(allPicsSet);
@@ -198,7 +198,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const filteredTasks = tasks.filter(task => {
     const extraPics = getAdditionalPics(task).join(' ');
     const matchesSearch = checkSearchMatch(task, searchQuery, globalSearchExactMatch);
-    
+
     let matchesFilter = true;
     if (filterStatus !== 'All' && task.status !== filterStatus) matchesFilter = false;
     if (filterPriority !== 'All' && task.prioritas !== filterPriority) matchesFilter = false;
@@ -234,7 +234,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       matchesTarget = true;
     } else {
       if (end >= startBoundary && end <= endBoundary) {
-         matchesTarget = true;
+        matchesTarget = true;
       }
     }
 
@@ -314,50 +314,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     setIsEditModalOpen(true);
   };
 
-  const handleOpenDuplicateModal = (task: Task) => {
-    setSelectedTask(null);
-    let parsedSubTasks: any[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
-
-    const startStr = typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0];
-    const endStr = typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0];
-
-    setEditingTask({
-      nama: task.nama,
-      pic: task.pic,
-      status: task.status,
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      repetisi: task.repetisi || 'Tidak Berulang',
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setIsEditModalOpen(true);
-    toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
-  };
-
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
@@ -426,9 +382,9 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         windowWidth: width,
         windowHeight: height,
@@ -452,7 +408,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(pdfUrl);
-      
+
       setIsExportingPdf(false);
     } catch (err) {
       console.error('PDF Export error:', err);
@@ -466,20 +422,20 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('calendar-container');
       if (!element) return;
-      
+
       const width = element.scrollWidth;
       const height = element.scrollHeight;
 
-      const canvas = await html2canvas(element, { 
-        scale: 2, 
-        useCORS: true, 
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#ffffff',
         windowWidth: width,
         windowHeight: height,
         width: width,
         height: height
       });
-      
+
       canvas.toBlob(async (blob) => {
         if (blob) {
           try {
@@ -487,7 +443,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
               new ClipboardItem({ 'image/png': blob })
             ]);
             toast.success('Gambar kalender disalin ke clipboard');
-          } catch(err) {
+          } catch (err) {
             console.error(err);
             toast.error('Gagal menyalin gambar, izin ditolak.');
           }
@@ -504,7 +460,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     try {
       const isNew = !payloadData.id;
       const realId = isNew ? null : Math.floor(Number(payloadData.id));
-      
+
       const url = isNew ? '/api/tasks' : `/api/tasks/${realId}`;
       const method = isNew ? 'POST' : 'PUT';
 
@@ -541,7 +497,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         const updated = await res.json();
         if (Array.isArray(updated)) setTasks(updated);
       }
-      
+
       startTransition(() => {
         router.refresh();
         if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
@@ -593,8 +549,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
           alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
         }}>
-          <div style={{ 
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)', 
+          <div style={{
+            padding: '12px 24px', backgroundColor: 'var(--surface-color)',
             borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             border: '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', gap: '8px',
@@ -612,23 +568,23 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       </datalist>
 
       {/* Search & Interactive Filter Action Bar */}
-      <UniversalFilterBar 
-        categories={allCategoryOptions} 
-        pics={existingPics} 
-        statuses={masterStatuses.length > 0 ? masterStatuses : undefined} 
-        priorities={masterPriorities.length > 0 ? masterPriorities : undefined} 
+      <UniversalFilterBar
+        categories={allCategoryOptions}
+        pics={existingPics}
+        statuses={masterStatuses.length > 0 ? masterStatuses : undefined}
+        priorities={masterPriorities.length > 0 ? masterPriorities : undefined}
         filteredCount={filteredTasks.length}
         totalCount={tasks.length}
       >
-        <UniversalActionBar 
+        <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         >
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             onClick={async () => {
               const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
               if (isLocal) {
@@ -679,7 +635,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                 const dayOfWeek = getDay(d);
                 const isRed = isHoliday || dayOfWeek === 0 || dayOfWeek === 6;
                 return (
-                  <div 
+                  <div
                     title={isHoliday ? isHoliday : (isRed ? 'Akhir Pekan' : undefined)}
                     style={{ padding: '4px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', cursor: isRed ? 'help' : 'default' }}
                   >
@@ -704,8 +660,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
             month: "Bulan",
             week: "Minggu",
             day: "Hari",
-            agenda: "Agenda",
-            showMore: (total) => `+${total}`
+            agenda: "Agenda"
           }}
         />
       </div>
@@ -714,9 +669,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
         setPreviewFile={setPreviewFile}
-        onDuplicate={() => {
-          if (selectedTask) handleOpenDuplicateModal(selectedTask);
-        }}
         onEdit={() => handleOpenEditModal(selectedTask!)}
         onDelete={() => handleDeleteTask(selectedTask!.id)}
       />
@@ -737,7 +689,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       <AnimatePresence>
         {errorMessage && (
           <div className="modal-overlay" style={{ zIndex: 1100 }}>
-            <motion.div 
+            <motion.div
               className="modal-content"
               style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -746,6 +698,53 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
               onClick={e => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--danger)' }}>
+                  <AlertCircle size={22} />
+                  <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>Terjadi Kesalahan Sistem</h3>
+                </div>
+                <button className="btn btn-secondary" style={{ padding: '6px' }} onClick={() => setErrorMessage(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                Rincian error sistem ditampilkan di bawah ini. Anda dapat menyalin seluruh pesan error ini dengan menekan tombol di bawah untuk dikirimkan kepada tim pengembang:
+              </p>
+
+              <div style={{ background: '#1e1e1e', color: '#f87171', padding: '14px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '12px', maxHeight: '200px', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', border: '1px solid #7f1d1d' }}>
+                {errorMessage}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setErrorMessage(null)}
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ background: 'var(--danger)', borderColor: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => {
+                    copyToClipboard(errorMessage);
+                    toast.success('Detail error berhasil disalin ke clipboard!');
+                  }}
+                >
+                  <Copy size={16} /> Salin Detail Error
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
+    </div>
+  );
+}             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--danger)' }}>
                   <AlertCircle size={22} />
                   <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>Terjadi Kesalahan Sistem</h3>
@@ -783,13 +782,13 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
                   <Copy size={16} /> Salin Detail Error
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </motion.div >
+          </div >
         )}
-      </AnimatePresence>
+      </AnimatePresence >
 
-      
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
-    </div>
+
+  <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
+    </div >
   );
 }

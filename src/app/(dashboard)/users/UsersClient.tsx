@@ -1,20 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, 
-  ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, 
-  Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare, 
-  Share2, Shield, HelpCircle, ExternalLink, Sparkles 
+import {
+  Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search,
+  ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw,
+  Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare,
+  Share2, Shield, HelpCircle, ExternalLink, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaster } from '@/context/MasterContext';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { 
+import {
   defaultRolePermissions, RolePermissionsConfig, hasPermission,
-  PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail 
+  PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail
 } from '@/lib/permissions';
 import { useNotifications } from '@/context/NotificationContext';
 
@@ -713,7 +713,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       {/* Roles Tab */}
       {tab === 'roles' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -768,8 +768,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
               )}
             </div>
 
-            <div style={{ overflowX: 'auto', margin: '0 -24px', padding: '0 24px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                   <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)', width: '380px', minWidth: '320px' }}>
@@ -822,18 +821,18 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                     <React.Fragment key={cat.id}>
                       {/* Category Header Row */}
                       <tr style={{ backgroundColor: 'var(--bg-secondary, rgba(0,0,0,0.03))', borderBottom: '1px solid var(--border-color)' }}>
-                        <td 
+                        <td
                           colSpan={Object.keys(roleConfig.labels).length + 1}
                           style={{ padding: '10px 16px', fontWeight: 700, fontSize: '12.5px', color: 'var(--text-primary)', letterSpacing: '0.3px', textTransform: 'uppercase' }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ 
-                              background: 'var(--accent-primary)', 
-                              color: 'white', 
-                              padding: '2px 8px', 
-                              borderRadius: '6px', 
+                            <span style={{
+                              background: 'var(--accent-primary)',
+                              color: 'white',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
                               fontSize: '11px',
-                              fontWeight: 700 
+                              fontWeight: 700
                             }}>
                               {catFeatures.length} Izin
                             </span>
@@ -851,12 +850,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span>{feature.label}</span>
                                 </div>
-                                <div style={{ 
-                                  display: 'inline-flex', 
-                                  alignItems: 'center', 
-                                  gap: '4px', 
-                                  fontSize: '11px', 
-                                  color: 'var(--text-secondary)', 
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '11px',
+                                  color: 'var(--text-secondary)',
                                   marginTop: '4px',
                                   background: 'var(--bg-secondary, rgba(0,0,0,0.04))',
                                   padding: '2px 8px',
@@ -933,22 +932,21 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             </table>
           </div>
         </div>
-      </div>
       )}
 
       {/* Feature Information Modal */}
       {selectedFeatureInfo && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            inset: 0, 
-            background: 'rgba(0,0,0,0.6)', 
-            backdropFilter: 'blur(6px)', 
-            zIndex: 99999, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '20px' 
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
           }}
           onClick={() => setSelectedFeatureInfo(null)}
         >
@@ -958,14 +956,14 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             exit={{ opacity: 0, scale: 0.93, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="glass"
-            style={{ 
-              width: '100%', 
-              maxWidth: '520px', 
-              padding: '24px', 
-              borderRadius: '20px', 
-              border: '1px solid var(--border-color)', 
-              display: 'flex', 
-              flexDirection: 'column', 
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              padding: '24px',
+              borderRadius: '20px',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
               gap: '16px',
               position: 'relative'
             }}
@@ -987,12 +985,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <span style={{ 
-                    fontSize: '11px', 
-                    fontWeight: 700, 
-                    color: 'var(--accent-primary)', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.5px' 
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--accent-primary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}>
                     {PERMISSION_CATEGORIES.find(c => c.id === selectedFeatureInfo.category)?.name}
                   </span>
@@ -1084,9 +1082,9 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 onClick={() => setSelectedFeatureInfo(null)}
                 style={{ padding: '8px 20px', fontSize: '13px' }}
               >
