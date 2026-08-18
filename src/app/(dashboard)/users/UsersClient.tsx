@@ -17,6 +17,7 @@ import {
   PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail
 } from '@/lib/permissions';
 import { useNotifications } from '@/context/NotificationContext';
+import Avatar from '@/components/Avatar';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
@@ -47,7 +48,7 @@ const actionLabel: Record<string, string> = {
 };
 
 export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string }) {
-  const { masterPicAvatars } = useMaster();
+  const { masterPicAvatars, masterColors } = useMaster();
   const { addActivityLog, notifications, markAsRead } = useNotifications();
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
@@ -517,17 +518,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       />
                     </td>
                     <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {u.image || masterPicAvatars[u.name] ? (
-                        <img
-                          src={u.image || masterPicAvatars[u.name]}
-                          alt={u.name}
-                          style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                        />
-                      ) : (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', flexShrink: 0 }}>
-                          {u.name ? u.name.charAt(0).toUpperCase() : '?'}
-                        </div>
-                      )}
+                      <Avatar
+                        name={u.name}
+                        src={u.image || masterPicAvatars[u.name]}
+                        size={28}
+                        masterColors={masterColors}
+                      />
                       <span>{u.npk}</span>
                     </td>
                     <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{u.name}</td>

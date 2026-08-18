@@ -707,11 +707,11 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             
             let innerHtml = '<thead>';
 
+            const c = masterColors[`pic_${picName}`] || masterColors[picName] || 'var(--accent-primary)';
             if (avatarSrc) {
-               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><img src="${avatarSrc}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"/> <span>${picName}</span></div></th></tr>`;
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><img src="${avatarSrc}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 2px solid ${c}; box-sizing: border-box;"/> <span>${picName}</span></div></th></tr>`;
             } else {
-               const c = masterColors[`pic_${picName}`] || 'var(--accent-primary)';
-               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: ${c}; color: white; display: flex; align-items:center; justify-content:center; font-size: 10px;">${picName.substring(0,2).toUpperCase()}</div> <span>${picName}</span></div></th></tr>`;
+               innerHtml += `<tr><th><div style="display:flex; align-items:center; gap: 8px; margin-bottom: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: ${c}; border: 2px solid ${c}; box-sizing: border-box; color: white; display: flex; align-items:center; justify-content:center; font-size: 10px; font-weight: bold;">${picName.substring(0,2).toUpperCase()}</div> <span>${picName}</span></div></th></tr>`;
             }
             
             innerHtml += '</thead><tbody>';

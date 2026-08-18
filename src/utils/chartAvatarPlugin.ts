@@ -69,6 +69,13 @@ export const picAvatarXAxisPlugin = {
       const xCenter = xScale.getPixelForValue(index);
       const avatarSrc = avatars[label];
 
+      let picColor = masterColors[`pic_${label}`] || masterColors[label] || null;
+      if (!picColor || picColor === '#ffffff') {
+        picColor = getStableColor(label);
+      } else if (picColor.length > 7) {
+        picColor = picColor.substring(0, 7);
+      }
+
       ctx.save();
 
       // Clip to a circle
@@ -83,14 +90,7 @@ export const picAvatarXAxisPlugin = {
         ctx.drawImage(img, xCenter - radius, yCenter - radius, avatarSize, avatarSize);
       } else {
         // Draw initials circle
-        let bgColor = masterColors[`pic_${label}`] || null;
-        if (!bgColor || bgColor === '#ffffff') {
-          bgColor = getStableColor(label);
-        } else if (bgColor.length > 7) {
-          bgColor = bgColor.substring(0, 7);
-        }
-
-        ctx.fillStyle = bgColor;
+        ctx.fillStyle = picColor;
         ctx.fillRect(xCenter - radius, yCenter - radius, avatarSize, avatarSize);
 
         ctx.fillStyle = '#ffffff';
@@ -100,6 +100,15 @@ export const picAvatarXAxisPlugin = {
         ctx.fillText(getInitials(label), xCenter, yCenter);
       }
 
+      ctx.restore();
+
+      // Draw colored outline ring for both photo and initials
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(xCenter, yCenter, radius - 1, 0, Math.PI * 2);
+      ctx.strokeStyle = picColor;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
       ctx.restore();
 
       // If the avatar image exists but hasn't loaded yet, start loading
