@@ -407,6 +407,10 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   };
 
   const handleAddNewTaskForPic = (picName: string) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah pekerjaan baru.');
+      return;
+    }
     setEditForm({
       nama: '',
       pic: picName,
@@ -630,28 +634,30 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   {isSelected ? 'Tutup Daftar Tugas ▲' : 'Lihat Daftar Tugas ▼'}
                 </span>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddNewTaskForPic(picName);
-                  }}
-                  title={`Tambah pekerjaan untuk ${picName}`}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent-primary)',
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 6px',
-                    borderRadius: '6px'
-                  }}
-                >
-                  <Plus size={13} /> Tugas Baru
-                </button>
+                {hasPermission(roleConfig, 'manage_task', userRole) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddNewTaskForPic(picName);
+                    }}
+                    title={`Tambah pekerjaan untuk ${picName}`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent-primary)',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 6px',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <Plus size={13} /> Tugas Baru
+                  </button>
+                )}
               </div>
             </div>
           );
