@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
-import QuickCommentModal from '@/components/QuickCommentModal';
 import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft, CheckSquare, MessageSquare, History, FileText, Download, Filter, ArrowUpDown, Copy, ChevronUp, ChevronDown, Paperclip, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -64,7 +63,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [commentTask, setCommentTask] = useState<any | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -1035,19 +1033,16 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                             </div>
                           )}
 
-                          {/* Comments Count */}
-                          <div
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCommentTask(task);
-                            }}
-                            className="hover-bg-surface"
-                            title={`${getTaskComments(task).length} Komentar`}
-                          >
-                            <MessageSquare size={14} />
-                            <span style={{ fontSize: '11px', fontWeight: 600 }}>{getTaskComments(task).length || ''}</span>
-                          </div>
+                          {/* Comments Count Indicator */}
+                          {getTaskComments(task).length > 0 && (
+                            <div
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                              title={`${getTaskComments(task).length} Komentar`}
+                            >
+                              <MessageSquare size={14} />
+                              <span style={{ fontSize: '11px', fontWeight: 600 }}>{getTaskComments(task).length}</span>
+                            </div>
+                          )}
 
                           {/* Activity Timeline Count */}
                           {getHistoryLogs(task).length > 0 && (
@@ -1174,12 +1169,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         />
       )}
 
-      {commentTask && (
-        <QuickCommentModal
-          task={commentTask}
-          onClose={() => setCommentTask(null)}
-        />
-      )}
       <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
 
       {/* Floating touch ghost card for mobile drag-and-drop */}
