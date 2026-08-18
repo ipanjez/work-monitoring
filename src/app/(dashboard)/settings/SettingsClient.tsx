@@ -43,6 +43,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(24);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
   const [backupReminderDays, setBackupReminderDays] = useState<number | string>('');
+  const [backupReminderMode, setBackupReminderMode] = useState<string>('0');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Master State
@@ -113,7 +114,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
         if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
         if (data.session_timeout !== undefined) setSessionTimeoutMinutes(data.session_timeout);
-        if (data.backup_reminder_days !== undefined) setBackupReminderDays(data.backup_reminder_days);
+        if (data.backup_reminder_days !== undefined) {
+          const days = Number(data.backup_reminder_days);
+          setBackupReminderDays(days);
+          if (['0', '-1', '1', '3', '7', '14', '30'].includes(String(days))) {
+            setBackupReminderMode(String(days));
+          } else {
+            setBackupReminderMode('custom');
+          }
+        }
       })
       .catch(e => console.error(e));
 
@@ -587,7 +596,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
           session_timeout_hours: Number(sessionTimeoutHours) || 24,
           session_timeout: Number(sessionTimeoutMinutes) || 10,
-          backup_reminder_days: (backupReminderDays !== '' && !isNaN(Number(backupReminderDays))) ? Number(backupReminderDays) : 0
+          backup_reminder_days: backupReminderMode === 'custom' 
+            ? (Number(backupReminderDays) || 7) 
+            : Number(backupReminderMode)
         })
       });
       
@@ -1183,20 +1194,13 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <select
                 className="input"
                 style={{ width: 'auto', minWidth: '220px', fontWeight: 500 }}
-                value={
-                  backupReminderDays === -1 || backupReminderDays === '-1' 
-                    ? '-1' 
-                    : backupReminderDays === 0 || backupReminderDays === '0' || backupReminderDays === ''
-                    ? '0' 
-                    : ['1', '3', '7', '14', '30'].includes(String(backupReminderDays)) 
-                    ? String(backupReminderDays) 
-                    : 'custom'
-                }
+                value={backupReminderMode}
                 onChange={e => {
                   const val = e.target.value;
+                  setBackupReminderMode(val);
                   if (val === 'custom') {
                     if (['0', '-1', ''].includes(String(backupReminderDays))) {
-                      setBackupReminderDays(7);
+                      setBackupReminderDays(5);
                     }
                   } else {
                     setBackupReminderDays(Number(val));
@@ -1213,7 +1217,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 <option value="custom">⚙️ Kustom (Isi jumlah hari)</option>
               </select>
 
-              {(!['0', '-1', ''].includes(String(backupReminderDays)) && !['1', '3', '7', '14', '30'].includes(String(backupReminderDays))) && (
+              {backupReminderMode === 'custom' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <input
                     type="number"
@@ -1221,8 +1225,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     value={backupReminderDays}
                     onChange={e => setBackupReminderDays(e.target.value)}
                     min="1"
-                    style={{ width: '90px' }}
+                    style={{ width: '100px' }}
                     placeholder="Hari"
+                    autoFocus
                   />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Hari</span>
                 </div>
@@ -1240,17 +1245,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
 
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-              {Number(backupReminderDays) === -1 ? (
+              {backupReminderMode === '-1' ? (
                 <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>
                   ✨ Pengingat akan selalu muncul sebagai pop-up setiap kali pengguna login baru.
                 </span>
-              ) : Number(backupReminderDays) > 0 ? (
+              ) : backupReminderMode === '0' ? (
                 <span>
-                  🕒 Pengingat akan muncul di Dashboard setiap <strong>{backupReminderDays} hari</strong> sejak tanggal backup terakhir.
+                  🚫 Pengingat dinonaktifkan (pop-up tidak akan pernah muncul).
                 </span>
               ) : (
                 <span>
-                  🚫 Pengingat dinonaktifkan (pop-up tidak akan pernah muncul).
+                  🕒 Pengingat akan muncul di Dashboard setiap <strong>{backupReminderMode === 'custom' ? backupReminderDays : backupReminderMode} hari</strong> sejak tanggal backup terakhir.
                 </span>
               )}
             </p>
