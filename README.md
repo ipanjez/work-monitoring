@@ -241,7 +241,7 @@ Berbagai peningkatan dan perbaikan terus dilakukan. Berikut adalah rangkuman *up
 
 ## 👨‍💻 Kredit & Pembuat
 
-Proyek ini dirancang dan dikembangkan dengan penuh semangat oleh **ipanjez**. 
+Proyek ini dirancang dan dikembangkan secara kolaboratif dengan penuh semangat oleh **ipanjez** dan **Syahmi Rianta**. 
 
 Mari terhubung, berdiskusi, dan berkolaborasi bersama saya melalui platform di bawah ini:
 
