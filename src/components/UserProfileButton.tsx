@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission } from '@/lib/permissions';
+import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission, PERMISSION_FEATURE_DETAILS } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
 
@@ -32,37 +32,40 @@ export default function UserProfileButton() {
         if (data.name) setDisplayName(data.name);
         if (data.image) setDisplayImage(data.image);
       })
-      .catch(() => {});
+      .catch(e => console.error(e));
   };
 
   useEffect(() => {
-    if (session?.user) {
-      setDisplayName(session.user.name || 'User');
-      setDisplayImage(session.user.image || '');
-      loadUserData();
-    }
-  }, [session]);
-
-  useEffect(() => {
+    loadUserData();
     window.addEventListener('profileUpdated', loadUserData);
     return () => window.removeEventListener('profileUpdated', loadUserData);
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleMasterUpdated = () => {
+      fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
+    };
+    window.addEventListener('masterUpdated', handleMasterUpdated);
+    return () => window.removeEventListener('masterUpdated', handleMasterUpdated);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
     }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, []);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  if (!session || !session.user) return null;
+  if (!session?.user) return null;
+
+  const currentRole = (session.user as any).role || 'MEMBER';
+  const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
+  const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -75,8 +78,9 @@ export default function UserProfileButton() {
   return (
     <div
       id="user-profile-btn-container"
+      className="relative" 
+      ref={dropdownRef} 
       style={{ position: 'relative' }}
-      ref={dropdownRef}
     >
       <button
         className="profile-btn"
@@ -106,21 +110,19 @@ export default function UserProfileButton() {
           }
         }}
       >
-        {/* Avatar Circle */}
         <Avatar
-          name={displayName}
-          src={displayImage || masterPicAvatars[displayName]}
+          name={displayName || session.user.name || 'User'}
+          src={displayImage || masterPicAvatars[displayName || session.user.name || '']}
           size={34}
           masterColors={masterColors}
         />
 
-        {/* User Name & Role */}
         <div className="profile-info" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
           <span className="profile-name-text" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
-            {displayName}
+            {displayName || session.user.name || 'User'}
           </span>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-            {getRoleLabel(roleConfig, (session.user as any).role)}
+            {getRoleLabel(roleConfig, currentRole)}
           </span>
         </div>
         <ChevronDown
@@ -143,7 +145,7 @@ export default function UserProfileButton() {
             top: '100%',
             right: 0,
             marginTop: '8px',
-            width: '200px',
+            width: '260px',
             background: 'var(--surface-color)',
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
@@ -165,42 +167,50 @@ export default function UserProfileButton() {
 
             <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Role Akses</div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div 
+                style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
+                title={activeFeatures.length > 0 ? `Hak Akses Aktif:\n${activeFeatures.map(f => `• ${f.label}`).join('\n')}` : 'Tidak ada hak akses aktif'}
+              >
                 {(() => {
-                  const role = (session.user as any).role;
-                  if (role === 'ADMIN') return <ShieldAlert size={16} color="var(--danger)" style={{ marginTop: '2px' }} />;
-                  if (role === 'VIEWER') return <Eye size={16} color="var(--text-secondary)" style={{ marginTop: '2px' }} />;
-                  return <Shield size={16} color="var(--accent-primary)" style={{ marginTop: '2px' }} />;
+                  if (currentRole === 'ADMIN') return <ShieldAlert size={16} color="var(--danger)" style={{ marginTop: '2px', flexShrink: 0 }} />;
+                  if (currentRole === 'VIEWER') return <Eye size={16} color="var(--text-secondary)" style={{ marginTop: '2px', flexShrink: 0 }} />;
+                  return <Shield size={16} color="var(--accent-primary)" style={{ marginTop: '2px', flexShrink: 0 }} />;
                 })()}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {getRoleLabel(roleConfig, (session.user as any).role)}
-                  </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {getRoleLabel(roleConfig, currentRole)}
+                    </span>
+                    <span style={{
+                      fontSize: '9.5px',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      background: activeFeatures.length === totalFeatures ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                      color: activeFeatures.length === totalFeatures ? '#059669' : 'var(--accent-primary)'
+                    }}>
+                      {activeFeatures.length}/{totalFeatures} Izin
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                     {(() => {
-                      const role = (session.user as any).role;
-                      if (role === 'ADMIN') return 'Akses penuh kelola data.';
-
-                      const labels: string[] = [];
-                      if (hasPermission(roleConfig, 'view_dashboard', role)) labels.push('Dashboard');
-                      if (hasPermission(roleConfig, 'view_detail', role)) labels.push('Detail Tugas');
-                      if (hasPermission(roleConfig, 'manage_task', role)) labels.push('Kelola Tugas');
-                      if (hasPermission(roleConfig, 'delete_task', role)) labels.push('Hapus Tugas');
-                      if (hasPermission(roleConfig, 'upload_comment', role)) labels.push('Komentar');
-                      if (hasPermission(roleConfig, 'master_data', role)) labels.push('Pengaturan');
-                      if (hasPermission(roleConfig, 'user_management', role)) labels.push('Manajemen User');
-                      if (hasPermission(roleConfig, 'system_logs', role)) labels.push('Log Sistem');
-
-                      if (labels.length === 0) return 'Tidak ada akses spesifik.';
-                      return `Akses: ${labels.join(', ')}`;
+                      if (activeFeatures.length === totalFeatures) {
+                        return 'Akses penuh seluruh fitur & pengaturan.';
+                      }
+                      if (activeFeatures.length === 0) {
+                        return 'Tidak memiliki izin aktif.';
+                      }
+                      const labels = activeFeatures.map(f => f.shortLabel);
+                      if (labels.length <= 3) {
+                        return `Izin: ${labels.join(', ')}`;
+                      }
+                      return `Izin: ${labels.slice(0, 2).join(', ')}, +${labels.length - 2} lainnya`;
                     })()}
                   </span>
                 </div>
               </div>
             </div>
           </div>
-
-
 
           <Link
             href="/users/profile"
