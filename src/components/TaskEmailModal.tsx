@@ -163,17 +163,17 @@ export default function TaskEmailModal({
   <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
     
     <!-- Header Banner -->
-    <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 22px 24px; color: #ffffff;">
+    <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 20px 24px; color: #ffffff;">
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td>
-            <span style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px;">
+            <span style="display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(255,255,255,0.22); padding: 3px 8px; border-radius: 4px; margin-bottom: 6px;">
               ${deptName} • ${appName}
             </span>
-            <h1 style="margin: 10px 0 4px 0; font-size: 19px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+            <h2 style="margin: 6px 0 6px 0; font-size: 18px; font-weight: 800; color: #ffffff; line-height: 1.35; word-break: break-word;">
               ${task.nama}
-            </h1>
-            <span style="font-size: 12px; opacity: 0.9;">Pemberitahuan Penugasan & Pembaruan Pekerjaan</span>
+            </h2>
+            <span style="font-size: 12px; opacity: 0.92; display: block;">Pemberitahuan Penugasan & Pembaruan Pekerjaan</span>
           </td>
         </tr>
       </table>
@@ -604,16 +604,26 @@ ${taskDirectUrl}
             </div>
 
             {/* Tab Contents */}
-            <div style={{ flex: 1, minHeight: '300px' }}>
+            <div style={{ flex: 1, minHeight: '380px' }}>
               {activeTab === 'preview' && (
                 <div style={{
-                  background: '#f8fafc',
                   border: '1px solid var(--border-color)',
                   borderRadius: '10px',
-                  padding: '16px',
-                  overflowX: 'auto'
+                  overflow: 'hidden',
+                  background: '#ffffff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                 }}>
-                  <div dangerouslySetInnerHTML={{ __html: emailHtml }} />
+                  <iframe
+                    srcDoc={emailHtml}
+                    title="Pratinjau Kartu Email Visual"
+                    style={{
+                      width: '100%',
+                      height: '420px',
+                      border: 'none',
+                      display: 'block',
+                      background: '#f8fafc'
+                    }}
+                  />
                 </div>
               )}
 
@@ -625,12 +635,13 @@ ${taskDirectUrl}
                     className="input"
                     style={{
                       width: '100%',
-                      height: '320px',
+                      height: '380px',
                       fontFamily: 'monospace',
                       fontSize: '12px',
                       lineHeight: '1.6',
-                      padding: '12px',
-                      resize: 'none'
+                      padding: '14px',
+                      resize: 'none',
+                      background: 'var(--input-bg)'
                     }}
                   />
                   <button
@@ -640,8 +651,9 @@ ${taskDirectUrl}
                       position: 'absolute',
                       top: '10px',
                       right: '10px',
-                      padding: '4px 8px',
-                      fontSize: '11px'
+                      padding: '5px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: 600
                     }}
                   >
                     {copiedText ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
@@ -658,13 +670,14 @@ ${taskDirectUrl}
                     className="input"
                     style={{
                       width: '100%',
-                      height: '320px',
+                      height: '380px',
                       fontFamily: 'monospace',
                       fontSize: '11.5px',
                       lineHeight: '1.5',
-                      padding: '12px',
+                      padding: '14px',
                       resize: 'none',
-                      color: '#0284c7'
+                      color: '#0284c7',
+                      background: 'var(--input-bg)'
                     }}
                   />
                   <button
@@ -674,8 +687,9 @@ ${taskDirectUrl}
                       position: 'absolute',
                       top: '10px',
                       right: '10px',
-                      padding: '4px 8px',
-                      fontSize: '11px'
+                      padding: '5px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: 600
                     }}
                   >
                     {copiedHtml ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
@@ -687,20 +701,21 @@ ${taskDirectUrl}
 
             {/* Helper Tip Box */}
             <div style={{
-              background: 'rgba(59, 130, 246, 0.06)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              fontSize: '12px',
-              color: 'var(--text-secondary)',
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              fontSize: '12.5px',
+              color: 'var(--text-primary)',
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
+              alignItems: 'flex-start',
+              gap: '10px',
+              flexShrink: 0
             }}>
-              <Sparkles size={16} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
-              <span>
-                <strong>Tips:</strong> Klik <strong>&quot;1-Klik Salin Kartu HTML&quot;</strong> lalu cukup tekan <code>Ctrl + V</code> (Paste) di dalam email Gmail / Outlook Anda untuk menampilkan kartu visual estetik lengkap dengan warna & tombol.
-              </span>
+              <Sparkles size={18} color="var(--accent-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--accent-primary)' }}>Tips:</strong> Klik tombol hijau <strong>&quot;1-Klik Salin Kartu HTML&quot;</strong> di atas, lalu cukup tekan <kbd style={{ background: 'var(--surface-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', fontFamily: 'monospace', fontSize: '11.5px', fontWeight: 700 }}>Ctrl + V</kbd> (Paste) di dalam lembar compose email <strong>Gmail / Outlook</strong> Anda untuk menampilkan kartu visual estetik lengkap dengan warna & tombol.
+              </div>
             </div>
 
           </div>
