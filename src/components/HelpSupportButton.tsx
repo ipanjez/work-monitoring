@@ -685,9 +685,9 @@ export default function HelpSupportButton() {
       if (addActivityLog) {
         const sender = session?.user?.name ? `${session.user.name} (${(session.user as any)?.npk || ''})` : 'Anonim';
         await addActivityLog(
-          'SUBMIT_FEEDBACK', 
-          'Umpan Balik Baru', 
-          `Feedback dari ${sender}: "${feedbackText.trim()}"`, 
+          'SUBMIT_FEEDBACK',
+          'Umpan Balik Baru',
+          `Feedback dari ${sender}: "${feedbackText.trim()}"`,
           'success'
         );
       }

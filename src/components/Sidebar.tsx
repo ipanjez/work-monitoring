@@ -205,9 +205,9 @@ export default function Sidebar() {
         <div>
           <div className={styles.logoContainer}>
             <div className={styles.logo}>
-              <div style={{ padding: appLogo ? '0' : '8px', background: appLogo ? 'transparent' : 'var(--accent-primary)', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', flexShrink: 0, width: '38px', height: '38px', justifyContent: 'center' }}>
+              <div style={{ padding: appLogo ? '0' : '8px', background: appLogo ? 'transparent' : 'var(--accent-primary)', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', flexShrink: 0, width: '38px', height: '38px', justifyContent: 'center', overflow: 'hidden' }}>
                 {appLogo ? (
-                  <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }} />
+                  <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                 ) : (
                   <CheckSquare size={22} />
                 )}

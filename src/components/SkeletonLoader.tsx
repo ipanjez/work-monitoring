@@ -51,7 +51,7 @@ export default function SkeletonLoader({ showCards = true }: SkeletonLoaderProps
             zIndex: 2
           }}>
             {appLogo ? (
-              <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={appLogo} alt="App Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
             ) : (
               <CheckSquare size={32} />
             )}
