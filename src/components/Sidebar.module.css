@@ -170,6 +170,13 @@
     -webkit-backdrop-filter: blur(4px);
   }
 
+  [data-sidebar="collapsed"] .logoContainer {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+
   [data-sidebar="collapsed"] .navText {
     display: block;
   }

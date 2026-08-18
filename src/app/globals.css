@@ -555,7 +555,7 @@ th[style*="cursor: pointer"]:hover,
   }
 
   /* Style tombol Tambah Kerja (GlobalAddButton) di mobile */
-  #global-add-btn-container > button {
+  #global-add-btn-container > button:not(.mobile-fab) {
     padding: 4px !important;
     height: 40px !important;
     width: 40px !important;
@@ -799,4 +799,231 @@ th[style*="cursor: pointer"]:hover,
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+/* ========================================== */
+/* Mobile UI/UX Optimizations                 */
+/* ========================================== */
+
+/* Mobile Floating Action Button (FAB) */
+.mobile-fab {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .mobile-fab {
+    display: flex;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--accent-primary);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+    border: none;
+    cursor: pointer;
+    z-index: 999;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .mobile-fab:active {
+    transform: scale(0.95);
+    background-color: var(--accent-hover);
+  }
+}
+
+/* Modifikasi Spacing & Ukuran Font (Lebih Compact) di HP & Bottom Sheet Modals */
+@media (max-width: 768px) {
+  .mobile-task-card {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+  
+  .mobile-task-card h4 {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+  
+  .mobile-task-card span, 
+  .mobile-task-card div {
+    font-size: 11px !important;
+  }
+
+  .mobile-header {
+    height: 54px !important;
+    padding: 0 12px !important;
+  }
+
+  .mobile-header div {
+    font-size: 16px !important;
+  }
+
+  /* Reduce padding of main container on tiny screens */
+  .main-content {
+    padding: 12px !important;
+    padding-top: 70px !important;
+  }
+
+  /* Sheet-style Modals (Modal Geser dari Bawah) */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  
+  .modal-content {
+    max-height: 85vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin-bottom: 0 !important;
+    padding: 24px 16px 30px 16px !important;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  /* Drag handle visual clue */
+  .modal-content::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background-color: var(--border-color);
+    border-radius: 2px;
+    margin: -12px auto 16px auto;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar for mobile overflow containers to show they can scroll */
+@media (max-width: 992px) {
+  .desktop-table-view, 
+  .table-responsive, 
+  div[style*="overflow-x: auto"],
+  div[style*="overflowX: auto"] {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--accent-primary) transparent !important;
+  }
+  
+  /* Webkit custom scrollbar to show it clearly */
+  .desktop-table-view::-webkit-scrollbar, 
+  .table-responsive::-webkit-scrollbar,
+  div[style*="overflow-x: auto"]::-webkit-scrollbar,
+  div[style*="overflowX: auto"]::-webkit-scrollbar {
+    height: 5px !important;
+    display: block !important;
+  }
+  
+  .desktop-table-view::-webkit-scrollbar-thumb, 
+  .table-responsive::-webkit-scrollbar-thumb,
+  div[style*="overflow-x: auto"]::-webkit-scrollbar-thumb,
+  div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
+    background: var(--accent-primary) !important;
+    border-radius: 10px !important;
+  }
+}
+
+/* Skeleton Loading Screens & PKT Loader */
+.skeleton-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-bar {
+  background: var(--border-color);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+  animation: shimmer 1.5s infinite;
+}
+
+[data-theme='light'] .skeleton-bar::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.05) 50%, transparent 100%);
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.pkt-loader-pulse {
+  animation: pktPulse 2s infinite ease-in-out;
+}
+
+.pkt-loader-spin {
+  transform-origin: center;
+  animation: pktSpin 4s linear infinite;
+}
+
+@keyframes pktPulse {
+  0%, 100% {
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 5px rgba(37, 99, 235, 0.2));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.6));
+  }
+}
+
+@keyframes pktSpin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dashboard Charts Carousel Slide for Mobile */
+.dashboard-charts-carousel {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.dashboard-charts-carousel > .full-width-chart {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .dashboard-charts-carousel {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 16px !important;
+    padding: 8px 4px 16px 4px !important;
+    width: 100% !important;
+  }
+  
+  .dashboard-charts-carousel > div {
+    flex: 0 0 85vw !important;
+    grid-column: auto !important;
+    scroll-snap-align: center !important;
+    min-height: 380px !important;
+  }
 }

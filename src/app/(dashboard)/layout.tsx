@@ -7,7 +7,7 @@ import RealTimeClock from '@/components/RealTimeClock';
 import UserProfileButton from '@/components/UserProfileButton';
 
 import FocusModeToggle from '@/components/FocusModeToggle';
-import { Menu } from 'lucide-react';
+import { Menu, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';

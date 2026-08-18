@@ -19,6 +19,15 @@ export default function GlobalAddButton() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<any>(null);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1100px)');
+    setIsMobile(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterPics, setMasterPics] = useState<string[]>([]);
@@ -618,20 +627,36 @@ export default function GlobalAddButton() {
   return (
     <div
       id="global-add-btn-container"
-      style={{ position: 'relative', zIndex: 1000 }}
+      style={isMobile ? undefined : { position: 'relative', zIndex: 1000 }}
       ref={panelRef}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseEnter={isMobile ? undefined : () => setIsOpen(true)}
+      onMouseLeave={isMobile ? undefined : () => setIsOpen(false)}
     >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="btn btn-primary"
-        style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
-      >
-        <Plus size={18} /> <span className="mobile-hide-text">Tambah Pekerjaan</span>
-      </button>
+      {isMobile ? (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="mobile-fab"
+          title="Tambah Pekerjaan"
+        >
+          <Plus size={24} />
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="btn btn-primary"
+          style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
+        >
+          <Plus size={18} /> <span className="mobile-hide-text">Tambah Pekerjaan</span>
+        </button>
+      )}
 
-      <div style={{
+      <div style={isMobile ? {
+        position: 'fixed', bottom: '90px', right: '24px', zIndex: 10000,
+        opacity: isOpen ? 1 : 0,
+        transform: isOpen ? 'translateY(0)' : 'translateY(10px)',
+        pointerEvents: isOpen ? 'auto' : 'none',
+        transition: 'opacity 0.2s, transform 0.2s',
+      } : {
         position: 'absolute', top: '100%', right: 0, zIndex: 100,
         paddingTop: '8px', // Invisible bridge for hover continuity
         opacity: isOpen ? 1 : 0,
@@ -641,7 +666,7 @@ export default function GlobalAddButton() {
       }}>
         <div style={{
           background: 'var(--surface-color)', borderRadius: '12px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--border-color)',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)', border: '1px solid var(--border-color)',
           width: '260px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px'
         }}>
           <div

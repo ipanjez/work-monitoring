@@ -44,6 +44,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     notificationsRef.current = notifications;
   }, [notifications]);
 
+  // Register Service Worker for Push Notifications
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) {
+          console.log('Service Worker Registered successfully', reg);
+          
+          if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+              if (permission === 'granted') {
+                console.log('Notification permission granted.');
+              }
+            });
+          }
+        })
+        .catch(function(err) {
+          console.error('Service Worker registration failed', err);
+        });
+    }
+  }, []);
+
   // Load local state on mount or user change
   useEffect(() => {
     if (status === 'loading') return;

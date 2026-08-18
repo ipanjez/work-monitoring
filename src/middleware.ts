@@ -6,13 +6,14 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow static assets, favicon, calendar exports, auth, settings, and reset requests (for forgot password page)
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
+    pathname === '/sw.js' ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/calendar') ||
     pathname.startsWith('/api/settings') ||

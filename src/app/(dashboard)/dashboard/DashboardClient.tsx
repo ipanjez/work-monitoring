@@ -1044,26 +1044,23 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         )}
 
         {/* Charts Container (Responsive) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
-          {/* Doughnut Charts (Side-by-Side) */}
-          <div id="dashboard-charts-doughnuts" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-            <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
-              <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
-                <Doughnut data={statusData} options={statusOptions} />
-              </div>
+        <div className="dashboard-charts-carousel" style={{ marginBottom: '32px' }}>
+          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
+            <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
+              <Doughnut data={statusData} options={statusOptions} />
             </div>
+          </div>
 
-            <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Distribusi Prioritas</h3>
-              <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
-                <Doughnut data={priorityData} options={priorityOptions} />
-              </div>
+          <div className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Distribusi Prioritas</h3>
+            <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
+              <Doughnut data={priorityData} options={priorityOptions} />
             </div>
           </div>
 
           {/* Full Width Bar Charts */}
-          <div id="dashboard-chart-pic" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-pic" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
               <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
@@ -1072,7 +1069,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             </div>
           </div>
 
-          <div id="dashboard-chart-category" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-category" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
             <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
               <div style={{ height: '280px', position: 'relative', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
@@ -1081,7 +1078,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             </div>
           </div>
 
-          <div id="dashboard-chart-timeline" className="glass" style={{ padding: '24px', minHeight: '340px' }}>
+          <div id="dashboard-chart-timeline" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu</h3>
             <div style={{ height: '240px', position: 'relative', width: '100%', margin: '0 auto' }}>
               <Line data={timelineData} options={timelineOptions} />

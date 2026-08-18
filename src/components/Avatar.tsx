@@ -19,8 +19,9 @@ export default function Avatar({ name, src, size = 32, className = '', masterCol
         src={src} 
         alt={name} 
         title={name}
+        loading="lazy"
         className={`rounded-full object-cover ${className}`}
-        style={{ width: defaultSize, height: defaultSize, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+        style={{ width: defaultSize, height: defaultSize, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, backgroundColor: 'var(--border-color)' }}
       />
     );
   }
