@@ -25,32 +25,8 @@ export default function DashboardLayout({
   const { toggleMobileMenu } = useTheme();
   const { appName } = useMaster();
   const router = useRouter();
-  const [progress, setProgress] = useState(0);
-
-  const fetchProgress = () => {
-    fetch('/api/tasks')
-      .then(res => res.json())
-      .then(tasks => {
-        if (Array.isArray(tasks) && tasks.length > 0) {
-          const doneTasks = tasks.filter((t: any) => t.status === 'Done' || t.status === 'Selesai');
-          const percent = Math.round((doneTasks.length / tasks.length) * 100);
-          setProgress(percent);
-        }
-      })
-      .catch(() => { });
-  };
-
   useEffect(() => {
-    fetchProgress();
-    window.addEventListener('tasksUpdated', fetchProgress);
-    return () => window.removeEventListener('tasksUpdated', fetchProgress);
-  }, []);
-
-  useEffect(() => {
-    const handleRefresh = () => {
-      router.refresh();
-      fetchProgress();
-    };
+    const handleRefresh = () => router.refresh();
     window.addEventListener('tasksUpdated', handleRefresh);
     return () => window.removeEventListener('tasksUpdated', handleRefresh);
   }, [router]);
@@ -65,10 +41,6 @@ export default function DashboardLayout({
             <Menu size={24} />
           </button>
           <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{appName}</div>
-        </div>
-        {/* Minimalist Progress Bar at the top of the header */}
-        <div className="mobile-progress-container" title={`${progress}% Pekerjaan Selesai`}>
-          <div className="mobile-progress-bar" style={{ width: `${progress}%` }} />
         </div>
       </div>
       <Sidebar />
