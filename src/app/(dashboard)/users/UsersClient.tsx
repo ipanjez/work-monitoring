@@ -1,13 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, Download, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search, 
+  ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw, 
+  Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare, 
+  Share2, Shield, HelpCircle, ExternalLink, Sparkles 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaster } from '@/context/MasterContext';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
+import { 
+  defaultRolePermissions, RolePermissionsConfig, hasPermission,
+  PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail 
+} from '@/lib/permissions';
 import { useNotifications } from '@/context/NotificationContext';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string };
@@ -63,6 +71,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [savingRoles, setSavingRoles] = useState(false);
+  const [selectedFeatureInfo, setSelectedFeatureInfo] = useState<PermissionFeatureDetail | null>(null);
 
   const fetchFeedbacks = useCallback(async () => {
     const res = await fetch('/api/admin/feedbacks');
@@ -705,12 +714,17 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       {tab === 'roles' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={20} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role
-              </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <ShieldCheck size={22} style={{ color: 'var(--accent-primary)' }} /> Matriks Akses Role & Hak Izin Fitur
+                </h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                  Kelola hak akses setiap role pengguna terhadap fitur aplikasi. Klik ikon <Info size={14} style={{ display: 'inline', verticalAlign: '-2px', color: 'var(--accent-primary)' }} /> untuk melihat lokasi menu dan rincian fungsinya.
+                </p>
+              </div>
               {userRole === 'ADMIN' && (
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-secondary"
                     onClick={() => {
@@ -753,17 +767,20 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                 </div>
               )}
             </div>
+
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)' }}>Fitur / Hak Akses</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)', width: '380px', minWidth: '320px' }}>
+                    Fitur & Lokasi Menu
+                  </th>
                   {Object.keys(roleConfig.labels).map(rk => (
-                    <th key={rk} style={{ padding: '12px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)' }}>
+                    <th key={rk} style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '110px' }}>
                       {userRole === 'ADMIN' ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                           <input
                             className="input"
-                            style={{ padding: '4px 8px', fontSize: '13px', textAlign: 'center', width: '100px', fontWeight: 600 }}
+                            style={{ padding: '4px 8px', fontSize: '12.5px', textAlign: 'center', width: '90px', fontWeight: 600 }}
                             value={roleConfig.labels[rk] || ''}
                             onChange={(e) => {
                               setRoleConfig({
@@ -782,69 +799,299 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                                 }
                               }}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                              title="Hapus Role"
                             >
-                              <X size={16} />
+                              <X size={15} />
                             </button>
                           )}
                         </div>
                       ) : (
-                        roleConfig.labels[rk] || rk
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {roleConfig.labels[rk] || rk}
+                        </span>
                       )}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { key: 'view_dashboard', label: 'Melihat Dashboard & Board' },
-                  { key: 'view_detail', label: 'Melihat Detail Tugas & Lampiran' },
-                  { key: 'manage_task', label: 'Menambah/Mengedit Tugas' },
-                  { key: 'delete_task', label: 'Hapus Tugas / Edit Massal (Bulk)' },
-                  { key: 'upload_comment', label: 'Upload Lampiran & Komentar' },
-                  { key: 'export_data', label: 'Export Data (Excel, PDF, Salin Gambar)' },
-                  { key: 'master_data', label: 'Akses Pengaturan (Master Data)' },
-                  { key: 'user_management', label: 'Manajemen User & Password' },
-                  { key: 'system_logs', label: 'Melihat Sistem Log Lengkap' },
-                  { key: 'admin_feedback', label: 'Akses Umpan Balik' },
-                  { key: 'database_backup', label: 'Cadangan & Pulihkan Database' },
-                  { key: 'system_config', label: 'Konfigurasi Limit & Sesi (System Config)' }
-                ].map(feature => (
-                  <tr key={feature.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)', borderRight: '1px solid var(--border-color)' }}><strong>{feature.label}</strong></td>
-                    {Object.keys(roleConfig.labels).map(rk => {
-                      const hasPerm = !!roleConfig.permissions[feature.key]?.includes(rk);
-                      return (
-                        <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
-                          {userRole === 'ADMIN' ? (
-                            <input
-                              type="checkbox"
-                              checked={hasPerm}
-                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                              onChange={(e) => {
-                                const checked = e.target.checked;
-                                setRoleConfig(prev => {
-                                  const list = prev.permissions[feature.key] || [];
-                                  return {
-                                    ...prev,
-                                    permissions: {
-                                      ...prev.permissions,
-                                      [feature.key]: checked ? [...list, rk] : list.filter(r => r !== rk)
-                                    }
-                                  };
-                                });
-                              }}
-                            />
-                          ) : (
-                            hasPerm ? <CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /> : <XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} />
-                          )}
+                {PERMISSION_CATEGORIES.map(cat => {
+                  const catFeatures = PERMISSION_FEATURE_DETAILS.filter(f => f.category === cat.id);
+                  return (
+                    <React.Fragment key={cat.id}>
+                      {/* Category Header Row */}
+                      <tr style={{ backgroundColor: 'var(--bg-secondary, rgba(0,0,0,0.03))', borderBottom: '1px solid var(--border-color)' }}>
+                        <td 
+                          colSpan={Object.keys(roleConfig.labels).length + 1}
+                          style={{ padding: '10px 16px', fontWeight: 700, fontSize: '12.5px', color: 'var(--text-primary)', letterSpacing: '0.3px', textTransform: 'uppercase' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ 
+                              background: 'var(--accent-primary)', 
+                              color: 'white', 
+                              padding: '2px 8px', 
+                              borderRadius: '6px', 
+                              fontSize: '11px',
+                              fontWeight: 700 
+                            }}>
+                              {catFeatures.length} Izin
+                            </span>
+                            <span>{cat.name}</span>
+                          </div>
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      </tr>
+
+                      {/* Feature Items */}
+                      {catFeatures.map(feature => (
+                        <tr key={feature.key} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.15s' }}>
+                          <td style={{ padding: '12px 16px', borderRight: '1px solid var(--border-color)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>{feature.label}</span>
+                                </div>
+                                <div style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  gap: '4px', 
+                                  fontSize: '11px', 
+                                  color: 'var(--text-secondary)', 
+                                  marginTop: '4px',
+                                  background: 'var(--bg-secondary, rgba(0,0,0,0.04))',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--border-color)'
+                                }}>
+                                  <MapPin size={11} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                                  <span>{feature.menuLocation}</span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFeatureInfo(feature)}
+                                title="Lihat detail penjelasan hak akses & dampak"
+                                style={{
+                                  background: 'rgba(59, 130, 246, 0.1)',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '24px',
+                                  height: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'var(--accent-primary)',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
+                                  transition: '0.2s',
+                                  marginTop: '2px'
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                              >
+                                <Info size={14} />
+                              </button>
+                            </div>
+                          </td>
+
+                          {Object.keys(roleConfig.labels).map(rk => {
+                            const hasPerm = !!roleConfig.permissions[feature.key]?.includes(rk);
+                            return (
+                              <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+                                {userRole === 'ADMIN' ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={hasPerm}
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setRoleConfig(prev => {
+                                        const list = prev.permissions[feature.key] || [];
+                                        return {
+                                          ...prev,
+                                          permissions: {
+                                            ...prev.permissions,
+                                            [feature.key]: checked ? [...list, rk] : list.filter(r => r !== rk)
+                                          }
+                                        };
+                                      });
+                                    }}
+                                  />
+                                ) : (
+                                  hasPerm ? <CheckCircle size={18} color="#10b981" style={{ margin: '0 auto' }} /> : <XCircle size={18} color="#ef4444" style={{ margin: '0 auto' }} />
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Feature Information Modal */}
+      {selectedFeatureInfo && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,0.6)', 
+            backdropFilter: 'blur(6px)', 
+            zIndex: 99999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '20px' 
+          }}
+          onClick={() => setSelectedFeatureInfo(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.93, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.93, y: 15 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="glass"
+            style={{ 
+              width: '100%', 
+              maxWidth: '520px', 
+              padding: '24px', 
+              borderRadius: '20px', 
+              border: '1px solid var(--border-color)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '16px',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  background: 'var(--accent-primary)',
+                  color: 'white',
+                  borderRadius: '12px',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    color: 'var(--accent-primary)', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.5px' 
+                  }}>
+                    {PERMISSION_CATEGORIES.find(c => c.id === selectedFeatureInfo.category)?.name}
+                  </span>
+                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {selectedFeatureInfo.label}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedFeatureInfo(null)}
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+              {/* Location */}
+              <div style={{ background: 'var(--bg-secondary)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={13} style={{ color: 'var(--accent-primary)' }} /> Lokasi Menu & Tampilan
+                </div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {selectedFeatureInfo.menuLocation}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div style={{ background: 'var(--bg-secondary)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileText size={13} style={{ color: '#3b82f6' }} /> Fungsi & Cakupan Izin
+                </div>
+                <div style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                  {selectedFeatureInfo.description}
+                </div>
+              </div>
+
+              {/* Impact */}
+              <div style={{ background: 'rgba(239, 68, 68, 0.06)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <XCircle size={13} /> Dampak Jika Hak Akses Dinonaktifkan
+                </div>
+                <div style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                  {selectedFeatureInfo.impact}
+                </div>
+              </div>
+
+              {/* Active Roles Overview */}
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Status Hak Akses Saat Ini:
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {Object.entries(roleConfig.labels).map(([rk, label]) => {
+                    const isGranted = !!roleConfig.permissions[selectedFeatureInfo.key]?.includes(rk);
+                    return (
+                      <span
+                        key={rk}
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: isGranted ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.12)',
+                          color: isGranted ? '#059669' : 'var(--text-secondary)',
+                          border: `1px solid ${isGranted ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-color)'}`
+                        }}
+                      >
+                        {isGranted ? <CheckCircle size={13} /> : <XCircle size={13} />} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={() => setSelectedFeatureInfo(null)}
+                style={{ padding: '8px 20px', fontSize: '13px' }}
+              >
+                Tutup Informasi
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
 
