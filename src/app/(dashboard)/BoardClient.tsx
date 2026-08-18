@@ -834,7 +834,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         </div>
       ) : (
         <div id="kanban-board-container" className="kanban-board-wrapper">
-        {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).map((col) => {
+        {(masterStatuses.length > 0 ? masterStatuses : ['To Do', 'In Progress', 'Review', 'Done']).filter((col: string) => col && col.trim() !== '').map((col, index) => {
           let columnTasks = filteredTasks.filter((t: any) => t.status === col);
           const sortType = colSorts[col] || 'default';
 
@@ -850,7 +850,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
           return (
             <div
-              key={col}
+              key={`${col}-${index}`}
               className="kanban-col glass"
               data-column-name={col}
               onDragOver={(e) => handleDragOverColumn(e, col)}
@@ -906,7 +906,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
               </div>
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minHeight: '60px', overflowY: 'auto', paddingRight: '4px' }} className="kanban-cards-container">
-                {columnTasks.map((task: any) => {
+                {columnTasks.map((task: any, cardIdx: number) => {
                   const subStats = getSubtaskStats(task.subTasksJson);
                   const isDragged = draggedTaskId === task.id;
                   const isDragOverThisCard = dragOverCardId === task.id;
@@ -925,7 +925,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
 
                   return (
                     <div
-                      key={task.id}
+                      key={task.id ? `${task.id}-${cardIdx}` : `card-${cardIdx}`}
                       className="kanban-card"
                       data-card-id={task.id}
                       draggable={canDrag}

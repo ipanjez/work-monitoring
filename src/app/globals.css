@@ -400,7 +400,7 @@ textarea.input:focus {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;

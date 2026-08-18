@@ -67,7 +67,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
       setAppLogo(localStorage.getItem('app_logo') || '');
       setMasterCats(JSON.parse(localStorage.getItem('master_cats') || '[]'));
-      setMasterStatuses(JSON.parse(localStorage.getItem('master_statuses') || '["To Do", "In Progress", "Done"]'));
+      setMasterStatuses((JSON.parse(localStorage.getItem('master_statuses') || '["To Do", "In Progress", "Done"]') as string[]).filter((s: string) => s && s.trim() !== ''));
       setMasterPriorities(JSON.parse(localStorage.getItem('master_priorities') || '["Low", "Medium", "High", "Critical"]'));
       setMasterLocations(JSON.parse(localStorage.getItem('master_locations') || '[]'));
       setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
@@ -119,7 +119,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           changed = true;
         }
         if (data.master_statuses) {
-          setMasterStatuses(data.master_statuses);
+          setMasterStatuses((data.master_statuses as string[]).filter((s: string) => s && s.trim() !== ''));
           localStorage.setItem('master_statuses', JSON.stringify(data.master_statuses));
           changed = true;
         }

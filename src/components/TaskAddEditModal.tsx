@@ -348,7 +348,7 @@ export default function TaskAddEditModal({
   return (
     <AnimatePresence>
       {isOpen && editingTask && (
-        <div className="modal-overlay" style={{ zIndex: 1050 }}>
+        <div className="modal-overlay" style={{ zIndex: 10100 }}>
           <motion.div
             className="modal-content"
             style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}
@@ -1265,3 +1265,4 @@ export default function TaskAddEditModal({
     </AnimatePresence>
   );
 }
+

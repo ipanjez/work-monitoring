@@ -161,7 +161,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
 
           if (isMobile) {
             return (
-              <div key={group.id} style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px', position: 'relative', width: '100%', paddingLeft: '36px' }}>
+              <div key={`${group.id}-${index}`} style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px', position: 'relative', width: '100%', paddingLeft: '36px' }}>
                 {/* Left Dot */}
                 <div style={{ 
                   position: 'absolute', 
@@ -181,9 +181,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     {format(group.date, 'dd MMM yyyy')}
                   </span>
-                  {group.events.map(ev => (
+                  {group.events.map((ev, evidx) => (
                     <div 
-                      key={ev.id}
+                      key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
                       onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                       style={{ 
                         background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
@@ -233,7 +233,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
           }
 
           return (
-            <div key={group.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', position: 'relative', width: '100%' }}>
+            <div key={`${group.id}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', position: 'relative', width: '100%' }}>
               
               {/* Left Side */}
               <div style={{ width: '45%', textAlign: 'right', paddingRight: '16px', paddingTop: '2px' }}>
@@ -242,9 +242,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    {group.events.map(ev => (
+                    {group.events.map((ev, evidx) => (
                       <div 
-                        key={ev.id}
+                        key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
                         onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                         style={{ 
                           background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
@@ -302,9 +302,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    {group.events.map(ev => (
+                    {group.events.map((ev, evidx) => (
                       <div 
-                        key={ev.id}
+                        key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
                         onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                         style={{ 
                           background: isSpecial ? 'transparent' : 'var(--modal-bg)', 

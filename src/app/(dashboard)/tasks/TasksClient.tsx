@@ -1675,7 +1675,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       {/* Interactive Copyable Error Details Modal */}
       <AnimatePresence>
         {errorMessage && (
-          <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-overlay" style={{ zIndex: 10200 }}>
             <motion.div
               className="modal-content"
               style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}

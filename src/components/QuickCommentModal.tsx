@@ -76,7 +76,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay" style={{ zIndex: 1100 }}>
+      <div className="modal-overlay" style={{ zIndex: 10200 }}>
         <motion.div
           className="modal-content"
           style={{ maxWidth: '500px', width: '100%' }}
@@ -144,3 +144,4 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
     </AnimatePresence>
   );
 }
+

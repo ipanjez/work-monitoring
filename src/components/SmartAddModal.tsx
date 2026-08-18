@@ -193,7 +193,7 @@ export default function SmartAddModal({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+    <div className="modal-overlay" style={{ zIndex: 10100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <motion.div 
         className="modal-content"
         style={{
@@ -690,3 +690,4 @@ export default function SmartAddModal({
     </div>
   );
 }
+

@@ -105,7 +105,7 @@ export default function ExcelImportPreviewModal({
   };
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+    <div className="modal-overlay" style={{ zIndex: 10200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <motion.div
         className="modal-content"
         style={{
@@ -380,3 +380,4 @@ export default function ExcelImportPreviewModal({
     </div>
   );
 }
+

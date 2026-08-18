@@ -134,7 +134,7 @@ export default function CalendarSyncModal({
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay" style={{ zIndex: 1100 }}>
+      <div className="modal-overlay" style={{ zIndex: 10200 }}>
         <motion.div
           className="modal-content"
           style={{ maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', padding: '0', borderRadius: '16px' }}
@@ -349,3 +349,4 @@ export default function CalendarSyncModal({
     </AnimatePresence>
   );
 }
+

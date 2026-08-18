@@ -395,7 +395,7 @@ ${taskDirectUrl}
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay" style={{ zIndex: 1100 }}>
+      <div className="modal-overlay" style={{ zIndex: 10200 }}>
         <motion.div
           className="modal-content"
           style={{ maxWidth: '780px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}
@@ -764,3 +764,4 @@ ${taskDirectUrl}
     </AnimatePresence>
   );
 }
+
