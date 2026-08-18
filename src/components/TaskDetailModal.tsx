@@ -35,13 +35,14 @@ interface TaskDetailModalProps {
   onClose: () => void;
   setPreviewFile: (file: FileItem) => void;
   onEdit?: () => void;
+  onDuplicate?: () => void;
   onDelete?: () => void;
 }
 
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
-export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDelete }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDuplicate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
@@ -388,6 +389,12 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
+                  <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                    <Copy size={16} style={{ marginRight: '6px', color: 'var(--accent-primary)' }} /> Duplikasi
+                  </button>
+                )}
+
                 {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
                   <button className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
                     <Edit size={16} style={{ marginRight: '6px' }} /> Edit

@@ -189,17 +189,20 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
 
   const handleSaveEdit = async () => {
-    if (!detailTask) return;
     setLoading(true);
     try {
+      const isNew = !editForm.id;
+      const url = isNew ? '/api/tasks' : `/api/tasks/${editForm.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+
       const payload = {
         ...editForm,
         startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
         endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
       };
       
-      const res = await fetch(`/api/tasks/${detailTask.id}`, {
-        method: 'PUT',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -209,9 +212,14 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       const savedTask = await res.json();
       
       // Update local state
-      setLocalTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
+      if (isNew) {
+        setLocalTasks(prev => [savedTask, ...prev]);
+      } else {
+        setLocalTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
+      }
       setDetailTask(savedTask);
       setIsEditing(false);
+      toast.success(isNew ? 'Pekerjaan baru berhasil dibuat' : 'Pekerjaan berhasil diperbarui');
       
       // Dispatch event to update other components like Sidebar
       startTransition(() => {
@@ -222,10 +230,61 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       });
     } catch (error) {
       console.error(error);
-      alert('Terjadi kesalahan saat menyimpan data');
+      toast.error('Terjadi kesalahan saat menyimpan data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDuplicate = (task: Task) => {
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        const raw = JSON.parse(task.subTasksJson);
+        if (Array.isArray(raw)) {
+          parsedSubTasks = raw.map((st: any) => ({
+            ...st,
+            id: Math.random().toString(36).substring(2, 9),
+            status: 'To Do',
+            logs: [{ status: `${st.text} (To Do)`, timestamp: new Date().toISOString() }]
+          }));
+        }
+      } catch (e) {}
+    }
+
+    const origStart = new Date(task.startDate);
+    const origEnd = new Date(task.endDate || task.startDate);
+    const diffDays = Math.max(0, Math.round((origEnd.getTime() - origStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const today = new Date();
+    const newEnd = new Date(today);
+    newEnd.setDate(newEnd.getDate() + diffDays);
+
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const newEndStr = format(newEnd, 'yyyy-MM-dd');
+
+    setEditForm({
+      nama: `${task.nama} (Salinan)`,
+      pic: task.pic,
+      status: 'To Do',
+      prioritas: task.prioritas || 'Medium',
+      kategori: task.kategori || 'Umum',
+      progress: 0,
+      deskripsi: task.deskripsi || '',
+      catatan: task.catatan || '',
+      lokasi: task.lokasi,
+      repetisi: repetisiValue,
+      startDate: todayStr,
+      endDate: newEndStr,
+      isCustomCategory: false,
+      isCustomPic: false,
+      filesList: [],
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks
+    } as any);
+    setDetailTask(null);
+    setIsEditing(true);
+    toast.success('Formulir duplikasi siap. Silakan tinjau dan klik Simpan.');
   };
 
   const handleDeleteTask = async (id: number) => {
@@ -558,6 +617,9 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         task={detailTask}
         onClose={() => setDetailTask(null)}
         setPreviewFile={setPreviewFile}
+        onDuplicate={() => {
+          if (detailTask) handleDuplicate(detailTask);
+        }}
         onEdit={() => {
           let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
       

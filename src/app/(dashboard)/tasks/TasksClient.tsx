@@ -374,6 +374,77 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     setIsModalOpen(true);
   };
 
+  const handleOpenDuplicateModal = (task: Task) => {
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+
+    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+      try {
+        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        while (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        customRecurrenceSettings = parsed;
+        repetisiValue = 'Custom';
+      } catch (e) { }
+    }
+
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
+        if (Array.isArray(raw)) {
+          parsedSubTasks = raw.map((st: any) => ({
+            ...st,
+            id: Math.random().toString(36).substring(2, 9),
+            status: 'To Do',
+            logs: [{ status: `${st.text} (To Do)`, timestamp: new Date().toISOString() }]
+          }));
+        }
+      } catch (e) {
+        console.error('Failed to parse subTasksJson for duplicate', e);
+      }
+    }
+
+    // Keep duration of original task, but start from today
+    const origStart = new Date(task.startDate);
+    const origEnd = new Date(task.endDate || task.startDate);
+    const diffDays = Math.max(0, Math.round((origEnd.getTime() - origStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const today = new Date();
+    const newEnd = new Date(today);
+    newEnd.setDate(newEnd.getDate() + diffDays);
+
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const newEndStr = format(newEnd, 'yyyy-MM-dd');
+
+    setEditingTask({
+      nama: `${task.nama} (Salinan)`,
+      pic: task.pic,
+      status: 'To Do',
+      prioritas: task.prioritas || 'Medium',
+      kategori: task.kategori || 'Umum',
+      progress: 0,
+      deskripsi: task.deskripsi || '',
+      catatan: task.catatan || '',
+      lokasi: task.lokasi,
+      filesList: [],
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      repetisi: repetisiValue,
+      customRecurrenceSettings,
+      startDate: todayStr,
+      endDate: newEndStr,
+      isCustomCategory: false,
+      isCustomPic: false,
+    });
+    setDetailTask(null);
+    setIsModalOpen(true);
+    toast.success('Formulir duplikasi siap. Silakan tinjau dan klik Simpan.');
+  };
+
 
   const handleSaveModal = async (payloadData: any) => {
     setLoading(true);
@@ -1600,6 +1671,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         task={detailTask}
         onClose={() => setDetailTask(null)}
         setPreviewFile={setPreviewFile}
+        onDuplicate={() => {
+          if (detailTask) handleOpenDuplicateModal(detailTask);
+        }}
         onEdit={() => {
           handleOpenEditModal(detailTask!);
         }}

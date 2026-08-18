@@ -314,6 +314,59 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     setIsEditModalOpen(true);
   };
 
+  const handleOpenDuplicateModal = (task: Task) => {
+    setSelectedTask(null);
+    let parsedSubTasks: any[] = [];
+    if (task.subTasksJson) {
+      try {
+        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
+        if (Array.isArray(raw)) {
+          parsedSubTasks = raw.map((st: any) => ({
+            ...st,
+            id: Math.random().toString(36).substring(2, 9),
+            status: 'To Do',
+            logs: [{ status: `${st.text} (To Do)`, timestamp: new Date().toISOString() }]
+          }));
+        }
+      } catch (e) {}
+    }
+
+    const origStart = new Date(task.startDate);
+    const origEnd = new Date(task.endDate || task.startDate);
+    const diffDays = Math.max(0, Math.round((origEnd.getTime() - origStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const today = new Date();
+    const newEnd = new Date(today);
+    newEnd.setDate(newEnd.getDate() + diffDays);
+
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const newEndStr = format(newEnd, 'yyyy-MM-dd');
+
+    setEditingTask({
+      nama: `${task.nama} (Salinan)`,
+      pic: task.pic,
+      status: 'To Do',
+      prioritas: task.prioritas || 'Medium',
+      kategori: task.kategori || 'Umum',
+      progress: 0,
+      deskripsi: task.deskripsi || '',
+      catatan: task.catatan || '',
+      lokasi: task.lokasi,
+      filesList: [],
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      repetisi: task.repetisi || 'Tidak Berulang',
+      startDate: todayStr,
+      endDate: newEndStr,
+      isCustomCategory: false,
+      isCustomPic: false,
+    });
+    setIsEditModalOpen(true);
+    toast.success('Formulir duplikasi siap. Silakan tinjau dan klik Simpan.');
+  };
+
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
@@ -670,6 +723,9 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
         setPreviewFile={setPreviewFile}
+        onDuplicate={() => {
+          if (selectedTask) handleOpenDuplicateModal(selectedTask);
+        }}
         onEdit={() => handleOpenEditModal(selectedTask!)}
         onDelete={() => handleDeleteTask(selectedTask!.id)}
       />

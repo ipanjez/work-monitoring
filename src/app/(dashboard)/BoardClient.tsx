@@ -329,6 +329,79 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setIsEditOpen(true);
   };
 
+  const openTaskDuplicate = (task: any) => {
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
+
+    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
+      try {
+        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
+        while (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+        customRecurrenceSettings = parsed;
+        repetisiValue = 'Custom';
+      } catch (e) { }
+    }
+
+    let parsedSubTasks: any[] = [];
+    if (task.subTasksJson) {
+      try {
+        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
+        if (Array.isArray(raw)) {
+          parsedSubTasks = raw.map((st: any) => ({
+            ...st,
+            id: Math.random().toString(36).substring(2, 9),
+            status: 'To Do',
+            logs: [{ status: `${st.text} (To Do)`, timestamp: new Date().toISOString() }]
+          }));
+        }
+      } catch (e) { }
+    }
+
+    let parsedPics: string[] = [];
+    if (task.additionalPics) {
+      try { parsedPics = JSON.parse(task.additionalPics); } catch (e) { }
+    }
+
+    const origStart = new Date(task.startDate);
+    const origEnd = new Date(task.endDate || task.startDate);
+    const diffDays = Math.max(0, Math.round((origEnd.getTime() - origStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const today = new Date();
+    const newEnd = new Date(today);
+    newEnd.setDate(newEnd.getDate() + diffDays);
+
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const newEndStr = format(newEnd, 'yyyy-MM-dd');
+
+    setSelectedTask({
+      nama: `${task.nama} (Salinan)`,
+      pic: task.pic,
+      status: 'To Do',
+      prioritas: task.prioritas || 'Medium',
+      kategori: task.kategori || 'Umum',
+      progress: 0,
+      deskripsi: task.deskripsi || '',
+      catatan: task.catatan || '',
+      lokasi: task.lokasi,
+      filesList: [],
+      additionalPicsList: parsedPics,
+      subTasksList: parsedSubTasks,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      repetisi: repetisiValue,
+      customRecurrenceSettings,
+      startDate: todayStr,
+      endDate: newEndStr,
+      isCustomCategory: false,
+      isCustomPic: false,
+    });
+    setIsDetailOpen(false);
+    setIsEditOpen(true);
+    toast.success('Formulir duplikasi siap. Silakan tinjau dan klik Simpan.');
+  };
+
   const filteredTasks = tasks.filter((t: any) => {
     let matchSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
 
@@ -927,6 +1000,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         <TaskDetailModal
           task={selectedTask}
           onClose={() => setIsDetailOpen(false)}
+          onDuplicate={() => openTaskDuplicate(selectedTask)}
           onEdit={() => openTaskEdit(selectedTask)}
           onDelete={() => handleDeleteTask(selectedTask.id)}
           setPreviewFile={setPreviewFile}
@@ -939,22 +1013,25 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onClose={() => setIsEditOpen(false)}
           taskToEdit={selectedTask}
           onSave={async (payload: any) => {
-            const toastId = toast.loading('Memperbarui data...');
+            const isNew = !selectedTask.id;
+            const toastId = toast.loading(isNew ? 'Menyimpan data baru...' : 'Memperbarui data...');
             try {
-              const res = await fetch(`/api/tasks/${selectedTask.id}`, {
-                method: 'PUT',
+              const url = isNew ? '/api/tasks' : `/api/tasks/${selectedTask.id}`;
+              const method = isNew ? 'POST' : 'PUT';
+              const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
               });
-              if (!res.ok) throw new Error('Failed to update task');
+              if (!res.ok) throw new Error('Failed to save task');
               setIsEditOpen(false);
-              toast.success('Berhasil diperbarui', { id: toastId });
+              toast.success(isNew ? 'Pekerjaan berhasil dibuat' : 'Berhasil diperbarui', { id: toastId });
               startTransition(() => {
                 router.refresh();
                 if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
               });
             } catch (err) {
-              toast.error('Gagal memperbarui', { id: toastId });
+              toast.error('Gagal menyimpan', { id: toastId });
             }
           }}
           formPicOptions={formPicOptions}
