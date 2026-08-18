@@ -4,15 +4,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, Sparkles, BookOpen, MessageSquare, X, Send } from 'lucide-react';
+import { HelpCircle, Sparkles, BookOpen, MessageSquare, X, Send, Maximize2, Minimize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNotifications } from '@/context/NotificationContext';
+import { useTheme } from '@/context/ThemeContext';
 import 'driver.js/dist/driver.css';
 
 export default function HelpSupportButton() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'PIC';
   const { addActivityLog } = useNotifications();
+  const { isFocusMode, toggleFocusMode } = useTheme();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -822,6 +824,42 @@ export default function HelpSupportButton() {
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Dokumentasi & Panduan</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Panduan lengkap penggunaan aplikasi</div>
+                  </div>
+                </button>
+
+                {/* Focus Mode option */}
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    toggleFocusMode();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    width: '100%',
+                    background: isFocusMode ? 'rgba(139, 92, 246, 0.12)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = isFocusMode ? 'rgba(139, 92, 246, 0.18)' : 'var(--input-bg)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = isFocusMode ? 'rgba(139, 92, 246, 0.12)' : 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6' }}>
+                    {isFocusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isFocusMode ? 'Keluar Mode Fokus' : 'Mode Fokus (Layar Penuh)'}
+                      {isFocusMode && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: '#8b5cf6', color: 'white' }}>Aktif</span>}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {isFocusMode ? 'Kembalikan tampilan sidebar' : 'Sembunyikan sidebar untuk area kerja luas'}
+                    </div>
                   </div>
                 </button>
 

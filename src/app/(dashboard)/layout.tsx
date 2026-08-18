@@ -6,7 +6,7 @@ import CopyAgendaButton from '@/components/CopyAgendaButton';
 import RealTimeClock from '@/components/RealTimeClock';
 import UserProfileButton from '@/components/UserProfileButton';
 
-import FocusModeToggle, { FocusModeHeaderButton } from '@/components/FocusModeToggle';
+import FocusModeToggle from '@/components/FocusModeToggle';
 import { Menu, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -52,7 +52,6 @@ export default function DashboardLayout({
         <CopyAgendaButton />
         <GlobalAddButton />
         <NotificationBell />
-        <FocusModeHeaderButton />
         <HelpSupportButton />
         <UserProfileButton />
       </div>
