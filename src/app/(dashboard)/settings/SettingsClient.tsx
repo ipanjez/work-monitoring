@@ -102,6 +102,73 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
   ];
 
+  const COMMON_TIMEZONES = [
+    {
+      group: '🇮🇩 Indonesia (WIB / WITA / WIT)',
+      options: [
+        { value: 'Asia/Makassar', label: '🕒 WITA (UTC+8) - Asia/Makassar (Bontang, Bali, Sulawesi, NTT/NTB, Kaltim/Kalsel)' },
+        { value: 'Asia/Jakarta', label: '🕒 WIB (UTC+7) - Asia/Jakarta (Jawa, Sumatera, Kalbar, Kalteng)' },
+        { value: 'Asia/Jayapura', label: '🕒 WIT (UTC+9) - Asia/Jayapura (Papua, Maluku)' },
+        { value: 'Asia/Pontianak', label: '🕒 WIB (UTC+7) - Asia/Pontianak (Kalimantan Barat)' },
+      ]
+    },
+    {
+      group: '🌏 Asia Tenggara & Asia Timur',
+      options: [
+        { value: 'Asia/Singapore', label: '🇸🇬 SGT (UTC+8) - Asia/Singapore (Singapura)' },
+        { value: 'Asia/Kuala_Lumpur', label: '🇲🇾 MYT (UTC+8) - Asia/Kuala_Lumpur (Malaysia)' },
+        { value: 'Asia/Bangkok', label: '🇹🇭 ICT (UTC+7) - Asia/Bangkok (Thailand, Vietnam, Kamboja)' },
+        { value: 'Asia/Manila', label: '🇵🇭 PST (UTC+8) - Asia/Manila (Filipina)' },
+        { value: 'Asia/Tokyo', label: '🇯🇵 JST (UTC+9) - Asia/Tokyo (Jepang)' },
+        { value: 'Asia/Seoul', label: '🇰🇷 KST (UTC+9) - Asia/Seoul (Korea Selatan)' },
+        { value: 'Asia/Hong_Kong', label: '🇭🇰 HKT (UTC+8) - Asia/Hong_Kong (Hong Kong)' },
+        { value: 'Asia/Shanghai', label: '🇨🇳 CST (UTC+8) - Asia/Shanghai (Tiongkok / Beijing)' },
+        { value: 'Asia/Taipei', label: '🇹🇼 CST (UTC+8) - Asia/Taipei (Taiwan)' },
+      ]
+    },
+    {
+      group: '🕌 Timur Tengah & Asia Selatan',
+      options: [
+        { value: 'Asia/Dubai', label: '🇦🇪 GST (UTC+4) - Asia/Dubai (Uni Emirat Arab)' },
+        { value: 'Asia/Riyadh', label: '🇸🇦 AST (UTC+3) - Asia/Riyadh (Arab Saudi / Mekkah)' },
+        { value: 'Asia/Kolkata', label: '🇮🇳 IST (UTC+5:30) - Asia/Kolkata (India)' },
+        { value: 'Asia/Dhaka', label: '🇧🇩 BST (UTC+6) - Asia/Dhaka (Bangladesh)' },
+      ]
+    },
+    {
+      group: '🦘 Australia & Pasifik',
+      options: [
+        { value: 'Australia/Perth', label: '🇦🇺 AWST (UTC+8) - Australia/Perth (Australia Barat)' },
+        { value: 'Australia/Sydney', label: '🇦🇺 AEST (UTC+10) - Australia/Sydney (Australia Timur)' },
+        { value: 'Pacific/Auckland', label: '🇳🇿 NZST (UTC+12) - Pacific/Auckland (Selandia Baru)' },
+      ]
+    },
+    {
+      group: '🏰 Eropa & Afrika',
+      options: [
+        { value: 'Europe/London', label: '🇬🇧 GMT/BST (UTC+0/+1) - Europe/London (Inggris / UK)' },
+        { value: 'Europe/Paris', label: '🇫🇷 CET/CEST (UTC+1/+2) - Europe/Paris (Prancis, Jerman, Italia)' },
+        { value: 'Europe/Istanbul', label: '🇹🇷 TRT (UTC+3) - Europe/Istanbul (Turki)' },
+        { value: 'Africa/Cairo', label: '🇪🇬 EET (UTC+2) - Africa/Cairo (Mesir)' },
+      ]
+    },
+    {
+      group: '🌎 Amerika',
+      options: [
+        { value: 'America/New_York', label: '🇺🇸 EST/EDT (UTC-5/-4) - America/New_York (New York, Washington)' },
+        { value: 'America/Chicago', label: '🇺🇸 CST/CDT (UTC-6/-5) - America/Chicago (Chicago, Texas)' },
+        { value: 'America/Denver', label: '🇺🇸 MST/MDT (UTC-7/-6) - America/Denver (Denver, Colorado)' },
+        { value: 'America/Los_Angeles', label: '🇺🇸 PST/PDT (UTC-8/-7) - America/Los_Angeles (California, LA)' },
+      ]
+    },
+    {
+      group: '🌐 Standar Universal',
+      options: [
+        { value: 'UTC', label: '🌐 UTC / GMT (UTC+0) - Standar Waktu Universal' },
+      ]
+    }
+  ];
+
   // Fetch initial data
   useEffect(() => {
     fetch('/api/settings')
@@ -124,7 +191,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
         if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
         if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
-        if (data.session_timeout !== undefined) setSessionTimeoutMinutes(data.session_timeout);
+        if (data.session_timeout) setSessionTimeoutMinutes(data.session_timeout);
         if (data.backup_reminder_days !== undefined) {
           const days = Number(data.backup_reminder_days);
           setBackupReminderDays(days);
@@ -137,7 +204,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.calendar_timezone) {
           const tz = String(data.calendar_timezone);
           setCalendarTimezone(tz);
-          if (['Asia/Makassar', 'Asia/Jakarta', 'Asia/Jayapura', 'UTC'].includes(tz)) {
+          const allKnown = COMMON_TIMEZONES.flatMap(g => g.options.map(o => o.value));
+          if (allKnown.includes(tz)) {
             setCalendarTzPreset(tz);
           } else {
             setCalendarTzPreset('custom');
@@ -1408,7 +1476,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
               <select
                 className="input"
-                style={{ width: 'auto', minWidth: '280px', fontWeight: 500 }}
+                style={{ width: 'auto', minWidth: '320px', fontWeight: 500 }}
                 value={calendarTzPreset}
                 onChange={e => {
                   const val = e.target.value;
@@ -1418,11 +1486,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   }
                 }}
               >
-                <option value="Asia/Makassar">🕒 WITA (UTC+8) - Asia/Makassar (Bontang, Bali, Sulawesi)</option>
-                <option value="Asia/Jakarta">🕒 WIB (UTC+7) - Asia/Jakarta (Jawa, Sumatera, Kalbar)</option>
-                <option value="Asia/Jayapura">🕒 WIT (UTC+9) - Asia/Jayapura (Papua, Maluku)</option>
-                <option value="UTC">🌐 UTC / GMT (UTC+0) - Standar Universal</option>
-                <option value="custom">⚙️ Kustom Timezone IANA...</option>
+                {COMMON_TIMEZONES.map(group => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.options.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+                <optgroup label="⚙️ Kustom Lainnya">
+                  <option value="custom">✍️ Ketik Kode Zona Waktu IANA Manual...</option>
+                </optgroup>
               </select>
 
               {calendarTzPreset === 'custom' && (
@@ -1435,8 +1510,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                       setCustomCalendarTz(e.target.value);
                       setCalendarTimezone(e.target.value.trim());
                     }}
-                    style={{ width: '200px' }}
-                    placeholder="Misal: Asia/Singapore"
+                    style={{ width: '220px' }}
+                    placeholder="Contoh: Asia/Bangkok"
                     autoFocus
                   />
                 </div>
