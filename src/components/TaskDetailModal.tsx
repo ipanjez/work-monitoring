@@ -283,7 +283,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
   return (
     <AnimatePresence>
-      <div className="modal-overlay">
+      <div key={task.id ? `modal-${task.id}` : 'modal-detail'} className="modal-overlay">
         <motion.div
           className="modal-content"
           style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}
@@ -335,7 +335,6 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 0, lineHeight: 1.4, wordBreak: 'break-word', whiteSpace: 'normal' }}>{task.nama}</h2>
               </div>
 
-              {/* Divider then two rows of buttons, right-aligned */}
               <div style={{
                 borderTop: '1px solid var(--border-color)',
                 paddingTop: '10px',
@@ -345,7 +344,28 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 gap: '8px',
                 flexWrap: 'wrap'
               }}>
-                {/* Left group: Utility icon buttons */}
+                {/* Left group: Primary action buttons */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                      <Copy size={13} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
+                    </button>
+                  )}
+
+                  {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                      <Edit size={13} style={{ marginRight: '4px' }} /> Edit
+                    </button>
+                  )}
+
+                  {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
+                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
+                      <Trash2 size={13} style={{ marginRight: '4px' }} /> Hapus
+                    </button>
+                  )}
+                </div>
+
+                {/* Right group: Utility icon buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-secondary"
@@ -423,27 +443,6 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   >
                     <Mail size={15} />
                   </button>
-                </div>
-
-                {/* Right group: Primary action buttons */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
-                      <Copy size={13} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
-                    </button>
-                  )}
-
-                  {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
-                      <Edit size={13} style={{ marginRight: '4px' }} /> Edit
-                    </button>
-                  )}
-
-                  {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
-                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
-                      <Trash2 size={13} style={{ marginRight: '4px' }} /> Hapus
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
