@@ -285,6 +285,28 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     }
   };
 
+  const handleDeleteTask = async (id: number | string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini? Tindakan ini tidak dapat dibatalkan.')) return;
+    const toastId = toast.loading('Menghapus pekerjaan...');
+    try {
+      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Gagal menghapus pekerjaan');
+      
+      setTasks(prev => prev.filter(t => String(t.id) !== String(id)));
+      setSelectedTaskForDetail(null);
+      toast.success('Pekerjaan berhasil dihapus', { id: toastId });
+      
+      if (addActivityLog) {
+        addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan telah dihapus dari Dashboard`, 'warning');
+      }
+      
+      router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+    } catch (error: any) {
+      toast.error(error.message || 'Terjadi kesalahan saat menghapus pekerjaan', { id: toastId });
+    }
+  };
+
   const categories = Array.from(new Set([...masterCategories, ...tasks.map(t => t.kategori || 'Umum')])).filter(Boolean);
   const pics = Array.from(new Set([...masterPics, ...tasks.map(t => t.pic), ...(session?.user?.name ? [session.user.name] : [])])).filter(Boolean);
 
@@ -1389,6 +1411,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             setSelectedTaskForDetail(null);
             handleOpenEditModal(selectedTaskForDetail);
           }}
+          onDelete={() => handleDeleteTask(selectedTaskForDetail.id)}
         />
       )}
       

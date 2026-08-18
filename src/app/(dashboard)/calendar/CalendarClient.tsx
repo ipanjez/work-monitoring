@@ -314,6 +314,50 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     setIsEditModalOpen(true);
   };
 
+  const handleOpenDuplicateModal = (task: Task) => {
+    setSelectedTask(null);
+    let repetisiValue = task.repetisi || 'Tidak Berulang';
+    let parsedSubTasks: SubTask[] = [];
+    if (task.subTasksJson) {
+      try {
+        const raw = JSON.parse(task.subTasksJson);
+        if (Array.isArray(raw)) {
+          parsedSubTasks = raw.map((st: any) => ({
+            ...st,
+            id: Math.random().toString(36).substring(2, 9),
+          }));
+        }
+      } catch (e) {}
+    }
+
+    const startStr = task.startDate ? (typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+    const endStr = task.endDate ? (typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+
+    setEditingTask({
+      nama: `${task.nama} (Salinan)`,
+      pic: task.pic,
+      status: task.status || 'To Do',
+      prioritas: task.prioritas || 'Medium',
+      kategori: task.kategori || 'Umum',
+      progress: task.progress || 0,
+      deskripsi: task.deskripsi || '',
+      catatan: task.catatan || '',
+      lokasi: task.lokasi,
+      repetisi: repetisiValue,
+      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
+      startDate: startStr,
+      endDate: endStr,
+      isCustomCategory: false,
+      isCustomPic: false,
+      filesList: getTaskFiles(task),
+      additionalPicsList: getAdditionalPics(task),
+      subTasksList: parsedSubTasks
+    });
+    setIsEditModalOpen(true);
+  };
+
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
@@ -646,6 +690,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
         setPreviewFile={setPreviewFile}
+        onDuplicate={() => handleOpenDuplicateModal(selectedTask!)}
         onEdit={() => handleOpenEditModal(selectedTask!)}
         onDelete={() => handleDeleteTask(selectedTask!.id)}
       />
