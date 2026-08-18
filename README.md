@@ -9,15 +9,20 @@ Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neo
 ## ✨ Fitur Unggulan
 
 - 🎮 **Manajemen Pekerjaan & Kalender:** Mengelola tugas dengan *kanban/list style* serta visualisasi di kalender yang interaktif. Kini dengan fitur unggah *multiple file attachments* yang dinamis.
-- 👥 **Kolaborasi Multi-PIC:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu secara otomatis.
+- 👥 **Kolaborasi Multi-PIC & Beban Kerja Tim:** Memungkinkan penugasan pekerjaan ke satu Penanggung Jawab utama beserta banyak PIC tambahan secara bersamaan, lengkap dengan kalkulasi beban kerja masing-masing individu (Tinggi, Optimal, Ringan) secara otomatis.
+- 🎨 **Identitas Warna Master PIC Melingkar:** Setiap personil memiliki identitas warna Master PIC kustom yang otomatis terimplementasi sebagai cincin lingkar luar (*outline border ring*) pada seluruh foto profil, kartu tim, menu profil, dan grafik.
+- 🗓️ **Universal Action Bar & Sinkronisasi Kalender Otomatis:** Tombol aksi terpadu (Export Excel, Export PDF, Salin Gambar, Sinkron Kalender) di seluruh menu, lengkap dengan modal langganan kalender (Google Calendar, Outlook, Apple iCal) via URL Feed terenkripsi token rahasia dan filter per PIC/Kategori.
+- ⏰ **Pengingat Pencadangan Database Berkala (Global Backup Reminder):** Notifikasi pop-up otomatis yang mengingatkan Admin untuk mencadangkan database dan lampiran berkas secara rutin (setiap login, mingguan, bulanan, atau jadwal kustom) dengan dukungan penuh Dark Mode.
+- ✉️ **Pengiriman Email Estetik & Kartu HTML:** Mengirim rincian tugas ke seluruh PIC langsung dari modal detail pekerjaan dengan pratinjau kartu HTML visual modern yang dapat disalin dengan 1-klik (*copy-paste*) ke Gmail atau Outlook.
+- 🤖 **Smart Add Modal (NLP Task Parser):** Penambahan tugas cepat dengan teks natural yang otomatis mengekstraksi judul, tenggat waktu, PIC, prioritas, dan kategori secara cerdas.
 - ☁️ **Dual-Mode Database & Storage:** 
   - **Cloud (Vercel):** Menggunakan PostgreSQL (Neon) & Vercel Blob untuk penyimpanan file online.
   - **Lokal (LAN):** Menggunakan SQLite & *Local Disk Storage* (file tersimpan langsung di hard disk laptop Anda, 100% independen tanpa internet).
   - Keduanya bisa berjalan bersamaan tanpa konfigurasi manual (cukup jalankan `npm run dev:local` untuk lokal).
 - 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
-- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), integrasi feed Google Calendar yang dilindungi Token Rahasia, serta **Kirim Email Otomatis** ke seluruh PIC langsung dari detail pekerjaan.
-- 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security):** 
-  - *Role-Based Access Control* (RBAC) dengan pemisahan akses Admin, Member, dan Viewer.
+- 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), serta visualisasi grafik Chart.js dinamis.
+- 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security & Granular RBAC):** 
+  - Matriks Hak Akses Peran (*Role Permissions Matrix*) fleksibel (Admin, Member, Viewer, Supervisor, Guest) untuk melindungi fitur operasional, pengaturan sistem, dan administrasi akun.
   - *Global Middleware / Proxy Route Protection* untuk mengunci API rahasia.
   - Sanitasi HTML (Anti-XSS) dengan DOMPurify.
   - *Whitelist* ekstensi file pada fitur unggah (Anti-Malware).
@@ -38,6 +43,8 @@ Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neo
 | **PostgreSQL (Neon)** | Database cloud untuk Vercel |
 | **SQLite** | Database lokal untuk server LAN |
 | **NextAuth.js** | Autentikasi & manajemen sesi |
+| **Chart.js & React-Chartjs-2** | Grafik visualisasi beban kerja dan status dengan avatar plugin |
+| **Framer Motion** | Animasi halus modal dan komponen interaktif |
 | **Vercel** | Hosting & deployment otomatis |
 | **Vanilla CSS** | Styling (Glassmorphism, Dark Mode, animasi) |
 
@@ -217,8 +224,13 @@ Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memi
 
 ## 📝 Changelog / Riwayat Pembaruan Terkini
 
-Berbagai peningkatan dan perbaikan bug terus dilakukan. Berikut adalah *update* utama yang baru saja diproses ke repositori:
+Berbagai peningkatan dan perbaikan bug terus dilakukan. Berikut adalah *update* utama yang telah diproses ke repositori:
 
+- 🗓️ **Universal Action Bar & Sinkronisasi Kalender:** Penyeragaman tombol aksi (Excel, PDF, Salin Gambar, Sinkron Kalender) di semua menu dan modal langganan kalender otomatis dengan filter personalisasi PIC/Kategori dan timezone IANA.
+- ⏰ **Global Backup Reminder:** Notifikasi modal pengingat pencadangan database berkala otomatis di level layout dengan dukungan penuh Dark Mode dan perhitungan rincian data pekerjaan yang akan diunduh.
+- 🎨 **Master PIC Outline Ring:** Implementasi warna Master PIC dinamis sebagai garis lingkar luar profil di seluruh kartu manajemen tim, avatar pengguna, dan grafik Chart.js.
+- ✉️ **Pratinjau Kartu Email HTML Estetik:** Format tampilan email modern dengan *isolated iframe* dan fitur 1-klik salin kartu visual ke Gmail / Outlook.
+- 🔒 **Granular Role Permissions (RBAC):** Matriks pengaturan izin peran lengkap untuk mengunci atau membuka akses operasional, master data, dan administrasi user.
 - 🐛 **Fix Filter Dropdown**: Menghapus duplikasi opsi "All" pada filter PIC dan Kategori di Dashboard serta menyelaraskan urutan dropdown agar 100% konsisten dengan pengaturan Master Data.
 - ✨ **Sort Lampiran**: Menambahkan fitur interaktif untuk mengurutkan daftar pekerjaan berdasarkan jumlah lampiran terbanyak/tersedikit secara langsung dari *header* tabel.
 - ⚡ **Optimasi Cloud Restore**: Mencegah *timeout* saat restore database besar dengan memparalelkan proses upload Blob, menambahkan mekanisme *retry* otomatis jika gagal (*blob fetch retry*), dan meningkatkan *maxDuration* fungsi API.

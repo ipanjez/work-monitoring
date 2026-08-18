@@ -712,7 +712,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                           title="Ubah Foto Profil PIC"
                         >
                           {masterPicAvatars[s] ? (
-                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${masterColors[`pic_${s}`]?.substring(0, 7) || 'var(--accent-primary)'}`, boxSizing: 'border-box' }}>
                               <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           ) : (
@@ -896,6 +896,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
+      window.dispatchEvent(new Event('backupReminderChanged'));
+      window.dispatchEvent(new Event('masterUpdated'));
       if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
       toast.success('Pengaturan berhasil disimpan!', { id: toastId });
     } catch (err) {

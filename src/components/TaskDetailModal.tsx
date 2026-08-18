@@ -326,7 +326,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 {(() => {
                   const badge = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
                   return (
-                    <span className={badge.className} style={{ ...badge.style, marginBottom: '8px', display: 'inline-block' }}>
+                    <span className={badge.className} style={{ ...badge.style, display: 'inline-block' }}>
                       {task.prioritas || 'Medium'}
                     </span>
                   );

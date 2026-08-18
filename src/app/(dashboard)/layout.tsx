@@ -14,6 +14,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
 import SessionMonitor from '@/components/SessionMonitor';
 import HelpSupportButton from '@/components/HelpSupportButton';
+import GlobalBackupReminder from '@/components/GlobalBackupReminder';
 
 import { useState } from 'react';
 
@@ -34,6 +35,7 @@ export default function DashboardLayout({
   return (
     <>
       <SessionMonitor />
+      <GlobalBackupReminder />
       {/* Mobile Header */}
       <div className="mobile-header glass">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

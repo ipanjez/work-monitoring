@@ -92,15 +92,15 @@ export default function BackupReminderModal({
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           style={{
-            background: 'var(--bg-primary, #ffffff)',
-            color: 'var(--text-primary, #1e293b)',
+            background: 'var(--modal-bg, #1e293b)',
+            color: 'var(--text-primary, #f8fafc)',
             borderRadius: '20px',
             width: '100%',
             maxWidth: '560px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--border-color, rgba(0,0,0,0.08))',
+            boxShadow: 'var(--card-shadow, 0 25px 50px -12px rgba(0, 0, 0, 0.5))',
             overflow: 'hidden',
             position: 'relative',
-            border: '1px solid var(--border-color, #e2e8f0)'
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))'
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -144,7 +144,7 @@ export default function BackupReminderModal({
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Database size={30} className="text-white" />
+                <Database size={30} color="#ffffff" />
               </div>
               <div>
                 <div style={{
@@ -162,7 +162,7 @@ export default function BackupReminderModal({
                 }}>
                   <AlertTriangle size={12} /> Pengingat Pencadangan Berkala
                 </div>
-                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, letterSpacing: '-0.02em', color: '#ffffff' }}>
                   Saatnya Backup Data Anda!
                 </h3>
               </div>
@@ -173,32 +173,32 @@ export default function BackupReminderModal({
           <div style={{ padding: '24px' }}>
             {/* Interval Status Info */}
             <div style={{
-              background: 'var(--bg-secondary, #f8fafc)',
+              background: 'var(--input-bg)',
               borderRadius: '12px',
               padding: '14px 16px',
               marginBottom: '18px',
-              border: '1px solid var(--border-color, #e2e8f0)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 500 }}>
-                <Clock size={16} style={{ color: '#0d9488', flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                <Clock size={16} style={{ color: '#10b981', flexShrink: 0 }} />
                 <span>
                   {reminderDays === -1 ? (
-                    <>Jadwal pengingat sistem diatur: <strong style={{ color: '#0d9488' }}>Setiap Kali Login</strong>.</>
+                    <>Jadwal pengingat sistem diatur: <strong style={{ color: '#10b981' }}>Setiap Kali Login</strong>.</>
                   ) : (
-                    <>Jadwal pengingat sistem diatur: <strong>Setiap {reminderDays} hari sekali</strong>.</>
+                    <>Jadwal pengingat sistem diatur: <strong style={{ color: 'var(--text-primary)' }}>Setiap {reminderDays} hari sekali</strong>.</>
                   )}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary, #64748b)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                 <Calendar size={16} style={{ color: lastBackupDate ? '#3b82f6' : '#f59e0b', flexShrink: 0 }} />
                 <span>
                   {lastBackupDate ? (
-                    <>Terakhir dicadangkan: <strong style={{ color: 'var(--text-primary, #1e293b)' }}>{formattedLastDate}</strong> ({daysAgoText})</>
+                    <>Terakhir dicadangkan: <strong style={{ color: 'var(--text-primary)' }}>{formattedLastDate}</strong> ({daysAgoText})</>
                   ) : (
-                    <strong style={{ color: '#d97706' }}>Anda belum pernah melakukan pencadangan database.</strong>
+                    <strong style={{ color: '#f59e0b' }}>Anda belum pernah melakukan pencadangan database.</strong>
                   )}
                 </span>
               </div>
@@ -207,10 +207,10 @@ export default function BackupReminderModal({
             {/* Detail Data yang Dicadangkan */}
             <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Rincian Data yang Akan Diunduh
                 </span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
                   Total {totalTasks} Pekerjaan
                 </span>
               </div>
@@ -222,41 +222,42 @@ export default function BackupReminderModal({
                 gap: '8px',
                 marginBottom: '12px'
               }}>
-                <div style={{ background: 'var(--bg-secondary, #f8fafc)', border: '1px solid var(--border-color, #e2e8f0)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: 600 }}>To Do</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '2px' }}>{todoCount}</div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: 700 }}>To Do</div>
+                  <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{todoCount}</div>
                 </div>
-                <div style={{ background: 'var(--bg-secondary, #f8fafc)', border: '1px solid var(--border-color, #e2e8f0)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>In Progress</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '2px' }}>{inProgressCount}</div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>In Progress</div>
+                  <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{inProgressCount}</div>
                 </div>
-                <div style={{ background: 'var(--bg-secondary, #f8fafc)', border: '1px solid var(--border-color, #e2e8f0)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#ec4899', fontWeight: 600 }}>Review</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '2px' }}>{reviewCount}</div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#ec4899', fontWeight: 700 }}>Review</div>
+                  <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{reviewCount}</div>
                 </div>
-                <div style={{ background: 'var(--bg-secondary, #f8fafc)', border: '1px solid var(--border-color, #e2e8f0)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>Done</div>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '2px' }}>{doneCount}</div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '10px 8px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700 }}>Done</div>
+                  <div style={{ fontSize: '17px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{doneCount}</div>
                 </div>
               </div>
 
               {/* Package Content List */}
               <div style={{
-                background: 'var(--bg-secondary, #f8fafc)',
+                background: 'var(--input-bg)',
                 borderRadius: '10px',
                 padding: '12px 14px',
-                border: '1px solid var(--border-color, #e2e8f0)',
+                border: '1px solid var(--border-color)',
                 fontSize: '12.5px',
+                color: 'var(--text-primary)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '6px'
+                gap: '8px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <ShieldCheck size={14} style={{ color: '#10b981' }} />
+                  <ShieldCheck size={16} style={{ color: '#10b981', flexShrink: 0 }} />
                   <span><strong>Database Lengkap (.json):</strong> Pekerjaan, Subtask, Pengaturan, User & Log Aktivitas</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileArchive size={14} style={{ color: '#0284c7' }} />
+                  <FileArchive size={16} style={{ color: '#0284c7', flexShrink: 0 }} />
                   <span><strong>File & Dokumen Lampiran:</strong> Seluruh berkas PDF, Excel, gambar & bukti pekerjaan</span>
                 </div>
               </div>
@@ -270,15 +271,15 @@ export default function BackupReminderModal({
                 style={{
                   padding: '10px 18px',
                   borderRadius: '10px',
-                  border: '1px solid var(--border-color, #cbd5e1)',
+                  border: '1px solid var(--border-color)',
                   background: 'transparent',
-                  color: 'var(--text-secondary, #475569)',
+                  color: 'var(--text-secondary)',
                   fontSize: '13.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  transition: '0.2s'
+                  transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary, #f1f5f9)')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-hover)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 Nanti Saja
@@ -318,10 +319,11 @@ export default function BackupReminderModal({
             </div>
             
             <p style={{
-              margin: '12px 0 0',
-              fontSize: '11px',
+              margin: '14px 0 0',
+              fontSize: '11.5px',
               textAlign: 'center',
-              color: 'var(--text-secondary, #94a3b8)'
+              color: 'var(--text-secondary)',
+              lineHeight: 1.4
             }}>
               *Klik &quot;Nanti Saja&quot; akan menunda pengingat ini dan tidak akan muncul kembali hingga Anda melakukan login ulang.
             </p>
