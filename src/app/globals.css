@@ -1043,7 +1043,7 @@ th[style*="cursor: pointer"]:hover,
   grid-column: span 2;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .dashboard-charts-carousel {
     display: flex !important;
     flex-direction: row !important;
@@ -1063,7 +1063,7 @@ th[style*="cursor: pointer"]:hover,
 }
 
 /* Universal Filter Bar Responsive Styles */
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .mobile-filter-toggle-btn {
     display: flex !important;
   }
