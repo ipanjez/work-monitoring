@@ -13,8 +13,18 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: (session.user as any).id },
+  const userId = (session.user as any).id;
+  const userNpk = (session.user as any).npk;
+  const userEmail = session.user.email;
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        ...(userId ? [{ id: userId }] : []),
+        ...(userNpk ? [{ npk: userNpk }] : []),
+        ...(userEmail ? [{ email: userEmail }] : []),
+      ]
+    },
     select: {
       id: true,
       npk: true,
@@ -40,6 +50,8 @@ export async function PUT(request: Request) {
   }
 
   const userId = (session.user as any).id;
+  const userNpk = (session.user as any).npk;
+  const userEmail = session.user.email;
   const body = await request.json();
   const { name, email, currentPassword, newPassword, image } = body;
 
@@ -48,8 +60,14 @@ export async function PUT(request: Request) {
   }
 
   // Find user
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        ...(userId ? [{ id: userId }] : []),
+        ...(userNpk ? [{ npk: userNpk }] : []),
+        ...(userEmail ? [{ email: userEmail }] : []),
+      ]
+    },
   });
 
   if (!user) {
@@ -74,13 +92,13 @@ export async function PUT(request: Request) {
   }
 
   const updatedUser = await prisma.user.update({
-    where: { id: userId },
+    where: { id: user.id },
     data: updateData,
   });
 
   // Sync profile photo (image) and name changes to master settings (master_pic_avatars)
   try {
-    const settingsRecord = await prisma.setting.findUnique({
+    const settingsRecord = await prisma.appSetting.findUnique({
       where: { key: 'master_pic_avatars' }
     });
     let avatars: Record<string, string> = {};
@@ -100,14 +118,14 @@ export async function PUT(request: Request) {
       delete avatars[updatedUser.name || ''];
     }
 
-    await prisma.setting.upsert({
+    await prisma.appSetting.upsert({
       where: { key: 'master_pic_avatars' },
       update: { value: JSON.stringify(avatars) },
       create: { key: 'master_pic_avatars', value: JSON.stringify(avatars) }
     });
 
     // Also sync the name change in master_pics list
-    const picsRecord = await prisma.setting.findUnique({
+    const picsRecord = await prisma.appSetting.findUnique({
       where: { key: 'master_pics' }
     });
     if (picsRecord && picsRecord.value) {
@@ -117,7 +135,7 @@ export async function PUT(request: Request) {
       } else if (updatedUser.name && !pics.includes(updatedUser.name)) {
         pics.push(updatedUser.name);
       }
-      await prisma.setting.update({
+      await prisma.appSetting.update({
         where: { key: 'master_pics' },
         data: { value: JSON.stringify(pics) }
       });

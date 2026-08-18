@@ -27,9 +27,21 @@ export default function Sidebar() {
   }, []);
   const { masterColors, appName, appSubtitle, appLogo } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useTheme();
+
+  useEffect(() => {
+    setIsMounted(true);
+    const mediaQuery = window.matchMedia('(max-width: 1100px)');
+    setIsMobile(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  const showExpanded = !isSidebarCollapsed || isMobile;
   const {
     globalTargetFilter,
     setGlobalTargetFilter,
@@ -197,7 +209,7 @@ export default function Sidebar() {
                   <CheckSquare size={22} />
                 )}
               </div>
-              {!isSidebarCollapsed && (
+              {showExpanded && (
                 <div style={{ overflow: 'hidden' }}>
                   <span style={{ fontSize: '16px', fontWeight: 'bold', display: 'block', lineHeight: 1.2, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{appName}</span>
                   <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 400, display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{appSubtitle}</span>
@@ -221,19 +233,20 @@ export default function Sidebar() {
                   key={item.href}
                   href={item.href}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                  title={isSidebarCollapsed ? item.label : undefined}
+                  title={!showExpanded ? item.label : undefined}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Icon size={20} style={{ flexShrink: 0 }} />
-                    {!isSidebarCollapsed && <span className={styles.navText}>{item.label}</span>}
+                    {showExpanded && <span className={styles.navText}>{item.label}</span>}
                   </div>
-                  {hasBadge && !isSidebarCollapsed && (
+                  {hasBadge && showExpanded && (
                     <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
                       {systemUserUnreads}
                     </span>
                   )}
-                  {hasBadge && isSidebarCollapsed && (
+                  {hasBadge && !showExpanded && (
                     <div style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }} />
                   )}
                 </Link>
@@ -241,22 +254,23 @@ export default function Sidebar() {
             })}
 
             <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-              {!isSidebarCollapsed && <div style={{ padding: '0 12px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Bantuan</div>}
+              {showExpanded && <div style={{ padding: '0 12px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Bantuan</div>}
               <Link
                 id="menu-guide"
                 href="/guide"
                 className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
-                title={isSidebarCollapsed ? "Panduan" : undefined}
+                title={!showExpanded ? "Panduan" : undefined}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <BookOpen size={20} style={{ flexShrink: 0 }} />
-                {!isSidebarCollapsed && <span className={styles.navText}>Panduan</span>}
+                {showExpanded && <span className={styles.navText}>Panduan</span>}
               </Link>
             </div>
           </nav>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-          {!isSidebarCollapsed ? (
+          {showExpanded ? (
             <div style={{
               background: 'var(--input-bg)',
               padding: '12px',
@@ -341,23 +355,19 @@ export default function Sidebar() {
             </div>
           )}
 
-          <IdleTimer isSidebarCollapsed={isSidebarCollapsed} />
-
-
-
-
+          <IdleTimer isSidebarCollapsed={!showExpanded} />
 
           <button
             onClick={toggleTheme}
             className={`btn ${styles.navItem}`}
-            style={{ justifyContent: isSidebarCollapsed ? 'center' : 'space-between', width: '100%', cursor: 'pointer' }}
-            title={isSidebarCollapsed ? (theme === 'dark' ? 'Mode Gelap' : 'Mode Terang') : undefined}
+            style={{ justifyContent: !showExpanded ? 'center' : 'space-between', width: '100%', cursor: 'pointer' }}
+            title={!showExpanded ? (theme === 'dark' ? 'Mode Gelap' : 'Mode Terang') : undefined}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               {theme === 'dark' ? <Moon size={20} color="#f59e0b" style={{ flexShrink: 0 }} /> : <Sun size={20} color="#f59e0b" style={{ flexShrink: 0 }} />}
-              {!isSidebarCollapsed && <span className={styles.navText}>{theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}</span>}
+              {showExpanded && <span className={styles.navText}>{theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}</span>}
             </div>
-            {!isSidebarCollapsed && (
+            {showExpanded && (
               <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: 'var(--border-color)', color: 'var(--text-secondary)' }}>
                 {theme === 'dark' ? 'Dark' : 'Light'}
               </span>
@@ -367,13 +377,12 @@ export default function Sidebar() {
           <button
             onClick={handleLogout}
             className={`btn ${styles.navItem} ${styles.logoutBtn}`}
-            style={{ justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
-            title={isSidebarCollapsed ? 'Keluar' : undefined}
+            style={{ justifyContent: !showExpanded ? 'center' : 'flex-start' }}
+            title={!showExpanded ? 'Keluar' : undefined}
           >
             <LogOut size={20} style={{ flexShrink: 0 }} />
-            {!isSidebarCollapsed && <span className={styles.navText}>Keluar</span>}
+            {showExpanded && <span className={styles.navText}>Keluar</span>}
           </button>
-
 
         </div>
       </div>

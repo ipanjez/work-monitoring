@@ -32,14 +32,20 @@ export default function ProfileClient() {
   useEffect(() => {
     // Fetch user profile from API
     fetch('/api/users/profile')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal memuat profil');
+        return res.json();
+      })
       .then(data => {
         if (data.name) setProfileName(data.name);
         if (data.email) setProfileEmail(data.email || '');
         if (data.npk) setProfileNpk(data.npk);
         if (data.image) setProfileImage(data.image);
       })
-      .catch(e => console.error(e));
+      .catch(e => {
+        console.error(e);
+        toast.error('Gagal mengambil data profil dari server.');
+      });
   }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {

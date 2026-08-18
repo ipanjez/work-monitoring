@@ -570,7 +570,9 @@ export default function HelpSupportButton() {
             title: 'Master Status Pekerjaan',
             description: 'Atur tahapan progress kerja (Kanban columns). Anda dapat menambah status baru, menyusun urutan prioritas kolom, serta memetakan bobot persentase progress default masing-masing status.',
             side: 'bottom'
+          }
         },
+        {
           element: '#settings-priorities',
           popover: {
             title: 'Master Prioritas Pekerjaan',

@@ -42,7 +42,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   // Sync profile photo (image) and name changes to master settings (master_pic_avatars)
   try {
-    const settingsRecord = await prisma.setting.findUnique({
+    const settingsRecord = await prisma.appSetting.findUnique({
       where: { key: 'master_pic_avatars' }
     });
     let avatars: Record<string, string> = {};
@@ -61,14 +61,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       avatars[user.name || ''] = user.image;
     }
 
-    await prisma.setting.upsert({
+    await prisma.appSetting.upsert({
       where: { key: 'master_pic_avatars' },
       update: { value: JSON.stringify(avatars) },
       create: { key: 'master_pic_avatars', value: JSON.stringify(avatars) }
     });
 
     // Also sync the name change in master_pics list
-    const picsRecord = await prisma.setting.findUnique({
+    const picsRecord = await prisma.appSetting.findUnique({
       where: { key: 'master_pics' }
     });
     if (picsRecord && picsRecord.value) {
@@ -78,7 +78,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       } else if (user.name && !pics.includes(user.name)) {
         pics.push(user.name);
       }
-      await prisma.setting.update({
+      await prisma.appSetting.update({
         where: { key: 'master_pics' },
         data: { value: JSON.stringify(pics) }
       });
