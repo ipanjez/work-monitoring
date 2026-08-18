@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
 import { exportTaskPdf } from '@/utils/exportPdf';
+import TaskEmailModal from './TaskEmailModal';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   if (!logs || logs.length === 0) return null;
@@ -44,9 +45,8 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDuplicate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
-  const userRole: string = (session?.user as any)?.role || 'PIC';
-
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig | null>(null);
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
@@ -60,6 +60,9 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isSendingMail, setIsSendingMail] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [appName, setAppName] = useState('DeptMonitor');
+  const [deptName, setDeptName] = useState('MRK');
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
   const [picEmails, setPicEmails] = useState<Record<string, string>>({});
@@ -78,6 +81,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         const data = await res.json();
         if (data.max_file_size_mb) setMaxFileSizeMb(Number(data.max_file_size_mb));
         if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(Number(data.max_task_files_size_mb));
+        if (data.dept_name) setDeptName(data.dept_name);
+        if (data.app_name) setAppName(data.app_name);
       } catch (err) {
         console.error('Failed to load settings:', err);
       }
@@ -361,14 +366,9 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     <FileDown size={16} />
                   </button>
 
-                  <a
+                  <button
                     className="btn"
-                    href={canSendMail ? mailtoLink : '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => {
-                      if (!canSendMail) e.preventDefault();
-                    }}
+                    onClick={() => setIsEmailModalOpen(true)}
                     style={{
                       padding: '6px',
                       borderRadius: '6px',
@@ -378,14 +378,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       background: '#3b82f6',
                       color: 'white',
                       border: 'none',
-                      cursor: canSendMail ? 'pointer' : 'not-allowed',
-                      opacity: canSendMail ? 1 : 0.6,
-                      textDecoration: 'none'
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
                     }}
-                    title="Kirim Email ke PIC"
+                    title="Kirim & Salin Format Email Pekerjaan (HTML & Teks)"
                   >
                     <Mail size={16} />
-                  </a>
+                  </button>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
@@ -782,6 +781,15 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
           </div>
         </motion.div>
       </div>
+
+      <TaskEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        task={task}
+        picEmails={picEmails}
+        appName={appName}
+        deptName={deptName}
+      />
     </AnimatePresence>
   );
 }
