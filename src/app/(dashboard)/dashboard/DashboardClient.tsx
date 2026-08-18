@@ -29,9 +29,6 @@ import { exportToRichExcel } from '@/utils/excelExport';
 import { picAvatarXAxisPlugin, getPicAvatarXAxisConfig } from '@/utils/chartAvatarPlugin';
 import { useTheme } from '@/context/ThemeContext';
 import Avatar from '@/components/Avatar';
-import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
 import FileViewer from '@/components/FileViewer';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
@@ -39,6 +36,7 @@ import UniversalActionBar from '@/components/UniversalActionBar';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { useTaskModal } from '@/context/TaskModalContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -97,13 +95,8 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
   
-  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
-  const [previewFile, setPreviewFile] = useState<any | null>(null);
+  const { openDetail } = useTaskModal();
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<any>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -129,183 +122,6 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     window.addEventListener('tasksUpdated', loadMasterData);
     return () => window.removeEventListener('tasksUpdated', loadMasterData);
   }, []);
-
-  useEffect(() => {
-    if (selectedTaskForDetail) {
-      const updated = tasks.find(t => t.id === selectedTaskForDetail.id);
-      if (updated && updated !== selectedTaskForDetail) {
-        setSelectedTaskForDetail(updated);
-      }
-    }
-  }, [tasks, selectedTaskForDetail]);
-
-  const handleOpenEditModal = (task: any) => {
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        parsedSubTasks = JSON.parse(task.subTasksJson);
-      } catch (e) {}
-    }
-    
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    if (task.isRepetitive && !task.repetisi) repetisiValue = 'Harian';
-
-    setEditingTask({
-      ...task,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      repetisi: repetisiValue,
-      startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
-      endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleOpenDuplicateModal = (task: any) => {
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
-
-    const startStr = typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0];
-    const endStr = typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0];
-
-    setEditingTask({
-      nama: task.nama,
-      pic: task.pic,
-      status: task.status,
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      repetisi: task.repetisi || 'Tidak Berulang',
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setSelectedTaskForDetail(null);
-    setIsEditModalOpen(true);
-    toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
-  };
-
-  const handleSaveModal = async (payloadData: any) => {
-    setIsSaving(true);
-    try {
-      const isNew = !payloadData.id;
-      const url = isNew ? '/api/tasks' : `/api/tasks/${payloadData.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-
-      const filteredExtraPics = payloadData.additionalPicsList ? payloadData.additionalPicsList.filter(Boolean) : [];
-      const filesListToSave = payloadData.filesList && payloadData.filesList.length > 0 
-        ? payloadData.filesList 
-        : (payloadData.fileUrl ? [{ url: payloadData.fileUrl, name: payloadData.fileName || 'File Lampiran' }] : []);
-
-      let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
-      
-      // Auto-update task progress if subtasks exist
-      let taskProgress = payloadData.progress || 0;
-      if (processedSubTasks.length > 0) {
-        const completed = processedSubTasks.filter((st: any) => st.status === 'Done').length;
-        taskProgress = Math.round((completed / processedSubTasks.length) * 100);
-      } else {
-        if (payloadData.status === 'Done') taskProgress = 100;
-        else if (payloadData.status === 'To Do') taskProgress = 0;
-      }
-
-      let historyLogs = [];
-      const originalTask = tasks.find(t => t.id === payloadData.id);
-      if (originalTask) {
-        if (originalTask.historyLogsJson) {
-           try { historyLogs = JSON.parse(originalTask.historyLogsJson); } catch(e){}
-        }
-        historyLogs.push({
-           action: 'Pekerjaan diubah melalui Edit Modal dari Dashboard',
-           details: 'Data pekerjaan diperbarui',
-           timestamp: new Date().toISOString()
-        });
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payloadData,
-          progress: taskProgress,
-          filesJson: JSON.stringify(filesListToSave),
-          additionalPics: JSON.stringify(filteredExtraPics),
-          subTasksJson: JSON.stringify(processedSubTasks),
-          historyLogsJson: JSON.stringify(historyLogs)
-        })
-      });
-
-      if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
-      
-      const savedTask = await res.json();
-      setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
-      
-      toast.success('Pekerjaan berhasil diperbarui!');
-      if (addActivityLog) {
-         addActivityLog('EDIT_TASK', 'Pekerjaan Diubah', `Pekerjaan "${payloadData.nama}" telah diubah dari Dashboard`, 'info');
-      }
-      
-      setIsEditModalOpen(false);
-      
-      // Trigger update
-      router.refresh();
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      
-    } catch (err) {
-      console.error(err);
-      toast.error('Terjadi kesalahan saat menyimpan');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteTask = async (id: number | string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini? Tindakan ini tidak dapat dibatalkan.')) return;
-    const toastId = toast.loading('Menghapus pekerjaan...');
-    try {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Gagal menghapus pekerjaan');
-      
-      setTasks(prev => prev.filter(t => String(t.id) !== String(id)));
-      setSelectedTaskForDetail(null);
-      toast.success('Pekerjaan berhasil dihapus', { id: toastId });
-      
-      if (addActivityLog) {
-        addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan telah dihapus dari Dashboard`, 'warning');
-      }
-      
-      router.refresh();
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-    } catch (error: any) {
-      toast.error(error.message || 'Terjadi kesalahan saat menghapus pekerjaan', { id: toastId });
-    }
-  };
 
   const categories = Array.from(new Set([...masterCategories, ...tasks.map(t => t.kategori || 'Umum')])).filter(Boolean);
   const pics = Array.from(new Set([...masterPics, ...tasks.map(t => t.pic), ...(session?.user?.name ? [session.user.name] : [])])).filter(Boolean);
@@ -1184,7 +1000,30 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {urgentTasks.map(t => (
-                <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-color)', borderRadius: '10px', flexWrap: 'wrap', gap: '12px' }}>
+                <div 
+                  key={t.id} 
+                  className="table-row-hover"
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '12px 16px', 
+                    background: 'var(--surface-color)', 
+                    borderRadius: '10px', 
+                    flexWrap: 'wrap', 
+                    gap: '12px',
+                    cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default',
+                    border: '1px solid var(--border-color)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => {
+                    if (hasPermission(roleConfig, 'view_detail', userRole)) {
+                      openDetail(t);
+                    } else {
+                      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                    }
+                  }}
+                >
                   <div>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>{t.nama}</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
@@ -1287,7 +1126,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                       }} 
                       onClick={() => {
                         if (hasPermission(roleConfig, 'view_detail', userRole)) {
-                          setSelectedTaskForDetail(t);
+                          openDetail(t);
                         } else {
                           toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
                         }
@@ -1398,36 +1237,6 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           </div>
         </div>
       </div>
-      
-      {selectedTaskForDetail && (
-        <TaskDetailModal 
-          task={selectedTaskForDetail as any}
-          onClose={() => setSelectedTaskForDetail(null)}
-          setPreviewFile={setPreviewFile}
-          onDuplicate={() => {
-            handleOpenDuplicateModal(selectedTaskForDetail);
-          }}
-          onEdit={() => {
-            setSelectedTaskForDetail(null);
-            handleOpenEditModal(selectedTaskForDetail);
-          }}
-          onDelete={() => handleDeleteTask(selectedTaskForDetail.id)}
-        />
-      )}
-      
-      <TaskAddEditModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        taskToEdit={editingTask}
-        onSave={handleSaveModal}
-        formCategoryOptions={masterCategories}
-        formPicOptions={masterPics}
-        formStatusOptions={masterStatuses}
-        formPriorityOptions={masterPriorities}
-        setPreviewFile={setPreviewFile}
-      />
-      
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </motion.div>
   );
 }

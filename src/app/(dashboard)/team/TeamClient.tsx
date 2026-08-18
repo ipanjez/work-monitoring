@@ -22,11 +22,9 @@ import {
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
-import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { useTaskModal } from '@/context/TaskModalContext';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import Avatar from '@/components/Avatar';
 import { useSession } from 'next-auth/react';
@@ -49,12 +47,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
   const [taskTabFilter, setTaskTabFilter] = useState<TaskTabFilter>('all');
+  const { openDetail, openCreate } = useTaskModal();
   
-  const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -67,15 +61,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   useEffect(() => {
     setLocalTasks(initialTasks);
   }, [initialTasks]);
-
-  useEffect(() => {
-    if (detailTask) {
-      const updated = localTasks.find(t => t.id === detailTask.id);
-      if (updated && updated !== detailTask) {
-        setDetailTask(updated);
-      }
-    }
-  }, [localTasks, detailTask]);
 
   useEffect(() => {
     const loadMasterPics = () => {
@@ -226,111 +211,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const totalTeamDone = filteredTasks.filter(t => t.status === 'Done' || t.status === 'Selesai').length;
   const teamDoneRate = totalTeamTasks > 0 ? Math.round((totalTeamDone / totalTeamTasks) * 100) : 0;
 
-  const handleSaveEdit = async () => {
-    setLoading(true);
-    try {
-      const isNew = !editForm.id;
-      const url = isNew ? '/api/tasks' : `/api/tasks/${editForm.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-
-      const payload = {
-        ...editForm,
-        startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
-        endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
-      };
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
-      const savedTask = await res.json();
-      
-      if (isNew) {
-        setLocalTasks(prev => [savedTask, ...prev]);
-      } else {
-        setLocalTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
-      }
-      setDetailTask(savedTask);
-      setIsEditing(false);
-      toast.success(isNew ? 'Pekerjaan baru berhasil dibuat' : 'Pekerjaan berhasil diperbarui');
-      
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-    } catch (error) {
-      console.error(error);
-      toast.error('Terjadi kesalahan saat menyimpan data');
-    } finally {
-      setLoading(false);
+  const handleAddNewTaskForPic = (picName: string) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah pekerjaan baru.');
+      return;
     }
-  };
-
-  const handleDuplicate = (task: Task) => {
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = JSON.parse(task.subTasksJson);
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
-
-    const startStr = task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const endStr = task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-    setEditForm({
-      nama: task.nama,
-      pic: task.pic,
-      status: task.status,
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      repetisi: repetisiValue,
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks
-    } as any);
-    setDetailTask(null);
-    setIsEditing(true);
-    toast.success('Pekerjaan berhasil diduplikasi.');
-  };
-
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini? Tindakan ini tidak dapat dibatalkan.')) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Gagal menghapus pekerjaan');
-      
-      setLocalTasks(prev => prev.filter(t => t.id !== id));
-      if (detailTask && detailTask.id === id) setDetailTask(null);
-      
-      toast.success('Pekerjaan berhasil dihapus');
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'Terjadi kesalahan');
-    } finally {
-      setLoading(false);
-    }
+    openCreate({ pic: picName });
   };
 
   const handleExportExcel = async () => {
@@ -404,29 +290,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     } catch (e) {
       console.error(e);
     }
-  };
-
-  const handleAddNewTaskForPic = (picName: string) => {
-    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
-      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah pekerjaan baru.');
-      return;
-    }
-    setEditForm({
-      nama: '',
-      pic: picName,
-      status: masterStatuses[0] || 'To Do',
-      prioritas: 'Medium',
-      kategori: 'Umum',
-      progress: 0,
-      deskripsi: '',
-      catatan: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-      filesList: [],
-      additionalPicsList: [],
-      subTasksList: []
-    });
-    setIsEditing(true);
   };
 
   return (
@@ -773,9 +636,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                           }} 
                           onClick={() => { 
                             if (hasPermission(roleConfig, 'view_detail', userRole)) {
-                              setDetailTask(t); 
-                              setEditForm(t); 
-                              setIsEditing(false); 
+                              openDetail(t);
                             }
                           }}
                         >
@@ -815,7 +676,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                             <button 
                               className="btn btn-secondary" 
                               style={{ padding: '4px 8px', fontSize: '11.5px' }} 
-                              onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}
+                              onClick={() => openDetail(t)}
                             >
                               Detail
                             </button>
@@ -829,51 +690,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           </div>
         </motion.div>
       )}
-
-      {/* Task Modals */}
-      <TaskDetailModal
-        task={detailTask}
-        onClose={() => setDetailTask(null)}
-        setPreviewFile={setPreviewFile}
-        onDuplicate={() => {
-          if (detailTask) handleDuplicate(detailTask);
-        }}
-        onEdit={() => {
-          let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
-          let parsedSubTasks: SubTask[] = [];
-          if (detailTask!.subTasksJson) {
-            try {
-              parsedSubTasks = JSON.parse(detailTask!.subTasksJson);
-            } catch (e) {}
-          }
-
-          setEditForm({
-            ...detailTask!,
-            repetisi: repetisiValue,
-            startDate: detailTask!.startDate ? new Date(detailTask!.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            endDate: detailTask!.endDate ? new Date(detailTask!.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            isCustomCategory: false,
-            isCustomPic: false,
-            filesList: getTaskFiles(detailTask!),
-            additionalPicsList: getAdditionalPics(detailTask!),
-            subTasksList: parsedSubTasks
-          });
-          setIsEditing(true);
-        }}
-        onDelete={() => handleDeleteTask(detailTask!.id)}
-      />
-
-      <TaskAddEditModal
-        isOpen={isEditing}
-        onClose={() => setIsEditing(false)}
-        taskToEdit={editForm as Task}
-        onSave={handleSaveEdit}
-        formPicOptions={[...masterPics]}
-        formCategoryOptions={masterCategories} 
-        setPreviewFile={setPreviewFile}
-      />
-      
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );
 }
