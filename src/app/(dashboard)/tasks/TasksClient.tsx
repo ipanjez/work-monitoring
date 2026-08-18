@@ -82,6 +82,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   // In-App File Preview Modal State
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const {
     masterColors,
@@ -876,11 +877,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const handleExportPDF = async () => {
     try {
+      setIsExportingPdf(true);
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
       const element = document.getElementById('task-table-container');
-      if (!element) return;
+      if (!element) {
+        setIsExportingPdf(false);
+        return;
+      }
 
       const width = element.scrollWidth;
       const height = element.scrollHeight;
@@ -915,6 +920,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } catch (err) {
       console.error('PDF Export error:', err);
       toast.error('Gagal mengekspor PDF');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -1039,18 +1046,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
+          isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          tasks={processedTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
-        >
-          <button
-            className="btn"
-            onClick={handleExportAllICS}
-            title="Export .ics untuk semua pekerjaan"
-            style={{ backgroundColor: '#f59e0b', color: '#fff', border: 'none', borderRadius: 0, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)' }}
-          >
-            <CalendarDays size={18} />
-          </button>
-        </UniversalActionBar>
+        />
       </UniversalFilterBar>
 
       {/* Main Table with Sortable Columns */}

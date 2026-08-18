@@ -547,6 +547,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>

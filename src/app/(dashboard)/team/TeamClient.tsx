@@ -495,6 +495,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
+          tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
