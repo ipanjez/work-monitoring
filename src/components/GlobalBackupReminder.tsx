@@ -5,16 +5,26 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { Task } from '@/utils/taskUtils';
 import BackupReminderModal from '@/components/BackupReminderModal';
+import { useMaster } from '@/context/MasterContext';
+import { hasPermission } from '@/lib/permissions';
 
 export default function GlobalBackupReminder() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const { roleConfig } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const [reminderDays, setReminderDays] = useState<number>(0);
   const [lastBackupDate, setLastBackupDate] = useState<string>('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
+  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const canBackup = hasPermission(roleConfig, 'database_backup', userRole);
+
   useEffect(() => {
     if (status !== 'authenticated') return;
+    if (!canBackup) {
+      setIsOpen(false);
+      return;
+    }
 
     const isDismissed = typeof window !== 'undefined' && sessionStorage.getItem('dismissed_backup_reminder') === 'true';
     if (isDismissed) return;
@@ -66,7 +76,7 @@ export default function GlobalBackupReminder() {
     };
 
     checkBackupStatus();
-  }, [status]);
+  }, [status, canBackup]);
 
   const handleDismiss = () => {
     if (typeof window !== 'undefined') {
@@ -99,6 +109,8 @@ export default function GlobalBackupReminder() {
       toast.error(err.message || 'Gagal mengunduh backup');
     }
   };
+
+  if (!canBackup) return null;
 
   return (
     <BackupReminderModal
