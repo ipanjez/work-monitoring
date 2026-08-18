@@ -9,25 +9,26 @@ import {
   FileText, BarChart3, Clock, Shield, Download, Upload,
   MousePointerClick, ArrowRight, Zap, Eye, Bell, Search,
   Filter, Globe, Palette, Database, UserCheck, Lock,
-  FileSpreadsheet, MapPin, Tag, Copy, Sparkles, Sliders
+  FileSpreadsheet, MapPin, Tag, Copy, Sparkles, Sliders,
+  ChevronsUpDown, Check, HelpCircle
 } from 'lucide-react';
 
 const FeatureVisual = ({ children, gradient, interactiveMockup }: { children: React.ReactNode; gradient: string; interactiveMockup?: React.ReactNode }) => (
   <div style={{
-    marginTop: '20px',
-    padding: '24px',
-    borderRadius: '16px',
+    marginTop: '16px',
+    padding: '20px',
+    borderRadius: '14px',
     background: gradient,
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px',
+    gap: '20px',
     border: '1px solid var(--border-color)',
     alignItems: 'center'
   }}>
     <div style={{
       display: 'flex',
       flexWrap: 'wrap',
-      gap: '12px',
+      gap: '10px',
       justifyContent: 'center',
       alignItems: 'center',
       width: '100%'
@@ -35,7 +36,7 @@ const FeatureVisual = ({ children, gradient, interactiveMockup }: { children: Re
       {children}
     </div>
     {interactiveMockup && (
-      <div style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-color)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+      <div style={{ width: '100%', maxWidth: '480px', background: 'var(--bg-color)', borderRadius: '12px', padding: '14px', border: '1px solid var(--border-color)', boxShadow: '0 8px 20px -4px rgba(0,0,0,0.1)' }}>
         {interactiveMockup}
       </div>
     )}
@@ -44,26 +45,23 @@ const FeatureVisual = ({ children, gradient, interactiveMockup }: { children: Re
 
 const InteractiveKanbanMockup = () => {
   return (
-    <div style={{ display: 'flex', gap: '10px', height: '180px' }}>
-      {/* Column 1 */}
-      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div style={{ display: 'flex', gap: '8px', height: '150px' }}>
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>To Do</div>
         <motion.div 
-          style={{ background: 'var(--bg-color)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', height: '60px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}
-          animate={{ x: [0, 0, 160, 160, 320, 320, 0], y: [0, 0, 0, 0, 0, 0, 0] }}
+          style={{ background: 'var(--bg-color)', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', height: '52px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+          animate={{ x: [0, 0, 140, 140, 280, 280, 0], y: [0, 0, 0, 0, 0, 0, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <div style={{ width: '40%', height: '6px', background: '#3b82f6', borderRadius: '3px', marginBottom: '8px' }} />
+          <div style={{ width: '40%', height: '5px', background: '#3b82f6', borderRadius: '3px', marginBottom: '6px' }} />
           <div style={{ width: '80%', height: '4px', background: 'var(--border-color)', borderRadius: '2px', marginBottom: '4px' }} />
-          <div style={{ width: '60%', height: '4px', background: 'var(--border-color)', borderRadius: '2px' }} />
+          <div style={{ width: '55%', height: '4px', background: 'var(--border-color)', borderRadius: '2px' }} />
         </motion.div>
       </div>
-      {/* Column 2 */}
-      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>In Progress</div>
       </div>
-      {/* Column 3 */}
-      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ flex: 1, background: 'var(--surface-color)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Done</div>
       </div>
     </div>
@@ -72,11 +70,11 @@ const InteractiveKanbanMockup = () => {
 
 const InteractiveChartMockup = () => {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '140px', padding: '20px 10px 0 10px' }}>
-      {[40, 70, 45, 90, 60].map((h, i) => (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '120px', padding: '16px 8px 0 8px' }}>
+      {[35, 75, 50, 95, 65].map((h, i) => (
         <motion.div
           key={i}
-          style={{ width: '15%', background: 'linear-gradient(to top, #3b82f6, #60a5fa)', borderRadius: '4px 4px 0 0' }}
+          style={{ width: '14%', background: 'linear-gradient(to top, #3b82f6, #60a5fa)', borderRadius: '4px 4px 0 0' }}
           animate={{ height: [0, h, h, 0] }}
           transition={{ duration: 4, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
         />
@@ -90,22 +88,22 @@ const MiniCard = ({ icon, label, color }: { icon: React.ReactNode; label: string
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '6px',
-    padding: '14px 18px',
-    borderRadius: '12px',
+    gap: '4px',
+    padding: '10px 14px',
+    borderRadius: '10px',
     background: 'var(--surface-color)',
     border: '1px solid var(--border-color)',
-    minWidth: '100px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    transition: 'transform 0.2s, box-shadow 0.2s',
+    minWidth: '85px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+    textAlign: 'center'
   }}>
     <div style={{ color, display: 'flex' }}>{icon}</div>
-    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>{label}</span>
+    <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>{label}</span>
   </div>
 );
 
 const FlowArrow = () => (
-  <ArrowRight size={20} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
+  <ArrowRight size={16} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
 );
 
 const StepBadge = ({ step }: { step: number }) => (
@@ -113,12 +111,12 @@ const StepBadge = ({ step }: { step: number }) => (
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '24px',
-    height: '24px',
+    width: '22px',
+    height: '22px',
     borderRadius: '50%',
     background: 'var(--accent-primary)',
     color: 'white',
-    fontSize: '12px',
+    fontSize: '11.5px',
     fontWeight: 700,
     flexShrink: 0
   }}>
@@ -128,143 +126,170 @@ const StepBadge = ({ step }: { step: number }) => (
 
 const TipBox = ({ children }: { children: React.ReactNode }) => (
   <div style={{
-    marginTop: '16px',
-    padding: '14px 16px',
-    borderRadius: '12px',
+    marginTop: '14px',
+    padding: '12px 14px',
+    borderRadius: '10px',
     background: 'rgba(245, 158, 11, 0.08)',
     border: '1px solid rgba(245, 158, 11, 0.2)',
     display: 'flex',
     gap: '10px',
     alignItems: 'flex-start',
-    fontSize: '13px',
+    fontSize: '12.5px',
     color: 'var(--text-primary)',
     lineHeight: 1.5
   }}>
-    <Zap size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+    <Zap size={15} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
     <div>{children}</div>
   </div>
 );
 
 export default function GuidePage() {
-  const [activeAccordion, setActiveAccordion] = useState<string | null>('auth');
+  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
+    'auth': true,
+    'dashboard': false,
+    'monitoring-board': false,
+    'daftar-pekerjaan': false,
+    'smart-add': false,
+    'excel-import-export': false,
+    'kalender': false,
+    'tim': false,
+    'settings': false,
+  });
+
+  const [searchQuery, setSearchQuery] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
 
   const toggleAccordion = (id: string) => {
-    setActiveAccordion(activeAccordion === id ? null : id);
+    setOpenAccordions(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleToggleAll = () => {
+    const anyOpen = Object.values(openAccordions).some(v => v);
+    const newState: Record<string, boolean> = {};
+    sections.forEach(s => {
+      newState[s.id] = !anyOpen;
+    });
+    setOpenAccordions(newState);
   };
 
   const sections = [
     {
       id: 'auth',
-      icon: <KeyRound size={24} />,
+      shortTitle: 'Akun & Login',
+      icon: <KeyRound size={20} />,
       color: '#8b5cf6',
       bg: 'rgba(139, 92, 246, 0.1)',
       title: '1. Login & Manajemen Akun',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Aplikasi menggunakan sistem autentikasi berbasis <strong>NPK (Nomor Pokok Karyawan)</strong> yang aman dan terintegrasi dengan sistem peran (*Role-Based Access Control*):
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={1} />
               <div><strong>Halaman Login:</strong> Masukkan NPK dan Password yang telah didaftarkan oleh Administrator, lalu klik <em>Masuk</em>.</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={2} />
               <div><strong>Lupa Password:</strong> Klik tautan <em>Lupa Password?</em> pada layar login. Masukkan NPK Anda untuk mengirim permintaan reset langsung ke panel Administrator.</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={3} />
               <div><strong>Profil & Keamanan:</strong> Klik foto profil/nama di pojok kanan atas untuk memperbarui nama tampilan, email notifikasi, avatar foto, dan mengganti password pribadi.</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={4} />
               <div><strong>Tingkatan Peran (Role):</strong> Sistem membagi peran menjadi <em>ADMIN</em> (kelola penuh), <em>MEMBER</em> (tambah, edit, dan kelola tugas), serta <em>VIEWER</em> (khusus monitoring).</div>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(139,92,246,0.05), rgba(59,130,246,0.05))">
-            <MiniCard icon={<Lock size={20} />} label="Input NPK" color="#8b5cf6" />
+            <MiniCard icon={<Lock size={18} />} label="Input NPK" color="#8b5cf6" />
             <FlowArrow />
-            <MiniCard icon={<KeyRound size={20} />} label="Verifikasi Sesi" color="#3b82f6" />
+            <MiniCard icon={<KeyRound size={18} />} label="Verifikasi Sesi" color="#3b82f6" />
             <FlowArrow />
-            <MiniCard icon={<UserCheck size={20} />} label="Akses Dashboard" color="#10b981" />
+            <MiniCard icon={<UserCheck size={18} />} label="Dashboard" color="#10b981" />
           </FeatureVisual>
           <TipBox>
-            <strong>Tips:</strong> Jika akun berstatus <em>PENDING</em>, hubungi Administrator untuk aktivasi akun dan penetapan role.
+            <strong>Tips:</strong> Jika akun Anda berstatus <em>PENDING</em>, hubungi Administrator untuk aktivasi akun dan penetapan role.
           </TipBox>
         </>
       )
     },
     {
       id: 'dashboard',
-      icon: <LayoutDashboard size={24} />,
+      shortTitle: 'Dashboard KPI',
+      icon: <LayoutDashboard size={20} />,
       color: '#3b82f6',
       bg: 'rgba(59, 130, 246, 0.1)',
       title: '2. Dashboard & Analitik Kinerja',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Dashboard adalah <strong>pusat visualisasi dan metrik kinerja</strong> yang menyajikan ringkasan progres secara real-time:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Kartu KPI Utama:</strong> Menampilkan total pekerjaan aktif, pekerjaan selesai (Done), pekerjaan tertunda, dan perbandingan persentase performa terhadap periode sebelumnya.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Filter Universal:</strong> Menyaring data secara instan berdasarkan rentang tanggal, PIC, kategori, status, dan tingkat prioritas.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Grafik Tren & Distribusi Beban:</strong> Visualisasi grafik penyelesaian bulanan dan pembagian beban kerja per PIC dalam bentuk diagram interaktif.</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Grafik Tren & Distribusi:</strong> Visualisasi grafik penyelesaian bulanan dan pembagian beban kerja per PIC dalam bentuk diagram interaktif.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Tabel Pekerjaan Terkini:</strong> Daftar cepat tugas prioritas dengan status progress, tenggat waktu, dan aksi sekali klik untuk melihat detail.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(59,130,246,0.05), rgba(16,185,129,0.05))" interactiveMockup={<InteractiveChartMockup />}>
-            <MiniCard icon={<BarChart3 size={20} />} label="Grafik Tren" color="#3b82f6" />
-            <MiniCard icon={<Filter size={20} />} label="Filter Universal" color="#8b5cf6" />
-            <MiniCard icon={<Eye size={20} />} label="Detail Modal" color="#10b981" />
-            <MiniCard icon={<Search size={20} />} label="Pencarian" color="#f59e0b" />
+            <MiniCard icon={<BarChart3 size={18} />} label="Grafik Tren" color="#3b82f6" />
+            <MiniCard icon={<Filter size={18} />} label="Filter Data" color="#8b5cf6" />
+            <MiniCard icon={<Eye size={18} />} label="Modal Detail" color="#10b981" />
+            <MiniCard icon={<Search size={18} />} label="Pencarian" color="#f59e0b" />
           </FeatureVisual>
         </>
       )
     },
     {
       id: 'monitoring-board',
-      icon: <Kanban size={24} />,
+      shortTitle: 'Kanban Board',
+      icon: <Kanban size={20} />,
       color: '#f59e0b',
       bg: 'rgba(245, 158, 11, 0.1)',
       title: '3. Monitoring Board (Kanban)',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Papan <strong>Kanban visual</strong> sangat efektif digunakan untuk rapat koordinasi rutin dan melacak tahapan eksekusi:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Drag & Drop Cepat:</strong> Pindahkan kartu pekerjaan antar kolom status (To Do, In Progress, Review, Done) secara lancar melalui gesture geser.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Informasi Lengkap pada Kartu:</strong> Setiap kartu menampilkan lencana prioritas berwarna, foto PIC utama, jumlah PIC tambahan, indikator subtask, dan batas tenggat waktu.</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Informasi Lengkap pada Kartu:</strong> Setiap kartu menampilkan lencana prioritas berwarna, foto PIC utama, badge jumlah PIC tambahan, checklist subtask, dan batas tenggat.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Opsi Pengurutan Kolom:</strong> Atur urutan kartu di setiap kolom berdasarkan Tenggat Terdekat, Prioritas Tertinggi, atau Pembaruan Terbaru.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.05))" interactiveMockup={<InteractiveKanbanMockup />}>
-            <MiniCard icon={<ListTodo size={20} />} label="To Do" color="#6b7280" />
+            <MiniCard icon={<ListTodo size={18} />} label="To Do" color="#6b7280" />
             <FlowArrow />
-            <MiniCard icon={<Clock size={20} />} label="In Progress" color="#f59e0b" />
+            <MiniCard icon={<Clock size={18} />} label="In Progress" color="#f59e0b" />
             <FlowArrow />
-            <MiniCard icon={<CheckCircle2 size={20} />} label="Done" color="#10b981" />
+            <MiniCard icon={<CheckCircle2 size={18} />} label="Done" color="#10b981" />
           </FeatureVisual>
           <TipBox>
             <strong>Tips:</strong> Memindahkan kartu ke kolom &quot;Done&quot; otomatis mengubah progress pekerjaan menjadi 100% dan mencatat riwayat log penyelesaian.
@@ -274,81 +299,83 @@ export default function GuidePage() {
     },
     {
       id: 'daftar-pekerjaan',
-      icon: <ListTodo size={24} />,
+      shortTitle: 'Daftar Pekerjaan',
+      icon: <ListTodo size={20} />,
       color: '#10b981',
       bg: 'rgba(16, 185, 129, 0.1)',
       title: '4. Daftar Pekerjaan & Sub-Tugas',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Halaman <strong>Daftar Pekerjaan</strong> menyediakan tabel komprehensif untuk manajemen tugas harian, checklist sub-tugas, dan log audit:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Sub-Tugas (Checklist Bertingkat):</strong> Bagi pekerjaan besar menjadi sub-pekerjaan spesifik. Setiap sub-tugas dapat memiliki PIC mandiri, PIC tambahan, dan tanggal tenggat waktu tersendiri.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Sub-Tugas (Checklist Bertingkat):</strong> Pecah pekerjaan besar menjadi sub-pekerjaan spesifik. Setiap sub-tugas memiliki PIC mandiri dan tanggal tenggat waktu tersendiri.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Multi-PIC & Tag Selector:</strong> Tetapkan 1 PIC Utama beserta beberapa PIC Tambahan dengan chip tag yang rapi dan terhubung ke Master Data.</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Multi-PIC & Tag Selector:</strong> Tetapkan 1 PIC Utama beserta banyak PIC Tambahan dengan chip tag yang rapi dan terhubung ke Master Data.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Multi-File Attachments:</strong> Unggah banyak dokumen eviden (PDF, Excel, Word, Gambar) ke satu pekerjaan dengan pratinjau file interaktif.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Duplikasi 1-ke-1:</strong> Tombol duplikasi menyalin seluruh data pekerjaan (termasuk sub-tugas dan PIC) untuk mempercepat pembuatan tugas berulang.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Edit Massal (Bulk Actions):</strong> Pilih beberapa pekerjaan untuk mengubah PIC, Kategori, Prioritas, atau Status secara serentak.</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Edit Massal (Bulk Actions):</strong> Centang beberapa baris untuk mengubah PIC, Kategori, Prioritas, atau Status secara serentak.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(16,185,129,0.05), rgba(59,130,246,0.05))">
-            <MiniCard icon={<FileText size={20} />} label="Detail Tugas" color="#10b981" />
-            <MiniCard icon={<MousePointerClick size={20} />} label="Edit Massal" color="#3b82f6" />
-            <MiniCard icon={<Copy size={20} />} label="Duplikasi" color="#f59e0b" />
-            <MiniCard icon={<Bell size={20} />} label="Email Reminder" color="#ef4444" />
+            <MiniCard icon={<FileText size={18} />} label="Detail Tugas" color="#10b981" />
+            <MiniCard icon={<MousePointerClick size={18} />} label="Edit Massal" color="#3b82f6" />
+            <MiniCard icon={<Copy size={18} />} label="Duplikasi" color="#f59e0b" />
+            <MiniCard icon={<Bell size={18} />} label="Email Reminder" color="#ef4444" />
           </FeatureVisual>
         </>
       )
     },
     {
       id: 'smart-add',
-      icon: <Zap size={24} />,
+      shortTitle: 'Smart Add (AI)',
+      icon: <Zap size={20} />,
       color: '#f59e0b',
       bg: 'rgba(245, 158, 11, 0.1)',
       title: '5. Tambah Cepat (Smart Add / AI Parser)',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Fitur <strong>Smart Add / AI Parser</strong> memungkinkan pembuatan banyak tugas sekaligus hanya dengan menyalin teks agenda, memo, atau notula rapat bebas:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={1} />
-              <div><strong>Salin & Tempel Teks:</strong> Tempel teks agenda dari WhatsApp, email, atau dokumen (contoh format memuat Judul, Hari/Tanggal, Waktu, Tempat/Zoom, PIC, Kategori).</div>
+              <div><strong>Salin & Tempel Teks:</strong> Tempel teks agenda dari WhatsApp, email, atau dokumen (memuat Judul, Hari/Tanggal, Waktu, Tempat/Zoom, PIC, Kategori).</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={2} />
               <div><strong>Ekstraksi Cerdas Otomatis:</strong> Parser otomatis mendeteksi Tanggal Mulai/Selesai, Jam Kerja, PIC Utama, PIC Tambahan, Master Lokasi, Kategori, dan Prioritas.</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={3} />
               <div><strong>Tinjau & Edit Cepat:</strong> Setiap pekerjaan ditampilkan dalam kartu yang dapat diedit langsung. Tersedia <em>Dropdown PIC Tambahan</em> dengan sistem tag chip dan <em>Dropdown Master Lokasi</em>.</div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
               <StepBadge step={4} />
               <div><strong>Aksi Massal & Simpan:</strong> Terapkan PIC atau Kategori ke seluruh baris yang diekstrak dengan 1 klik, lalu simpan semua ke database.</div>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(139,92,246,0.05))">
-            <MiniCard icon={<FileText size={20} />} label="Paste Teks" color="#f59e0b" />
+            <MiniCard icon={<FileText size={18} />} label="Paste Teks" color="#f59e0b" />
             <FlowArrow />
-            <MiniCard icon={<Sparkles size={20} />} label="AI Parser" color="#8b5cf6" />
+            <MiniCard icon={<Sparkles size={18} />} label="AI Parser" color="#8b5cf6" />
             <FlowArrow />
-            <MiniCard icon={<Database size={20} />} label="Simpan Sekaligus" color="#10b981" />
+            <MiniCard icon={<Database size={18} />} label="Simpan Sekaligus" color="#10b981" />
           </FeatureVisual>
           <TipBox>
             <strong>Tips:</strong> Manfaatkan tombol <em>Contoh Template Cepat</em> di dalam modal Smart Add untuk melihat contoh format teks yang optimal.
@@ -358,141 +385,145 @@ export default function GuidePage() {
     },
     {
       id: 'excel-import-export',
-      icon: <FileSpreadsheet size={24} />,
+      shortTitle: 'Rich Excel',
+      icon: <FileSpreadsheet size={20} />,
       color: '#10b981',
       bg: 'rgba(16, 185, 129, 0.1)',
       title: '6. Template Excel & Impor/Ekspor Data',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Aplikasi mendukung integrasi penuh dengan Microsoft Excel melalui format <strong>Rich Excel</strong> yang terhubung langsung ke Master Data:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Unduh Template Excel Interaktif:</strong> Template Excel yang diunduh sudah dilengkapi <em>Dropdown Data Validation</em> otomatis untuk PIC Utama, Kategori, Prioritas, Status, dan Master Lokasi.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Dukungan Sub-Pekerjaan & Multi-PIC di Excel:</strong> Anda dapat menulis sub-tugas dengan format <code>[Status] Nama Sub | PIC: Nama | Tenggat: YYYY-MM-DD</code> di dalam satu sel Excel (gunakan Alt+Enter untuk baris baru).</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Dukungan Sub-Pekerjaan & Multi-PIC:</strong> Tulis sub-tugas dengan format <code>[Status] Nama Sub | PIC: Nama | Tenggat: YYYY-MM-DD</code> di dalam satu sel Excel.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Pratinjau Impor Interaktif:</strong> Sebelum data Excel masuk ke database, modal pratinjau menampilkan tabel validasi baris lengkap dengan dropdown untuk mengubah lokasi atau menghapus baris keliru.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Ekspor Excel Berwarna:</strong> Ekspor data pekerjaan aktif ke Excel berformat rapi dengan pewarnaan sel dinamis sesuai warna tema status dan prioritas.</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Ekspor Excel Berwarna:</strong> Ekspor data pekerjaan aktif ke Excel berformat rapi dengan pewarnaan sel dinamis sesuai status dan prioritas.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(16,185,129,0.05), rgba(59,130,246,0.05))">
-            <MiniCard icon={<Download size={20} />} label="Unduh Template" color="#10b981" />
-            <MiniCard icon={<FileSpreadsheet size={20} />} label="Dropdown Validasi" color="#3b82f6" />
-            <MiniCard icon={<Upload size={20} />} label="Pratinjau Impor" color="#f59e0b" />
+            <MiniCard icon={<Download size={18} />} label="Unduh Template" color="#10b981" />
+            <MiniCard icon={<FileSpreadsheet size={18} />} label="Dropdown Validasi" color="#3b82f6" />
+            <MiniCard icon={<Upload size={18} />} label="Pratinjau Impor" color="#f59e0b" />
           </FeatureVisual>
         </>
       )
     },
     {
       id: 'kalender',
-      icon: <CalendarDays size={24} />,
+      shortTitle: 'Kalender & Sync',
+      icon: <CalendarDays size={20} />,
       color: '#06b6d4',
       bg: 'rgba(6, 182, 212, 0.1)',
       title: '7. Kalender & Integrasi Jadwal',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Pantau seluruh jadwal pekerjaan dalam tampilan <strong>kalender multi-mode</strong> yang fleksibel dan terintegrasi:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Tampilan Multi-Mode:</strong> Pilih mode tampilan Kalender Bulan, Minggu, Hari, atau format List Agenda sesuai preferensi.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Hari Libur Nasional Indonesia:</strong> Kalender secara otomatis mendeteksi dan menandai hari libur nasional serta cuti bersama.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Google Calendar & ICS Sync:</strong> Sinkronkan jadwal pekerjaan langsung ke Google Calendar atau unduh file <code>.ics</code> untuk Outlook / Apple Calendar.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(6,182,212,0.05), rgba(139,92,246,0.05))">
-            <MiniCard icon={<CalendarDays size={20} />} label="Mode Bulan" color="#06b6d4" />
-            <MiniCard icon={<Clock size={20} />} label="Mode Jam/Hari" color="#8b5cf6" />
-            <MiniCard icon={<Globe size={20} />} label="Libur Nasional" color="#ef4444" />
+            <MiniCard icon={<CalendarDays size={18} />} label="Mode Bulan" color="#06b6d4" />
+            <MiniCard icon={<Clock size={18} />} label="Mode Jam/Hari" color="#8b5cf6" />
+            <MiniCard icon={<Globe size={18} />} label="Libur Nasional" color="#ef4444" />
           </FeatureVisual>
         </>
       )
     },
     {
       id: 'tim',
-      icon: <Users size={24} />,
+      shortTitle: 'Tim & Beban',
+      icon: <Users size={20} />,
       color: '#ec4899',
       bg: 'rgba(236, 72, 153, 0.1)',
       title: '8. Manajemen Tim & Analisis Beban Kerja',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Halaman <strong>Tim</strong> menyajikan metrik beban kerja komprehensif per PIC untuk memastikan distribusi pekerjaan yang adil dan terukur:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Kartu Statistik PIC:</strong> Pantau jumlah tugas aktif, tugas urgent, tingkat penyelesaian (Done rate), dan rata-rata waktu penyelesaian tugas per individu.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Kalkulasi Multi-PIC:</strong> Sistem secara cerdas menghitung kontribusi tugas baik saat PIC menjadi penanggung jawab utama maupun PIC tambahan.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Quick Drawer / Filter Tugas:</strong> Klik kartu PIC untuk memunculkan panel pekerjaan yang sedang dipegang beserta status rincinya.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(236,72,153,0.05), rgba(245,158,11,0.05))">
-            <MiniCard icon={<Users size={20} />} label="Daftar PIC" color="#ec4899" />
-            <MiniCard icon={<BarChart3 size={20} />} label="Beban Kerja" color="#f59e0b" />
-            <MiniCard icon={<Shield size={20} />} label="Matriks Peran" color="#3b82f6" />
+            <MiniCard icon={<Users size={18} />} label="Daftar PIC" color="#ec4899" />
+            <MiniCard icon={<BarChart3 size={18} />} label="Beban Kerja" color="#f59e0b" />
+            <MiniCard icon={<Shield size={18} />} label="Matriks Peran" color="#3b82f6" />
           </FeatureVisual>
         </>
       )
     },
     {
       id: 'settings',
-      icon: <Settings size={24} />,
+      shortTitle: 'Master & Hak Akses',
+      icon: <Settings size={20} />,
       color: '#ef4444',
       bg: 'rgba(239, 68, 68, 0.1)',
       title: '9. Pengaturan Master Data, Hak Akses & Backup',
       content: (
         <>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px', fontSize: '13px' }}>
             Menu <strong>Pengaturan</strong> memberikan kontrol penuh bagi Administrator untuk menyesuaikan alur kerja, keamanan, dan cadangan data:
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Master Data Terpusat:</strong> Kelola daftar Master PIC, Kategori, Prioritas, Status, dan Master Lokasi (Online Zoom & Offline Ruang Rapat). Seluruh form dan template Excel tersinkronisasi 100% ke data ini.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Matriks Hak Akses (Role Permissions):</strong> Atur izin detail (tambah tugas, edit status, hapus, unggah eviden, ekspor data) untuk setiap role (Admin, Member, Viewer).</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Personalisasi Branding & Warna:</strong> Ganti nama aplikasi, sub-judul departemen, logo, serta warna label status secara fleksibel.</span>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px' }}>
+              <CheckCircle2 size={16} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
               <span><strong>Cadangan & Pemulihan (1-Click Backup / Restore):</strong> Unduh file cadangan lengkap (.zip) yang mencakup seluruh database dan file lampiran. Pulihkan kapan saja dengan 1 klik.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(239,68,68,0.05), rgba(139,92,246,0.05))">
-            <MiniCard icon={<Palette size={20} />} label="Warna & Tema" color="#ef4444" />
-            <MiniCard icon={<MapPin size={20} />} label="Master Lokasi" color="#3b82f6" />
-            <MiniCard icon={<Database size={20} />} label="Backup ZIP" color="#10b981" />
-            <MiniCard icon={<Sliders size={20} />} label="Hak Akses" color="#8b5cf6" />
+            <MiniCard icon={<Palette size={18} />} label="Warna & Tema" color="#ef4444" />
+            <MiniCard icon={<MapPin size={18} />} label="Master Lokasi" color="#3b82f6" />
+            <MiniCard icon={<Database size={18} />} label="Backup ZIP" color="#10b981" />
+            <MiniCard icon={<Sliders size={18} />} label="Hak Akses" color="#8b5cf6" />
           </FeatureVisual>
           <TipBox>
             <strong>Tips:</strong> Lakukan backup ZIP secara berkala dan simpan di media penyimpanan aman untuk menjamin kelangsungan data pekerjaan.
@@ -502,9 +533,16 @@ export default function GuidePage() {
     },
   ];
 
+  const filteredSections = sections.filter(s => 
+    s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.shortTitle.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handlePrintPDF = () => {
     window.print();
   };
+
+  const isAllOpen = Object.values(openAccordions).every(Boolean);
 
   return (
     <>
@@ -532,124 +570,238 @@ export default function GuidePage() {
       `}} />
 
       {/* ================== WEB AREA ================== */}
-      <motion.div 
+      <div 
         id="web-area"
         ref={contentRef}
-        className="glass" 
-        style={{ padding: '32px', maxWidth: '1000px', margin: '0 auto', borderRadius: '16px' }}
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        style={{ maxWidth: '1080px', margin: '0 auto' }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', color: 'white', marginBottom: '16px' }}>
-            <BookOpen size={32} />
+        {/* Top Header Card */}
+        <div 
+          className="glass"
+          style={{
+            padding: '24px 28px',
+            borderRadius: '16px',
+            marginBottom: '20px',
+            background: 'var(--surface-color)',
+            border: '1px solid var(--border-color)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              flexShrink: 0,
+              boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)'
+            }}>
+              <BookOpen size={26} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Dokumentasi Resmi
+                </span>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>• 9 Modul Panduan</span>
+              </div>
+              <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Panduan Aplikasi Monitoring Pekerjaan
+              </h1>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                Panduan praktis seluruh alur kerja, Smart Add AI, Rich Excel, Kanban, kalender, dan hak akses.
+              </p>
+            </div>
           </div>
-          <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '10px' }}>Panduan Aplikasi Monitoring Pekerjaan</h1>
-          <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)', maxWidth: '650px', margin: '0 auto', marginBottom: '22px', lineHeight: 1.6 }}>
-            Pelajari seluruh alur kerja, modul manajemen tugas, integrasi Excel, Smart Add AI Parser, kalender, hingga pengaturan hak akses sistem.
-          </p>
-          
-          <button 
-            onClick={handlePrintPDF}
-            className="btn btn-primary"
-            style={{ padding: '11px 22px', fontSize: '14.5px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
-          >
-            <Printer size={18} />
-            Unduh Panduan PDF
-          </button>
-        </div>
 
-        {/* Quick Navigation */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
-          {sections.map((s) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button 
-              key={s.id}
-              onClick={() => { setActiveAccordion(s.id); }}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '20px',
-                border: activeAccordion === s.id ? `2px solid ${s.color}` : '1px solid var(--border-color)',
-                background: activeAccordion === s.id ? s.bg : 'var(--surface-color)',
-                color: activeAccordion === s.id ? s.color : 'var(--text-secondary)',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 600,
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
+              onClick={handleToggleAll}
+              className="btn btn-secondary glass"
+              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}
             >
-              {s.icon && React.cloneElement(s.icon as React.ReactElement<any>, { size: 14 })}
-              {s.title.replace(/^\d+\.\s*/, '')}
+              <ChevronsUpDown size={15} />
+              {isAllOpen ? 'Tutup Semua' : 'Buka Semua'}
             </button>
-          ))}
+            <button 
+              onClick={handlePrintPDF}
+              className="btn btn-primary"
+              style={{ padding: '8px 16px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}
+            >
+              <Printer size={15} />
+              Unduh PDF (A4)
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {sections.map((section) => (
-            <div key={section.id} className="glass" style={{ borderRadius: '16px', overflow: 'hidden', background: 'var(--surface-color)', border: activeAccordion === section.id ? `1px solid ${section.color}40` : '1px solid var(--border-color)', transition: 'border-color 0.3s' }}>
-              <button
-                onClick={() => toggleAccordion(section.id)}
-                style={{
-                  width: '100%',
-                  padding: '18px 22px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: activeAccordion === section.id ? section.bg : 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.2s'
+        {/* Search & Topic Quick Grid */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{
+            position: 'relative',
+            marginBottom: '12px'
+          }}>
+            <Search size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text"
+              className="input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari topik atau modul panduan (contoh: Smart Add, Excel, PIC, Kalender, Backup)..."
+              style={{
+                width: '100%',
+                paddingLeft: '40px',
+                paddingRight: '14px',
+                height: '42px',
+                fontSize: '13px',
+                borderRadius: '12px',
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)'
+              }}
+            />
+          </div>
+
+          {/* Quick Navigator Cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))',
+            gap: '8px'
+          }}>
+            {sections.map((s, idx) => {
+              const isOpen = openAccordions[s.id];
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setOpenAccordions(prev => ({ ...prev, [s.id]: true }));
+                    const el = document.getElementById(`section-${s.id}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: isOpen ? `1.5px solid ${s.color}` : '1px solid var(--border-color)',
+                    background: isOpen ? s.bg : 'var(--surface-color)',
+                    color: isOpen ? s.color : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isOpen ? `0 2px 8px ${s.color}25` : 'none'
+                  }}
+                >
+                  <div style={{ color: s.color, display: 'flex' }}>
+                    {React.cloneElement(s.icon as React.ReactElement<any>, { size: 16 })}
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                    {idx + 1}. {s.shortTitle}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section Accordions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filteredSections.map((section) => {
+            const isOpen = openAccordions[section.id];
+            return (
+              <div 
+                key={section.id} 
+                id={`section-${section.id}`}
+                className="glass" 
+                style={{ 
+                  borderRadius: '14px', 
+                  overflow: 'hidden', 
+                  background: 'var(--surface-color)', 
+                  border: isOpen ? `1px solid ${section.color}50` : '1px solid var(--border-color)', 
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxShadow: isOpen ? '0 4px 16px -4px rgba(0,0,0,0.06)' : 'none'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ padding: '9px', background: section.bg, borderRadius: '12px', color: section.color }}>
-                    {section.icon}
-                  </div>
-                  <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
-                    {section.title}
-                  </h2>
-                </div>
-                <motion.div
-                  animate={{ rotate: activeAccordion === section.id ? 180 : 0 }}
-                  transition={{ duration: 0.3 }}
+                <button
+                  onClick={() => toggleAccordion(section.id)}
+                  style={{
+                    width: '100%',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: isOpen ? section.bg : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.2s'
+                  }}
                 >
-                  <ChevronDown size={20} color="var(--text-secondary)" />
-                </motion.div>
-              </button>
-              
-              <AnimatePresence>
-                {activeAccordion === section.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div style={{ padding: '0 22px 22px 22px', borderTop: '1px solid var(--border-color)', paddingTop: '18px' }}>
-                      {section.content}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ 
+                      padding: '8px', 
+                      background: isOpen ? 'var(--surface-color)' : section.bg, 
+                      borderRadius: '10px', 
+                      color: section.color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: `1px solid ${section.color}30`
+                    }}>
+                      {section.icon}
                     </div>
+                    <div>
+                      <h2 style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                        {section.title}
+                      </h2>
+                    </div>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <ChevronDown size={18} color="var(--text-secondary)" />
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
+                </button>
+                
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div style={{ padding: '16px 20px 20px 20px', borderTop: '1px solid var(--border-color)' }}>
+                        {section.content}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
         
-        <div style={{ marginTop: '32px', padding: '20px 24px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-          <AlertCircle size={22} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
+        {/* Support Alert Box */}
+        <div style={{ marginTop: '24px', padding: '18px 20px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '14px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+          <AlertCircle size={20} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <h3 style={{ fontSize: '15.5px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '5px' }}>Pusat Bantuan & Kendala Teknis</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6 }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>Pusat Bantuan & Kendala Teknis</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', lineHeight: 1.5, margin: 0 }}>
               Jika Anda mengalami kendala operasional, gunakan tombol <strong>Bantuan & Support</strong> di pojok kanan bawah atau hubungi Administrator sistem untuk bantuan lebih lanjut.
             </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* ================== PRINT AREA (PDF EXPORT) ================== */}
       <div id="print-area">

@@ -273,89 +273,91 @@ export default function Sidebar() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-          {showExpanded ? (
-            <div style={{
-              background: 'var(--input-bg)',
-              padding: '12px',
-              borderRadius: '12px',
-              marginBottom: '4px',
-              border: '1px solid var(--border-color)',
-              fontSize: '12px'
-            }}>
-              <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <select
-                  id="filter-pic"
-                  value={globalPicFilter}
-                  onChange={(e) => setGlobalPicFilter(e.target.value)}
-                  style={{ width: '100%', padding: '4px 6px', fontSize: '11px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-                >
-                  <option value="Semua PIC">Semua PIC</option>
-                  {picList.map((p: any) => <option key={p} value={p}>{p}</option>)}
-                </select>
+          {(pathname === '/' || pathname === '/dashboard' || pathname === '/tasks' || pathname === '/calendar' || pathname === '/reports' || pathname === '/team') && (
+            showExpanded ? (
+              <div style={{
+                background: 'var(--input-bg)',
+                padding: '12px',
+                borderRadius: '12px',
+                marginBottom: '4px',
+                border: '1px solid var(--border-color)',
+                fontSize: '12px'
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <select
+                    id="filter-pic"
+                    value={globalPicFilter}
+                    onChange={(e) => setGlobalPicFilter(e.target.value)}
+                    style={{ width: '100%', padding: '4px 6px', fontSize: '11px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                  >
+                    <option value="Semua PIC">Semua PIC</option>
+                    {picList.map((p: any) => <option key={p} value={p}>{p}</option>)}
+                  </select>
 
-                <select
-                  id="filter-target"
-                  value={globalTargetFilter}
-                  onChange={(e) => setGlobalTargetFilter(e.target.value)}
-                  style={{ width: '100%', padding: '4px 6px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: 'var(--accent-primary)', color: 'white', border: 'none', outline: 'none' }}
-                >
-                  <option value="Hari Ini">Target Hari Ini</option>
-                  <option value="Minggu Ini">Target Minggu Ini</option>
-                  <option value="Bulan Ini">Target Bulan Ini</option>
-                  <option value="Semua Waktu">Semua Target Waktu</option>
-                  <option value="Custom">Pilih Tanggal...</option>
-                </select>
-                {globalTargetFilter === 'Custom' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '-4px' }}>
-                    <input
-                      type="date"
-                      value={globalCustomStartDate}
-                      onChange={(e) => setGlobalCustomStartDate(e.target.value)}
-                      style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                    />
-                    <input
-                      type="date"
-                      value={globalCustomEndDate}
-                      onChange={(e) => setGlobalCustomEndDate(e.target.value)}
-                      style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                )}
+                  <select
+                    id="filter-target"
+                    value={globalTargetFilter}
+                    onChange={(e) => setGlobalTargetFilter(e.target.value)}
+                    style={{ width: '100%', padding: '4px 6px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: 'var(--accent-primary)', color: 'white', border: 'none', outline: 'none' }}
+                  >
+                    <option value="Hari Ini">Target Hari Ini</option>
+                    <option value="Minggu Ini">Target Minggu Ini</option>
+                    <option value="Bulan Ini">Target Bulan Ini</option>
+                    <option value="Semua Waktu">Semua Target Waktu</option>
+                    <option value="Custom">Pilih Tanggal...</option>
+                  </select>
+                  {globalTargetFilter === 'Custom' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '-4px' }}>
+                      <input
+                        type="date"
+                        value={globalCustomStartDate}
+                        onChange={(e) => setGlobalCustomStartDate(e.target.value)}
+                        style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                      />
+                      <input
+                        type="date"
+                        value={globalCustomEndDate}
+                        onChange={(e) => setGlobalCustomEndDate(e.target.value)}
+                        style={{ width: '100%', padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
+                  const color = masterColors[`status_${status}`] || '#3b82f6';
+                  return (
+                    <div key={status} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{status}:</span>
+                      <span style={{ fontWeight: 700, color: color }}>{stats[status] || 0}</span>
+                    </div>
+                  );
+                })}
               </div>
-
-              {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
-                const color = masterColors[`status_${status}`] || '#3b82f6';
-                return (
-                  <div key={status} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>{status}:</span>
-                    <span style={{ fontWeight: 700, color: color }}>{stats[status] || 0}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              alignItems: 'center',
-              marginBottom: '4px',
-              padding: '12px 0',
-              background: 'var(--input-bg)',
-              borderRadius: '12px',
-              border: '1px solid var(--border-color)',
-              flexShrink: 0
-            }}>
-              {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
-                const color = masterColors[`status_${status}`] || '#3b82f6';
-                const val = stats[status] || 0;
-                return (
-                  <div key={status} title={`${status}: ${val}`} style={{ background: `${color}20`, border: `1px solid ${color}`, color: color, width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-                    {val > 99 ? '99+' : val}
-                  </div>
-                );
-              })}
-            </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                alignItems: 'center',
+                marginBottom: '4px',
+                padding: '12px 0',
+                background: 'var(--input-bg)',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)',
+                flexShrink: 0
+              }}>
+                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
+                  const color = masterColors[`status_${status}`] || '#3b82f6';
+                  const val = stats[status] || 0;
+                  return (
+                    <div key={status} title={`${status}: ${val}`} style={{ background: `${color}20`, border: `1px solid ${color}`, color: color, width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+                      {val > 99 ? '99+' : val}
+                    </div>
+                  );
+                })}
+              </div>
+            )
           )}
 
           <IdleTimer isSidebarCollapsed={!showExpanded} />

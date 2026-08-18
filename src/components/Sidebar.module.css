@@ -29,6 +29,11 @@
   padding: 20px 8px;
 }
 
+[data-focus="true"] .sidebar {
+  transform: translateX(-100%);
+  display: none !important;
+}
+
 .logoContainer {
   display: flex;
   align-items: center;
