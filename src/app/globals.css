@@ -1027,3 +1027,61 @@ th[style*="cursor: pointer"]:hover,
     min-height: 380px !important;
   }
 }
+
+/* Universal Filter Bar Responsive Styles */
+@media (max-width: 768px) {
+  .mobile-filter-toggle-btn {
+    display: flex !important;
+  }
+  
+  .filter-bar-actions-desktop {
+    display: none !important;
+  }
+  
+  .filter-bar-actions-mobile {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-options-area {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+    opacity: 0;
+  }
+
+  .filter-options-area.open {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 12px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 12px;
+  }
+
+  .filter-options-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .filter-options-grid > div {
+    width: 100% !important;
+  }
+
+  .filter-options-grid select, 
+  .filter-options-grid input {
+    width: 100% !important;
+    height: 38px !important;
+  }
+  
+  .filter-count-label {
+    grid-column: span 2;
+    border-left: none !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    justify-content: center;
+    margin-top: 4px;
+  }
+}
