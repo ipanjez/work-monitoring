@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera, Globe, Clock, Copy } from 'lucide-react';
+import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -48,6 +48,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [calendarTzPreset, setCalendarTzPreset] = useState('Asia/Makassar');
   const [customCalendarTz, setCustomCalendarTz] = useState('');
   const [calendarToken, setCalendarToken] = useState('');
+  const [feedFilterPic, setFeedFilterPic] = useState('');
+  const [feedFilterCategory, setFeedFilterCategory] = useState('');
+  const [feedHideCompleted, setFeedHideCompleted] = useState(false);
+  const [isResettingToken, setIsResettingToken] = useState(false);
   const [copiedCalendarFeed, setCopiedCalendarFeed] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -1150,9 +1154,17 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
       {/* Auto Sync Google Calendar / iCal Feed */}
       <div id="settings-calendar-sync" className="glass" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CalendarDays size={20} color="#4285F4" /> Sinkronisasi Otomatis Google Calendar / Outlook (URL Feed)
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CalendarDays size={20} color="#4285F4" /> Sinkronisasi Otomatis Google Calendar / Outlook (URL Feed)
+          </h3>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4', fontWeight: 600 }}>Google Calendar</span>
+            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(0, 120, 212, 0.1)', color: '#0078D4', fontWeight: 600 }}>MS Outlook</span>
+            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.06)', color: 'var(--text-primary)', fontWeight: 600 }}>Apple iCal</span>
+          </div>
+        </div>
+
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
           Berlangganan (*subscribe*) kalender aplikasi secara langsung di Google Calendar atau Microsoft Outlook agar seluruh jadwal ter-update otomatis secara *real-time*.
         </p>
@@ -1160,14 +1172,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         {/* Timezone Configuration */}
         {isAdmin && (
           <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
-              <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Feed Kalender (Timezone)
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Standar Feed (Timezone)
             </label>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-              Pilih zona waktu acuan jadwal kerja. Google Calendar akan membaca zona waktu ini sebagai basis jam kegiatan Anda.
+              Pilih zona waktu acuan default jadwal kerja. Google Calendar akan membaca zona waktu ini sebagai basis jam kegiatan Anda.
             </p>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
               <select
                 className="input"
                 style={{ width: 'auto', minWidth: '280px', fontWeight: 500 }}
@@ -1197,7 +1209,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                       setCustomCalendarTz(e.target.value);
                       setCalendarTimezone(e.target.value.trim());
                     }}
-                    style={{ width: '220px' }}
+                    style={{ width: '200px' }}
                     placeholder="Misal: Asia/Singapore"
                     autoFocus
                   />
@@ -1215,71 +1227,193 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               </button>
             </div>
             <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              Zona waktu aktif saat ini: <strong style={{ color: 'var(--accent-primary)' }}>{calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset}</strong>
+              Zona waktu aktif di sistem: <strong style={{ color: 'var(--accent-primary)' }}>{calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset}</strong>
             </div>
           </div>
         )}
 
-        {/* Feed URL Display & Copy */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            URL Kalender Anda (.ics Feed)
+        {/* Personalized Filter Generator */}
+        <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+            <Filter size={15} color="var(--accent-primary)" /> Kustomisasi Filter Feed (Opsional untuk PIC / Tim)
           </label>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              readOnly
-              className="input"
-              value={
-                typeof window !== 'undefined' && calendarToken
-                  ? `${window.location.origin}/calendar.ics?token=${calendarToken}`
-                  : 'Memuat URL kalender...'
-              }
-              style={{ flex: 1, minWidth: '280px', fontFamily: 'monospace', fontSize: '12px', background: 'var(--bg-secondary, rgba(0,0,0,0.03))' }}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
-            />
-            <button
-              className="btn btn-primary"
-              style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}
-              onClick={async () => {
-                const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.'));
-                if (isLocal) {
-                  alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
-                  return;
-                }
-                try {
-                  let token = calendarToken;
-                  if (!token) {
-                    const res = await fetch('/api/calendar/token');
-                    const data = await res.json();
-                    token = data.token;
-                    setCalendarToken(token);
-                  }
-                  const feedUrl = `${window.location.origin}/calendar.ics?token=${token}`;
-                  await navigator.clipboard.writeText(feedUrl);
-                  setCopiedCalendarFeed(true);
-                  setTimeout(() => setCopiedCalendarFeed(false), 2500);
-                  toast.success('URL Kalender berhasil disalin ke clipboard!');
-                } catch (err) {
-                  toast.error('Gagal menyalin URL kalender');
-                }
-              }}
-            >
-              {copiedCalendarFeed ? <Check size={16} /> : <Copy size={16} />}
-              {copiedCalendarFeed ? 'Tersalin!' : 'Salin URL Feed'}
-            </button>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+            Personalisasi URL feed jika Anda atau anggota tim hanya ingin menyinkronkan tugas tertentu ke Google Calendar pribadi:
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                Filter PIC:
+              </label>
+              <select
+                className="input"
+                style={{ width: '100%', fontSize: '13px' }}
+                value={feedFilterPic}
+                onChange={e => setFeedFilterPic(e.target.value)}
+              >
+                <option value="">Semua Tugas (Seluruh Departemen)</option>
+                {pics.map(p => (
+                  <option key={p} value={p}>Hanya Tugas: {p}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                Filter Kategori:
+              </label>
+              <select
+                className="input"
+                style={{ width: '100%', fontSize: '13px' }}
+                value={feedFilterCategory}
+                onChange={e => setFeedFilterCategory(e.target.value)}
+              >
+                <option value="">Semua Kategori</option>
+                {categories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '4px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={feedHideCompleted}
+                  onChange={e => setFeedHideCompleted(e.target.checked)}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                Sembunyikan tugas selesai (Done)
+              </label>
+            </div>
           </div>
         </div>
+
+        {/* Feed URL Display & Quick Actions */}
+        {(() => {
+          let computedFeedUrl = '';
+          if (typeof window !== 'undefined' && calendarToken) {
+            const params = new URLSearchParams();
+            params.set('token', calendarToken);
+            if (feedFilterPic) params.set('pic', feedFilterPic);
+            if (feedFilterCategory) params.set('kategori', feedFilterCategory);
+            if (feedHideCompleted) params.set('hideCompleted', 'true');
+            computedFeedUrl = `${window.location.origin}/calendar.ics?${params.toString()}`;
+          }
+
+          const webcalUrl = computedFeedUrl ? computedFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
+          const gcalDirectUrl = computedFeedUrl ? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcalUrl || computedFeedUrl)}` : '';
+
+          return (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                URL Kalender Anda (.ics Feed)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <input
+                  type="text"
+                  readOnly
+                  className="input"
+                  value={computedFeedUrl || 'Memuat URL kalender...'}
+                  style={{ flex: 1, minWidth: '280px', fontFamily: 'monospace', fontSize: '12px', background: 'var(--bg-secondary, rgba(0,0,0,0.03))' }}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}
+                  onClick={async () => {
+                    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.'));
+                    if (isLocal) {
+                      alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
+                      return;
+                    }
+                    try {
+                      if (!computedFeedUrl) return;
+                      await navigator.clipboard.writeText(computedFeedUrl);
+                      setCopiedCalendarFeed(true);
+                      setTimeout(() => setCopiedCalendarFeed(false), 2500);
+                      toast.success('URL Kalender berhasil disalin ke clipboard!');
+                    } catch (err) {
+                      toast.error('Gagal menyalin URL kalender');
+                    }
+                  }}
+                >
+                  {copiedCalendarFeed ? <Check size={16} /> : <Copy size={16} />}
+                  {copiedCalendarFeed ? 'Tersalin!' : 'Salin URL Feed'}
+                </button>
+              </div>
+
+              {/* 1-Click Action Buttons */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <a
+                  href={gcalDirectUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)' }}
+                  onClick={(e) => {
+                    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+                    if (isLocal) {
+                      e.preventDefault();
+                      alert('Fitur Sinkronisasi Kalender hanya dapat diakses melalui domain publik (Vercel/domain server).');
+                    }
+                  }}
+                >
+                  <ExternalLink size={14} color="#4285F4" /> 1-Klik Tambah ke Google Calendar
+                </a>
+
+                <a
+                  href={webcalUrl || '#'}
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)' }}
+                >
+                  <Globe size={14} color="var(--accent-primary)" /> Buka di Apple Calendar / Outlook (webcal)
+                </a>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={isResettingToken}
+                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginLeft: 'auto' }}
+                    onClick={async () => {
+                      if (!confirm('Peringatan: Membuat ulang token akan membatalkan seluruh link sinkronisasi kalender yang sudah terpasang sebelumnya di Google Calendar / Outlook seluruh pengguna.\n\nApakah Anda yakin ingin membuat token baru?')) return;
+                      setIsResettingToken(true);
+                      try {
+                        const res = await fetch('/api/calendar/token', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.token) {
+                          setCalendarToken(data.token);
+                          toast.success('Token kalender berhasil di-reset!');
+                        } else {
+                          toast.error(data.error || 'Gagal mereset token');
+                        }
+                      } catch {
+                        toast.error('Terjadi kesalahan jaringan');
+                      } finally {
+                        setIsResettingToken(false);
+                      }
+                    }}
+                  >
+                    <RotateCcw size={14} /> {isResettingToken ? 'Mereset...' : 'Reset Token Kalender'}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Tips & Instructions Box */}
         <div style={{ background: 'color-mix(in srgb, var(--accent-primary) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent)', borderRadius: '10px', padding: '14px 16px' }}>
           <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <HelpCircle size={15} /> Petunjuk Sinkronisasi & Pengingat (Reminder):
+            <Sparkles size={15} /> Fitur & Petunjuk Penting:
           </h4>
           <ul style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingLeft: '18px', margin: 0, lineHeight: 1.6 }}>
-            <li><strong>Cara Berlangganan di Google Calendar:</strong> Buka Google Calendar $\rightarrow$ Klik tanda <strong>+</strong> di samping <em>Other calendars</em> (Kalender Lain) $\rightarrow$ Pilih <strong>From URL</strong> $\rightarrow$ Tempel URL di atas $\rightarrow$ Klik <strong>Add calendar</strong>.</li>
-            <li><strong>Mengaktifkan Notifikasi Pengingat:</strong> Google Calendar secara default menonaktifkan notifikasi kalender dari URL demi keamanan. Untuk menyalakan pengingat, klik titik tiga (<strong>⋮</strong>) pada kalender di bilah kiri $\rightarrow$ <strong>Settings</strong> $\rightarrow$ Gulir ke <strong>Event notifications</strong> $\rightarrow$ Klik <strong>Add notification</strong> (misal: 15 menit sebelumnya).</li>
-            <li><strong>Update Otomatis:</strong> Google Calendar & Outlook akan memperbarui (*sync*) data kalender secara berkala di latar belakang.</li>
+            <li><strong>Tampilan Kalender Rapi (All-Day Header):</strong> Tugas jangka panjang (tahunan/multi-hari tanpa jam spesifik) otomatis diformat sebagai acara seharian penuh (*All-Day*), sehingga tampil rapi di baris atas kalender dan tidak memblokir grid jam harian.</li>
+            <li><strong>Mengaktifkan Pengingat (Reminder):</strong> Google Calendar secara default mematikan alarm kalender dari link luar demi keamanan. Untuk menyalakan pengingat, buka Google Calendar $\rightarrow$ klik titik tiga (<strong>⋮</strong>) pada kalender di bilah kiri $\rightarrow$ <strong>Settings</strong> $\rightarrow$ Gulir ke <strong>Event notifications</strong> $\rightarrow$ Klik <strong>Add notification</strong> (misal: 15 menit sebelumnya).</li>
+            <li><strong>Sinkronisasi & Pembaruan Otomatis:</strong> Google Calendar & Outlook akan memperbarui (*sync*) data kalender secara berkala (dilengkapi dukungan caching cepat <em>ETag / RFC 5545</em>).</li>
           </ul>
         </div>
       </div>
