@@ -1191,11 +1191,6 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                         {t.deskripsi.replace(/<[^>]+>/g, '')}
                       </div>
                     )}
-                    {t.fileUrl && (
-                      <a href={t.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(t.fileUrl)}` : t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '12px', marginTop: '4px' }}>
-                        <Paperclip size={12} /> {t.fileName || 'Lampiran'}
-                      </a>
-                    )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors)} style={{ ...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', 'badge', masterColors).style }}>{t.prioritas || 'Medium'}</span>
@@ -1278,14 +1273,6 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                     >
                       <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
                         {t.nama}
-                        {t.fileUrl && (
-                          <div style={{ marginTop: '8px', fontSize: '12px' }}>
-                            {t.fileUrl && (
-                              <a href={t.fileUrl.toLowerCase().match(/\.(xls|doc|ppt)/) ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(t.fileUrl)}` : t.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-primary)', marginTop: '4px' }}>
-                                <Paperclip size={12} /> {t.fileName || 'Lampiran'}
-                              </a>
-                            )}</div>
-                        )}
                       </td>
                       <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top', maxWidth: '200px', whiteSpace: 'normal' }}>
                         {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
