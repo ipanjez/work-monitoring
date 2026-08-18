@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, Sparkles } from 'lucide-react';
+import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, Sparkles, Search, GripVertical, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -13,6 +13,7 @@ type Task = {
   id: number;
   nama: string;
   pic: string;
+  additionalPics?: string | null;
   status: string;
   prioritas?: string | null;
   kategori?: string | null;
@@ -29,6 +30,7 @@ type Task = {
 
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
+  const { addActivityLog } = useNotifications();
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('MRK');
@@ -261,20 +263,97 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
-  const { addActivityLog } = useNotifications();
+  const [masterSearch, setMasterSearch] = useState<Record<string, string>>({});
+
+  const getTaskCountForItem = (type: ListType, val: string) => {
+    if (!tasks || !Array.isArray(tasks)) return 0;
+    const target = val.toLowerCase().trim();
+    if (type === 'cat') {
+      return tasks.filter(t => (t.kategori || '').toLowerCase().trim() === target).length;
+    }
+    if (type === 'pic') {
+      return tasks.filter(t => {
+        if ((t.pic || '').toLowerCase().trim() === target) return true;
+        if (t.additionalPics) {
+          try {
+            const arr = JSON.parse(t.additionalPics);
+            if (Array.isArray(arr) && arr.some((p: string) => p.toLowerCase().trim() === target)) return true;
+          } catch {}
+        }
+        return false;
+      }).length;
+    }
+    if (type === 'status') {
+      return tasks.filter(t => (t.status || '').toLowerCase().trim() === target).length;
+    }
+    if (type === 'priority') {
+      return tasks.filter(t => (t.prioritas || '').toLowerCase().trim() === target).length;
+    }
+    if (type === 'location') {
+      return tasks.filter(t => {
+        if (!t.lokasi) return false;
+        try {
+          const parsed = JSON.parse(t.lokasi);
+          const locFisik = (parsed.lokasiFisik || '').toLowerCase();
+          const linkZoom = (parsed.linkZoom || '').toLowerCase();
+          return locFisik.includes(target) || linkZoom.includes(target);
+        } catch {
+          return t.lokasi.toLowerCase().includes(target);
+        }
+      }).length;
+    }
+    return 0;
+  };
 
   const handleAdd = (e: React.FormEvent, type: ListType, val: string, setVal: any, list: string[]) => {
     e.preventDefault();
-    if (!val.trim() || list.includes(val.trim())) return;
-    updateList(type, prev => [...prev, val.trim()]);
-    if (addActivityLog) addActivityLog('ADD_MASTER', `Tambah Master ${type}`, `Menambahkan item "${val.trim()}" ke master ${type}`, 'info');
+    if (!val.trim()) return;
+
+    // Support batch add via comma or newline
+    const rawItems = val.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+    if (rawItems.length === 0) return;
+
+    const existingLower = list.map(x => x.toLowerCase().trim());
+    const toAdd: string[] = [];
+    const duplicates: string[] = [];
+
+    for (const item of rawItems) {
+      if (existingLower.includes(item.toLowerCase())) {
+        duplicates.push(item);
+      } else if (!toAdd.some(x => x.toLowerCase() === item.toLowerCase())) {
+        toAdd.push(item);
+      }
+    }
+
+    if (toAdd.length === 0) {
+      toast.error(`Item "${duplicates.join(', ')}" sudah ada di daftar!`);
+      return;
+    }
+
+    updateList(type, prev => [...prev, ...toAdd]);
+    if (addActivityLog) addActivityLog('ADD_MASTER', `Tambah Master ${type}`, `Menambahkan item "${toAdd.join(', ')}" ke master ${type}`, 'info');
+
+    if (duplicates.length > 0) {
+      toast.success(`Berhasil menambahkan ${toAdd.length} item. (${duplicates.length} dilewati karena sudah ada)`);
+    } else if (toAdd.length > 1) {
+      toast.success(`Berhasil menambahkan ${toAdd.length} item sekaligus!`);
+    } else {
+      toast.success(`Berhasil menambahkan "${toAdd[0]}"`);
+    }
+
     setVal('');
   };
 
   const handleDelete = (type: ListType, val: string) => {
-    if (confirm(`Hapus ${val}?`)) {
+    const count = getTaskCountForItem(type, val);
+    let msg = `Hapus "${val}" dari master ${type}?`;
+    if (count > 0) {
+      msg = `⚠️ PERINGATAN: "${val}" saat ini sedang digunakan oleh ${count} pekerjaan aktif!\n\nJika dihapus dari master, tugas yang sudah ada tidak akan hilang namun opsi ini tidak akan muncul lagi di formulir baru.\n\nTetap hapus "${val}"?`;
+    }
+    if (confirm(msg)) {
       updateList(type, prev => prev.filter(x => x !== val));
       if (addActivityLog) addActivityLog('DELETE_MASTER', `Hapus Master ${type}`, `Menghapus item "${val}" dari master ${type}`, 'danger');
+      toast.success(`"${val}" berhasil dihapus.`);
     }
   };
 
@@ -379,172 +458,286 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
-  const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode) => (
-    <>
-      <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {icon} {title}
-      </h3>
-      <form onSubmit={(e) => handleAdd(e, type, val, setVal, list)} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-        <input className="input" placeholder="Tambah baru..." value={val} onChange={e => setVal(e.target.value)} />
-        <button type="submit" className="btn btn-primary" style={{ flexShrink: 0 }}><Plus size={16} /> Tambah</button>
-      </form>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort A-Z</button>
-        <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }}>Sort Z-A</button>
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {list.map((s, idx) => (
-          <span
-            key={s}
-            draggable={editingItem?.type !== type || editingItem?.oldVal !== s}
-            onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
-            onDragOver={(e: React.DragEvent) => handleDragOver(e)}
-            onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
-            onDragEnd={() => setDraggedIdx(null)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
-              background: (() => {
-                const c = masterColors[`${type}_${s}`];
-                if (c && c !== '#ffffff') {
-                  const base = c.length === 9 ? c.substring(0, 7) : c;
-                  return `color-mix(in srgb, ${base} 15%, transparent)`;
-                }
-                return draggedIdx?.type === type && draggedIdx.index === idx ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)' : 'var(--surface-color)';
-              })(),
-              border: (() => {
-                const c = masterColors[`${type}_${s}`];
-                if (c && c !== '#ffffff') {
-                  const base = c.length === 9 ? c.substring(0, 7) : c;
-                  return `1px solid ${base}`;
-                }
-                return draggedIdx?.type === type && draggedIdx.index === idx ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)';
-              })(),
-              fontSize: '13px', fontWeight: 500,
-              color: (() => {
-                const c = masterColors[`${type}_${s}`];
-                if (c && c !== '#ffffff') {
-                  return c.length === 9 ? c.substring(0, 7) : c;
-                }
-                return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
-              })(), cursor: editingItem?.type === type && editingItem?.oldVal === s ? 'default' : 'grab', position: 'relative'
-            }}
-          >
-            {editingItem?.type === type && editingItem?.oldVal === s ? (
+  const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode, subtitle?: string) => {
+    const searchQ = (masterSearch[type] || '').toLowerCase().trim();
+    const filteredList = searchQ ? list.filter(item => item.toLowerCase().includes(searchQ)) : list;
+
+    return (
+      <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {icon} {title}
+            </h3>
+            {subtitle && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{subtitle}</p>}
+          </div>
+          <span style={{ fontSize: '11.5px', padding: '3px 10px', borderRadius: '12px', background: 'var(--bg-secondary, rgba(0,0,0,0.05))', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            {list.length} Item Terdaftar
+          </span>
+        </div>
+
+        {/* Search & Batch Add Bar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+          {/* Add Form */}
+          <form onSubmit={(e) => handleAdd(e, type, val, setVal, list)} style={{ display: 'flex', gap: '10px' }}>
+            <input
+              className="input"
+              placeholder={`Tambah ${title.replace('Master ', '').replace('Dropdown ', '')}... (Pisahkan koma untuk input banyak)`}
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Plus size={16} /> Tambah
+            </button>
+          </form>
+
+          {/* Search & Quick Sort Row */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 220px', maxWidth: '360px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
               <input
                 type="text"
-                autoFocus
-                value={editInputValue}
-                onChange={e => setEditInputValue(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleRename(type, s, editInputValue);
-                  } else if (e.key === 'Escape') {
-                    setEditingItem(null);
-                  }
-                }}
-                onBlur={() => handleRename(type, s, editInputValue)}
-                style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px', fontWeight: 500, width: `${Math.max(editInputValue.length * 8, 50)}px` }}
+                className="input"
+                placeholder={`Cari dalam daftar ${list.length} item...`}
+                value={masterSearch[type] || ''}
+                onChange={e => setMasterSearch(prev => ({ ...prev, [type]: e.target.value }))}
+                style={{ paddingLeft: '30px', paddingRight: masterSearch[type] ? '28px' : '10px', height: '32px', fontSize: '12px', width: '100%' }}
               />
-            ) : (
-              <>{s}</>
-            )}
+              {masterSearch[type] && (
+                <button
+                  type="button"
+                  onClick={() => setMasterSearch(prev => ({ ...prev, [type]: '' }))}
+                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px', display: 'flex' }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
 
-            {type === 'status' && (
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={masterStatusProgress[s] ?? 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(s, Number(e.target.value))}
-                style={{ width: '40px', padding: '2px 4px', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'var(--bg-color)', color: 'var(--text-primary)' }}
-                title="Persentase Progress Otomatis (0-100)"
-              />
-            )}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Sort A-Z</button>
+              <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Sort Z-A</button>
+              <button type="button" onClick={() => transformList(type, 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Title Case</button>
+            </div>
+          </div>
+        </div>
 
-            {editingItem?.type !== type || editingItem?.oldVal !== s ? (
-              <>
-                {type === 'pic' && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setActivePicForAvatar(s);
+        {/* Badge List */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '40px', alignItems: 'center' }}>
+          {filteredList.length === 0 ? (
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: '8px 0' }}>
+              {searchQ ? `Tidak ada item yang cocok dengan pencarian "${searchQ}".` : 'Belum ada item master. Tambahkan item di atas.'}
+            </p>
+          ) : (
+            filteredList.map((s) => {
+              const idx = list.indexOf(s);
+              const taskCount = getTaskCountForItem(type, s);
+              const isEditingThis = editingItem?.type === type && editingItem?.oldVal === s;
+
+              return (
+                <span
+                  key={s}
+                  draggable={!isEditingThis}
+                  onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
+                  onDragOver={(e: React.DragEvent) => handleDragOver(e)}
+                  onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
+                  onDragEnd={() => setDraggedIdx(null)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
+                    background: (() => {
+                      const c = masterColors[`${type}_${s}`];
+                      if (c && c !== '#ffffff') {
+                        const base = c.length === 9 ? c.substring(0, 7) : c;
+                        return `color-mix(in srgb, ${base} 15%, transparent)`;
+                      }
+                      return draggedIdx?.type === type && draggedIdx.index === idx ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)' : 'var(--surface-color)';
+                    })(),
+                    border: (() => {
+                      const c = masterColors[`${type}_${s}`];
+                      if (c && c !== '#ffffff') {
+                        const base = c.length === 9 ? c.substring(0, 7) : c;
+                        return `1px solid ${base}`;
+                      }
+                      return draggedIdx?.type === type && draggedIdx.index === idx ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)';
+                    })(),
+                    fontSize: '13px', fontWeight: 500,
+                    color: (() => {
+                      const c = masterColors[`${type}_${s}`];
+                      if (c && c !== '#ffffff') {
+                        return c.length === 9 ? c.substring(0, 7) : c;
+                      }
+                      return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
+                    })(),
+                    cursor: isEditingThis ? 'default' : 'grab',
+                    position: 'relative',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {!isEditingThis && (
+                    <span title="Geser untuk mengatur urutan" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <GripVertical size={13} style={{ opacity: 0.4, cursor: 'grab', marginRight: '-2px' }} />
+                    </span>
+                  )}
+
+                  {isEditingThis ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={editInputValue}
+                      onChange={e => setEditInputValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleRename(type, s, editInputValue);
+                        } else if (e.key === 'Escape') {
+                          setEditingItem(null);
+                        }
+                      }}
+                      onBlur={() => handleRename(type, s, editInputValue)}
+                      style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px', fontWeight: 500, width: `${Math.max(editInputValue.length * 8, 50)}px` }}
+                    />
+                  ) : (
+                    <span>{s}</span>
+                  )}
+
+                  {/* Task Usage Counter Badge */}
+                  <span
+                    title={taskCount > 0 ? `Digunakan di ${taskCount} pekerjaan aktif` : 'Belum digunakan di pekerjaan manapun'}
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      background: taskCount > 0 ? 'color-mix(in srgb, var(--accent-primary) 20%, transparent)' : 'rgba(0,0,0,0.06)',
+                      color: taskCount > 0 ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      marginLeft: '2px'
                     }}
-                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '4px', zIndex: 2 }}
-                    title="Ubah Foto Profil PIC"
                   >
-                    {masterPicAvatars[s] ? (
-                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
-                        <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ) : (
-                      <Camera size={14} />
-                    )}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
-                  style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: type === 'pic' ? '4px' : '4px' }}
-                  title="Pilih Warna Template"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingItem({ type, oldVal: s });
-                    setEditInputValue(s);
-                  }}
-                  style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex' }}
-                  title="Edit"
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  type="button" onClick={() => handleDelete(type, s)}
-                  style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
-                ><X size={14} /></button>
-              </>
-            ) : null}
+                    {taskCount}
+                  </span>
 
-            {activeColorPicker === `${type}_${s}` && (
-              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', width: '140px', display: 'flex', flexWrap: 'wrap', gap: '6px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', marginTop: '8px' }}>
-                {PRESET_COLORS.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => {
-                      handleColorChange(type, s, c);
-                      setActiveColorPicker(null);
-                    }}
-                    style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: masterColors[`${type}_${s}`] === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: '2px' }}
-                    title={c}
-                  />
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleColorChange(type, s, '#ffffff');
-                    setActiveColorPicker(null);
-                  }}
-                  style={{ width: '100%', marginTop: '4px', padding: '6px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
-                >
-                  Gunakan Default Aksen
-                </button>
-              </div>
-            )}
-          </span>
-        ))}
-      </div>
-      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-        <button type="button" className="btn btn-primary" onClick={(e) => handleSaveSettings(e as any)} disabled={isSavingSettings}>
-          {isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
-        </button>
-      </div>
-    </>
-  );
+                  {type === 'status' && (
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={masterStatusProgress[s] ?? 0}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(s, Number(e.target.value))}
+                      style={{ width: '40px', padding: '2px 4px', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'var(--bg-color)', color: 'var(--text-primary)', marginLeft: '2px' }}
+                      title="Persentase Progress Otomatis (0-100)"
+                    />
+                  )}
+
+                  {!isEditingThis && (
+                    <>
+                      {type === 'pic' && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setActivePicForAvatar(s);
+                          }}
+                          style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '2px', zIndex: 2 }}
+                          title="Ubah Foto Profil PIC"
+                        >
+                          {masterPicAvatars[s] ? (
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden' }}>
+                              <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ) : (
+                            <Camera size={13} />
+                          )}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
+                        style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '2px' }}
+                        title="Pilih Warna Kategori/Status"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingItem({ type, oldVal: s });
+                          setEditInputValue(s);
+                        }}
+                        style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex' }}
+                        title="Edit Nama"
+                      >
+                        <Pencil size={12} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(type, s)}
+                        style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
+                        title="Hapus Item"
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  )}
+
+                  {activeColorPicker === `${type}_${s}` && (
+                    <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '10px', width: '160px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)', marginTop: '8px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Warna Preset:</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {PRESET_COLORS.map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => {
+                              handleColorChange(type, s, c);
+                              setActiveColorPicker(null);
+                            }}
+                            style={{ width: '18px', height: '18px', borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: masterColors[`${type}_${s}`] === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: '2px' }}
+                            title={c}
+                          />
+                        ))}
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kustom:</span>
+                        <input
+                          type="color"
+                          value={masterColors[`${type}_${s}`]?.substring(0, 7) || '#3b82f6'}
+                          onChange={e => handleColorChange(type, s, e.target.value)}
+                          style={{ width: '28px', height: '24px', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+                          title="Pilih Warna Bebas (Custom Color Picker)"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleColorChange(type, s, '#ffffff');
+                          setActiveColorPicker(null);
+                        }}
+                        style={{ width: '100%', padding: '5px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
+                      >
+                        Gunakan Default
+                      </button>
+                    </div>
+                  )}
+                </span>
+              );
+            })
+          )}
+        </div>
+
+        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+          <button type="button" className="btn btn-primary" onClick={(e) => handleSaveSettings(e as any)} disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}>
+            <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </button>
+        </div>
+      </>
+    );
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -956,12 +1149,40 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
 
 
+      {/* Quick Navigation Header for Master Data */}
+      {isAdmin && (
+        <div style={{ background: 'var(--surface-color)', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Layers size={18} color="var(--accent-primary)" />
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Navigasi Cepat Master Data:</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <a href="#settings-categories" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Tag size={13} color="var(--accent-primary)" /> Kategori <span style={{ opacity: 0.7, fontWeight: 700 }}>({categories.length})</span>
+            </a>
+            <a href="#settings-pics" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Users size={13} color="var(--accent-primary)" /> PIC <span style={{ opacity: 0.7, fontWeight: 700 }}>({pics.length})</span>
+            </a>
+            <a href="#settings-statuses" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Tag size={13} color="var(--accent-primary)" /> Status <span style={{ opacity: 0.7, fontWeight: 700 }}>({statuses.length})</span>
+            </a>
+            <a href="#settings-priorities" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Tag size={13} color="var(--accent-primary)" /> Prioritas <span style={{ opacity: 0.7, fontWeight: 700 }}>({priorities.length})</span>
+            </a>
+            <a href="#settings-locations" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <MapPin size={13} color="var(--accent-primary)" /> Lokasi <span style={{ opacity: 0.7, fontWeight: 700 }}>({locations.length})</span>
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Dropdown Master Categories Manager */}
       {isAdmin && (
         <div id="settings-categories" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
-            "Master Dropdown Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
-            <Tag size={20} color="var(--accent-primary)" />
+            "Master Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
+            <Tag size={20} color="var(--accent-primary)" />,
+            "Pilihan kategori agenda/pekerjaan yang muncul di dropdown dan filter sistem."
           )}
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
             Kelola pilihan opsi kategori yang muncul otomatis (*auto-suggest*) saat menambah atau mengedit pekerjaan.
@@ -973,11 +1194,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       {isAdmin && (
         <div id="settings-pics" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
-            "Master Dropdown PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
-            <Users size={20} color="var(--accent-primary)" />
+            "Master PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
+            <Users size={20} color="var(--accent-primary)" />,
+            "Daftar nama PIC dan personil yang ditugaskan dalam pekerjaan/agenda."
           )}
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan.
+            Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan dan foto profil.
           </p>
         </div>
       )}
@@ -986,7 +1208,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         <div id="settings-statuses" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
-            <Tag size={20} color="var(--accent-primary)" />
+            <Tag size={20} color="var(--accent-primary)" />,
+            "Kolom status Kanban Board dan tahapan progres pekerjaan."
           )}
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
         </div>
@@ -996,9 +1219,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         <div id="settings-priorities" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
-            <Tag size={20} color="var(--accent-primary)" />
+            <Tag size={20} color="var(--accent-primary)" />,
+            "Tingkat urgensi pekerjaan untuk klasifikasi matriks risiko dan filter."
           )}
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
+        </div>
+      )}
+
+      {/* Master Locations Manager */}
+      {isAdmin && (
+        <div id="settings-locations" className="glass" style={{ padding: '24px' }}>
+          {renderListEditor(
+            "Master Lokasi & Ruang Rapat", 'location', locations, newLocationInput, setNewLocationInput,
+            <MapPin size={20} color="var(--accent-primary)" />,
+            "Daftar nama ruang rapat, gedung, atau link Zoom meeting yang muncul di pilihan auto-complete form pekerjaan."
+          )}
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Memudahkan tim memilih ruangan (misal: R.R Komp TKMR, Ruang Pleno, KPJ) atau link meeting online tanpa perlu mengetik ulang.
+          </p>
         </div>
       )}
 
