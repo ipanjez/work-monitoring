@@ -31,7 +31,8 @@ export async function GET() {
       session_timeout_hours: 24,
       session_timeout: 10,
       backup_reminder_days: 0,
-      last_backup_date: ''
+      last_backup_date: '',
+      calendar_timezone: 'Asia/Makassar'
     };
 
     settings.forEach(setting => {
@@ -211,6 +212,14 @@ export async function POST(request: Request) {
         where: { key: 'backup_reminder_days' },
         update: { value: String(body.backup_reminder_days) },
         create: { key: 'backup_reminder_days', value: String(body.backup_reminder_days) }
+      });
+    }
+
+    if (body.calendar_timezone !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'calendar_timezone' },
+        update: { value: String(body.calendar_timezone).trim() },
+        create: { key: 'calendar_timezone', value: String(body.calendar_timezone).trim() }
       });
     }
 

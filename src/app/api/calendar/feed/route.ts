@@ -44,6 +44,16 @@ export async function GET(req: Request) {
       orderBy: { startDate: 'asc' },
     });
 
+    // Timezone configuration (Priority: Query param `tz` -> DB setting `calendar_timezone` -> Default 'Asia/Makassar')
+    const tzParam = searchParams.get('tz');
+    const tzSetting = await prisma.appSetting.findUnique({ where: { key: 'calendar_timezone' } });
+    const timezone = (tzParam || tzSetting?.value || 'Asia/Makassar').trim();
+
+    // App/Dept name for calendar title
+    const appSetting = await prisma.appSetting.findUnique({ where: { key: 'app_name' } });
+    const deptSetting = await prisma.appSetting.findUnique({ where: { key: 'dept_name' } });
+    const calTitle = `${deptSetting?.value || appSetting?.value || 'DeptMonitor'} - Jadwal Pekerjaan`;
+
     // Build iCal manually for maximum reliability
     const now = new Date();
     const nowStr = toIcalDate(now);
@@ -54,8 +64,8 @@ export async function GET(req: Request) {
       'PRODID:-//DeptMonitor//Work Monitoring Calendar//ID',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:DeptMonitor - Jadwal Pekerjaan',
-      'X-WR-TIMEZONE:Asia/Jakarta',
+      `X-WR-CALNAME:${escapeIcal(calTitle)}`,
+      `X-WR-TIMEZONE:${timezone}`,
       'X-WR-CALDESC:Feed kalender otomatis dari sistem monitoring pekerjaan',
     ];
 
@@ -113,8 +123,8 @@ export async function GET(req: Request) {
         icsLines.push('BEGIN:VEVENT');
         icsLines.push(`UID:task-${task.id}@deptmonitor.vercel.app`);
         icsLines.push(`DTSTAMP:${nowStr}`);
-        icsLines.push(`DTSTART;TZID=Asia/Jakarta:${toIcalDate(dtStart)}`);
-        icsLines.push(`DTEND;TZID=Asia/Jakarta:${toIcalDate(dtEnd)}`);
+        icsLines.push(`DTSTART;TZID=${timezone}:${toIcalDate(dtStart)}`);
+        icsLines.push(`DTEND;TZID=${timezone}:${toIcalDate(dtEnd)}`);
         icsLines.push(`LAST-MODIFIED:${toIcalDate(updated)}`);
         icsLines.push(`SEQUENCE:${task.editCount || 0}`);
         icsLines.push(`SUMMARY:${escapeIcal(`[${task.kategori || 'Umum'}] ${task.nama}`)}`);
