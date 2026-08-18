@@ -1091,6 +1091,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 Waktu jeda tanpa aktivitas (mouse, keyboard, scroll) sebelum pengguna otomatis di-logout (Default: 10 menit).
               </p>
 
+              <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                ℹ️ <strong>Kebijakan Sesi Aplikasi:</strong> Pengaturan ini berlaku secara menyeluruh sebagai standar keamanan bagi seluruh akun pengguna aplikasi. Akun pengguna tanpa hak akses <em>&quot;Konfigurasi Limit & Sesi&quot;</em> akan otomatis mematuhi aturan ini (atau nilai default 24 jam / 10 menit). Hak akses dapat dikelola di menu <strong>Sistem User &gt; Matriks Akses Role</strong>.
+              </div>
+
               {session?.user && (session.user as any).loginAt && (
                 <div style={{ marginTop: '12px', padding: '12px', background: 'var(--background-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
                   <strong>Informasi Sesi Anda:</strong><br />
