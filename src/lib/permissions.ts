@@ -112,9 +112,9 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     category: 'SETTINGS',
     label: 'Cadangan & Pemulihan Database (Backup/Restore)',
     shortLabel: 'Backup & Restore',
-    menuLocation: 'Menu Pengaturan (/settings) > Cadangan & Export Database',
-    description: 'Mengunduh salinan backup lengkap database & file (.zip), restore data, dan mengatur interval pengingat backup.',
-    impact: 'Jika tidak dicentang, bagian Backup & Restore Database di menu Pengaturan disembunyikan.'
+    menuLocation: 'Menu Pengaturan (/settings) > Cadangan & Export Database & Pop-up Global Pengingat Backup',
+    description: 'Mengunduh salinan backup lengkap database JSON beserta file lampiran (.zip), memulihkan (restore) data, mengatur frekuensi jadwal pengingat pencadangan, serta menerima notifikasi pop-up modal "Pengingat Pencadangan Berkala".',
+    impact: 'Jika tidak dicentang, bagian Cadangan & Export Database di menu Pengaturan disembunyikan, dan pengguna tidak akan menerima notifikasi pop-up pengingat pencadangan data.'
   },
 
   // --- Kategori 3: Administrasi Akun & Audit Log ---
