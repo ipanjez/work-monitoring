@@ -1022,22 +1022,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               />
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Waktu Sisa Sesi Inaktif (Menit)
-              </label>
-              <input
-                type="number"
-                className="input"
-                value={sessionTimeoutMinutes}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSessionTimeoutMinutes(e.target.value)}
-                placeholder="Contoh: 10"
-                min="1"
-              />
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                Waktu maksimal (dalam menit) sebelum pengguna di-logout otomatis jika tidak ada aktivitas (mouse/keyboard).
-              </p>
-            </div>
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
