@@ -28,9 +28,9 @@ export async function GET() {
       app_logo: '',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100,
-      session_timeout_hours: 720,
+      session_timeout_hours: 24,
       session_timeout: 10,
-      backup_reminder_days: 7,
+      backup_reminder_days: 0,
       last_backup_date: ''
     };
 

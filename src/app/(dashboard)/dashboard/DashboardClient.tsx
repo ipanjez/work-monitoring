@@ -43,6 +43,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useMaster } from '@/context/MasterContext';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
+import BackupReminderModal from '@/components/BackupReminderModal';
 
 ChartJS.register(
   CategoryScale,
@@ -58,7 +59,15 @@ ChartJS.register(
 
 
 
-export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[] }) {
+interface DashboardClientProps {
+  tasks: Task[];
+  initialBackupSettings?: {
+    backup_reminder_days: number;
+    last_backup_date: string;
+  };
+}
+
+export default function DashboardClient({ tasks: initialTasks, initialBackupSettings }: DashboardClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   useEffect(() => {
@@ -97,9 +106,26 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   
-  const [backupReminderDays, setBackupReminderDays] = useState<number>(0);
-  const [lastBackupDate, setLastBackupDate] = useState<string>('');
-  const [showBackupReminder, setShowBackupReminder] = useState<boolean>(false);
+  const [backupReminderDays, setBackupReminderDays] = useState<number>(initialBackupSettings?.backup_reminder_days ?? 0);
+  const [lastBackupDate, setLastBackupDate] = useState<string>(initialBackupSettings?.last_backup_date ?? '');
+  const [showBackupReminder, setShowBackupReminder] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const isDismissed = sessionStorage.getItem('dismissed_backup_reminder') === 'true';
+    if (isDismissed) return false;
+    const days = initialBackupSettings?.backup_reminder_days ?? 0;
+    if (days === 0) return false;
+    if (days === -1) return true; // Setiap Kali Login
+    if (days > 0) {
+      const lastDateStr = initialBackupSettings?.last_backup_date;
+      if (!lastDateStr) return true;
+      const lastDate = new Date(lastDateStr);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays >= days;
+    }
+    return false;
+  });
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -121,24 +147,33 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
           
           if (data.backup_reminder_days !== undefined) {
-            const days = Number(data.backup_reminder_days) || 0;
+            const days = Number(data.backup_reminder_days);
             setBackupReminderDays(days);
             
-            if (days > 0) {
-              const lastDateStr = data.last_backup_date;
-              setLastBackupDate(lastDateStr || '');
-              
-              if (!lastDateStr) {
+            const lastDateStr = data.last_backup_date || '';
+            setLastBackupDate(lastDateStr);
+
+            const isDismissed = typeof window !== 'undefined' && sessionStorage.getItem('dismissed_backup_reminder') === 'true';
+            if (!isDismissed) {
+              if (days === -1) {
                 setShowBackupReminder(true);
-              } else {
-                const lastDate = new Date(lastDateStr);
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - lastDate.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                if (diffDays >= days) {
+              } else if (days > 0) {
+                if (!lastDateStr) {
                   setShowBackupReminder(true);
+                } else {
+                  const lastDate = new Date(lastDateStr);
+                  const now = new Date();
+                  const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (diffDays >= days) {
+                    setShowBackupReminder(true);
+                  } else {
+                    setShowBackupReminder(false);
+                  }
                 }
+              } else {
+                setShowBackupReminder(false);
               }
             }
           }
@@ -806,6 +841,13 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     return acc;
   }, {} as Record<string, number>);
 
+  const handleDismissBackupReminder = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dismissed_backup_reminder', 'true');
+    }
+    setShowBackupReminder(false);
+  };
+
   const handleDownloadBackup = async () => {
     const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
     try {
@@ -1007,27 +1049,14 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {showBackupReminder && (
-        <div style={{ background: 'var(--accent-primary)', color: 'white', padding: '16px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <AlertTriangle size={24} />
-            <div>
-              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Saatnya Backup Data Anda!</h4>
-              <p style={{ margin: 0, fontSize: '13px', opacity: 0.9, marginTop: '2px' }}>
-                {lastBackupDate ? `Sudah ${backupReminderDays} hari atau lebih sejak pencadangan terakhir Anda pada ${new Date(lastBackupDate).toLocaleDateString('id-ID')}.` : `Anda belum pernah melakukan pencadangan database.`}
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setShowBackupReminder(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', padding: '8px 16px', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, transition: '0.2s' }}>
-              Nanti Saja
-            </button>
-            <button onClick={handleDownloadBackup} style={{ background: 'white', color: 'var(--accent-primary)', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}>
-              <Download size={14} /> Download Backup Sekarang
-            </button>
-          </div>
-        </div>
-      )}
+      <BackupReminderModal
+        isOpen={showBackupReminder}
+        onClose={handleDismissBackupReminder}
+        onDownloadBackup={handleDownloadBackup}
+        reminderDays={backupReminderDays}
+        lastBackupDate={lastBackupDate}
+        tasks={tasks}
+      />
 
       {/* Header Controls */}
       <UniversalFilterBar 

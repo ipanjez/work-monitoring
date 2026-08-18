@@ -163,6 +163,9 @@ export default function Sidebar() {
   if (pathname.startsWith('/auth/')) return null;
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('dismissed_backup_reminder');
+    }
     await signOut({ callbackUrl: '/auth/signin' });
   };
 

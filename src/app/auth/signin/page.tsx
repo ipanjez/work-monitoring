@@ -69,6 +69,9 @@ function SignInContent() {
     });
 
     if (res?.ok) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('dismissed_backup_reminder');
+      }
       toast.success('Berhasil masuk!');
       router.push('/');
       router.refresh();

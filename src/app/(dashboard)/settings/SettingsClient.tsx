@@ -40,7 +40,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
-  const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(720);
+  const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(24);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
   const [backupReminderDays, setBackupReminderDays] = useState<number | string>('');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -585,9 +585,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           max_file_size_mb: Number(maxFileSizeMb) || 25,
           max_task_files_size_mb: Number(maxTaskFilesSizeMb) || 100,
           max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
-          session_timeout_hours: Number(sessionTimeoutHours) || 720,
+          session_timeout_hours: Number(sessionTimeoutHours) || 24,
           session_timeout: Number(sessionTimeoutMinutes) || 10,
-          backup_reminder_days: Number(backupReminderDays) || 0
+          backup_reminder_days: (backupReminderDays !== '' && !isNaN(Number(backupReminderDays))) ? Number(backupReminderDays) : 0
         })
       });
       
@@ -1071,27 +1071,45 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               >
                 <option value={1}>1 Jam</option>
                 <option value={12}>12 Jam</option>
-                <option value={24}>1 Hari</option>
-                <option value={168}>7 Hari</option>
-                <option value={720}>30 Hari</option>
+                <option value={24}>24 Jam (1 Hari) - Default</option>
+                <option value={168}>7 Hari (1 Minggu)</option>
+                <option value={720}>30 Hari (1 Bulan)</option>
               </select>
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                Jika pengguna tidak aktif / menutup aplikasi melampaui batas waktu ini, sistem akan otomatis mengeluarkan (logout) pengguna tersebut.
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
+                Batas maksimal durasi token sesi login sebelum otomatis kedaluwarsa dan pengguna diminta login kembali (Default: 24 jam).
+              </p>
+
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Waktu Sisa Sesi Inaktif (Menit)
+              </label>
+              <input
+                type="number"
+                className="input"
+                value={sessionTimeoutMinutes}
+                onChange={(e) => setSessionTimeoutMinutes(e.target.value)}
+                min="1"
+                max="120"
+                placeholder="Contoh: 10"
+                style={{ width: '130px' }}
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '12px' }}>
+                Waktu jeda tanpa aktivitas (mouse, keyboard, scroll) sebelum pengguna otomatis di-logout (Default: 10 menit).
               </p>
 
               {session?.user && (session.user as any).loginAt && (
                 <div style={{ marginTop: '12px', padding: '12px', background: 'var(--background-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
                   <strong>Informasi Sesi Anda:</strong><br />
                   Login pada: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}<br />
-                  Sisa waktu sesi Anda: {
+                  Sisa waktu sesi login Anda: {
                     (() => {
-                      const expiresAt = (session.user as any).loginAt + (Number(sessionTimeoutHours) || 720) * 3600000;
+                      const expiresAt = (session.user as any).loginAt + (Number(sessionTimeoutHours) || 24) * 3600000;
                       const remainingMs = expiresAt - Date.now();
                       if (remainingMs <= 0) return 'Kedaluwarsa (akan logout)';
                       const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
                       const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                       const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-                      return `${days} hari, ${hours} jam, ${minutes} menit`;
+                      if (days > 0) return `${days} hari, ${hours} jam, ${minutes} menit`;
+                      return `${hours} jam, ${minutes} menit`;
                     })()
                   }
                 </div>
@@ -1156,31 +1174,86 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             Unduh seluruh salinan data pekerjaan dan pengaturan dalam format JSON untuk cadangan (*backup*) aman, atau pulihkan dari cadangan sebelumnya.
           </p>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-              Jadwal Pengingat Backup (Hari)
+          <div style={{ marginBottom: '24px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Jadwal Pengingat Pencadangan Data
             </label>
-            <input 
-              type="number" 
-              className="input" 
-              value={backupReminderDays} 
-              onChange={e => setBackupReminderDays(e.target.value)}
-              placeholder="Misal: 7"
-              min="0"
-              style={{ width: '120px' }}
-            />
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '8px' }}>
-              Isi 0 untuk menonaktifkan pengingat.
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <select
+                className="input"
+                style={{ width: 'auto', minWidth: '220px', fontWeight: 500 }}
+                value={
+                  backupReminderDays === -1 || backupReminderDays === '-1' 
+                    ? '-1' 
+                    : backupReminderDays === 0 || backupReminderDays === '0' || backupReminderDays === ''
+                    ? '0' 
+                    : ['1', '3', '7', '14', '30'].includes(String(backupReminderDays)) 
+                    ? String(backupReminderDays) 
+                    : 'custom'
+                }
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'custom') {
+                    if (['0', '-1', ''].includes(String(backupReminderDays))) {
+                      setBackupReminderDays(7);
+                    }
+                  } else {
+                    setBackupReminderDays(Number(val));
+                  }
+                }}
+              >
+                <option value="0">❌ Nonaktif (Tidak ada pengingat)</option>
+                <option value="-1">🔔 Setiap Kali Login</option>
+                <option value="1">⏱️ Setiap 1 Hari</option>
+                <option value="3">⏱️ Setiap 3 Hari</option>
+                <option value="7">⏱️ Setiap 7 Hari (1 Minggu)</option>
+                <option value="14">⏱️ Setiap 14 Hari (2 Minggu)</option>
+                <option value="30">⏱️ Setiap 30 Hari (1 Bulan)</option>
+                <option value="custom">⚙️ Kustom (Isi jumlah hari)</option>
+              </select>
+
+              {(!['0', '-1', ''].includes(String(backupReminderDays)) && !['1', '3', '7', '14', '30'].includes(String(backupReminderDays))) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type="number"
+                    className="input"
+                    value={backupReminderDays}
+                    onChange={e => setBackupReminderDays(e.target.value)}
+                    min="1"
+                    style={{ width: '90px' }}
+                    placeholder="Hari"
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Hari</span>
+                </div>
+              )}
+
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={(e) => handleSaveSettings(e as any)} 
+                disabled={isSavingSettings}
+                style={{ padding: '8px 16px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Jadwal'}
+              </button>
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+              {Number(backupReminderDays) === -1 ? (
+                <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>
+                  ✨ Pengingat akan selalu muncul sebagai pop-up setiap kali pengguna login baru.
+                </span>
+              ) : Number(backupReminderDays) > 0 ? (
+                <span>
+                  🕒 Pengingat akan muncul di Dashboard setiap <strong>{backupReminderDays} hari</strong> sejak tanggal backup terakhir.
+                </span>
+              ) : (
+                <span>
+                  🚫 Pengingat dinonaktifkan (pop-up tidak akan pernah muncul).
+                </span>
+              )}
             </p>
-            <button 
-              type="button" 
-              className="btn btn-primary" 
-              onClick={(e) => handleSaveSettings(e as any)} 
-              disabled={isSavingSettings}
-              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Jadwal Pengingat'}
-            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>

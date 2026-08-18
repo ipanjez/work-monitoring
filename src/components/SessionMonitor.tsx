@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 export default function SessionMonitor() {
   const { data: session, status } = useSession();
-  const [timeoutMs, setTimeoutMs] = useState<number>(30 * 24 * 60 * 60 * 1000); // default 30 days
+  const [timeoutMs, setTimeoutMs] = useState<number>(24 * 60 * 60 * 1000); // default 24 hours
 
   useEffect(() => {
     // Fetch session timeout from settings

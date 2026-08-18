@@ -66,6 +66,9 @@ export default function UserProfileButton() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('dismissed_backup_reminder');
+    }
     await signOut({ callbackUrl: '/auth/signin' });
   };
 

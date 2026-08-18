@@ -4,11 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest } from 'next/server';
 
 async function getDynamicOptions() {
-  let sessionTimeoutHours = 720; // Default 30 days
+  let sessionTimeoutHours = 24; // Default 24 hours
   try {
     const setting = await prisma.appSetting.findUnique({ where: { key: 'session_timeout_hours' } });
     if (setting) {
-      sessionTimeoutHours = Number(setting.value) || 720;
+      sessionTimeoutHours = Number(setting.value) || 24;
     }
   } catch (e) {
     console.error('Failed to load session_timeout_hours', e);
