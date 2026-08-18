@@ -175,48 +175,39 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           parsedSubTasks = raw.map((st: any) => ({
             ...st,
             id: Math.random().toString(36).substring(2, 9),
-            status: 'To Do',
-            logs: [{ status: `${st.text} (To Do)`, timestamp: new Date().toISOString() }]
           }));
         }
       } catch (e) {}
     }
 
-    const origStart = new Date(task.startDate);
-    const origEnd = new Date(task.endDate || task.startDate);
-    const diffDays = Math.max(0, Math.round((origEnd.getTime() - origStart.getTime()) / (1000 * 60 * 60 * 24)));
-    const today = new Date();
-    const newEnd = new Date(today);
-    newEnd.setDate(newEnd.getDate() + diffDays);
-
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const newEndStr = format(newEnd, 'yyyy-MM-dd');
+    const startStr = typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0];
+    const endStr = typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0];
 
     setEditingTask({
-      nama: `${task.nama} (Salinan)`,
+      nama: task.nama,
       pic: task.pic,
-      status: 'To Do',
+      status: task.status,
       prioritas: task.prioritas || 'Medium',
       kategori: task.kategori || 'Umum',
-      progress: 0,
+      progress: task.progress || 0,
       deskripsi: task.deskripsi || '',
       catatan: task.catatan || '',
       lokasi: task.lokasi,
-      filesList: [],
+      filesList: getTaskFiles(task),
       additionalPicsList: getAdditionalPics(task),
       subTasksList: parsedSubTasks,
       isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
       startTime: task.startTime || '',
       endTime: task.endTime || '',
       repetisi: task.repetisi || 'Tidak Berulang',
-      startDate: todayStr,
-      endDate: newEndStr,
+      startDate: startStr,
+      endDate: endStr,
       isCustomCategory: false,
       isCustomPic: false,
     });
     setSelectedTaskForDetail(null);
     setIsEditModalOpen(true);
-    toast.success('Formulir duplikasi siap. Silakan tinjau dan klik Simpan.');
+    toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
   };
 
   const handleSaveModal = async (payloadData: any) => {
