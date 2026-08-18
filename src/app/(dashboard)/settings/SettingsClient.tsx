@@ -982,13 +982,13 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Subjudul / Departemen</label>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Departemen / Sub-Unit</label>
               <input
                 type="text"
                 value={deptName}
                 onChange={e => setDeptName(e.target.value)}
                 className="input"
-                placeholder="MRK"
+                placeholder="Contoh: MRK atau Divisi TI & Sistem Informasi"
               />
             </div>
           </div>
@@ -1250,18 +1250,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           </h3>
 
           <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Nama Departemen / Sub-Unit
-              </label>
-              <input
-                className="input"
-                value={deptName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeptName(e.target.value)}
-                placeholder="Contoh: Divisi TI & Sistem Informasi"
-              />
-            </div>
-
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Maksimal Ukuran per File Lampiran (MB)
