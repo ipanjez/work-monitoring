@@ -8,7 +8,8 @@ import {
   ChevronDown, Settings, AlertCircle, Printer, KeyRound,
   FileText, BarChart3, Clock, Shield, Download, Upload,
   MousePointerClick, ArrowRight, Zap, Eye, Bell, Search,
-  Filter, Globe, Palette, Database, UserCheck, Lock
+  Filter, Globe, Palette, Database, UserCheck, Lock,
+  FileSpreadsheet, MapPin, Tag, Copy, Sparkles, Sliders
 } from 'lucide-react';
 
 const FeatureVisual = ({ children, gradient, interactiveMockup }: { children: React.ReactNode; gradient: string; interactiveMockup?: React.ReactNode }) => (
@@ -162,31 +163,35 @@ export default function GuidePage() {
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Aplikasi menggunakan sistem autentikasi berbasis <strong>NPK (Nomor Pokok Karyawan)</strong>. Berikut alur aksesnya:
+            Aplikasi menggunakan sistem autentikasi berbasis <strong>NPK (Nomor Pokok Karyawan)</strong> yang aman dan terintegrasi dengan sistem peran (*Role-Based Access Control*):
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <StepBadge step={1} />
-              <div><strong>Buka halaman Login</strong> — Masukkan NPK dan Password yang telah diberikan oleh Administrator, lalu klik <em>Masuk</em>.</div>
+              <div><strong>Halaman Login:</strong> Masukkan NPK dan Password yang telah didaftarkan oleh Administrator, lalu klik <em>Masuk</em>.</div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <StepBadge step={2} />
-              <div><strong>Lupa Password?</strong> — Klik link &quot;Lupa Password&quot; di halaman Login. Masukkan NPK Anda, dan permintaan reset akan dikirim ke Admin untuk disetujui.</div>
+              <div><strong>Lupa Password:</strong> Klik tautan <em>Lupa Password?</em> pada layar login. Masukkan NPK Anda untuk mengirim permintaan reset langsung ke panel Administrator.</div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <StepBadge step={3} />
-              <div><strong>Profil Pengguna</strong> — Setelah login, klik foto/nama Anda di pojok kanan atas untuk mengubah nama, email, avatar, dan password kapan saja.</div>
+              <div><strong>Profil & Keamanan:</strong> Klik foto profil/nama di pojok kanan atas untuk memperbarui nama tampilan, email notifikasi, avatar foto, dan mengganti password pribadi.</div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <StepBadge step={4} />
+              <div><strong>Tingkatan Peran (Role):</strong> Sistem membagi peran menjadi <em>ADMIN</em> (kelola penuh), <em>MEMBER</em> (tambah, edit, dan kelola tugas), serta <em>VIEWER</em> (khusus monitoring).</div>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(139,92,246,0.05), rgba(59,130,246,0.05))">
-            <MiniCard icon={<Lock size={20} />} label="Masukkan NPK" color="#8b5cf6" />
+            <MiniCard icon={<Lock size={20} />} label="Input NPK" color="#8b5cf6" />
             <FlowArrow />
-            <MiniCard icon={<KeyRound size={20} />} label="Verifikasi" color="#3b82f6" />
+            <MiniCard icon={<KeyRound size={20} />} label="Verifikasi Sesi" color="#3b82f6" />
             <FlowArrow />
-            <MiniCard icon={<UserCheck size={20} />} label="Login Berhasil" color="#10b981" />
+            <MiniCard icon={<UserCheck size={20} />} label="Akses Dashboard" color="#10b981" />
           </FeatureVisual>
           <TipBox>
-            <strong>Tips:</strong> Jika akun Anda berstatus <em>PENDING</em>, hubungi Admin untuk mengaktifkannya terlebih dahulu.
+            <strong>Tips:</strong> Jika akun berstatus <em>PENDING</em>, hubungi Administrator untuk aktivasi akun dan penetapan role.
           </TipBox>
         </>
       )
@@ -196,33 +201,33 @@ export default function GuidePage() {
       icon: <LayoutDashboard size={24} />,
       color: '#3b82f6',
       bg: 'rgba(59, 130, 246, 0.1)',
-      title: '2. Dashboard & Analitik',
+      title: '2. Dashboard & Analitik Kinerja',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Dashboard adalah <strong>pusat kontrol</strong> yang menampilkan ringkasan seluruh metrik kinerja dan pekerjaan secara visual dan real-time.
+            Dashboard adalah <strong>pusat visualisasi dan metrik kinerja</strong> yang menyajikan ringkasan progres secara real-time:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Kartu KPI:</strong> Lihat total pekerjaan, tugas selesai, dan tugas tertunda. Persentase perbandingan performa bulan ini vs bulan lalu.</span>
+              <span><strong>Kartu KPI Utama:</strong> Menampilkan total pekerjaan aktif, pekerjaan selesai (Done), pekerjaan tertunda, dan perbandingan persentase performa terhadap periode sebelumnya.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Filter Global:</strong> Filter berdasarkan <em>Waktu</em>, <em>PIC</em>, <em>Prioritas</em>, <em>Kategori</em>, dan <em>Status</em> untuk drill-down analisis data.</span>
+              <span><strong>Filter Universal:</strong> Menyaring data secara instan berdasarkan rentang tanggal, PIC, kategori, status, dan tingkat prioritas.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Grafik Tren & Distribusi:</strong> Grafik bar penyelesaian bulanan dan grafik donat distribusi beban kerja per PIC.</span>
+              <span><strong>Grafik Tren & Distribusi Beban:</strong> Visualisasi grafik penyelesaian bulanan dan pembagian beban kerja per PIC dalam bentuk diagram interaktif.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Tabel Ringkasan:</strong> Daftar pekerjaan aktif dengan kolom yang dapat di-sort (nama, PIC, kategori, status, tenggat).</span>
+              <span><strong>Tabel Pekerjaan Terkini:</strong> Daftar cepat tugas prioritas dengan status progress, tenggat waktu, dan aksi sekali klik untuk melihat detail.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(59,130,246,0.05), rgba(16,185,129,0.05))" interactiveMockup={<InteractiveChartMockup />}>
             <MiniCard icon={<BarChart3 size={20} />} label="Grafik Tren" color="#3b82f6" />
-            <MiniCard icon={<Filter size={20} />} label="Filter Global" color="#8b5cf6" />
+            <MiniCard icon={<Filter size={20} />} label="Filter Universal" color="#8b5cf6" />
             <MiniCard icon={<Eye size={20} />} label="Detail Modal" color="#10b981" />
             <MiniCard icon={<Search size={20} />} label="Pencarian" color="#f59e0b" />
           </FeatureVisual>
@@ -238,20 +243,20 @@ export default function GuidePage() {
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Visualisasi pekerjaan dalam bentuk <strong>papan Kanban</strong>. Sangat cocok untuk rapat koordinasi dan melacak pergerakan progres tugas.
+            Papan <strong>Kanban visual</strong> sangat efektif digunakan untuk rapat koordinasi rutin dan melacak tahapan eksekusi:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Drag & Drop:</strong> Pindahkan kartu antar kolom status cukup dengan menggeser. Jika dipindah ke kolom &quot;Selesai&quot;, progress otomatis 100%.</span>
+              <span><strong>Drag & Drop Cepat:</strong> Pindahkan kartu pekerjaan antar kolom status (To Do, In Progress, Review, Done) secara lancar melalui gesture geser.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Sort & Filter Kolom:</strong> Setiap kolom memiliki opsi pengurutan (Terbaru, Prioritas, Tenggat Terdekat).</span>
+              <span><strong>Informasi Lengkap pada Kartu:</strong> Setiap kartu menampilkan lencana prioritas berwarna, foto PIC utama, jumlah PIC tambahan, indikator subtask, dan batas tenggat waktu.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Kartu Dinamis:</strong> Setiap kartu menampilkan indikator prioritas, avatar PIC, tenggat waktu, dan progress bar sub-tugas.</span>
+              <span><strong>Opsi Pengurutan Kolom:</strong> Atur urutan kartu di setiap kolom berdasarkan Tenggat Terdekat, Prioritas Tertinggi, atau Pembaruan Terbaru.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.05))" interactiveMockup={<InteractiveKanbanMockup />}>
@@ -262,7 +267,7 @@ export default function GuidePage() {
             <MiniCard icon={<CheckCircle2 size={20} />} label="Done" color="#10b981" />
           </FeatureVisual>
           <TipBox>
-            <strong>Tips:</strong> Klik kartu untuk membuka detail lengkap, termasuk sub-tugas, komentar, dan file lampiran.
+            <strong>Tips:</strong> Memindahkan kartu ke kolom &quot;Done&quot; otomatis mengubah progress pekerjaan menjadi 100% dan mencatat riwayat log penyelesaian.
           </TipBox>
         </>
       )
@@ -276,31 +281,114 @@ export default function GuidePage() {
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Halaman <strong>Daftar Pekerjaan</strong> menampilkan tabel detail lengkap. Ideal untuk pengelolaan massal dan melihat detail spesifik setiap tugas.
+            Halaman <strong>Daftar Pekerjaan</strong> menyediakan tabel komprehensif untuk manajemen tugas harian, checklist sub-tugas, dan log audit:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Sub-Tugas (Checklist):</strong> Pecah pekerjaan menjadi item-item kecil. Setiap sub-tugas memiliki PIC, tanggal mulai, dan tenggat tersendiri.</span>
+              <span><strong>Sub-Tugas (Checklist Bertingkat):</strong> Bagi pekerjaan besar menjadi sub-pekerjaan spesifik. Setiap sub-tugas dapat memiliki PIC mandiri, PIC tambahan, dan tanggal tenggat waktu tersendiri.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Edit Massal (Bulk Edit):</strong> Centang beberapa baris, lalu klik &quot;Edit Terpilih&quot; untuk mengubah PIC, Status, Kategori, atau Jadwal sekaligus.</span>
+              <span><strong>Multi-PIC & Tag Selector:</strong> Tetapkan 1 PIC Utama beserta beberapa PIC Tambahan dengan chip tag yang rapi dan terhubung ke Master Data.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Log Perubahan (Audit Trail):</strong> Setiap perubahan dicatat otomatis — siapa, kapan, dan apa yang berubah.</span>
+              <span><strong>Multi-File Attachments:</strong> Unggah banyak dokumen eviden (PDF, Excel, Word, Gambar) ke satu pekerjaan dengan pratinjau file interaktif.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Ekspor Excel Berwarna:</strong> Ekspor ke Excel dengan format warna sel otomatis berdasarkan Status/Prioritas.</span>
+              <span><strong>Duplikasi 1-ke-1:</strong> Tombol duplikasi menyalin seluruh data pekerjaan (termasuk sub-tugas dan PIC) untuk mempercepat pembuatan tugas berulang.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Edit Massal (Bulk Actions):</strong> Pilih beberapa pekerjaan untuk mengubah PIC, Kategori, Prioritas, atau Status secara serentak.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(16,185,129,0.05), rgba(59,130,246,0.05))">
             <MiniCard icon={<FileText size={20} />} label="Detail Tugas" color="#10b981" />
             <MiniCard icon={<MousePointerClick size={20} />} label="Edit Massal" color="#3b82f6" />
-            <MiniCard icon={<Download size={20} />} label="Ekspor Excel" color="#f59e0b" />
-            <MiniCard icon={<Bell size={20} />} label="Notifikasi" color="#ef4444" />
+            <MiniCard icon={<Copy size={20} />} label="Duplikasi" color="#f59e0b" />
+            <MiniCard icon={<Bell size={20} />} label="Email Reminder" color="#ef4444" />
+          </FeatureVisual>
+        </>
+      )
+    },
+    {
+      id: 'smart-add',
+      icon: <Zap size={24} />,
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.1)',
+      title: '5. Tambah Cepat (Smart Add / AI Parser)',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+            Fitur <strong>Smart Add / AI Parser</strong> memungkinkan pembuatan banyak tugas sekaligus hanya dengan menyalin teks agenda, memo, atau notula rapat bebas:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <StepBadge step={1} />
+              <div><strong>Salin & Tempel Teks:</strong> Tempel teks agenda dari WhatsApp, email, atau dokumen (contoh format memuat Judul, Hari/Tanggal, Waktu, Tempat/Zoom, PIC, Kategori).</div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <StepBadge step={2} />
+              <div><strong>Ekstraksi Cerdas Otomatis:</strong> Parser otomatis mendeteksi Tanggal Mulai/Selesai, Jam Kerja, PIC Utama, PIC Tambahan, Master Lokasi, Kategori, dan Prioritas.</div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <StepBadge step={3} />
+              <div><strong>Tinjau & Edit Cepat:</strong> Setiap pekerjaan ditampilkan dalam kartu yang dapat diedit langsung. Tersedia <em>Dropdown PIC Tambahan</em> dengan sistem tag chip dan <em>Dropdown Master Lokasi</em>.</div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <StepBadge step={4} />
+              <div><strong>Aksi Massal & Simpan:</strong> Terapkan PIC atau Kategori ke seluruh baris yang diekstrak dengan 1 klik, lalu simpan semua ke database.</div>
+            </div>
+          </div>
+          <FeatureVisual gradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(139,92,246,0.05))">
+            <MiniCard icon={<FileText size={20} />} label="Paste Teks" color="#f59e0b" />
+            <FlowArrow />
+            <MiniCard icon={<Sparkles size={20} />} label="AI Parser" color="#8b5cf6" />
+            <FlowArrow />
+            <MiniCard icon={<Database size={20} />} label="Simpan Sekaligus" color="#10b981" />
+          </FeatureVisual>
+          <TipBox>
+            <strong>Tips:</strong> Manfaatkan tombol <em>Contoh Template Cepat</em> di dalam modal Smart Add untuk melihat contoh format teks yang optimal.
+          </TipBox>
+        </>
+      )
+    },
+    {
+      id: 'excel-import-export',
+      icon: <FileSpreadsheet size={24} />,
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.1)',
+      title: '6. Template Excel & Impor/Ekspor Data',
+      content: (
+        <>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
+            Aplikasi mendukung integrasi penuh dengan Microsoft Excel melalui format <strong>Rich Excel</strong> yang terhubung langsung ke Master Data:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Unduh Template Excel Interaktif:</strong> Template Excel yang diunduh sudah dilengkapi <em>Dropdown Data Validation</em> otomatis untuk PIC Utama, Kategori, Prioritas, Status, dan Master Lokasi.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Dukungan Sub-Pekerjaan & Multi-PIC di Excel:</strong> Anda dapat menulis sub-tugas dengan format <code>[Status] Nama Sub | PIC: Nama | Tenggat: YYYY-MM-DD</code> di dalam satu sel Excel (gunakan Alt+Enter untuk baris baru).</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Pratinjau Impor Interaktif:</strong> Sebelum data Excel masuk ke database, modal pratinjau menampilkan tabel validasi baris lengkap dengan dropdown untuk mengubah lokasi atau menghapus baris keliru.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Ekspor Excel Berwarna:</strong> Ekspor data pekerjaan aktif ke Excel berformat rapi dengan pewarnaan sel dinamis sesuai warna tema status dan prioritas.</span>
+            </div>
+          </div>
+          <FeatureVisual gradient="linear-gradient(135deg, rgba(16,185,129,0.05), rgba(59,130,246,0.05))">
+            <MiniCard icon={<Download size={20} />} label="Unduh Template" color="#10b981" />
+            <MiniCard icon={<FileSpreadsheet size={20} />} label="Dropdown Validasi" color="#3b82f6" />
+            <MiniCard icon={<Upload size={20} />} label="Pratinjau Impor" color="#f59e0b" />
           </FeatureVisual>
         </>
       )
@@ -310,29 +398,29 @@ export default function GuidePage() {
       icon: <CalendarDays size={24} />,
       color: '#06b6d4',
       bg: 'rgba(6, 182, 212, 0.1)',
-      title: '5. Kalender & Integrasi',
+      title: '7. Kalender & Integrasi Jadwal',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Lihat seluruh pekerjaan dalam tampilan <strong>kalender bulanan/mingguan/harian</strong> untuk perencanaan jadwal yang lebih intuitif.
+            Pantau seluruh jadwal pekerjaan dalam tampilan <strong>kalender multi-mode</strong> yang fleksibel dan terintegrasi:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Tampilan Multi-Mode:</strong> Pilih tampilan Bulan, Minggu, Hari, atau Agenda sesuai kebutuhan Anda.</span>
+              <span><strong>Tampilan Multi-Mode:</strong> Pilih mode tampilan Kalender Bulan, Minggu, Hari, atau format List Agenda sesuai preferensi.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Hari Libur Nasional:</strong> Kalender otomatis menampilkan hari libur nasional Indonesia dengan warna merah.</span>
+              <span><strong>Hari Libur Nasional Indonesia:</strong> Kalender secara otomatis mendeteksi dan menandai hari libur nasional serta cuti bersama.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Google Calendar & ICS:</strong> Dari modal detail pekerjaan, Anda dapat menambahkan ke Google Calendar atau mengunduh file .ics.</span>
+              <span><strong>Google Calendar & ICS Sync:</strong> Sinkronkan jadwal pekerjaan langsung ke Google Calendar atau unduh file <code>.ics</code> untuk Outlook / Apple Calendar.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(6,182,212,0.05), rgba(139,92,246,0.05))">
-            <MiniCard icon={<CalendarDays size={20} />} label="Tampilan Bulan" color="#06b6d4" />
-            <MiniCard icon={<Clock size={20} />} label="Tampilan Hari" color="#8b5cf6" />
+            <MiniCard icon={<CalendarDays size={20} />} label="Mode Bulan" color="#06b6d4" />
+            <MiniCard icon={<Clock size={20} />} label="Mode Jam/Hari" color="#8b5cf6" />
             <MiniCard icon={<Globe size={20} />} label="Libur Nasional" color="#ef4444" />
           </FeatureVisual>
         </>
@@ -343,26 +431,30 @@ export default function GuidePage() {
       icon: <Users size={24} />,
       color: '#ec4899',
       bg: 'rgba(236, 72, 153, 0.1)',
-      title: '6. Manajemen Tim & Beban Kerja',
+      title: '8. Manajemen Tim & Analisis Beban Kerja',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Halaman <strong>Tim</strong> menampilkan statistik beban kerja per PIC agar distribusi tugas dapat dimonitor secara adil dan merata.
+            Halaman <strong>Tim</strong> menyajikan metrik beban kerja komprehensif per PIC untuk memastikan distribusi pekerjaan yang adil dan terukur:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Kartu PIC:</strong> Lihat jumlah total, urgent, dan status distribusi tugas per anggota tim.</span>
+              <span><strong>Kartu Statistik PIC:</strong> Pantau jumlah tugas aktif, tugas urgent, tingkat penyelesaian (Done rate), dan rata-rata waktu penyelesaian tugas per individu.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Quick View:</strong> Klik nama PIC untuk melihat daftar pekerjaan yang ditangani.</span>
+              <span><strong>Kalkulasi Multi-PIC:</strong> Sistem secara cerdas menghitung kontribusi tugas baik saat PIC menjadi penanggung jawab utama maupun PIC tambahan.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span><strong>Quick Drawer / Filter Tugas:</strong> Klik kartu PIC untuk memunculkan panel pekerjaan yang sedang dipegang beserta status rincinya.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(236,72,153,0.05), rgba(245,158,11,0.05))">
             <MiniCard icon={<Users size={20} />} label="Daftar PIC" color="#ec4899" />
             <MiniCard icon={<BarChart3 size={20} />} label="Beban Kerja" color="#f59e0b" />
-            <MiniCard icon={<Shield size={20} />} label="Hak Akses" color="#3b82f6" />
+            <MiniCard icon={<Shield size={20} />} label="Matriks Peran" color="#3b82f6" />
           </FeatureVisual>
         </>
       )
@@ -372,38 +464,38 @@ export default function GuidePage() {
       icon: <Settings size={24} />,
       color: '#ef4444',
       bg: 'rgba(239, 68, 68, 0.1)',
-      title: '7. Pengaturan & Master Data',
+      title: '9. Pengaturan Master Data, Hak Akses & Backup',
       content: (
         <>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '16px' }}>
-            Administrator memiliki akses penuh untuk mengatur <strong>master data</strong>, konfigurasi aplikasi, dan backup.
+            Menu <strong>Pengaturan</strong> memberikan kontrol penuh bagi Administrator untuk menyesuaikan alur kerja, keamanan, dan cadangan data:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Master Dropdown:</strong> Kelola opsi PIC, Kategori, Prioritas, Status, dan Lokasi. Semua dropdown di aplikasi merujuk ke data ini.</span>
+              <span><strong>Master Data Terpusat:</strong> Kelola daftar Master PIC, Kategori, Prioritas, Status, dan Master Lokasi (Online Zoom & Offline Ruang Rapat). Seluruh form dan template Excel tersinkronisasi 100% ke data ini.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Warna & Ikon Kustom:</strong> Tetapkan warna dan ikon untuk setiap label Status/Kategori agar mudah dibedakan secara visual.</span>
+              <span><strong>Matriks Hak Akses (Role Permissions):</strong> Atur izin detail (tambah tugas, edit status, hapus, unggah eviden, ekspor data) untuk setiap role (Admin, Member, Viewer).</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Batas Waktu Sesi:</strong> Atur durasi auto-logout (1 jam s.d. 30 hari) dari menu Pengaturan Umum.</span>
+              <span><strong>Personalisasi Branding & Warna:</strong> Ganti nama aplikasi, sub-judul departemen, logo, serta warna label status secara fleksibel.</span>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <CheckCircle2 size={18} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span><strong>Backup & Restore:</strong> Unduh file cadangan JSON yang mencakup seluruh data dan pengaturan. Restore dengan 1 klik.</span>
+              <span><strong>Cadangan & Pemulihan (1-Click Backup / Restore):</strong> Unduh file cadangan lengkap (.zip) yang mencakup seluruh database dan file lampiran. Pulihkan kapan saja dengan 1 klik.</span>
             </div>
           </div>
           <FeatureVisual gradient="linear-gradient(135deg, rgba(239,68,68,0.05), rgba(139,92,246,0.05))">
             <MiniCard icon={<Palette size={20} />} label="Warna & Tema" color="#ef4444" />
-            <MiniCard icon={<Database size={20} />} label="Backup Data" color="#3b82f6" />
-            <MiniCard icon={<Upload size={20} />} label="Restore" color="#10b981" />
-            <MiniCard icon={<Shield size={20} />} label="Hak Akses" color="#8b5cf6" />
+            <MiniCard icon={<MapPin size={20} />} label="Master Lokasi" color="#3b82f6" />
+            <MiniCard icon={<Database size={20} />} label="Backup ZIP" color="#10b981" />
+            <MiniCard icon={<Sliders size={20} />} label="Hak Akses" color="#8b5cf6" />
           </FeatureVisual>
           <TipBox>
-            <strong>Tips:</strong> Lakukan backup berkala (misalnya setiap minggu) untuk mencegah kehilangan data.
+            <strong>Tips:</strong> Lakukan backup ZIP secara berkala dan simpan di media penyimpanan aman untuk menjamin kelangsungan data pekerjaan.
           </TipBox>
         </>
       )
@@ -419,22 +511,22 @@ export default function GuidePage() {
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           #web-area, header, nav, aside, .sidebar, .header-actions-container, .mobile-header, .focus-mode-toggle { display: none !important; }
-          @page { margin: 15mm; size: A4 portrait; }
+          @page { margin: 12mm 15mm; size: A4 portrait; }
           body { background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-          #print-area { display: block !important; width: 100%; font-family: 'Segoe UI', sans-serif; }
-          .print-cover { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; }
-          .print-title { font-size: 32px; font-weight: bold; color: #1e3a8a; margin-bottom: 16px; line-height: 1.3; }
-          .print-subtitle { font-size: 16px; color: #4b5563; margin-bottom: 40px; }
-          .print-toc { page-break-after: always; padding: 40px 0; }
-          .print-toc h2 { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 24px; color: #1e40af; }
-          .print-toc-item { font-size: 15px; margin-bottom: 10px; border-bottom: 1px dotted #d1d5db; padding-bottom: 6px; color: #374151; }
-          .print-section { page-break-inside: avoid; margin-bottom: 30px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }
-          .print-section h2 { font-size: 20px; color: #1e40af; border-bottom: 2px solid #dbeafe; padding-bottom: 8px; margin-bottom: 16px; margin-top: 0; }
-          .print-section p { font-size: 13px; line-height: 1.7; color: #374151; margin-bottom: 12px; }
-          .print-section ul { padding-left: 20px; }
-          .print-section li { font-size: 13px; line-height: 1.6; margin-bottom: 8px; color: #374151; }
-          .print-footer { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+          #print-area { display: block !important; width: 100%; font-family: 'Segoe UI', Arial, sans-serif; }
+          .print-cover { height: 95vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; }
+          .print-title { font-size: 30px; font-weight: bold; color: #1e3a8a; margin-bottom: 14px; line-height: 1.3; }
+          .print-subtitle { font-size: 15px; color: #4b5563; margin-bottom: 30px; }
+          .print-toc { page-break-after: always; padding: 30px 0; }
+          .print-toc h2 { font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 20px; color: #1e40af; border-bottom: 2px solid #dbeafe; padding-bottom: 8px; }
+          .print-toc-item { font-size: 14px; margin-bottom: 8px; border-bottom: 1px dotted #d1d5db; padding-bottom: 5px; color: #374151; display: flex; justify-content: space-between; }
+          .print-section { page-break-inside: avoid; margin-bottom: 24px; padding: 18px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; }
+          .print-section h2 { font-size: 18px; color: #1e40af; border-bottom: 2px solid #dbeafe; padding-bottom: 6px; margin-bottom: 12px; margin-top: 0; }
+          .print-section p { font-size: 12.5px; line-height: 1.6; color: #374151; margin-bottom: 10px; }
+          .print-section ul { padding-left: 18px; margin-top: 6px; margin-bottom: 6px; }
+          .print-section li { font-size: 12.5px; line-height: 1.5; margin-bottom: 6px; color: #374151; }
+          .print-footer { text-align: center; font-size: 10.5px; color: #9ca3af; margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
         }
         @media screen { #print-area { display: none !important; } }
       `}} />
@@ -453,17 +545,17 @@ export default function GuidePage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', color: 'white', marginBottom: '16px' }}>
             <BookOpen size={32} />
           </div>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>Panduan Aplikasi</h1>
-          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', marginBottom: '24px', lineHeight: 1.6 }}>
-            Pelajari semua fitur dan fungsionalitas aplikasi monitoring pekerjaan ini. Klik setiap bagian untuk melihat detail.
+          <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '10px' }}>Panduan Aplikasi Monitoring Pekerjaan</h1>
+          <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)', maxWidth: '650px', margin: '0 auto', marginBottom: '22px', lineHeight: 1.6 }}>
+            Pelajari seluruh alur kerja, modul manajemen tugas, integrasi Excel, Smart Add AI Parser, kalender, hingga pengaturan hak akses sistem.
           </p>
           
           <button 
             onClick={handlePrintPDF}
             className="btn btn-primary"
-            style={{ padding: '12px 24px', fontSize: '15px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
+            style={{ padding: '11px 22px', fontSize: '14.5px', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '12px', boxShadow: '0 8px 16px -4px rgba(59, 130, 246, 0.4)' }}
           >
-            <Printer size={20} />
+            <Printer size={18} />
             Unduh Panduan PDF
           </button>
         </div>
@@ -502,7 +594,7 @@ export default function GuidePage() {
                 onClick={() => toggleAccordion(section.id)}
                 style={{
                   width: '100%',
-                  padding: '20px 24px',
+                  padding: '18px 22px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -513,11 +605,11 @@ export default function GuidePage() {
                   transition: 'background 0.2s'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ padding: '10px', background: section.bg, borderRadius: '12px', color: section.color }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ padding: '9px', background: section.bg, borderRadius: '12px', color: section.color }}>
                     {section.icon}
                   </div>
-                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+                  <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
                     {section.title}
                   </h2>
                 </div>
@@ -525,7 +617,7 @@ export default function GuidePage() {
                   animate={{ rotate: activeAccordion === section.id ? 180 : 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ChevronDown size={22} color="var(--text-secondary)" />
+                  <ChevronDown size={20} color="var(--text-secondary)" />
                 </motion.div>
               </button>
               
@@ -538,7 +630,7 @@ export default function GuidePage() {
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                     style={{ overflow: 'hidden' }}
                   >
-                    <div style={{ padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                    <div style={{ padding: '0 22px 22px 22px', borderTop: '1px solid var(--border-color)', paddingTop: '18px' }}>
                       {section.content}
                     </div>
                   </motion.div>
@@ -551,30 +643,33 @@ export default function GuidePage() {
         <div style={{ marginTop: '32px', padding: '20px 24px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
           <AlertCircle size={22} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '6px' }}>Punya Pertanyaan?</h3>
+            <h3 style={{ fontSize: '15.5px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '5px' }}>Pusat Bantuan & Kendala Teknis</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6 }}>
-              Jika Anda mengalami kendala teknis, salin <strong>Error Clipboard</strong> apabila muncul notifikasi error, dan kirimkan ke tim IT untuk penanganan cepat.
+              Jika Anda mengalami kendala operasional, gunakan tombol <strong>Bantuan & Support</strong> di pojok kanan bawah atau hubungi Administrator sistem untuk bantuan lebih lanjut.
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* ================== PRINT AREA ================== */}
+      {/* ================== PRINT AREA (PDF EXPORT) ================== */}
       <div id="print-area">
         <div className="print-cover">
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📖</div>
-          <h1 className="print-title">Buku Panduan Penggunaan<br/>Aplikasi Monitoring Pekerjaan</h1>
-          <p className="print-subtitle">Versi Resmi — {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <div style={{ marginTop: '40px', color: '#6b7280', fontSize: '13px', maxWidth: '400px', lineHeight: 1.6 }}>
-            Dokumen ini merangkum seluruh instruksi penggunaan modul, fitur, pengaturan, dan mekanisme aplikasi.
+          <div style={{ fontSize: '50px', marginBottom: '14px' }}>📖</div>
+          <h1 className="print-title">Buku Panduan Penggunaan Lengkap<br/>Aplikasi Monitoring Pekerjaan</h1>
+          <p className="print-subtitle">Dokumentasi Standar Operasional — Pembaruan {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <div style={{ marginTop: '36px', color: '#6b7280', fontSize: '12.5px', maxWidth: '440px', lineHeight: 1.6 }}>
+            Buku panduan ini merangkum seluruh fitur, modul Kanban, checklist sub-tugas, AI Parser Smart Add, integrasi Rich Excel, kalender, manajemen tim, dan administrasi hak akses.
           </div>
         </div>
 
         <div className="print-toc">
-          <h2>Daftar Isi</h2>
-          <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <h2>Daftar Isi Panduan</h2>
+          <div style={{ maxWidth: '520px', margin: '0 auto' }}>
             {sections.map(sec => (
-              <div key={sec.id} className="print-toc-item">{sec.title}</div>
+              <div key={sec.id} className="print-toc-item">
+                <span>{sec.title}</span>
+                <span style={{ color: '#9ca3af' }}>Halaman {sections.indexOf(sec) + 1}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -584,78 +679,99 @@ export default function GuidePage() {
             <h2>{sec.title}</h2>
             {sec.id === 'auth' && (
               <>
-                <p>Aplikasi menggunakan sistem autentikasi berbasis NPK (Nomor Pokok Karyawan).</p>
+                <p>Aplikasi menggunakan sistem autentikasi berbasis NPK (Nomor Pokok Karyawan) dengan Role-Based Access Control (Admin, Member, Viewer).</p>
                 <ul>
-                  <li><strong>Login:</strong> Masukkan NPK dan Password yang diberikan Administrator, lalu klik Masuk.</li>
-                  <li><strong>Lupa Password:</strong> Klik &quot;Lupa Password?&quot; di halaman Login. Masukkan NPK, permintaan reset akan dikirim ke Admin.</li>
-                  <li><strong>Profil Pengguna:</strong> Klik nama/foto Anda di pojok kanan atas untuk mengubah nama, email, avatar, dan password.</li>
+                  <li><strong>Login Sistem:</strong> Masukkan NPK dan kata sandi yang telah didaftarkan oleh Administrator.</li>
+                  <li><strong>Lupa Password:</strong> Kirim permintaan reset password secara langsung ke panel Admin melalui tautan di halaman login.</li>
+                  <li><strong>Profil & Keamanan:</strong> Ubah nama, email notifikasi, avatar, dan kata sandi pribadi dari menu profil pengguna.</li>
                 </ul>
               </>
             )}
             {sec.id === 'dashboard' && (
               <>
-                <p>Dashboard adalah pusat kontrol yang menampilkan ringkasan metrik kinerja secara visual dan real-time.</p>
+                <p>Dashboard menyajikan ringkasan kinerja, kartu KPI, dan analisis grafik distribusi tugas secara real-time.</p>
                 <ul>
-                  <li><strong>Kartu KPI:</strong> Total pekerjaan, tugas selesai, tugas tertunda, dengan persentase perbandingan bulan ini vs bulan lalu.</li>
-                  <li><strong>Filter Global:</strong> Filter berdasarkan Waktu, PIC, Prioritas, Kategori, dan Status.</li>
-                  <li><strong>Grafik Tren &amp; Distribusi:</strong> Grafik bar penyelesaian bulanan dan donat distribusi PIC.</li>
-                  <li><strong>Tabel Ringkasan:</strong> Daftar pekerjaan aktif yang dapat di-sort berdasarkan berbagai kolom.</li>
+                  <li><strong>Kartu KPI:</strong> Total tugas, penyelesaian (Done), tugas tertunda, dan tren performa bulanan.</li>
+                  <li><strong>Filter Universal:</strong> Filter data dinamis berdasarkan rentang tanggal, PIC, kategori, status, dan prioritas.</li>
+                  <li><strong>Grafik Tren & Distribusi:</strong> Visualisasi beban kerja per PIC dan tren penyelesaian pekerjaan.</li>
                 </ul>
               </>
             )}
             {sec.id === 'monitoring-board' && (
               <>
-                <p>Visualisasi pekerjaan dalam bentuk papan Kanban untuk rapat koordinasi dan pelacakan progres.</p>
+                <p>Papan Kanban interaktif untuk pemantauan alur kerja, koordinasi tim, dan pembagian tugas harian.</p>
                 <ul>
-                  <li><strong>Drag &amp; Drop:</strong> Pindahkan kartu antar kolom. Jika ke &quot;Selesai&quot;, progress otomatis 100%.</li>
-                  <li><strong>Sort Kolom:</strong> Tiap kolom memiliki pengurutan (Terbaru, Prioritas, Tenggat Terdekat).</li>
-                  <li><strong>Kartu Dinamis:</strong> Menampilkan prioritas, avatar PIC, tenggat waktu, dan progress bar.</li>
+                  <li><strong>Drag & Drop:</strong> Geser kartu antar kolom status (To Do, In Progress, Review, Done).</li>
+                  <li><strong>Informasi Kartu:</strong> Menampilkan prioritas, avatar PIC, jumlah PIC tambahan, dan progress checklist.</li>
+                  <li><strong>Pengurutan:</strong> Urutkan kartu per kolom berdasarkan tenggat terdekat, prioritas, atau waktu pembaruan.</li>
                 </ul>
               </>
             )}
             {sec.id === 'daftar-pekerjaan' && (
               <>
-                <p>Tabel detail untuk pengelolaan massal dan melihat detail spesifik setiap tugas.</p>
+                <p>Tabel detail untuk pengelolaan tugas secara menyeluruh, checklist sub-pekerjaan, dan audit log.</p>
                 <ul>
-                  <li><strong>Sub-Tugas:</strong> Pecah pekerjaan menjadi item kecil dengan PIC dan tenggat terpisah.</li>
-                  <li><strong>Edit Massal:</strong> Centang beberapa baris dan ubah PIC, Status, Kategori, atau Jadwal sekaligus.</li>
-                  <li><strong>Log Perubahan:</strong> Audit trail otomatis — siapa, kapan, dan apa yang berubah.</li>
-                  <li><strong>Ekspor Excel:</strong> Ekspor dengan format warna sel otomatis berdasarkan Status/Prioritas.</li>
+                  <li><strong>Sub-Tugas (Checklist):</strong> Pemecahan pekerjaan menjadi sub-tugas dengan PIC dan tenggat mandiri.</li>
+                  <li><strong>Multi-PIC & Tag:</strong> Penugasan ke 1 PIC Utama beserta beberapa PIC Tambahan berbasis tag chip.</li>
+                  <li><strong>Multi-File Eviden:</strong> Lampirkan banyak file dokumen eviden dengan viewer pratinjau file.</li>
+                  <li><strong>Duplikasi 1-ke-1 & Bulk Action:</strong> Duplikasi lengkap tugas dan edit massal beberapa baris sekaligus.</li>
+                </ul>
+              </>
+            )}
+            {sec.id === 'smart-add' && (
+              <>
+                <p>Modul cerdas Smart Add (AI Parser) untuk mengekstrak teks agenda atau notula rapat menjadi tugas terstruktur.</p>
+                <ul>
+                  <li><strong>Ekstraksi Otomatis:</strong> Mendeteksi tanggal, waktu kerja, PIC utama, PIC tambahan, master lokasi, kategori, dan prioritas.</li>
+                  <li><strong>Dropdown PIC Tambahan:</strong> Pemilihan PIC tambahan dengan sistem chip tag yang terhubung ke Master PIC.</li>
+                  <li><strong>Integrasi Master Lokasi:</strong> Pemilihan lokasi online (Link Zoom/Meet) atau offline (Ruang Rapat) secara otomatis.</li>
+                  <li><strong>Aksi Massal:</strong> Terapkan PIC atau Kategori ke seluruh hasil ekstraksi sebelum disimpan ke database.</li>
+                </ul>
+              </>
+            )}
+            {sec.id === 'excel-import-export' && (
+              <>
+                <p>Integrasi format Rich Excel dua arah dengan validasi data master dan pratinjau interaktif.</p>
+                <ul>
+                  <li><strong>Template Excel dengan Dropdown:</strong> Dropdown otomatis untuk PIC, Kategori, Prioritas, Status, dan Lokasi.</li>
+                  <li><strong>Format Sub-Pekerjaan:</strong> Mendukung penulisan sub-tugas dan PIC multi-baris di dalam satu sel Excel.</li>
+                  <li><strong>Modal Pratinjau Impor:</strong> Verifikasi data, koreksi lokasi dengan dropdown, dan hapus baris keliru sebelum disimpan.</li>
+                  <li><strong>Ekspor Excel Berwarna:</strong> Ekspor tabel lengkap dengan styling warna sel sesuai status dan prioritas.</li>
                 </ul>
               </>
             )}
             {sec.id === 'kalender' && (
               <>
-                <p>Lihat seluruh pekerjaan dalam tampilan kalender bulanan/mingguan/harian.</p>
+                <p>Visualisasi jadwal kerja dalam tampilan kalender multi-mode terintegrasi.</p>
                 <ul>
-                  <li><strong>Multi-Mode:</strong> Tampilan Bulan, Minggu, Hari, atau Agenda.</li>
-                  <li><strong>Hari Libur:</strong> Hari libur nasional Indonesia ditampilkan otomatis.</li>
-                  <li><strong>Google Calendar &amp; ICS:</strong> Tambah ke Google Calendar atau unduh file .ics dari modal detail.</li>
+                  <li><strong>Multi-Mode:</strong> Tampilan kalender Bulan, Minggu, Hari, dan Agenda.</li>
+                  <li><strong>Libur Nasional:</strong> Penandaan otomatis hari libur nasional Indonesia.</li>
+                  <li><strong>Sinkronisasi Kalender:</strong> Integrasi langsung ke Google Calendar atau unduhan file .ics.</li>
                 </ul>
               </>
             )}
             {sec.id === 'tim' && (
               <>
-                <p>Statistik beban kerja per PIC untuk distribusi tugas yang adil dan merata.</p>
+                <p>Analisis distribusi beban kerja per PIC untuk memastikan alokasi sumber daya yang seimbang.</p>
                 <ul>
-                  <li><strong>Kartu PIC:</strong> Jumlah total, urgent, dan distribusi status per anggota tim.</li>
-                  <li><strong>Quick View:</strong> Klik nama PIC untuk melihat daftar pekerjaannya.</li>
+                  <li><strong>Statistik PIC:</strong> Total tugas, tugas urgent, dan rasio penyelesaian per anggota tim.</li>
+                  <li><strong>Kalkulasi Multi-PIC:</strong> Memperhitungkan peran PIC Utama dan PIC Tambahan secara proporsional.</li>
+                  <li><strong>Quick View:</strong> Akses cepat daftar pekerjaan aktif yang ditangani masing-masing individu.</li>
                 </ul>
               </>
             )}
             {sec.id === 'settings' && (
               <>
-                <p>Administrator memiliki akses penuh untuk mengatur master data dan konfigurasi aplikasi.</p>
+                <p>Pengaturan master data, personalisasi aplikasi, konfigurasi hak akses, dan manajemen cadangan.</p>
                 <ul>
-                  <li><strong>Master Dropdown:</strong> Kelola opsi PIC, Kategori, Prioritas, Status, Lokasi.</li>
-                  <li><strong>Warna &amp; Ikon:</strong> Tetapkan warna dan ikon untuk setiap label.</li>
-                  <li><strong>Batas Waktu Sesi:</strong> Atur durasi auto-logout (1 jam s.d. 30 hari).</li>
-                  <li><strong>Backup &amp; Restore:</strong> Unduh/pulihkan file cadangan JSON seluruh data.</li>
+                  <li><strong>Master Data:</strong> Kelola opsi Master PIC, Kategori, Prioritas, Status, dan Master Lokasi (Online/Offline).</li>
+                  <li><strong>Matriks Hak Akses:</strong> Pengaturan izin spesifik per peran (Admin, Member, Viewer).</li>
+                  <li><strong>Cadangan ZIP (1-Click):</strong> Backup dan pemulihan database beserta seluruh file lampiran.</li>
                 </ul>
               </>
             )}
             <div className="print-footer">
-              Panduan Aplikasi Monitoring Pekerjaan — Halaman {sections.indexOf(sec) + 1} dari {sections.length}
+              Buku Panduan Aplikasi Monitoring Pekerjaan — Halaman {sections.indexOf(sec) + 1} dari {sections.length}
             </div>
           </div>
         ))}
