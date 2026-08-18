@@ -482,7 +482,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
       {selectedPic && picStatsMap[selectedPic] && (
         <div id="team-pic-detail-table" className="glass" style={{ padding: '24px', marginTop: '12px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px' }}>
-            Daftar Pekerjaan Ditangani oleh: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span> (Klik nama pekerjaan untuk membuka detail)
+            Daftar Pekerjaan Ditangani oleh: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
+            {hasPermission(roleConfig, 'view_detail', userRole) && (
+              <span style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                (Klik nama pekerjaan untuk membuka detail)
+              </span>
+            )}
           </h3>
 
           <div style={{ overflowX: 'auto' }}>
@@ -494,13 +499,31 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   <th style={{ padding: '12px' }}>Prioritas</th>
                   <th style={{ padding: '12px' }}>Status & Progress</th>
                   <th style={{ padding: '12px' }}>Tenggat Waktu</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
+                  {hasPermission(roleConfig, 'view_detail', userRole) && (
+                    <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {picStatsMap[selectedPic].tasks.map(t => (
                   <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
-                    <td style={{ padding: '12px', fontWeight: 600, color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
+                    <td 
+                      style={{ 
+                        padding: '12px', 
+                        fontWeight: 600, 
+                        color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
+                        cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                      }} 
+                      onClick={() => { 
+                        if (hasPermission(roleConfig, 'view_detail', userRole)) {
+                          setDetailTask(t); 
+                          setEditForm(t); 
+                          setIsEditing(false); 
+                        } else {
+                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                        }
+                      }}
+                    >
                       {t.nama}
                     </td>
                     <td style={{ padding: '12px' }}>{t.kategori || 'Umum'}</td>
@@ -516,11 +539,13 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '6px' }}>({t.progress || 0}%)</span>
                     </td>
                     <td style={{ padding: '12px' }}>{format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>
-                      <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
-                        Detail Pekerjaan
-                      </button>
-                    </td>
+                    {hasPermission(roleConfig, 'view_detail', userRole) && (
+                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                        <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}>
+                          Detail Pekerjaan
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

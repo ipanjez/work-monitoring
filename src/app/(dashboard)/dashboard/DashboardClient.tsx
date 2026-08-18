@@ -1197,9 +1197,22 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                 {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
                   const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
                   return (
-                    <tr key={t.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s', cursor: 'pointer' }} onClick={() => {
-                      setSelectedTaskForDetail(t);
-                    }}>
+                    <tr 
+                      key={t.id} 
+                      className="table-row-hover" 
+                      style={{ 
+                        borderBottom: '1px solid var(--border-color)', 
+                        transition: 'background 0.2s', 
+                        cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                      }} 
+                      onClick={() => {
+                        if (hasPermission(roleConfig, 'view_detail', userRole)) {
+                          setSelectedTaskForDetail(t);
+                        } else {
+                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                        }
+                      }}
+                    >
                       <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
                         {t.nama}
                         {t.fileUrl && (
