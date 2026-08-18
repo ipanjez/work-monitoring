@@ -43,7 +43,6 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useMaster } from '@/context/MasterContext';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
-import BackupReminderModal from '@/components/BackupReminderModal';
 
 ChartJS.register(
   CategoryScale,
@@ -59,15 +58,7 @@ ChartJS.register(
 
 
 
-interface DashboardClientProps {
-  tasks: Task[];
-  initialBackupSettings?: {
-    backup_reminder_days: number;
-    last_backup_date: string;
-  };
-}
-
-export default function DashboardClient({ tasks: initialTasks, initialBackupSettings }: DashboardClientProps) {
+export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   useEffect(() => {
@@ -106,27 +97,6 @@ export default function DashboardClient({ tasks: initialTasks, initialBackupSett
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   
-  const [backupReminderDays, setBackupReminderDays] = useState<number>(initialBackupSettings?.backup_reminder_days ?? 0);
-  const [lastBackupDate, setLastBackupDate] = useState<string>(initialBackupSettings?.last_backup_date ?? '');
-  const [showBackupReminder, setShowBackupReminder] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const isDismissed = sessionStorage.getItem('dismissed_backup_reminder') === 'true';
-    if (isDismissed) return false;
-    const days = initialBackupSettings?.backup_reminder_days ?? 0;
-    if (days === 0) return false;
-    if (days === -1) return true; // Setiap Kali Login
-    if (days > 0) {
-      const lastDateStr = initialBackupSettings?.last_backup_date;
-      if (!lastDateStr) return true;
-      const lastDate = new Date(lastDateStr);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - lastDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays >= days;
-    }
-    return false;
-  });
-  
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>([]);
@@ -145,38 +115,6 @@ export default function DashboardClient({ tasks: initialTasks, initialBackupSett
           if (data.master_priorities) setMasterPriorities(data.master_priorities);
           if (data.master_colors) setMasterColors(data.master_colors);
           if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
-          
-          if (data.backup_reminder_days !== undefined) {
-            const days = Number(data.backup_reminder_days);
-            setBackupReminderDays(days);
-            
-            const lastDateStr = data.last_backup_date || '';
-            setLastBackupDate(lastDateStr);
-
-            const isDismissed = typeof window !== 'undefined' && sessionStorage.getItem('dismissed_backup_reminder') === 'true';
-            if (!isDismissed) {
-              if (days === -1) {
-                setShowBackupReminder(true);
-              } else if (days > 0) {
-                if (!lastDateStr) {
-                  setShowBackupReminder(true);
-                } else {
-                  const lastDate = new Date(lastDateStr);
-                  const now = new Date();
-                  const diffTime = Math.abs(now.getTime() - lastDate.getTime());
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  if (diffDays >= days) {
-                    setShowBackupReminder(true);
-                  } else {
-                    setShowBackupReminder(false);
-                  }
-                }
-              } else {
-                setShowBackupReminder(false);
-              }
-            }
-          }
         })
         .catch(e => console.error(e));
     };
@@ -841,38 +779,6 @@ export default function DashboardClient({ tasks: initialTasks, initialBackupSett
     return acc;
   }, {} as Record<string, number>);
 
-  const handleDismissBackupReminder = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('dismissed_backup_reminder', 'true');
-    }
-    setShowBackupReminder(false);
-  };
-
-  const handleDownloadBackup = async () => {
-    const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
-    try {
-      const res = await fetch('/api/database');
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        throw new Error(`Gagal mengambil backup: HTTP ${res.status} ${errText.substring(0, 100)}`);
-      }
-      
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Backup_Database_Pekerjaan_${new Date().toISOString().split('T')[0]}.zip`;
-      a.click();
-      toast.dismiss(toastId);
-      toast.success('Backup berhasil diunduh!');
-      setShowBackupReminder(false);
-      setLastBackupDate(new Date().toISOString());
-    } catch (err: any) {
-      toast.dismiss(toastId);
-      toast.error(err.message || 'Gagal mengunduh backup');
-    }
-  };
-
   const handleExportPDF = () => {
     try {
       if (addActivityLog) {
@@ -1049,15 +955,6 @@ export default function DashboardClient({ tasks: initialTasks, initialBackupSett
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <BackupReminderModal
-        isOpen={showBackupReminder}
-        onClose={handleDismissBackupReminder}
-        onDownloadBackup={handleDownloadBackup}
-        reminderDays={backupReminderDays}
-        lastBackupDate={lastBackupDate}
-        tasks={tasks}
-      />
-
       {/* Header Controls */}
       <UniversalFilterBar 
         categories={['Umum', ...categories]} 
