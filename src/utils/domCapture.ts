@@ -19,23 +19,14 @@ export async function captureDomElement(
   const bg = options?.backgroundColor || (isDark ? '#0f172a' : '#f1f5f9');
   const textColor = isDark ? '#f8fafc' : '#0f172a';
 
-  const scrollW = options?.targetWidth || Math.max(element.scrollWidth, element.offsetWidth, 1280);
-  const scrollH = Math.max(element.scrollHeight, element.offsetHeight, 800);
-
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
     allowTaint: true,
     logging: false,
     backgroundColor: bg,
-    windowWidth: scrollW,
-    windowHeight: scrollH,
-    width: scrollW,
-    height: scrollH,
     scrollX: 0,
-    scrollY: -window.scrollY,
-    x: 0,
-    y: 0,
+    scrollY: 0,
     onclone: (clonedDoc) => {
       // 1. Synchronize theme attributes & root styles
       clonedDoc.documentElement.setAttribute('data-theme', currentTheme);
@@ -43,74 +34,24 @@ export async function captureDomElement(
       clonedDoc.documentElement.style.color = textColor;
       clonedDoc.body.style.backgroundColor = bg;
       clonedDoc.body.style.color = textColor;
-      clonedDoc.body.style.margin = '0';
-      clonedDoc.body.style.padding = '0';
-      clonedDoc.body.style.overflow = 'visible';
-      clonedDoc.body.style.height = 'auto';
+
+      // 2. Fix all color-mix or gradient crashes in html2canvas
+      const badges = clonedDoc.querySelectorAll('[style*="color-mix"], .badge, [class*="badge"]');
+      badges.forEach((b: any) => {
+        const bgStyle = b.style.backgroundColor;
+        if (bgStyle && bgStyle.includes('color-mix')) {
+          const colorVal = b.style.color;
+          if (colorVal && colorVal.startsWith('#')) {
+            b.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
+          } else {
+            b.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+          }
+        }
+      });
 
       const clonedEl = clonedDoc.getElementById(element.id) || (clonedDoc.querySelector(`[data-capture-root]`) as HTMLElement) || clonedDoc.body;
-      if (clonedEl) {
-        // 2. Set generous padding & full visibility
-        clonedEl.style.setProperty('box-sizing', 'border-box', 'important');
-        clonedEl.style.setProperty('padding', '24px', 'important');
-        clonedEl.style.setProperty('padding-bottom', '48px', 'important');
-        clonedEl.style.setProperty('background', bg, 'important');
-        clonedEl.style.setProperty('color', textColor, 'important');
-        clonedEl.style.setProperty('overflow', 'visible', 'important');
-        clonedEl.style.setProperty('height', 'auto', 'important');
-        clonedEl.style.setProperty('min-height', `${scrollH}px`, 'important');
-        clonedEl.style.setProperty('max-height', 'none', 'important');
-        clonedEl.style.setProperty('width', '100%', 'important');
-        clonedEl.style.setProperty('position', 'relative', 'important');
-
-        // 3. Fix all color-mix or gradient crashes in html2canvas
-        const badges = clonedDoc.querySelectorAll('[style*="color-mix"], .badge, [class*="badge"]');
-        badges.forEach((b: any) => {
-          const bgStyle = b.style.backgroundColor;
-          if (bgStyle && bgStyle.includes('color-mix')) {
-            const colorVal = b.style.color;
-            if (colorVal && colorVal.startsWith('#')) {
-              b.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
-            } else {
-              b.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-            }
-          }
-        });
-
-        // 4. Ensure ALL nested containers don't clip contents
-        const allScrollable = clonedDoc.querySelectorAll('*');
-        allScrollable.forEach((el: any) => {
-          const cs = clonedDoc.defaultView?.getComputedStyle(el);
-          if (cs && (cs.overflow === 'hidden' || cs.overflow === 'auto' || cs.overflow === 'scroll' ||
-                     cs.overflowY === 'hidden' || cs.overflowY === 'auto' || cs.overflowY === 'scroll')) {
-            el.style.setProperty('overflow', 'visible', 'important');
-            el.style.setProperty('overflow-y', 'visible', 'important');
-            el.style.setProperty('max-height', 'none', 'important');
-          }
-        });
-
-        // 5. Fix chart canvases - ensure they have proper sizing and aren't clipped
-        const chartContainers = clonedDoc.querySelectorAll('[class*="chart"], [class*="Chart"], [class*="graph"], [class*="Graph"]');
-        chartContainers.forEach((container: any) => {
-          container.style.setProperty('overflow', 'visible', 'important');
-          container.style.setProperty('display', 'flex', 'important');
-          container.style.setProperty('justify-content', 'center', 'important');
-          container.style.setProperty('align-items', 'center', 'important');
-          container.style.setProperty('min-height', 'auto', 'important');
-        });
-
-        // 6. Ensure all canvas elements (charts) maintain aspect ratio
-        const canvases = clonedDoc.querySelectorAll('canvas');
-        canvases.forEach((cvs: any) => {
-          cvs.style.setProperty('max-width', '100%', 'important');
-          cvs.style.setProperty('height', 'auto', 'important');
-          cvs.style.setProperty('display', 'block', 'important');
-          cvs.style.setProperty('margin', '0 auto', 'important');
-        });
-
-        if (options?.extraStyles) {
-          options.extraStyles(clonedDoc, clonedEl as HTMLElement);
-        }
+      if (clonedEl && options?.extraStyles) {
+        options.extraStyles(clonedDoc, clonedEl as HTMLElement);
       }
     }
   });
@@ -178,7 +119,7 @@ export async function exportCanvasToPdf(
   const totalPages = Math.ceil(scaledImgHeightMm / printH);
 
   // How many source pixels per page
-  const srcPixelsPerPage = canvas.width * (printH / printW) ; // height in source pixels that fits one page
+  const srcPixelsPerPage = canvas.width * (printH / printW);
 
   for (let page = 0; page < totalPages; page++) {
     if (page > 0) pdf.addPage('a4', 'l');
