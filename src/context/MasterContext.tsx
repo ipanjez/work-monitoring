@@ -18,6 +18,7 @@ interface MasterContextType {
   masterPics: string[];
   roleConfig: RolePermissionsConfig;
   sessionTimeout: number;
+  userRoles: Record<string, string>;
 }
 
 const MasterContext = createContext<MasterContextType>({ 
@@ -34,7 +35,8 @@ const MasterContext = createContext<MasterContextType>({
   masterStatusProgress: {},
   masterPics: [],
   roleConfig: defaultRolePermissions,
-  sessionTimeout: 10
+  sessionTimeout: 10,
+  userRoles: {}
 });
 
 export function MasterProvider({ children }: { children: React.ReactNode }) {
@@ -52,6 +54,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [sessionTimeout, setSessionTimeout] = useState(10);
+  const [userRoles, setUserRoles] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -165,6 +168,15 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
+    fetch('/api/users/roles')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data === 'object') {
+          setUserRoles(data);
+        }
+      })
+      .catch(() => {});
+
     // Listen to changes across tabs or other components
     const handleStorage = (e: StorageEvent) => {
       try {
@@ -203,6 +215,13 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
             setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
             setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
         } catch(e) {}
+
+        fetch('/api/users/roles')
+          .then(res => res.json())
+          .then(data => {
+            if (data && typeof data === 'object') setUserRoles(data);
+          })
+          .catch(() => {});
     }
 
     window.addEventListener('storage', handleStorage);
@@ -215,7 +234,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles }}>
       {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}
     </MasterContext.Provider>
   );

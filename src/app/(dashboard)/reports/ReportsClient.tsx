@@ -31,6 +31,7 @@ import { useSession } from 'next-auth/react';
 import { getDynamicColor, getTaskExportRow, getDynamicBadgeStyle } from '@/utils/taskUtils';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import Avatar from '@/components/Avatar';
+import RoleBadge from '@/components/RoleBadge';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -58,7 +59,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
-  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
+  const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   
@@ -783,7 +784,13 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
                                 </span>
                               )}
                             </div>
-                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Staff PIC</span>
+                            <div style={{ marginTop: '2px' }}>
+                              <RoleBadge 
+                                role={userRoles[item.pic] || userRoles[item.pic.trim()] || 'MEMBER'} 
+                                config={roleConfig} 
+                                size="sm" 
+                              />
+                            </div>
                           </div>
                         </div>
                       </td>

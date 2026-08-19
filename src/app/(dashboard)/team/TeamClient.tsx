@@ -31,6 +31,7 @@ import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useGuestAccess } from '@/context/GuestAccessContext';
+import RoleBadge from '@/components/RoleBadge';
 
 type WorkloadFilter = 'all' | 'high' | 'optimal' | 'low';
 type TaskTabFilter = 'all' | 'in_progress' | 'done' | 'urgent';
@@ -39,7 +40,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const { handleGuestAction } = useGuestAccess();
   const userRole = (session?.user as any)?.role || 'MEMBER';
-  const { masterColors, masterPicAvatars, roleConfig } = useMaster();
+  const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
@@ -445,8 +446,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                     masterColors={masterColors}
                   />
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{picName}</h3>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>Person In Charge</span>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, marginBottom: '2px' }}>{picName}</h3>
+                    <RoleBadge 
+                      role={userRoles[picName] || userRoles[picName.trim()] || 'MEMBER'} 
+                      config={roleConfig} 
+                      size="sm" 
+                    />
                   </div>
                 </div>
 
