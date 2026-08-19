@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Task, FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
+import { useMaster } from '@/context/MasterContext';
 import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
@@ -77,6 +78,7 @@ export default function TaskAddEditModal({
   setPreviewFile
 }: TaskAddEditModalProps) {
   const router = useRouter();
+  const { maxFileSizeMb } = useMaster();
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -257,10 +259,11 @@ export default function TaskAddEditModal({
     try {
       const filesArr = Array.from(files);
       const newFiles: FileItem[] = [];
+      const limitMb = maxFileSizeMb || 25;
 
       for (const file of filesArr) {
-        if (file.size > 25 * 1024 * 1024) {
-          toast.error(`File ${file.name} melebihi 25MB`);
+        if (file.size > limitMb * 1024 * 1024) {
+          toast.error(`File ${file.name} melebihi batas maksimum (${limitMb}MB)`);
           continue;
         }
 
@@ -1175,7 +1178,7 @@ export default function TaskAddEditModal({
                         Klik untuk Unggah atau Tarik & Letakkan File di Sini
                       </span>
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        Mendukung banyak file sekaligus (Maksimal 25MB per file)
+                        Mendukung banyak file sekaligus (Maksimal {maxFileSizeMb || 25}MB per file)
                       </span>
                       {uploadingFile && <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 600 }}>Mengunggah...</span>}
                     </div>

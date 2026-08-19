@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
+import { subscribeToSettingsChanges } from '@/utils/realtimeSettingsSync';
 
 interface MasterContextType {
   masterColors: Record<string, string>;
@@ -19,6 +20,9 @@ interface MasterContextType {
   roleConfig: RolePermissionsConfig;
   sessionTimeout: number;
   userRoles: Record<string, string>;
+  maxFileSizeMb: number;
+  maxTaskFilesSizeMb: number;
+  maxTotalStorageMb: number;
 }
 
 const MasterContext = createContext<MasterContextType>({ 
@@ -36,7 +40,10 @@ const MasterContext = createContext<MasterContextType>({
   masterPics: [],
   roleConfig: defaultRolePermissions,
   sessionTimeout: 10,
-  userRoles: {}
+  userRoles: {},
+  maxFileSizeMb: 25,
+  maxTaskFilesSizeMb: 100,
+  maxTotalStorageMb: 5000
 });
 
 export function MasterProvider({ children }: { children: React.ReactNode }) {
@@ -55,6 +62,9 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [sessionTimeout, setSessionTimeout] = useState(10);
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
+  const [maxFileSizeMb, setMaxFileSizeMb] = useState<number>(25);
+  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number>(100);
+  const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number>(5000);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -78,6 +88,9 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
       setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
       setUserRoles(JSON.parse(localStorage.getItem('user_roles') || '{}'));
+      setMaxFileSizeMb(Number(localStorage.getItem('max_file_size_mb') || 25));
+      setMaxTaskFilesSizeMb(Number(localStorage.getItem('max_task_files_size_mb') || 100));
+      setMaxTotalStorageMb(Number(localStorage.getItem('max_total_storage_mb') || 5000));
     } catch {}
 
     setMounted(true);
@@ -152,6 +165,24 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('master_pics', JSON.stringify(data.master_pics));
           changed = true;
         }
+        if (data.max_file_size_mb !== undefined) {
+          const val = Number(data.max_file_size_mb) || 25;
+          setMaxFileSizeMb(val);
+          localStorage.setItem('max_file_size_mb', String(val));
+          changed = true;
+        }
+        if (data.max_task_files_size_mb !== undefined) {
+          const val = Number(data.max_task_files_size_mb) || 100;
+          setMaxTaskFilesSizeMb(val);
+          localStorage.setItem('max_task_files_size_mb', String(val));
+          changed = true;
+        }
+        if (data.max_total_storage_mb !== undefined) {
+          const val = Number(data.max_total_storage_mb) || 5000;
+          setMaxTotalStorageMb(val);
+          localStorage.setItem('max_total_storage_mb', String(val));
+          changed = true;
+        }
         if (changed) {
           window.dispatchEvent(new Event('masterUpdated'));
         }
@@ -179,7 +210,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
 
-    // Listen to changes across tabs or other components
+    // Listen to changes across tabs or other components via storage event
     const handleStorage = (e: StorageEvent) => {
       try {
         if (e.key === 'master_colors' && e.newValue) setMasterColors(JSON.parse(e.newValue));
@@ -197,15 +228,21 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'role_config' && e.newValue) setRoleConfig(JSON.parse(e.newValue));
         if (e.key === 'user_roles' && e.newValue) setUserRoles(JSON.parse(e.newValue));
         if (e.key === 'session_timeout' && e.newValue) setSessionTimeout(Number(e.newValue));
+        if (e.key === 'max_file_size_mb' && e.newValue) setMaxFileSizeMb(Number(e.newValue));
+        if (e.key === 'max_task_files_size_mb' && e.newValue) setMaxTaskFilesSizeMb(Number(e.newValue));
+        if (e.key === 'max_total_storage_mb' && e.newValue) setMaxTotalStorageMb(Number(e.newValue));
       } catch (err) {}
     };
     
-    // Non-StorageEvent version for internal dispatches
+    // Internal masterUpdated dispatch handler
     const handleMasterUpdated = () => {
         setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
         setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
         setAppLogo(localStorage.getItem('app_logo') || '');
         setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
+        setMaxFileSizeMb(Number(localStorage.getItem('max_file_size_mb') || 25));
+        setMaxTaskFilesSizeMb(Number(localStorage.getItem('max_task_files_size_mb') || 100));
+        setMaxTotalStorageMb(Number(localStorage.getItem('max_total_storage_mb') || 5000));
         try {
             setMasterColors(JSON.parse(localStorage.getItem('master_colors') || '{}'));
             setMasterIcons(JSON.parse(localStorage.getItem('master_icons') || '{}'));
@@ -229,19 +266,57 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
             }
           })
           .catch(() => {});
-    }
+    };
+
+    // Realtime cross-tab broadcast handler
+    const unsubscribeBroadcast = subscribeToSettingsChanges(({ key, value }) => {
+      if (key === 'max_file_size_mb') {
+        setMaxFileSizeMb(Number(value) || 25);
+      } else if (key === 'max_task_files_size_mb') {
+        setMaxTaskFilesSizeMb(Number(value) || 100);
+      } else if (key === 'max_total_storage_mb') {
+        setMaxTotalStorageMb(Number(value) || 5000);
+      } else if (key === 'app_name') {
+        setAppName(String(value));
+      } else if (key === 'app_subtitle') {
+        setAppSubtitle(String(value));
+      } else if (key === 'app_logo') {
+        setAppLogo(String(value));
+      } else if (key === 'session_timeout') {
+        setSessionTimeout(Number(value) || 10);
+      } else if (key === 'master_statuses') {
+        setMasterStatuses(Array.isArray(value) ? value : []);
+      } else if (key === 'master_categories') {
+        setMasterCats(Array.isArray(value) ? value : []);
+      } else if (key === 'master_priorities') {
+        setMasterPriorities(Array.isArray(value) ? value : []);
+      } else if (key === 'master_locations') {
+        setMasterLocations(Array.isArray(value) ? value : []);
+      } else if (key === 'master_pics') {
+        setMasterPics(Array.isArray(value) ? value : []);
+      } else if (key === 'master_colors') {
+        setMasterColors(typeof value === 'object' ? value : {});
+      } else if (key === 'master_icons') {
+        setMasterIcons(typeof value === 'object' ? value : {});
+      } else if (key === 'master_status_progress') {
+        setMasterStatusProgress(typeof value === 'object' ? value : {});
+      } else if (key === 'master_pic_avatars') {
+        setMasterPicAvatars(typeof value === 'object' ? value : {});
+      }
+    });
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('masterUpdated', handleMasterUpdated);
 
     return () => {
+      unsubscribeBroadcast();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('masterUpdated', handleMasterUpdated);
     };
   }, []);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
       {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}
     </MasterContext.Provider>
   );

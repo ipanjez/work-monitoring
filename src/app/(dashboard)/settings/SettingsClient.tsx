@@ -2,15 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, Sparkles, Search, GripVertical, Layers } from 'lucide-react';
-import Link from 'next/link';
+import { 
+  Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, 
+  Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
+  Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, 
+  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive
+} from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useMaster } from '@/context/MasterContext';
 import { hasPermission } from '@/lib/permissions';
+import { broadcastSettingsChange } from '@/utils/realtimeSettingsSync';
 import toast from 'react-hot-toast';
 import AvatarCropperModal from '@/components/AvatarCropperModal';
 import Avatar from '@/components/Avatar';
+
 type Task = {
   id: number;
   nama: string;
@@ -30,29 +36,44 @@ type Task = {
   lokasi?: string | null;
 };
 
+type ListType = 'cat' | 'pic' | 'status' | 'priority' | 'location';
+
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const { addActivityLog } = useNotifications();
-  const userRole = (session?.user as any)?.role || 'GUEST';
+  const userRole = (session?.user as any)?.role || '';
   const { roleConfig } = useMaster();
 
   const canMasterData = hasPermission(roleConfig, 'master_data', userRole);
   const canSystemConfig = hasPermission(roleConfig, 'system_config', userRole);
   const canDatabaseBackup = hasPermission(roleConfig, 'database_backup', userRole);
+
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
+
+  // Active Tab State
+  const [activeTab, setActiveTab] = useState<string>('appearance');
+  const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
+
+  // General & Branding State
   const [deptName, setDeptName] = useState('MRK');
   const [appName, setAppName] = useState('DeptMonitor');
   const [appLogo, setAppLogo] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Storage & Limits State
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number | string>(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
+
+  // Session & Security State
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(24);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
   const [backupReminderDays, setBackupReminderDays] = useState<number | string>('');
   const [backupReminderMode, setBackupReminderMode] = useState<string>('0');
+
+  // Calendar State
   const [calendarTimezone, setCalendarTimezone] = useState('Asia/Makassar');
   const [calendarTzPreset, setCalendarTzPreset] = useState('Asia/Makassar');
   const [customCalendarTz, setCustomCalendarTz] = useState('');
@@ -64,7 +85,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [copiedCalendarFeed, setCopiedCalendarFeed] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-  // Master State
+  // Master Data State
   const [categories, setCategories] = useState<string[]>([]);
   const [pics, setPics] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
@@ -92,14 +113,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Avatar Cropper State
   const [activePicForAvatar, setActivePicForAvatar] = useState<string | null>(null);
   const [isAppLogoCropperOpen, setIsAppLogoCropperOpen] = useState(false);
-
-  // Profile State for logged-in user
-  const [profileName, setProfileName] = useState('');
-  const [profileEmail, setProfileEmail] = useState('');
-  const [profileNpk, setProfileNpk] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
 
   const PRESET_COLORS = [
@@ -120,64 +133,130 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       ]
     },
     {
-      group: '🌏 Asia Tenggara & Asia Timur',
+      group: '🌏 Asia & ASEAN',
       options: [
-        { value: 'Asia/Singapore', label: '🇸🇬 SGT (UTC+8) - Asia/Singapore (Singapura)' },
-        { value: 'Asia/Kuala_Lumpur', label: '🇲🇾 MYT (UTC+8) - Asia/Kuala_Lumpur (Malaysia)' },
-        { value: 'Asia/Bangkok', label: '🇹🇭 ICT (UTC+7) - Asia/Bangkok (Thailand, Vietnam, Kamboja)' },
-        { value: 'Asia/Manila', label: '🇵🇭 PST (UTC+8) - Asia/Manila (Filipina)' },
-        { value: 'Asia/Tokyo', label: '🇯🇵 JST (UTC+9) - Asia/Tokyo (Jepang)' },
-        { value: 'Asia/Seoul', label: '🇰🇷 KST (UTC+9) - Asia/Seoul (Korea Selatan)' },
-        { value: 'Asia/Hong_Kong', label: '🇭🇰 HKT (UTC+8) - Asia/Hong_Kong (Hong Kong)' },
-        { value: 'Asia/Shanghai', label: '🇨🇳 CST (UTC+8) - Asia/Shanghai (Tiongkok / Beijing)' },
-        { value: 'Asia/Taipei', label: '🇹🇼 CST (UTC+8) - Asia/Taipei (Taiwan)' },
+        { value: 'Asia/Singapore', label: '🇸🇬 Singapore (UTC+8)' },
+        { value: 'Asia/Kuala_Lumpur', label: '🇲🇾 Kuala Lumpur (UTC+8)' },
+        { value: 'Asia/Bangkok', label: '🇹🇭 Bangkok (UTC+7)' },
+        { value: 'Asia/Tokyo', label: '🇯🇵 Tokyo / JST (UTC+9)' },
+        { value: 'Asia/Seoul', label: '🇰🇷 Seoul / KST (UTC+9)' },
+        { value: 'Asia/Hong_Kong', label: '🇭🇰 Hong Kong (UTC+8)' },
+        { value: 'Asia/Dubai', label: '🇦🇪 Dubai / GST (UTC+4)' },
       ]
     },
     {
-      group: '🕌 Timur Tengah & Asia Selatan',
+      group: '🌐 Internasional / UTC',
       options: [
-        { value: 'Asia/Dubai', label: '🇦🇪 GST (UTC+4) - Asia/Dubai (Uni Emirat Arab)' },
-        { value: 'Asia/Riyadh', label: '🇸🇦 AST (UTC+3) - Asia/Riyadh (Arab Saudi / Mekkah)' },
-        { value: 'Asia/Kolkata', label: '🇮🇳 IST (UTC+5:30) - Asia/Kolkata (India)' },
-        { value: 'Asia/Dhaka', label: '🇧🇩 BST (UTC+6) - Asia/Dhaka (Bangladesh)' },
-      ]
-    },
-    {
-      group: '🦘 Australia & Pasifik',
-      options: [
-        { value: 'Australia/Perth', label: '🇦🇺 AWST (UTC+8) - Australia/Perth (Australia Barat)' },
-        { value: 'Australia/Sydney', label: '🇦🇺 AEST (UTC+10) - Australia/Sydney (Australia Timur)' },
-        { value: 'Pacific/Auckland', label: '🇳🇿 NZST (UTC+12) - Pacific/Auckland (Selandia Baru)' },
-      ]
-    },
-    {
-      group: '🏰 Eropa & Afrika',
-      options: [
-        { value: 'Europe/London', label: '🇬🇧 GMT/BST (UTC+0/+1) - Europe/London (Inggris / UK)' },
-        { value: 'Europe/Paris', label: '🇫🇷 CET/CEST (UTC+1/+2) - Europe/Paris (Prancis, Jerman, Italia)' },
-        { value: 'Europe/Istanbul', label: '🇹🇷 TRT (UTC+3) - Europe/Istanbul (Turki)' },
-        { value: 'Africa/Cairo', label: '🇪🇬 EET (UTC+2) - Africa/Cairo (Mesir)' },
-      ]
-    },
-    {
-      group: '🌎 Amerika',
-      options: [
-        { value: 'America/New_York', label: '🇺🇸 EST/EDT (UTC-5/-4) - America/New_York (New York, Washington)' },
-        { value: 'America/Chicago', label: '🇺🇸 CST/CDT (UTC-6/-5) - America/Chicago (Chicago, Texas)' },
-        { value: 'America/Denver', label: '🇺🇸 MST/MDT (UTC-7/-6) - America/Denver (Denver, Colorado)' },
-        { value: 'America/Los_Angeles', label: '🇺🇸 PST/PDT (UTC-8/-7) - America/Los_Angeles (California, LA)' },
-      ]
-    },
-    {
-      group: '🌐 Standar Universal',
-      options: [
-        { value: 'UTC', label: '🌐 UTC / GMT (UTC+0) - Standar Waktu Universal' },
+        { value: 'UTC', label: '🌍 UTC / GMT (Universal Coordinated Time)' },
+        { value: 'Europe/London', label: '🇬🇧 London / BST' },
+        { value: 'America/New_York', label: '🇺🇸 New York / EST (UTC-5)' },
+        { value: 'America/Los_Angeles', label: '🇺🇸 Los Angeles / PST (UTC-8)' },
+        { value: 'Australia/Perth', label: '🇦🇺 Perth / AWST (UTC+8)' },
+        { value: 'Australia/Sydney', label: '🇦🇺 Sydney / AEST (UTC+10)' },
       ]
     }
   ];
 
-  // Fetch initial data
+  // Defined Settings Tabs according to RBAC permissions
+  const availableTabs = [
+    { id: 'appearance', label: 'Tampilan & Preferensi', icon: Palette, badge: null, visible: true },
+    { id: 'branding', label: 'Identitas & Branding', icon: Layout, badge: null, visible: canSystemConfig },
+    { id: 'master', label: 'Master Data Pekerjaan', icon: Tag, badge: `${categories.length + pics.length + statuses.length}`, visible: canMasterData },
+    { id: 'storage', label: 'Penyimpanan & File', icon: HardDrive, badge: null, visible: canSystemConfig },
+    { id: 'security', label: 'Keamanan & Sesi', icon: Clock, badge: null, visible: canSystemConfig },
+    { id: 'calendar', label: 'Kalender & Timezone', icon: CalendarDays, badge: null, visible: canSystemConfig },
+    { id: 'backup', label: 'Database & Backup', icon: Shield, badge: null, visible: canDatabaseBackup },
+  ].filter(t => t.visible);
+
+  // Auto-switch to available tab if current active tab is not visible
   useEffect(() => {
+    if (!availableTabs.some(t => t.id === activeTab)) {
+      if (availableTabs.length > 0) {
+        setActiveTab(availableTabs[0].id);
+      }
+    }
+  }, [canMasterData, canSystemConfig, canDatabaseBackup, availableTabs, activeTab]);
+
+  useEffect(() => {
+    // 1. Initial Load from LocalStorage
+    try {
+      const storedCategories = localStorage.getItem('master_cats');
+      if (storedCategories) setCategories(JSON.parse(storedCategories));
+
+      const storedPics = localStorage.getItem('master_pics');
+      if (storedPics) setPics(JSON.parse(storedPics));
+
+      const storedStatuses = localStorage.getItem('master_statuses');
+      if (storedStatuses) setStatuses(JSON.parse(storedStatuses));
+
+      const storedPriorities = localStorage.getItem('master_priorities');
+      if (storedPriorities) setPriorities(JSON.parse(storedPriorities));
+
+      const storedLocations = localStorage.getItem('master_locations');
+      if (storedLocations) setLocations(JSON.parse(storedLocations));
+
+      const storedColors = localStorage.getItem('master_colors');
+      if (storedColors) setMasterColors(JSON.parse(storedColors));
+
+      const storedIcons = localStorage.getItem('master_icons');
+      if (storedIcons) setMasterIcons(JSON.parse(storedIcons));
+
+      const storedStatusProgress = localStorage.getItem('master_status_progress');
+      if (storedStatusProgress) setMasterStatusProgress(JSON.parse(storedStatusProgress));
+
+      const storedPicAvatars = localStorage.getItem('master_pic_avatars');
+      if (storedPicAvatars) setMasterPicAvatars(JSON.parse(storedPicAvatars));
+
+      const storedAppName = localStorage.getItem('app_name');
+      if (storedAppName) setAppName(storedAppName);
+
+      const storedDeptName = localStorage.getItem('app_subtitle') || localStorage.getItem('dept_name');
+      if (storedDeptName) setDeptName(storedDeptName);
+
+      const storedAppLogo = localStorage.getItem('app_logo');
+      if (storedAppLogo) setAppLogo(storedAppLogo);
+
+      const storedMaxFileSize = localStorage.getItem('max_file_size_mb');
+      if (storedMaxFileSize) setMaxFileSizeMb(storedMaxFileSize);
+
+      const storedMaxTaskFiles = localStorage.getItem('max_task_files_size_mb');
+      if (storedMaxTaskFiles) setMaxTaskFilesSizeMb(storedMaxTaskFiles);
+
+      const storedMaxTotal = localStorage.getItem('max_total_storage_mb');
+      if (storedMaxTotal) setMaxTotalStorageMb(storedMaxTotal);
+
+      const storedTimeoutHours = localStorage.getItem('session_timeout_hours');
+      if (storedTimeoutHours) setSessionTimeoutHours(storedTimeoutHours);
+
+      const storedTimeoutMinutes = localStorage.getItem('session_timeout');
+      if (storedTimeoutMinutes) setSessionTimeoutMinutes(storedTimeoutMinutes);
+
+      const storedReminder = localStorage.getItem('backup_reminder_days');
+      if (storedReminder) {
+        setBackupReminderDays(storedReminder);
+        if (['-1', '0', '1', '3', '7', '14', '30'].includes(storedReminder)) {
+          setBackupReminderMode(storedReminder);
+        } else {
+          setBackupReminderMode('custom');
+        }
+      }
+
+      const storedTz = localStorage.getItem('calendar_timezone');
+      if (storedTz) {
+        setCalendarTimezone(storedTz);
+        const isPreset = COMMON_TIMEZONES.some(g => g.options.some(o => o.value === storedTz));
+        if (isPreset) {
+          setCalendarTzPreset(storedTz);
+        } else {
+          setCalendarTzPreset('custom');
+          setCustomCalendarTz(storedTz);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading settings from localStorage:', e);
+    }
+
+    // 2. Fetch from DB API
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
@@ -190,39 +269,39 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.master_icons) setMasterIcons(data.master_icons);
         if (data.master_status_progress) setMasterStatusProgress(data.master_status_progress);
         if (data.master_pic_avatars) setMasterPicAvatars(data.master_pic_avatars);
-        if (data.dept_name) setDeptName(data.dept_name);
-        if (data.app_name) setAppName(data.app_name);
-        if (data.app_subtitle) setDeptName(data.app_subtitle);
-        if (data.app_logo) setAppLogo(data.app_logo);
-        if (data.max_file_size_mb) setMaxFileSizeMb(data.max_file_size_mb);
-        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
-        if (data.max_total_storage_mb) setMaxTotalStorageMb(data.max_total_storage_mb);
-        if (data.session_timeout_hours) setSessionTimeoutHours(data.session_timeout_hours);
-        if (data.session_timeout) setSessionTimeoutMinutes(data.session_timeout);
-        if (data.backup_reminder_days !== undefined) {
-          const days = Number(data.backup_reminder_days);
-          setBackupReminderDays(days);
-          if (['0', '-1', '1', '3', '7', '14', '30'].includes(String(days))) {
-            setBackupReminderMode(String(days));
+        if (data.app_name !== undefined) setAppName(data.app_name);
+        if (data.dept_name !== undefined) setDeptName(data.dept_name);
+        if (data.app_logo !== undefined) setAppLogo(data.app_logo);
+        if (data.max_file_size_mb !== undefined) setMaxFileSizeMb(data.max_file_size_mb);
+        if (data.max_task_files_size_mb !== undefined) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
+        if (data.max_total_storage_mb !== undefined) setMaxTotalStorageMb(data.max_total_storage_mb);
+        if (data.session_timeout_hours !== undefined) setSessionTimeoutHours(data.session_timeout_hours);
+        if (data.session_timeout !== undefined) setSessionTimeoutMinutes(data.session_timeout);
+
+        if (data.backup_reminder_days !== undefined && data.backup_reminder_days !== null) {
+          const daysStr = String(data.backup_reminder_days);
+          setBackupReminderDays(daysStr);
+          if (['-1', '0', '1', '3', '7', '14', '30'].includes(daysStr)) {
+            setBackupReminderMode(daysStr);
           } else {
             setBackupReminderMode('custom');
           }
         }
+
         if (data.calendar_timezone) {
-          const tz = String(data.calendar_timezone);
-          setCalendarTimezone(tz);
-          const allKnown = COMMON_TIMEZONES.flatMap(g => g.options.map(o => o.value));
-          if (allKnown.includes(tz)) {
-            setCalendarTzPreset(tz);
+          setCalendarTimezone(data.calendar_timezone);
+          const isPreset = COMMON_TIMEZONES.some(g => g.options.some(o => o.value === data.calendar_timezone));
+          if (isPreset) {
+            setCalendarTzPreset(data.calendar_timezone);
           } else {
             setCalendarTzPreset('custom');
-            setCustomCalendarTz(tz);
+            setCustomCalendarTz(data.calendar_timezone);
           }
         }
       })
-      .catch(e => console.error(e));
+      .catch(err => console.error('Failed to fetch settings from API:', err));
 
-    // Fetch Calendar Token for Feed URL
+    // 3. Fetch calendar token
     fetch('/api/calendar/token')
       .then(res => res.json())
       .then(data => {
@@ -230,634 +309,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       })
       .catch(() => {});
 
-    // Fetch Storage stats
+    // 4. Fetch storage usage
     fetch('/api/settings/storage')
       .then(res => res.json())
       .then(data => {
-        if (data.usedMb !== undefined) setStorageUsedMb(data.usedMb);
+        if (data && typeof data.totalUsedMb === 'number') {
+          setStorageUsedMb(data.totalUsedMb);
+        }
       })
-      .catch(e => console.error(e));
-
-    // Fetch user profile
-    fetch('/api/users/profile')
-      .then(res => res.json())
-      .then(data => {
-        if (data.name) setProfileName(data.name);
-        if (data.email) setProfileEmail(data.email || '');
-        if (data.npk) setProfileNpk(data.npk);
-      })
-      .catch(e => console.error(e));
+      .catch(() => {});
   }, []);
 
-  // Common List Updaters
-  type ListType = 'cat' | 'pic' | 'status' | 'priority' | 'location';
-
-  const updateList = (type: ListType, updater: (prev: string[]) => string[]) => {
-    let key = '';
-    if (type === 'cat') key = 'master_categories';
-    if (type === 'pic') key = 'master_pics';
-    if (type === 'status') key = 'master_statuses';
-    if (type === 'priority') key = 'master_priorities';
-    if (type === 'location') key = 'master_locations';
-
-    const setFunc =
-      type === 'cat' ? setCategories :
-        type === 'pic' ? setPics :
-          type === 'status' ? setStatuses :
-            type === 'priority' ? setPriorities :
-              setLocations;
-
-    (setFunc as React.Dispatch<React.SetStateAction<string[]>>)((prev: string[]) => {
-      const next = updater(prev as any);
-      fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [key]: next })
-      });
-      return next as any;
-    });
-  };
-
-  const sortList = (type: ListType, dir: 'asc' | 'desc') => {
-    updateList(type, prev => [...prev].sort((a, b) => dir === 'asc' ? a.localeCompare(b) : b.localeCompare(a)));
-  };
-
-  const transformList = (type: ListType, transform: 'upper' | 'lower' | 'proper') => {
-    updateList(type, prev => prev.map(s => {
-      if (transform === 'upper') return s.toUpperCase();
-      if (transform === 'lower') return s.toLowerCase();
-      return s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
-    }));
-  };
-
-  const handleDragStart = (e: React.DragEvent, type: ListType, index: number) => {
-    setDraggedIdx({ type, index });
-    e.dataTransfer.effectAllowed = 'move';
-  };
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent, type: ListType, dropIndex: number) => {
-    e.preventDefault();
-    if (!draggedIdx || draggedIdx.type !== type || draggedIdx.index === dropIndex) return;
-
-    updateList(type, prev => {
-      const next = [...prev];
-      const [moved] = next.splice(draggedIdx.index, 1);
-      next.splice(dropIndex, 0, moved);
-      return next;
-    });
-  };
-
-  const handleAddCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatInput.trim()) return;
-    if (categories.includes(newCatInput.trim())) return;
-    updateList('cat', prev => [...prev, newCatInput.trim()]);
-    setNewCatInput('');
-  };
-
-  const handleRemoveCategory = (cat: string) => {
-    if (confirm(`Hapus kategori ${cat}?`)) {
-      updateList('cat', prev => prev.filter(c => c !== cat));
-    }
-  };
-
-  const handleAddPic = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPicInput.trim()) return;
-    if (pics.includes(newPicInput.trim())) return;
-    updateList('pic', prev => [...prev, newPicInput.trim()]);
-    setNewPicInput('');
-  };
-
-  const handleRemovePic = (p: string) => {
-    if (confirm(`Hapus PIC ${p}?`)) {
-      updateList('pic', prev => prev.filter(c => c !== p));
-    }
-  };
-
-  const [masterSearch, setMasterSearch] = useState<Record<string, string>>({});
-
-  const getTaskCountForItem = (type: ListType, val: string) => {
-    if (!tasks || !Array.isArray(tasks)) return 0;
-    const target = val.toLowerCase().trim();
-    if (type === 'cat') {
-      return tasks.filter(t => (t.kategori || '').toLowerCase().trim() === target).length;
-    }
-    if (type === 'pic') {
-      return tasks.filter(t => {
-        if ((t.pic || '').toLowerCase().trim() === target) return true;
-        if (t.additionalPics) {
-          try {
-            const arr = JSON.parse(t.additionalPics);
-            if (Array.isArray(arr) && arr.some((p: string) => p.toLowerCase().trim() === target)) return true;
-          } catch {}
-        }
-        return false;
-      }).length;
-    }
-    if (type === 'status') {
-      return tasks.filter(t => (t.status || '').toLowerCase().trim() === target).length;
-    }
-    if (type === 'priority') {
-      return tasks.filter(t => (t.prioritas || '').toLowerCase().trim() === target).length;
-    }
-    if (type === 'location') {
-      return tasks.filter(t => {
-        if (!t.lokasi) return false;
-        try {
-          const parsed = JSON.parse(t.lokasi);
-          const locFisik = (parsed.lokasiFisik || '').toLowerCase();
-          const linkZoom = (parsed.linkZoom || '').toLowerCase();
-          return locFisik.includes(target) || linkZoom.includes(target);
-        } catch {
-          return t.lokasi.toLowerCase().includes(target);
-        }
-      }).length;
-    }
-    return 0;
-  };
-
-  const handleAdd = (e: React.FormEvent, type: ListType, val: string, setVal: any, list: string[]) => {
-    e.preventDefault();
-    if (!val.trim()) return;
-
-    // Support batch add via comma or newline
-    const rawItems = val.split(/,|\n/).map(s => s.trim()).filter(Boolean);
-    if (rawItems.length === 0) return;
-
-    const existingLower = list.map(x => x.toLowerCase().trim());
-    const toAdd: string[] = [];
-    const duplicates: string[] = [];
-
-    for (const item of rawItems) {
-      if (existingLower.includes(item.toLowerCase())) {
-        duplicates.push(item);
-      } else if (!toAdd.some(x => x.toLowerCase() === item.toLowerCase())) {
-        toAdd.push(item);
-      }
-    }
-
-    if (toAdd.length === 0) {
-      toast.error(`Item "${duplicates.join(', ')}" sudah ada di daftar!`);
-      return;
-    }
-
-    updateList(type, prev => [...prev, ...toAdd]);
-    if (addActivityLog) addActivityLog('ADD_MASTER', `Tambah Master ${type}`, `Menambahkan item "${toAdd.join(', ')}" ke master ${type}`, 'info');
-
-    if (duplicates.length > 0) {
-      toast.success(`Berhasil menambahkan ${toAdd.length} item. (${duplicates.length} dilewati karena sudah ada)`);
-    } else if (toAdd.length > 1) {
-      toast.success(`Berhasil menambahkan ${toAdd.length} item sekaligus!`);
-    } else {
-      toast.success(`Berhasil menambahkan "${toAdd[0]}"`);
-    }
-
-    setVal('');
-  };
-
-  const handleDelete = (type: ListType, val: string) => {
-    const count = getTaskCountForItem(type, val);
-    let msg = `Hapus "${val}" dari master ${type}?`;
-    if (count > 0) {
-      msg = `⚠️ PERINGATAN: "${val}" saat ini sedang digunakan oleh ${count} pekerjaan aktif!\n\nJika dihapus dari master, tugas yang sudah ada tidak akan hilang namun opsi ini tidak akan muncul lagi di formulir baru.\n\nTetap hapus "${val}"?`;
-    }
-    if (confirm(msg)) {
-      updateList(type, prev => prev.filter(x => x !== val));
-      if (addActivityLog) addActivityLog('DELETE_MASTER', `Hapus Master ${type}`, `Menghapus item "${val}" dari master ${type}`, 'danger');
-      toast.success(`"${val}" berhasil dihapus.`);
-    }
-  };
-
-  const handleRename = async (type: ListType, oldVal: string, newVal: string) => {
-    if (!newVal.trim() || newVal.trim() === oldVal) {
-      setEditingItem(null);
-      return;
-    }
-
-    // Optimistic UI update
-    const setFunc =
-      type === 'cat' ? setCategories :
-        type === 'pic' ? setPics :
-          type === 'status' ? setStatuses :
-            type === 'priority' ? setPriorities :
-              setLocations;
-
-    (setFunc as React.Dispatch<React.SetStateAction<string[]>>)(prev => {
-      const arr = [...prev];
-      const index = arr.indexOf(oldVal);
-      if (index !== -1) arr[index] = newVal.trim();
-      return arr;
-    });
-
-    // Color UI Update
-    const oldColorKey = `${type}_${oldVal}`;
-    const newColorKey = `${type}_${newVal.trim()}`;
-    if (masterColors[oldColorKey]) {
-      setMasterColors(prev => {
-        const next = { ...prev };
-        next[newColorKey] = next[oldColorKey];
-        delete next[oldColorKey];
-        return next;
-      });
-    }
-
-    if (type === 'status' && masterStatusProgress[oldVal] !== undefined) {
-      setMasterStatusProgress(prev => {
-        const next = { ...prev };
-        next[newVal.trim()] = next[oldVal];
-        delete next[oldVal];
-        return next;
-      });
-    }
-
-    if (type === 'pic' && masterPicAvatars[oldVal] !== undefined) {
-      setMasterPicAvatars(prev => {
-        const next = { ...prev };
-        next[newVal.trim()] = next[oldVal];
-        delete next[oldVal];
-        return next;
-      });
-    }
-
-    setEditingItem(null);
-    const loadingToast = toast.loading('Memperbarui nama di semua pekerjaan...');
-
-    try {
-      const res = await fetch('/api/settings/rename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listType: type, oldValue: oldVal, newValue: newVal.trim() })
-      });
-      if (res.ok) {
-        toast.success('Berhasil mengubah master data', { id: loadingToast });
-        if (addActivityLog) addActivityLog('EDIT_MASTER', `Edit Master ${type}`, `Mengubah item "${oldVal}" menjadi "${newVal.trim()}" di master ${type}`, 'info');
-      } else {
-        toast.error('Gagal memperbarui', { id: loadingToast });
-      }
-    } catch (e) {
-      toast.error('Terjadi kesalahan', { id: loadingToast });
-    }
-  };
-
-  const handleColorChange = (type: ListType, val: string, color: string) => {
-    const newColors = { ...masterColors, [`${type}_${val}`]: color };
-    setMasterColors(newColors);
-  };
-
-  const handleProgressChange = (val: string, progress: number) => {
-    const newProgress = { ...masterStatusProgress, [val]: progress };
-    setMasterStatusProgress(newProgress);
-  };
-
-  const handleAvatarSave = (base64Image: string) => {
-    if (activePicForAvatar) {
-      setMasterPicAvatars(prev => {
-        const next = { ...prev, [activePicForAvatar]: base64Image };
-        // Save to backend immediately
-        fetch('/api/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ master_pic_avatars: next })
-        }).then(() => {
-          // Update localStorage and notify MasterContext
-          localStorage.setItem('master_pic_avatars', JSON.stringify(next));
-          window.dispatchEvent(new Event('masterUpdated'));
-          toast.success('Foto profil berhasil disimpan');
-        });
-        return next;
-      });
-    }
-  };
-
-  const renderListEditor = (title: string, type: ListType, list: string[], val: string, setVal: any, icon: React.ReactNode, subtitle?: string) => {
-    const searchQ = (masterSearch[type] || '').toLowerCase().trim();
-    const filteredList = searchQ ? list.filter(item => item.toLowerCase().includes(searchQ)) : list;
-
-    return (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {icon} {title}
-            </h3>
-            {subtitle && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{subtitle}</p>}
-          </div>
-          <span style={{ fontSize: '11.5px', padding: '3px 10px', borderRadius: '12px', background: 'var(--bg-secondary, rgba(0,0,0,0.05))', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {list.length} Item Terdaftar
-          </span>
-        </div>
-
-        {/* Search & Batch Add Bar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-          {/* Add Form */}
-          <form onSubmit={(e) => handleAdd(e, type, val, setVal, list)} style={{ display: 'flex', gap: '10px' }}>
-            <input
-              className="input"
-              placeholder={`Tambah ${title.replace('Master ', '').replace('Dropdown ', '')}... (Pisahkan koma untuk input banyak)`}
-              value={val}
-              onChange={e => setVal(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <button type="submit" className="btn btn-primary" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Plus size={16} /> Tambah
-            </button>
-          </form>
-
-          {/* Search & Quick Sort Row */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 220px', maxWidth: '360px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
-              <input
-                type="text"
-                className="input"
-                placeholder={`Cari dalam daftar ${list.length} item...`}
-                value={masterSearch[type] || ''}
-                onChange={e => setMasterSearch(prev => ({ ...prev, [type]: e.target.value }))}
-                style={{ paddingLeft: '30px', paddingRight: masterSearch[type] ? '28px' : '10px', height: '32px', fontSize: '12px', width: '100%' }}
-              />
-              {masterSearch[type] && (
-                <button
-                  type="button"
-                  onClick={() => setMasterSearch(prev => ({ ...prev, [type]: '' }))}
-                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px', display: 'flex' }}
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Sort A-Z</button>
-              <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Sort Z-A</button>
-              <button type="button" onClick={() => transformList(type, 'proper')} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11.5px' }}>Title Case</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Badge List */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '40px', alignItems: 'center' }}>
-          {filteredList.length === 0 ? (
-            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: '8px 0' }}>
-              {searchQ ? `Tidak ada item yang cocok dengan pencarian "${searchQ}".` : 'Belum ada item master. Tambahkan item di atas.'}
-            </p>
-          ) : (
-            filteredList.map((s) => {
-              const idx = list.indexOf(s);
-              const taskCount = getTaskCountForItem(type, s);
-              const isEditingThis = editingItem?.type === type && editingItem?.oldVal === s;
-
-              return (
-                <span
-                  key={s}
-                  draggable={!isEditingThis}
-                  onDragStart={(e: React.DragEvent) => handleDragStart(e, type, idx)}
-                  onDragOver={(e: React.DragEvent) => handleDragOver(e)}
-                  onDrop={(e: React.DragEvent) => handleDrop(e, type, idx)}
-                  onDragEnd={() => setDraggedIdx(null)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px',
-                    background: (() => {
-                      const c = masterColors[`${type}_${s}`];
-                      if (c && c !== '#ffffff') {
-                        const base = c.length === 9 ? c.substring(0, 7) : c;
-                        return `color-mix(in srgb, ${base} 15%, transparent)`;
-                      }
-                      return draggedIdx?.type === type && draggedIdx.index === idx ? 'color-mix(in srgb, var(--accent-primary) 15%, transparent)' : 'var(--surface-color)';
-                    })(),
-                    border: (() => {
-                      const c = masterColors[`${type}_${s}`];
-                      if (c && c !== '#ffffff') {
-                        const base = c.length === 9 ? c.substring(0, 7) : c;
-                        return `1px solid ${base}`;
-                      }
-                      return draggedIdx?.type === type && draggedIdx.index === idx ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)';
-                    })(),
-                    fontSize: '13px', fontWeight: 500,
-                    color: (() => {
-                      const c = masterColors[`${type}_${s}`];
-                      if (c && c !== '#ffffff') {
-                        return c.length === 9 ? c.substring(0, 7) : c;
-                      }
-                      return (draggedIdx?.type === type && draggedIdx.index === idx ? 'var(--accent-primary)' : 'var(--text-primary)');
-                    })(),
-                    cursor: isEditingThis ? 'default' : 'grab',
-                    position: 'relative',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {!isEditingThis && (
-                    <span title="Geser untuk mengatur urutan" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                      <GripVertical size={13} style={{ opacity: 0.4, cursor: 'grab', marginRight: '-2px' }} />
-                    </span>
-                  )}
-
-                  {isEditingThis ? (
-                    <input
-                      type="text"
-                      autoFocus
-                      value={editInputValue}
-                      onChange={e => setEditInputValue(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleRename(type, s, editInputValue);
-                        } else if (e.key === 'Escape') {
-                          setEditingItem(null);
-                        }
-                      }}
-                      onBlur={() => handleRename(type, s, editInputValue)}
-                      style={{ background: 'transparent', border: 'none', color: 'inherit', outline: 'none', fontSize: '13px', fontWeight: 500, width: `${Math.max(editInputValue.length * 8, 50)}px` }}
-                    />
-                  ) : (
-                    <span>{s}</span>
-                  )}
-
-                  {/* Task Usage Counter Badge */}
-                  <span
-                    title={taskCount > 0 ? `Digunakan di ${taskCount} pekerjaan aktif` : 'Belum digunakan di pekerjaan manapun'}
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      padding: '1px 6px',
-                      borderRadius: '10px',
-                      background: taskCount > 0 ? 'color-mix(in srgb, var(--accent-primary) 20%, transparent)' : 'rgba(0,0,0,0.06)',
-                      color: taskCount > 0 ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                      marginLeft: '2px'
-                    }}
-                  >
-                    {taskCount}
-                  </span>
-
-                  {type === 'status' && (
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={masterStatusProgress[s] ?? 0}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(s, Number(e.target.value))}
-                      style={{ width: '40px', padding: '2px 4px', fontSize: '11px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'var(--bg-color)', color: 'var(--text-primary)', marginLeft: '2px' }}
-                      title="Persentase Progress Otomatis (0-100)"
-                    />
-                  )}
-
-                  {!isEditingThis && (
-                    <>
-                      {type === 'pic' && (
-                        <button
-                          type="button"
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setActivePicForAvatar(s);
-                          }}
-                          style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '2px', zIndex: 2 }}
-                          title="Ubah Foto Profil PIC"
-                        >
-                          {masterPicAvatars[s] ? (
-                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', overflow: 'hidden', border: `1.5px solid ${masterColors[`pic_${s}`]?.substring(0, 7) || 'var(--accent-primary)'}`, boxSizing: 'border-box' }}>
-                              <img src={masterPicAvatars[s]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                          ) : (
-                            <Camera size={13} />
-                          )}
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${s}` ? null : `${type}_${s}`)}
-                        style={{ width: '16px', height: '16px', padding: '0', border: 'none', background: masterColors[`${type}_${s}`]?.substring(0, 7) || 'var(--text-secondary)', cursor: 'pointer', borderRadius: '50%', marginLeft: '2px' }}
-                        title="Pilih Warna Kategori/Status"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingItem({ type, oldVal: s });
-                          setEditInputValue(s);
-                        }}
-                        style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--text-secondary)', cursor: 'pointer', padding: '0', display: 'flex' }}
-                        title="Edit Nama"
-                      >
-                        <Pencil size={12} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(type, s)}
-                        style={{ background: 'none', border: 'none', color: masterColors[`${type}_${s}`] || (draggedIdx?.type === type && draggedIdx.index === idx) ? 'white' : 'var(--danger)', cursor: 'pointer', padding: '0', display: 'flex' }}
-                        title="Hapus Item"
-                      >
-                        <X size={14} />
-                      </button>
-                    </>
-                  )}
-
-                  {activeColorPicker === `${type}_${s}` && (
-                    <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '10px', width: '160px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)', marginTop: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Warna Preset:</span>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {PRESET_COLORS.map(c => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => {
-                              handleColorChange(type, s, c);
-                              setActiveColorPicker(null);
-                            }}
-                            style={{ width: '18px', height: '18px', borderRadius: '50%', background: c, border: 'none', cursor: 'pointer', outline: masterColors[`${type}_${s}`] === c ? '2px solid var(--text-primary)' : 'none', outlineOffset: '2px' }}
-                            title={c}
-                          />
-                        ))}
-                      </div>
-
-                      <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Kustom:</span>
-                        <input
-                          type="color"
-                          value={masterColors[`${type}_${s}`]?.substring(0, 7) || '#3b82f6'}
-                          onChange={e => handleColorChange(type, s, e.target.value)}
-                          style={{ width: '28px', height: '24px', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                          title="Pilih Warna Bebas (Custom Color Picker)"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleColorChange(type, s, '#ffffff');
-                          setActiveColorPicker(null);
-                        }}
-                        style={{ width: '100%', padding: '5px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
-                      >
-                        Gunakan Default
-                      </button>
-                    </div>
-                  )}
-                </span>
-              );
-            })
-          )}
-        </div>
-
-        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
-          <button type="button" className="btn btn-primary" onClick={(e) => handleSaveSettings(e as any)} disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}>
-            <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
-        </div>
-      </>
-    );
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profileName.trim()) {
-      toast.error('Nama wajib diisi!');
-      return;
-    }
-    if (newPassword && newPassword !== confirmPassword) {
-      toast.error('Konfirmasi password baru tidak cocok!');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/users/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: profileName,
-          email: profileEmail,
-          currentPassword,
-          newPassword
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success('Profil berhasil diperbarui!');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        toast.error(data.error || 'Gagal memperbarui profil.');
-      }
-    } catch {
-      toast.error('Terjadi kesalahan jaringan.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Save Settings Handler with Real-Time Broadcasting
   const handleSaveSettings = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setIsSavingSettings(true);
-    const toastId = toast.loading('Menyimpan pengaturan...');
+    const toastId = toast.loading('Menyimpan pengaturan & menyinkronkan ke seluruh tab...');
     
+    // Save to localStorage for instant local access
     localStorage.setItem('master_categories', JSON.stringify(categories));
     localStorage.setItem('master_pics', JSON.stringify(pics));
     localStorage.setItem('master_statuses', JSON.stringify(statuses));
@@ -867,6 +336,23 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('master_icons', JSON.stringify(masterIcons));
     localStorage.setItem('master_status_progress', JSON.stringify(masterStatusProgress));
     localStorage.setItem('master_pic_avatars', JSON.stringify(masterPicAvatars));
+    localStorage.setItem('app_name', appName);
+    localStorage.setItem('app_subtitle', deptName);
+    localStorage.setItem('dept_name', deptName);
+    localStorage.setItem('app_logo', appLogo);
+    localStorage.setItem('max_file_size_mb', String(maxFileSizeMb));
+    localStorage.setItem('max_task_files_size_mb', String(maxTaskFilesSizeMb));
+    localStorage.setItem('max_total_storage_mb', String(maxTotalStorageMb));
+    localStorage.setItem('session_timeout', String(sessionTimeoutMinutes));
+    localStorage.setItem('session_timeout_hours', String(sessionTimeoutHours));
+
+    const finalTz = calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset;
+    localStorage.setItem('calendar_timezone', finalTz);
+
+    const finalReminderDays = backupReminderMode === 'custom' 
+      ? (Number(backupReminderDays) || 7) 
+      : Number(backupReminderMode);
+    localStorage.setItem('backup_reminder_days', String(finalReminderDays));
 
     try {
       await fetch('/api/settings', {
@@ -891,22 +377,40 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           max_total_storage_mb: Number(maxTotalStorageMb) || 5000,
           session_timeout_hours: Number(sessionTimeoutHours) || 24,
           session_timeout: Number(sessionTimeoutMinutes) || 10,
-          backup_reminder_days: backupReminderMode === 'custom' 
-            ? (Number(backupReminderDays) || 7) 
-            : Number(backupReminderMode),
-          calendar_timezone: calendarTzPreset === 'custom' 
-            ? (customCalendarTz.trim() || 'Asia/Makassar') 
-            : calendarTzPreset
+          backup_reminder_days: finalReminderDays,
+          calendar_timezone: finalTz
         })
       });
       
+      // Real-time broadcast to all other open tabs & MasterContext
+      broadcastSettingsChange('max_file_size_mb', Number(maxFileSizeMb) || 25);
+      broadcastSettingsChange('max_task_files_size_mb', Number(maxTaskFilesSizeMb) || 100);
+      broadcastSettingsChange('max_total_storage_mb', Number(maxTotalStorageMb) || 5000);
+      broadcastSettingsChange('app_name', appName);
+      broadcastSettingsChange('app_subtitle', deptName);
+      broadcastSettingsChange('app_logo', appLogo);
+      broadcastSettingsChange('master_categories', categories);
+      broadcastSettingsChange('master_pics', pics);
+      broadcastSettingsChange('master_statuses', statuses);
+      broadcastSettingsChange('master_priorities', priorities);
+      broadcastSettingsChange('master_locations', locations);
+      broadcastSettingsChange('master_colors', masterColors);
+      broadcastSettingsChange('master_icons', masterIcons);
+      broadcastSettingsChange('master_status_progress', masterStatusProgress);
+      broadcastSettingsChange('master_pic_avatars', masterPicAvatars);
+      broadcastSettingsChange('session_timeout', Number(sessionTimeoutMinutes) || 10);
+      broadcastSettingsChange('calendar_timezone', finalTz);
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
       window.dispatchEvent(new Event('deptNameChanged'));
       window.dispatchEvent(new Event('backupReminderChanged'));
       window.dispatchEvent(new Event('masterUpdated'));
-      if (addActivityLog) addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan', 'success');
-      toast.success('Pengaturan berhasil disimpan!', { id: toastId });
+
+      if (addActivityLog) {
+        addActivityLog('SAVE_SETTINGS', 'Simpan Pengaturan', 'Pengaturan aplikasi berhasil disimpan & disinkronkan', 'success');
+      }
+      toast.success('Pengaturan berhasil disimpan & disinkronkan ke seluruh tab!', { id: toastId });
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan pengaturan.', { id: toastId });
@@ -915,6 +419,210 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
+  // Master Data Add Item Handler
+  const handleAddItem = (type: ListType, val: string, setInput: (v: string) => void) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+
+    if (type === 'cat') {
+      if (categories.includes(trimmed)) return toast.error('Kategori sudah ada');
+      const updated = [...categories, trimmed];
+      setCategories(updated);
+      localStorage.setItem('master_cats', JSON.stringify(updated));
+    } else if (type === 'pic') {
+      if (pics.includes(trimmed)) return toast.error('PIC sudah ada');
+      const updated = [...pics, trimmed];
+      setPics(updated);
+      localStorage.setItem('master_pics', JSON.stringify(updated));
+    } else if (type === 'status') {
+      if (statuses.includes(trimmed)) return toast.error('Status sudah ada');
+      const updated = [...statuses, trimmed];
+      setStatuses(updated);
+      localStorage.setItem('master_statuses', JSON.stringify(updated));
+    } else if (type === 'priority') {
+      if (priorities.includes(trimmed)) return toast.error('Prioritas sudah ada');
+      const updated = [...priorities, trimmed];
+      setPriorities(updated);
+      localStorage.setItem('master_priorities', JSON.stringify(updated));
+    } else if (type === 'location') {
+      if (locations.includes(trimmed)) return toast.error('Lokasi sudah ada');
+      const updated = [...locations, trimmed];
+      setLocations(updated);
+      localStorage.setItem('master_locations', JSON.stringify(updated));
+    }
+
+    setInput('');
+  };
+
+  // Master Data Delete Item Handler
+  const handleDeleteItem = (type: ListType, val: string) => {
+    if (type === 'cat') {
+      const updated = categories.filter(c => c !== val);
+      setCategories(updated);
+      localStorage.setItem('master_cats', JSON.stringify(updated));
+    } else if (type === 'pic') {
+      const updated = pics.filter(p => p !== val);
+      setPics(updated);
+      localStorage.setItem('master_pics', JSON.stringify(updated));
+    } else if (type === 'status') {
+      if (statuses.length <= 1) return toast.error('Minimal harus ada 1 status');
+      const updated = statuses.filter(s => s !== val);
+      setStatuses(updated);
+      localStorage.setItem('master_statuses', JSON.stringify(updated));
+    } else if (type === 'priority') {
+      if (priorities.length <= 1) return toast.error('Minimal harus ada 1 prioritas');
+      const updated = priorities.filter(p => p !== val);
+      setPriorities(updated);
+      localStorage.setItem('master_priorities', JSON.stringify(updated));
+    } else if (type === 'location') {
+      const updated = locations.filter(l => l !== val);
+      setLocations(updated);
+      localStorage.setItem('master_locations', JSON.stringify(updated));
+    }
+  };
+
+  // Master Data Rename Handler
+  const handleStartEdit = (type: ListType, val: string) => {
+    setEditingItem({ type, oldVal: val });
+    setEditInputValue(val);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+    const { type, oldVal } = editingItem;
+    const newVal = editInputValue.trim();
+
+    if (!newVal || newVal === oldVal) {
+      setEditingItem(null);
+      return;
+    }
+
+    const toastId = toast.loading(`Mengubah "${oldVal}" menjadi "${newVal}" pada seluruh pekerjaan terkait...`);
+
+    let endpointField = '';
+    if (type === 'cat') endpointField = 'kategori';
+    else if (type === 'pic') endpointField = 'pic';
+    else if (type === 'status') endpointField = 'status';
+    else if (type === 'priority') endpointField = 'prioritas';
+    else if (type === 'location') endpointField = 'lokasi';
+
+    try {
+      const res = await fetch('/api/settings/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: endpointField, oldVal, newVal })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Gagal mengubah data pada database');
+      }
+
+      // Update state locally
+      if (type === 'cat') {
+        const updated = categories.map(c => c === oldVal ? newVal : c);
+        setCategories(updated);
+        localStorage.setItem('master_cats', JSON.stringify(updated));
+      } else if (type === 'pic') {
+        const updated = pics.map(p => p === oldVal ? newVal : p);
+        setPics(updated);
+        localStorage.setItem('master_pics', JSON.stringify(updated));
+        if (masterPicAvatars[oldVal]) {
+          const avs = { ...masterPicAvatars, [newVal]: masterPicAvatars[oldVal] };
+          delete avs[oldVal];
+          setMasterPicAvatars(avs);
+        }
+      } else if (type === 'status') {
+        const updated = statuses.map(s => s === oldVal ? newVal : s);
+        setStatuses(updated);
+        localStorage.setItem('master_statuses', JSON.stringify(updated));
+        if (masterColors[oldVal]) {
+          const cols = { ...masterColors, [newVal]: masterColors[oldVal] };
+          delete cols[oldVal];
+          setMasterColors(cols);
+        }
+        if (masterStatusProgress[oldVal] !== undefined) {
+          const progs = { ...masterStatusProgress, [newVal]: masterStatusProgress[oldVal] };
+          delete progs[oldVal];
+          setMasterStatusProgress(progs);
+        }
+      } else if (type === 'priority') {
+        const updated = priorities.map(p => p === oldVal ? newVal : p);
+        setPriorities(updated);
+        localStorage.setItem('master_priorities', JSON.stringify(updated));
+      } else if (type === 'location') {
+        const updated = locations.map(l => l === oldVal ? newVal : l);
+        setLocations(updated);
+        localStorage.setItem('master_locations', JSON.stringify(updated));
+      }
+
+      toast.success(`Berhasil mengubah "${oldVal}" menjadi "${newVal}"!`, { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengubah data', { id: toastId });
+    } finally {
+      setEditingItem(null);
+    }
+  };
+
+  // Drag Reorder Handlers
+  const handleDragStart = (type: string, index: number) => {
+    setDraggedIdx({ type, index });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (type: ListType, targetIdx: number) => {
+    if (!draggedIdx || draggedIdx.type !== type) return;
+    const sourceIdx = draggedIdx.index;
+    if (sourceIdx === targetIdx) return;
+
+    if (type === 'cat') {
+      const arr = [...categories];
+      const [moved] = arr.splice(sourceIdx, 1);
+      arr.splice(targetIdx, 0, moved);
+      setCategories(arr);
+      localStorage.setItem('master_cats', JSON.stringify(arr));
+    } else if (type === 'pic') {
+      const arr = [...pics];
+      const [moved] = arr.splice(sourceIdx, 1);
+      arr.splice(targetIdx, 0, moved);
+      setPics(arr);
+      localStorage.setItem('master_pics', JSON.stringify(arr));
+    } else if (type === 'status') {
+      const arr = [...statuses];
+      const [moved] = arr.splice(sourceIdx, 1);
+      arr.splice(targetIdx, 0, moved);
+      setStatuses(arr);
+      localStorage.setItem('master_statuses', JSON.stringify(arr));
+    } else if (type === 'priority') {
+      const arr = [...priorities];
+      const [moved] = arr.splice(sourceIdx, 1);
+      arr.splice(targetIdx, 0, moved);
+      setPriorities(arr);
+      localStorage.setItem('master_priorities', JSON.stringify(arr));
+    } else if (type === 'location') {
+      const arr = [...locations];
+      const [moved] = arr.splice(sourceIdx, 1);
+      arr.splice(targetIdx, 0, moved);
+      setLocations(arr);
+      localStorage.setItem('master_locations', JSON.stringify(arr));
+    }
+    setDraggedIdx(null);
+  };
+
+  // Avatar Handler
+  const handleAvatarSave = (base64: string) => {
+    if (!activePicForAvatar) return;
+    const updated = { ...masterPicAvatars, [activePicForAvatar]: base64 };
+    setMasterPicAvatars(updated);
+    localStorage.setItem('master_pic_avatars', JSON.stringify(updated));
+    setActivePicForAvatar(null);
+    toast.success(`Foto profil ${activePicForAvatar} diperbarui`);
+  };
+
+  // Database Handlers
   const handleBackupDatabase = async () => {
     const toastId = toast.loading('Sedang mengunduh seluruh data (database & file)...');
     try {
@@ -963,19 +671,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             body: JSON.stringify(data)
           });
         } else {
-          // Check if we are on Vercel (not localhost)
           const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          
           if (!isLocalhost && file.size > 4 * 1024 * 1024) {
-            // Cloud Mode (Vercel) & File > 4MB: Use Vercel Blob Client Upload to bypass 4.5MB Serverless limit
             const { upload } = await import('@vercel/blob/client');
             toast.loading('Mengunggah file backup (tahap 1/2)...', { id: toastId });
-            
             const blob = await upload(file.name, file, {
               access: 'public',
               handleUploadUrl: '/api/upload/token',
             });
-            
             toast.loading('Memulihkan database (tahap 2/2)...', { id: toastId });
             res = await fetch('/api/database', {
               method: 'POST',
@@ -983,13 +686,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               body: JSON.stringify({ blobUrl: blob.url })
             });
           } else {
-            // Local Mode or Small File: Direct upload
             const arrayBuffer = await file.arrayBuffer();
             res = await fetch('/api/database', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/zip',
-              },
+              headers: { 'Content-Type': 'application/zip' },
               body: arrayBuffer
             });
           }
@@ -999,17 +699,13 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (res.ok) {
           const result = await res.json();
           toast.success(result.message || 'Database berhasil dipulihkan!');
-          // Gunakan alert agar pop-up tertahan sampai di-klik OK oleh user (terutama jika di HP)
           window.alert(`✅ BERHASIL!\n\n${result.message || 'Database berhasil dipulihkan!'}`);
           window.location.reload();
         } else {
           let err: any = {};
           try { err = await res.json(); } catch(e) { err.message = await res.text(); }
-          
           let errMsg = err.error || err.message || 'Gagal memulihkan database';
-          if (typeof errMsg === 'object') {
-            errMsg = errMsg.message || JSON.stringify(errMsg);
-          }
+          if (typeof errMsg === 'object') errMsg = errMsg.message || JSON.stringify(errMsg);
           toast.error(errMsg);
         }
       } catch (err: any) {
@@ -1022,32 +718,408 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     input.click();
   };
 
+  // Reusable Master Data List Editor Renderer
+  const renderListEditor = (
+    title: string,
+    type: ListType,
+    items: string[],
+    inputVal: string,
+    setInputVal: (v: string) => void,
+    icon: React.ReactNode,
+    subtitle?: string
+  ) => {
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+          <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {icon} {title}
+          </h4>
+          <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '12px', background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', fontWeight: 600 }}>
+            {items.length} Item
+          </span>
+        </div>
+
+        {subtitle && (
+          <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.4 }}>
+            {subtitle}
+          </p>
+        )}
+
+        {/* Add Input */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+          <input
+            type="text"
+            className="input"
+            placeholder={`Tambah ${title.toLowerCase()} baru...`}
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddItem(type, inputVal, setInputVal);
+              }
+            }}
+            style={{ fontSize: '13px' }}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => handleAddItem(type, inputVal, setInputVal)}
+            style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', whiteSpace: 'nowrap' }}
+          >
+            <Plus size={16} /> Tambah
+          </button>
+        </div>
+
+        {/* Items Badges & Manager */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '44px', padding: '12px', background: 'var(--input-bg)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+          {items.length === 0 ? (
+            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '4px' }}>
+              Belum ada data. Silakan ketik nama lalu klik Tambah.
+            </span>
+          ) : (
+            items.map((item, index) => {
+              const isEditing = editingItem?.type === type && editingItem.oldVal === item;
+              const isDragging = draggedIdx?.type === type && draggedIdx.index === index;
+              const color = masterColors[item] || (type === 'status' ? '#3b82f6' : undefined);
+              const progress = masterStatusProgress[item];
+
+              return (
+                <div
+                  key={item}
+                  draggable={!isEditing}
+                  onDragStart={() => handleDragStart(type, index)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(type, index)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: isEditing ? '2px 6px' : '5px 10px',
+                    borderRadius: '8px',
+                    background: 'var(--surface-color)',
+                    border: isDragging ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                    fontSize: '12.5px',
+                    color: 'var(--text-primary)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    opacity: isDragging ? 0.4 : 1,
+                    position: 'relative'
+                  }}
+                >
+                  <GripVertical size={13} style={{ color: 'var(--text-secondary)', cursor: 'grab', opacity: 0.6 }} />
+
+                  {type === 'pic' && (
+                    <div
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setActivePicForAvatar(item)}
+                      title="Klik untuk ubah foto PIC"
+                    >
+                      <Avatar name={item} src={masterPicAvatars[item]} size={20} />
+                    </div>
+                  )}
+
+                  {type === 'status' && (
+                    <div
+                      style={{ width: '10px', height: '10px', borderRadius: '50%', background: color || '#3b82f6', cursor: 'pointer' }}
+                      onClick={() => setActiveColorPicker(activeColorPicker === item ? null : item)}
+                      title="Klik untuk ubah warna status"
+                    />
+                  )}
+
+                  {isEditing ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input
+                        type="text"
+                        className="input"
+                        value={editInputValue}
+                        onChange={(e) => setEditInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit();
+                          if (e.key === 'Escape') setEditingItem(null);
+                        }}
+                        style={{ padding: '2px 6px', height: '26px', fontSize: '12px', width: '140px' }}
+                        autoFocus
+                      />
+                      <button className="btn btn-primary" onClick={handleSaveEdit} style={{ padding: '3px 8px', fontSize: '11px' }}>
+                        Simpan
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => setEditingItem(null)} style={{ padding: '3px 6px', fontSize: '11px' }}>
+                        Batal
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span style={{ fontWeight: 500 }}>{item}</span>
+
+                      {type === 'status' && progress !== undefined && (
+                        <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', background: 'var(--input-bg)', padding: '1px 5px', borderRadius: '4px' }}>
+                          {progress}%
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(type, item)}
+                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                        title="Edit & Perbarui di Seluruh Pekerjaan"
+                      >
+                        <Pencil size={12} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteItem(type, item)}
+                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: '#ef4444' }}
+                        title="Hapus Opsi"
+                      >
+                        <X size={13} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Color Picker Popover */}
+                  {activeColorPicker === item && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        zIndex: 100,
+                        marginTop: '4px',
+                        background: 'var(--surface-color)',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        boxShadow: 'var(--card-shadow)',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(5, 1fr)',
+                        gap: '6px',
+                        width: '150px'
+                      }}
+                    >
+                      {PRESET_COLORS.map(c => (
+                        <div
+                          key={c}
+                          onClick={() => {
+                            const cols = { ...masterColors, [item]: c };
+                            setMasterColors(cols);
+                            localStorage.setItem('master_colors', JSON.stringify(cols));
+                            setActiveColorPicker(null);
+                          }}
+                          style={{ width: '22px', height: '22px', borderRadius: '4px', background: c, cursor: 'pointer', border: color === c ? '2px solid white' : 'none' }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Action Save Bar */}
+        <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+            type="button" 
+            className="btn btn-primary" 
+            onClick={(e) => handleSaveSettings(e as any)} 
+            disabled={isSavingSettings} 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', padding: '8px 14px' }}
+          >
+            <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Perubahan Master'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '850px', margin: '0 auto', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '980px', margin: '0 auto', width: '100%' }}>
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '8px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Pengaturan Aplikasi</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {(canMasterData || canSystemConfig || canDatabaseBackup)
-            ? 'Kelola preferensi antarmuka, master opsi dropdown kategori, daftar PIC, dan cadangan data aplikasi.'
-            : 'Kelola preferensi antarmuka aplikasi Anda.'}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+          Pengaturan Aplikasi
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
+          Kelola preferensi antarmuka pengguna, data master dropdown, penyimpanan file, dan pemeliharaan sistem.
         </p>
       </div>
 
+      {/* Success Notification */}
       {savedSuccess && (
-        <div style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '10px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-          <Check size={18} /> Pengaturan berhasil disimpan!
+        <div style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '10px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px' }}>
+          <Check size={18} /> Pengaturan berhasil disimpan dan disinkronkan ke seluruh tab!
         </div>
       )}
 
-      {/* Identitas Aplikasi Card */}
-      {canSystemConfig && (
-        <div id="settings-app-identity" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layout size={20} color="var(--accent-primary)" /> Identitas Aplikasi
-          </h3>
+      {/* Modern Navigation Tabs */}
+      <div 
+        style={{ 
+          display: 'flex', 
+          gap: '6px', 
+          borderBottom: '1px solid var(--border-color)', 
+          paddingBottom: '2px', 
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
+        {availableTabs.map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 16px',
+                borderRadius: '8px 8px 0 0',
+                border: 'none',
+                borderBottom: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                background: isActive ? 'var(--surface-color)' : 'transparent',
+                color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                fontWeight: isActive ? 700 : 500,
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '10px', background: isActive ? 'var(--accent-primary)' : 'var(--input-bg)', color: isActive ? 'white' : 'var(--text-secondary)', fontWeight: 700 }}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+      {/* TAB CONTENT AREA */}
+
+      {/* 1. Appearance & Theme Tab */}
+      {activeTab === 'appearance' && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Palette size={18} color="var(--accent-primary)" /> Tampilan & Preferensi Pengguna
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Personalisasi antarmuka aplikasi sesuai dengan kenyamanan visual Anda.
+            </p>
+          </div>
+
+          {/* Dark / Light Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', fontSize: '14px' }}>Mode Gelap / Terang</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Beralih antara tema gelap (Dark) atau terang (Light).</span>
+            </div>
+            <button className="btn btn-secondary" onClick={toggleTheme} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', fontSize: '13px' }}>
+              {theme === 'dark' ? <Sun size={16} color="#f59e0b" /> : <Moon size={16} color="#f59e0b" />}
+              {theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+            </button>
+          </div>
+
+          <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+          {/* Accent Color Selection */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+                Warna Aksen (Accent Color)
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Warna utama tombol aktif, grafik, dan sorotan antarmuka.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {[
+                { id: 'blue', color: '#3b82f6', label: 'Biru' },
+                { id: 'purple', color: '#a855f7', label: 'Ungu' },
+                { id: 'green', color: '#10b981', label: 'Hijau' },
+                { id: 'orange', color: '#f97316', label: 'Oranye' },
+                { id: 'red', color: '#ef4444', label: 'Merah' },
+                { id: 'teal', color: '#14b8a6', label: 'Teal' },
+              ].map(ac => (
+                <button
+                  key={ac.id}
+                  onClick={() => setAccentColor(ac.id as any)}
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '50%', backgroundColor: ac.color, border: 'none', cursor: 'pointer',
+                    outline: accentColor === ac.id ? `3px solid var(--text-primary)` : 'none', outlineOffset: '2px', transition: 'all 0.2s'
+                  }}
+                  title={ac.label}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+          {/* Density Selection */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', fontSize: '14px' }}>Kerapatan Tampilan (Density)</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Atur jarak baris tabel dan spasi elemen.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', background: 'var(--input-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => setDensity('comfortable')}
+                style={{
+                  padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 500, cursor: 'pointer',
+                  background: density === 'comfortable' ? 'var(--surface-color)' : 'transparent',
+                  color: density === 'comfortable' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  boxShadow: density === 'comfortable' ? 'var(--card-shadow)' : 'none',
+                }}
+              >
+                Nyaman (Comfortable)
+              </button>
+              <button
+                onClick={() => setDensity('compact')}
+                style={{
+                  padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 500, cursor: 'pointer',
+                  background: density === 'compact' ? 'var(--surface-color)' : 'transparent',
+                  color: density === 'compact' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  boxShadow: density === 'compact' ? 'var(--card-shadow)' : 'none',
+                }}
+              >
+                Padat (Compact)
+              </button>
+            </div>
+          </div>
+
+          <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+          {/* Focus Mode (Zen Mode) */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', fontSize: '14px' }}>Mode Fokus (Zen Mode)</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sembunyikan bilah navigasi samping untuk tampilan layar penuh saat presentasi.</span>
+            </div>
+            <button className="btn btn-primary" onClick={toggleFocusMode} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', fontSize: '13px' }}>
+              <Maximize size={16} /> Aktifkan Mode Fokus
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. App Identity & Branding Tab */}
+      {activeTab === 'branding' && canSystemConfig && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layout size={18} color="var(--accent-primary)" /> Identitas Aplikasi & Branding Departemen
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Ubah nama sistem, subtitle departemen, serta logo yang tampil di header dan laporan PDF/Excel.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Aplikasi</label>
               <input
@@ -1070,7 +1142,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          <div style={{ marginTop: '24px' }}>
+          <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Logo Aplikasi</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -1081,282 +1153,143 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               </button>
               {appLogo && (
                 <button className="btn btn-danger" onClick={() => setAppLogo('')} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
-                  Hapus
+                  Hapus Logo
                 </button>
               )}
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>Gunakan gambar persegi (rasio 1:1) berukuran minimal 128x128 pixel untuk hasil terbaik.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Format gambar persegi (1:1) berukuran minimal 128x128 pixel untuk hasil tampilan tajam di kop laporan.
+            </p>
           </div>
 
-          <button onClick={(e) => handleSaveSettings(e as any)} className="btn btn-primary" style={{ marginTop: '24px' }} disabled={isSavingSettings}>
-            {isSavingSettings ? 'Menyimpan...' : 'Simpan Identitas Aplikasi'}
-          </button>
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={(e) => handleSaveSettings(e as any)} className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+              <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Identitas Aplikasi'}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Theme Settings Card */}
-      <div id="settings-theme" className="glass" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {theme === 'dark' ? <Moon size={20} color="#f59e0b" /> : <Sun size={20} color="#f59e0b" />} Tampilan & Tema
-        </h3>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>Mode Gelap / Terang</span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Pilih antara tema gelap (Dark) atau terang (Light).</span>
+      {/* 3. Master Data Pekerjaan Tab */}
+      {activeTab === 'master' && canMasterData && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tag size={18} color="var(--accent-primary)" /> Master Opsi Data Pekerjaan
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Kelola daftar pilihan dropdown yang muncul saat pembuatan tugas baru dan filter monitoring.
+            </p>
           </div>
 
-          <button className="btn btn-secondary" onClick={toggleTheme} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {theme === 'dark' ? <Sun size={16} color="#f59e0b" /> : <Moon size={16} color="#f59e0b" />}
-            {theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-          </button>
-        </div>
-
-        <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '24px' }} />
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Palette size={16} color="var(--accent-primary)" /> Warna Aksen (Accent Color)
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sesuaikan warna utama tombol dan antarmuka.</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {[
-              { id: 'blue', color: '#3b82f6', label: 'Biru' },
-              { id: 'purple', color: '#a855f7', label: 'Ungu' },
-              { id: 'green', color: '#10b981', label: 'Hijau' },
-              { id: 'orange', color: '#f97316', label: 'Oranye' },
-              { id: 'red', color: '#ef4444', label: 'Merah' },
-              { id: 'teal', color: '#14b8a6', label: 'Teal' },
-            ].map(ac => (
-              <button
-                key={ac.id}
-                onClick={() => setAccentColor(ac.id as any)}
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%', backgroundColor: ac.color, border: 'none', cursor: 'pointer',
-                  outline: accentColor === ac.id ? `3px solid var(--text-primary)` : 'none', outlineOffset: '2px', transition: 'all 0.2s'
-                }}
-                title={ac.label}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '24px' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Layout size={16} color="var(--accent-primary)" /> Kerapatan Tampilan (Display Density)
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sesuaikan jarak dan kepadatan elemen (spasi baris).</span>
-          </div>
-
-          <div style={{ flexShrink: 0, display: 'flex', gap: '8px', background: 'var(--input-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <button
-              onClick={() => setDensity('comfortable')}
-              style={{
-                padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                background: density === 'comfortable' ? 'var(--surface-color)' : 'transparent',
-                color: density === 'comfortable' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: density === 'comfortable' ? 'var(--card-shadow)' : 'none',
-              }}
-            >
-              Nyaman (Comfortable)
-            </button>
-            <button
-              onClick={() => setDensity('compact')}
-              style={{
-                padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
-                background: density === 'compact' ? 'var(--surface-color)' : 'transparent',
-                color: density === 'compact' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: density === 'compact' ? 'var(--card-shadow)' : 'none',
-              }}
-            >
-              Padat (Compact)
-            </button>
-          </div>
-        </div>
-
-        <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '24px' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Maximize size={16} color="var(--accent-primary)" /> Mode Fokus (Zen Mode)
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sembunyikan menu samping untuk layar penuh. Berguna saat presentasi.</span>
-          </div>
-
-          <button className="btn btn-primary" onClick={toggleFocusMode} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Maximize size={16} /> Aktifkan Mode Fokus
-          </button>
-        </div>
-
-        {/* Theme Preview Card */}
-        <div style={{ marginTop: '32px', border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}>
-          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Pratinjau Tema & Warna</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
-              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
-            </div>
-          </div>
-          <div style={{ padding: density === 'compact' ? '16px' : '32px', background: 'var(--bg-color)', transition: 'padding 0.3s' }}>
-            <div className="glass" style={{ padding: density === 'compact' ? '16px' : '24px', display: 'flex', flexDirection: 'column', gap: density === 'compact' ? '12px' : '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Kartu Contoh Pekerjaan</h4>
-                <span className="badge" style={{ backgroundColor: 'var(--input-bg)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' }}>
-                  In Progress (50%)
-                </span>
-              </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: density === 'compact' ? 1.4 : 1.6 }}>
-                Ini adalah simulasi bagaimana teks, kartu, dan tombol akan terlihat di seluruh aplikasi dengan kombinasi tema ({theme === 'dark' ? 'Gelap' : 'Terang'}) dan warna aksen pilihan Anda.
-              </p>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <button className="btn btn-primary">Tombol Utama</button>
-                <button className="btn btn-secondary">Tombol Sekunder</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      {/* Quick Navigation Header for Master Data */}
-      {canMasterData && (
-        <div style={{ background: 'var(--surface-color)', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={18} color="var(--accent-primary)" />
-            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Navigasi Cepat Master Data:</span>
-          </div>
+          {/* Sub-Tabs for Master Data Items */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <a href="#settings-categories" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Tag size={13} color="var(--accent-primary)" /> Kategori <span style={{ opacity: 0.7, fontWeight: 700 }}>({categories.length})</span>
-            </a>
-            <a href="#settings-pics" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Users size={13} color="var(--accent-primary)" /> PIC <span style={{ opacity: 0.7, fontWeight: 700 }}>({pics.length})</span>
-            </a>
-            <a href="#settings-statuses" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Tag size={13} color="var(--accent-primary)" /> Status <span style={{ opacity: 0.7, fontWeight: 700 }}>({statuses.length})</span>
-            </a>
-            <a href="#settings-priorities" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Tag size={13} color="var(--accent-primary)" /> Prioritas <span style={{ opacity: 0.7, fontWeight: 700 }}>({priorities.length})</span>
-            </a>
-            <a href="#settings-locations" className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <MapPin size={13} color="var(--accent-primary)" /> Lokasi <span style={{ opacity: 0.7, fontWeight: 700 }}>({locations.length})</span>
-            </a>
+            {[
+              { id: 'cat' as ListType, label: 'Kategori Agenda', count: categories.length, icon: Tag },
+              { id: 'pic' as ListType, label: 'Master PIC & Personil', count: pics.length, icon: Users },
+              { id: 'status' as ListType, label: 'Status & Progres %', count: statuses.length, icon: Tag },
+              { id: 'priority' as ListType, label: 'Tingkat Prioritas', count: priorities.length, icon: Tag },
+              { id: 'location' as ListType, label: 'Lokasi & Ruang Rapat', count: locations.length, icon: MapPin },
+            ].map(sub => {
+              const isSubActive = activeMasterSubTab === sub.id;
+              const SubIcon = sub.icon;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => setActiveMasterSubTab(sub.id)}
+                  className={`btn ${isSubActive ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
+                >
+                  <SubIcon size={14} /> {sub.label} <span style={{ opacity: 0.8, fontWeight: 700 }}>({sub.count})</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-      )}
 
-      {/* Dropdown Master Categories Manager */}
-      {canMasterData && (
-        <div id="settings-categories" className="glass" style={{ padding: '24px' }}>
-          {renderListEditor(
+          {/* Sub Tab Content */}
+          {activeMasterSubTab === 'cat' && renderListEditor(
             "Master Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
-            <Tag size={20} color="var(--accent-primary)" />,
+            <Tag size={18} color="var(--accent-primary)" />,
             "Pilihan kategori agenda/pekerjaan yang muncul di dropdown dan filter sistem."
           )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Kelola pilihan opsi kategori yang muncul otomatis (*auto-suggest*) saat menambah atau mengedit pekerjaan.
-          </p>
-        </div>
-      )}
 
-      {/* Dropdown Master PIC Manager */}
-      {canMasterData && (
-        <div id="settings-pics" className="glass" style={{ padding: '24px' }}>
-          {renderListEditor(
-            "Master PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
-            <Users size={20} color="var(--accent-primary)" />,
-            "Daftar nama PIC dan personil yang ditugaskan dalam pekerjaan/agenda."
+          {activeMasterSubTab === 'pic' && renderListEditor(
+            "Master PIC & Personil", 'pic', pics, newPicInput, setNewPicInput,
+            <Users size={18} color="var(--accent-primary)" />,
+            "Daftar nama penanggung jawab (PIC) yang muncul pada form tugas dan penugasan tim."
           )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Kelola daftar nama PIC yang muncul di pilihan dropdown auto-suggest form pekerjaan dan foto profil.
-          </p>
-        </div>
-      )}
 
-      {canMasterData && (
-        <div id="settings-statuses" className="glass" style={{ padding: '24px' }}>
-          {renderListEditor(
+          {activeMasterSubTab === 'status' && renderListEditor(
             "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
-            <Tag size={20} color="var(--accent-primary)" />,
-            "Kolom status Kanban Board dan tahapan progres pekerjaan."
+            <Tag size={18} color="var(--accent-primary)" />,
+            "Kolom status pada Kanban Board dan alur progres tahapan pekerjaan."
           )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Kolom-kolom di Monitoring Board (Kanban) dan pilihan status secara sistem menyesuaikan pengaturan ini.</p>
-        </div>
-      )}
 
-      {canMasterData && (
-        <div id="settings-priorities" className="glass" style={{ padding: '24px' }}>
-          {renderListEditor(
-            "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
-            <Tag size={20} color="var(--accent-primary)" />,
+          {activeMasterSubTab === 'priority' && renderListEditor(
+            "Master Tingkat Prioritas", 'priority', priorities, newPriorityInput, setNewPriorityInput,
+            <Tag size={18} color="var(--accent-primary)" />,
             "Tingkat urgensi pekerjaan untuk klasifikasi matriks risiko dan filter."
           )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>Opsi tingkat prioritas untuk pekerjaan.</p>
-        </div>
-      )}
 
-      {/* Master Locations Manager */}
-      {canMasterData && (
-        <div id="settings-locations" className="glass" style={{ padding: '24px' }}>
-          {renderListEditor(
+          {activeMasterSubTab === 'location' && renderListEditor(
             "Master Lokasi & Ruang Rapat", 'location', locations, newLocationInput, setNewLocationInput,
-            <MapPin size={20} color="var(--accent-primary)" />,
-            "Daftar nama ruang rapat, gedung, atau link Zoom meeting yang muncul di pilihan auto-complete form pekerjaan."
+            <MapPin size={18} color="var(--accent-primary)" />,
+            "Daftar nama ruang rapat, gedung, atau link Zoom meeting untuk opsi auto-complete form pekerjaan."
           )}
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Memudahkan tim memilih ruangan (misal: R.R Komp TKMR, Ruang Pleno, KPJ) atau link meeting online tanpa perlu mengetik ulang.
-          </p>
         </div>
       )}
 
-
-
-      {/* General Settings */}
-      {canSystemConfig && (
-        <div id="settings-general" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
-          </h3>
+      {/* 4. Storage & Files Tab */}
+      {activeTab === 'storage' && canSystemConfig && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HardDrive size={18} color="var(--accent-primary)" /> Penyimpanan & Batas Unggah File
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Konfigurasi batas kapasitas file lampiran yang langsung disinkronkan secara <em>real-time</em> ke seluruh form upload.
+            </p>
+          </div>
 
           <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Maksimal Ukuran per File Lampiran (MB)
-              </label>
-              <input
-                type="number"
-                className="input"
-                value={maxFileSizeMb}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
-                placeholder="Contoh: 25"
-                min="1"
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Maksimal Ukuran per File Lampiran (MB) *
+                </label>
+                <input
+                  type="number"
+                  className="input"
+                  value={maxFileSizeMb}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
+                  placeholder="25"
+                  min="1"
+                  required
+                />
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                  Batas per satu file dokumen/lampiran yang diupload PIC.
+                </span>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Maksimal Total Ukuran File per Pekerjaan (MB)
+                </label>
+                <input
+                  type="number"
+                  className="input"
+                  value={maxTaskFilesSizeMb}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
+                  placeholder="100"
+                  min="1"
+                />
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                  Akumulasi total seluruh file lampiran pada satu tugas pekerjaan.
+                </span>
+              </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Maksimal Total Ukuran File per Pekerjaan (MB)
-              </label>
-              <input
-                type="number"
-                className="input"
-                value={maxTaskFilesSizeMb}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
-                placeholder="Contoh: 100"
-                min="1"
-              />
-            </div>
-
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '6px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Kapasitas Maksimal Storage Keseluruhan Aplikasi (MB)
               </label>
@@ -1365,14 +1298,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 className="input"
                 value={maxTotalStorageMb}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTotalStorageMb(e.target.value)}
-                placeholder="Contoh: 5000"
+                placeholder="5000"
                 min="1"
+                style={{ maxWidth: '300px' }}
               />
 
-              <div style={{ marginTop: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>
+              {/* Live Storage Progress Bar */}
+              <div style={{ marginTop: '16px', background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
                   <span>Penyimpanan Terpakai: {storageUsedMb.toFixed(2)} MB</span>
-                  <span>Maks: {maxTotalStorageMb} MB</span>
+                  <span>Kapasitas: {maxTotalStorageMb} MB</span>
                 </div>
                 <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
                   <div style={{
@@ -1382,33 +1317,58 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     transition: 'width 0.3s'
                   }} />
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                  Sisa kapasitas: {Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
+                  Sisa kapasitas penyimpanan yang tersedia: <strong style={{ color: 'var(--text-primary)' }}>{Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB</strong>
                 </p>
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+                <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Konfigurasi Storage'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* 5. Security & Session Tab */}
+      {activeTab === 'security' && canSystemConfig && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={18} color="var(--accent-primary)" /> Keamanan & Batas Waktu Sesi
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Atur durasi kedaluwarsa login otomatis dan pengingat keamanan akun.
+            </p>
+          </div>
+
+          <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Batas Waktu Sesi Login (Auto Logout)
+                Batas Waktu Sesi Login Maksimal (Token Expiration)
               </label>
               <select
                 className="input"
                 value={sessionTimeoutHours}
                 onChange={(e) => setSessionTimeoutHours(e.target.value)}
+                style={{ maxWidth: '320px' }}
               >
                 <option value={1}>1 Jam</option>
                 <option value={12}>12 Jam</option>
-                <option value={24}>24 Jam (1 Hari) - Default</option>
+                <option value={24}>24 Jam (1 Hari) - Rekomendasi</option>
                 <option value={168}>7 Hari (1 Minggu)</option>
                 <option value={720}>30 Hari (1 Bulan)</option>
               </select>
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
-                Batas maksimal durasi token sesi login sebelum otomatis kedaluwarsa dan pengguna diminta login kembali (Default: 24 jam).
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Batas durasi sesi login sebelum token kedaluwarsa dan pengguna diminta masuk kembali.
               </p>
+            </div>
 
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Waktu Sisa Sesi Inaktif (Menit)
+                Waktu Sisa Sesi Inaktif / Idle Logout (Menit)
               </label>
               <input
                 type="number"
@@ -1417,69 +1377,50 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 onChange={(e) => setSessionTimeoutMinutes(e.target.value)}
                 min="1"
                 max="120"
-                placeholder="Contoh: 10"
-                style={{ width: '130px' }}
+                placeholder="10"
+                style={{ width: '140px' }}
               />
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '12px' }}>
-                Waktu jeda tanpa aktivitas (mouse, keyboard, scroll) sebelum pengguna otomatis di-logout (Default: 10 menit).
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Jeda waktu tanpa aktivitas (mouse, keyboard) sebelum sistem otomatis keluar demi keamanan.
               </p>
-
-              <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                ℹ️ <strong>Kebijakan Sesi Aplikasi:</strong> Pengaturan ini berlaku secara menyeluruh sebagai standar keamanan bagi seluruh akun pengguna aplikasi. Akun pengguna tanpa hak akses <em>&quot;Konfigurasi Limit & Sesi&quot;</em> akan otomatis mematuhi aturan ini (atau nilai default 24 jam / 10 menit). Hak akses dapat dikelola di menu <strong>Sistem User &gt; Matriks Akses Role</strong>.
-              </div>
-
-              {session?.user && (session.user as any).loginAt && (
-                <div style={{ marginTop: '12px', padding: '12px', background: 'var(--background-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  <strong>Informasi Sesi Anda:</strong><br />
-                  Login pada: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}<br />
-                  Sisa waktu sesi login Anda: {
-                    (() => {
-                      const expiresAt = (session.user as any).loginAt + (Number(sessionTimeoutHours) || 24) * 3600000;
-                      const remainingMs = expiresAt - Date.now();
-                      if (remainingMs <= 0) return 'Kedaluwarsa (akan logout)';
-                      const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
-                      const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-                      if (days > 0) return `${days} hari, ${hours} jam, ${minutes} menit`;
-                      return `${hours} jam, ${minutes} menit`;
-                    })()
-                  }
-                </div>
-              )}
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-              Simpan Pengaturan
-            </button>
+            {/* Session Info Card */}
+            {session?.user && (session.user as any).loginAt && (
+              <div style={{ padding: '14px', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>Informasi Sesi Anda Saat Ini:</strong>
+                <div>Waktu Login: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}</div>
+              </div>
+            )}
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+                <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan Keamanan'}
+              </button>
+            </div>
           </form>
         </div>
       )}
 
-      {/* Auto Sync Google Calendar / iCal Feed */}
-      <div id="settings-calendar-sync" className="glass" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CalendarDays size={20} color="#4285F4" /> Sinkronisasi Otomatis Google Calendar / Outlook (URL Feed)
-          </h3>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(66, 133, 244, 0.1)', color: '#4285F4', fontWeight: 600 }}>Google Calendar</span>
-            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(0, 120, 212, 0.1)', color: '#0078D4', fontWeight: 600 }}>MS Outlook</span>
-            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.06)', color: 'var(--text-primary)', fontWeight: 600 }}>Apple iCal</span>
+      {/* 6. Calendar & Timezone Tab */}
+      {activeTab === 'calendar' && canSystemConfig && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarDays size={18} color="#4285F4" /> Sinkronisasi Kalender & Zona Waktu
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Integrasikan jadwal tugas ke Google Calendar, Outlook, atau Apple Calendar secara otomatis via feed iCal.
+            </p>
           </div>
-        </div>
 
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          Berlangganan (*subscribe*) kalender aplikasi secara langsung di Google Calendar atau Microsoft Outlook agar seluruh jadwal ter-update otomatis secara *real-time*.
-        </p>
-
-        {/* Timezone Configuration */}
-        {canSystemConfig && (
-          <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          {/* Timezone Configuration */}
+          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Standar Feed (Timezone)
+              <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Acuan Sistem (Timezone)
             </label>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-              Pilih zona waktu acuan default jadwal kerja. Google Calendar akan membaca zona waktu ini sebagai basis jam kegiatan Anda.
+              Basis zona waktu untuk jam kegiatan di kalender departemen.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -1490,9 +1431,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 onChange={e => {
                   const val = e.target.value;
                   setCalendarTzPreset(val);
-                  if (val !== 'custom') {
-                    setCalendarTimezone(val);
-                  }
+                  if (val !== 'custom') setCalendarTimezone(val);
                 }}
               >
                 {COMMON_TIMEZONES.map(group => (
@@ -1510,20 +1449,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               </select>
 
               {calendarTzPreset === 'custom' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="text"
-                    className="input"
-                    value={customCalendarTz}
-                    onChange={e => {
-                      setCustomCalendarTz(e.target.value);
-                      setCalendarTimezone(e.target.value.trim());
-                    }}
-                    style={{ width: '220px' }}
-                    placeholder="Contoh: Asia/Bangkok"
-                    autoFocus
-                  />
-                </div>
+                <input
+                  type="text"
+                  className="input"
+                  value={customCalendarTz}
+                  onChange={e => {
+                    setCustomCalendarTz(e.target.value);
+                    setCalendarTimezone(e.target.value.trim());
+                  }}
+                  style={{ width: '200px' }}
+                  placeholder="Contoh: Asia/Bangkok"
+                  autoFocus
+                />
               )}
 
               <button 
@@ -1531,158 +1468,79 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 className="btn btn-primary" 
                 onClick={(e) => handleSaveSettings(e as any)} 
                 disabled={isSavingSettings}
-                style={{ padding: '8px 16px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Zona Waktu'}
+                <Save size={14} /> Simpan Zona Waktu
               </button>
             </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              Zona waktu aktif di sistem: <strong style={{ color: 'var(--accent-primary)' }}>{calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset}</strong>
-            </div>
+            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+              Zona aktif: <strong style={{ color: 'var(--accent-primary)' }}>{calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset}</strong>
+            </span>
           </div>
-        )}
 
-        {/* Personalized Filter Generator */}
-        <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            <Filter size={15} color="var(--accent-primary)" /> Kustomisasi Filter Feed (Opsional untuk PIC / Tim)
-          </label>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-            Personalisasi URL feed jika Anda atau anggota tim hanya ingin menyinkronkan tugas tertentu ke Google Calendar pribadi:
-          </p>
+          {/* Feed URL & Action Links */}
+          {(() => {
+            let computedFeedUrl = '';
+            if (typeof window !== 'undefined' && calendarToken) {
+              const params = new URLSearchParams();
+              params.set('token', calendarToken);
+              if (feedFilterPic) params.set('pic', feedFilterPic);
+              if (feedFilterCategory) params.set('kategori', feedFilterCategory);
+              if (feedHideCompleted) params.set('hideCompleted', 'true');
+              computedFeedUrl = `${window.location.origin}/calendar.ics?${params.toString()}`;
+            }
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                Filter PIC:
-              </label>
-              <select
-                className="input"
-                style={{ width: '100%', fontSize: '13px' }}
-                value={feedFilterPic}
-                onChange={e => setFeedFilterPic(e.target.value)}
-              >
-                <option value="">Semua Tugas (Seluruh Departemen)</option>
-                {pics.map(p => (
-                  <option key={p} value={p}>Hanya Tugas: {p}</option>
-                ))}
-              </select>
-            </div>
+            const webcalUrl = computedFeedUrl ? computedFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
+            const gcalDirectUrl = computedFeedUrl ? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcalUrl || computedFeedUrl)}` : '';
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                Filter Kategori:
-              </label>
-              <select
-                className="input"
-                style={{ width: '100%', fontSize: '13px' }}
-                value={feedFilterCategory}
-                onChange={e => setFeedFilterCategory(e.target.value)}
-              >
-                <option value="">Semua Kategori</option>
-                {categories.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '4px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)', userSelect: 'none' }}>
-                <input
-                  type="checkbox"
-                  checked={feedHideCompleted}
-                  onChange={e => setFeedHideCompleted(e.target.checked)}
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                Sembunyikan tugas selesai (Done)
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Feed URL Display & Quick Actions */}
-        {(() => {
-          let computedFeedUrl = '';
-          if (typeof window !== 'undefined' && calendarToken) {
-            const params = new URLSearchParams();
-            params.set('token', calendarToken);
-            if (feedFilterPic) params.set('pic', feedFilterPic);
-            if (feedFilterCategory) params.set('kategori', feedFilterCategory);
-            if (feedHideCompleted) params.set('hideCompleted', 'true');
-            computedFeedUrl = `${window.location.origin}/calendar.ics?${params.toString()}`;
-          }
-
-          const webcalUrl = computedFeedUrl ? computedFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
-          const gcalDirectUrl = computedFeedUrl ? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcalUrl || computedFeedUrl)}` : '';
-
-          return (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                URL Kalender Anda (.ics Feed)
-              </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  readOnly
-                  className="input"
-                  value={computedFeedUrl || 'Memuat URL kalender...'}
-                  style={{ flex: 1, minWidth: '280px', fontFamily: 'monospace', fontSize: '12px', background: 'var(--bg-secondary, rgba(0,0,0,0.03))' }}
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}
-                  onClick={async () => {
-                    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.'));
-                    if (isLocal) {
-                      alert('Fitur Sinkronisasi Kalender tidak dapat digunakan saat aplikasi dijalankan di jaringan lokal (localhost/LAN).\n\nSilakan akses aplikasi ini melalui domain publik (seperti Vercel) agar server Google Calendar dapat menarik jadwal Anda.');
-                      return;
-                    }
-                    try {
+            return (
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  URL Feed Kalender (.ics)
+                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    className="input"
+                    value={computedFeedUrl || 'Memuat URL kalender...'}
+                    style={{ flex: 1, minWidth: '260px', fontFamily: 'monospace', fontSize: '12px', background: 'var(--input-bg)' }}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    onClick={async () => {
                       if (!computedFeedUrl) return;
                       await navigator.clipboard.writeText(computedFeedUrl);
                       setCopiedCalendarFeed(true);
                       setTimeout(() => setCopiedCalendarFeed(false), 2500);
-                      toast.success('URL Kalender berhasil disalin ke clipboard!');
-                    } catch (err) {
-                      toast.error('Gagal menyalin URL kalender');
-                    }
-                  }}
-                >
-                  {copiedCalendarFeed ? <Check size={16} /> : <Copy size={16} />}
-                  {copiedCalendarFeed ? 'Tersalin!' : 'Salin URL Feed'}
-                </button>
-              </div>
+                      toast.success('URL Kalender disalin ke clipboard!');
+                    }}
+                  >
+                    {copiedCalendarFeed ? <Check size={16} /> : <Copy size={16} />}
+                    {copiedCalendarFeed ? 'Tersalin!' : 'Salin URL'}
+                  </button>
+                </div>
 
-              {/* 1-Click Action Buttons */}
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <a
-                  href={gcalDirectUrl || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary"
-                  style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)' }}
-                  onClick={(e) => {
-                    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-                    if (isLocal) {
-                      e.preventDefault();
-                      alert('Fitur Sinkronisasi Kalender hanya dapat diakses melalui domain publik (Vercel/domain server).');
-                    }
-                  }}
-                >
-                  <ExternalLink size={14} color="#4285F4" /> 1-Klik Tambah ke Google Calendar
-                </a>
-
-                <a
-                  href={webcalUrl || '#'}
-                  className="btn btn-secondary"
-                  style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: 'var(--text-primary)' }}
-                >
-                  <Globe size={14} color="var(--accent-primary)" /> Buka di Apple Calendar / Outlook (webcal)
-                </a>
-
-                {canSystemConfig && (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <a
+                    href={gcalDirectUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', textDecoration: 'none' }}
+                  >
+                    <ExternalLink size={14} color="#4285F4" /> Tambah ke Google Calendar
+                  </a>
+                  <a
+                    href={webcalUrl || '#'}
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', textDecoration: 'none' }}
+                  >
+                    <Globe size={14} color="var(--accent-primary)" /> Buka di Outlook / Apple iCal
+                  </a>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -1707,29 +1565,31 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                       }
                     }}
                   >
-                    <RotateCcw size={14} /> {isResettingToken ? 'Mereset...' : 'Reset Token Kalender'}
+                    <RotateCcw size={14} /> {isResettingToken ? 'Mereset...' : 'Reset Token'}
                   </button>
-                )}
+                </div>
               </div>
-            </div>
-          );
-        })()}
-      </div>
+            );
+          })()}
+        </div>
+      )}
 
-      {/* Backup & Export Database */}
-      {canDatabaseBackup && (
-        <div id="settings-backup" className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database size={20} color="var(--success)" /> Cadangan & Export Data Database
-          </h3>
+      {/* 7. Database Backup & Maintenance Tab */}
+      {activeTab === 'backup' && canDatabaseBackup && (
+        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={18} color="var(--success)" /> Cadangan & Pemeliharaan Database
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Unduh cadangan data pekerjaan secara berkala atau pulihkan data dari file arsip cadangan sebelumnya.
+            </p>
+          </div>
 
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            Unduh seluruh salinan data pekerjaan dan pengaturan dalam format JSON untuk cadangan (*backup*) aman, atau pulihkan dari cadangan sebelumnya.
-          </p>
-
-          <div style={{ marginBottom: '24px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          {/* Backup Reminder Settings */}
+          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Jadwal Pengingat Pencadangan Data
+              Jadwal Pengingat Cadangan Otomatis
             </label>
             
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -1749,11 +1609,11 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   }
                 }}
               >
-                <option value="0">❌ Nonaktif (Tidak ada pengingat)</option>
+                <option value="0">❌ Nonaktif (Tanpa pengingat)</option>
                 <option value="-1">🔔 Setiap Kali Login</option>
                 <option value="1">⏱️ Setiap 1 Hari</option>
                 <option value="3">⏱️ Setiap 3 Hari</option>
-                <option value="7">⏱️ Setiap 7 Hari (1 Minggu)</option>
+                <option value="7">⏱️ Setiap 7 Hari (1 Minggu) - Rekomendasi</option>
                 <option value="14">⏱️ Setiap 14 Hari (2 Minggu)</option>
                 <option value="30">⏱️ Setiap 30 Hari (1 Bulan)</option>
                 <option value="custom">⚙️ Kustom (Isi jumlah hari)</option>
@@ -1767,7 +1627,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     value={backupReminderDays}
                     onChange={e => setBackupReminderDays(e.target.value)}
                     min="1"
-                    style={{ width: '100px' }}
+                    style={{ width: '90px' }}
                     placeholder="Hari"
                     autoFocus
                   />
@@ -1780,40 +1640,26 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 className="btn btn-primary" 
                 onClick={(e) => handleSaveSettings(e as any)} 
                 disabled={isSavingSettings}
-                style={{ padding: '8px 16px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <Save size={14} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Jadwal'}
+                <Save size={14} /> Simpan Jadwal
               </button>
             </div>
-
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-              {backupReminderMode === '-1' ? (
-                <span style={{ color: 'var(--accent-primary)', fontWeight: 500 }}>
-                  ✨ Pengingat akan selalu muncul sebagai pop-up setiap kali pengguna login baru.
-                </span>
-              ) : backupReminderMode === '0' ? (
-                <span>
-                  🚫 Pengingat dinonaktifkan (pop-up tidak akan pernah muncul).
-                </span>
-              ) : (
-                <span>
-                  🕒 Pengingat akan muncul di Dashboard setiap <strong>{backupReminderMode === 'custom' ? backupReminderDays : backupReminderMode} hari</strong> sejak tanggal backup terakhir.
-                </span>
-              )}
-            </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Download size={16} /> Download Backup (.zip)
+          {/* Backup & Restore Action Buttons */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
+              <Download size={16} /> Unduh Backup Database (.zip)
             </button>
-            <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore Database'}
+            <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
+              <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore / Pulihkan Database'}
             </button>
           </div>
         </div>
       )}
 
+      {/* Modal Croppers */}
       <AvatarCropperModal
         isOpen={!!activePicForAvatar}
         onClose={() => setActivePicForAvatar(null)}
