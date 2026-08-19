@@ -43,33 +43,25 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px', background: 'var(--surface-color)', borderTop: '1px solid var(--border-color)' }}>
-              <a 
-                href={isGuest ? undefined : previewFile.url} 
-                onClick={(e) => {
-                  if (isGuest) {
-                    e.preventDefault();
-                    handleGuestAction(() => {});
-                  }
-                }}
-                target={isGuest ? undefined : "_blank"} 
-                rel="noopener noreferrer" 
-                className="btn btn-secondary"
-              >
-                <ExternalLink size={16} /> Buka di Tab Baru
-              </a>
-              <a 
-                href={isGuest ? undefined : previewFile.url} 
-                onClick={(e) => {
-                  if (isGuest) {
-                    e.preventDefault();
-                    handleGuestAction(() => {});
-                  }
-                }}
-                download={isGuest ? undefined : previewFile.name} 
-                className="btn btn-primary"
-              >
-                <Download size={16} /> Unduh File
-              </a>
+              {!isGuest && (
+                <>
+                  <a 
+                    href={previewFile.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn btn-secondary"
+                  >
+                    <ExternalLink size={16} /> Buka di Tab Baru
+                  </a>
+                  <a 
+                    href={previewFile.url} 
+                    download={previewFile.name} 
+                    className="btn btn-primary"
+                  >
+                    <Download size={16} /> Unduh File
+                  </a>
+                </>
+              )}
             </div>
           </motion.div>
         </div>

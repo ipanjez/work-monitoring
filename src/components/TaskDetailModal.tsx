@@ -738,12 +738,12 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                             {f.name}
                           </span>
                         </div>
-                        {!f.isDeleted && (
+                         {!f.isDeleted && (
                           <button
                             type="button"
                             className="btn btn-secondary"
                             style={{ padding: '4px 8px' }}
-                            onClick={() => setPreviewFile(f)}
+                            onClick={() => handleGuestAction(() => setPreviewFile(f))}
                           >
                             <Eye size={14} color="var(--text-secondary)" />
                           </button>

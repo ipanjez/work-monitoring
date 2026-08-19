@@ -11,7 +11,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { formatLogDetails } from '@/utils/taskUtils';
 
+import { useSession } from 'next-auth/react';
+
 export default function NotificationBell() {
+  const { data: session } = useSession();
+  const isGuest = (session?.user as any)?.role === 'GUEST';
+
   const { 
     notifications, 
     unreadCount, 
@@ -89,6 +94,8 @@ export default function NotificationBell() {
       return 'Baru saja';
     }
   };
+
+  if (isGuest) return null;
 
   return (
     <div
