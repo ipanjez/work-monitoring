@@ -16,23 +16,7 @@ export async function GET() {
 
     const parsed = JSON.parse(setting.value);
     
-    // Auto-initialize GUEST if it doesn't exist in the legacy DB settings
-    if (!parsed.labels || !parsed.labels.GUEST) {
-      if (!parsed.labels) parsed.labels = {};
-      parsed.labels.GUEST = 'Guest';
-      
-      if (!parsed.permissions) parsed.permissions = {};
-      Object.keys(defaultRolePermissions.permissions).forEach(key => {
-        if (defaultRolePermissions.permissions[key]?.includes('GUEST')) {
-          if (!parsed.permissions[key]) {
-            parsed.permissions[key] = [];
-          }
-          if (!parsed.permissions[key].includes('GUEST')) {
-            parsed.permissions[key].push('GUEST');
-          }
-        }
-      });
-    }
+
 
     return NextResponse.json(parsed);
   } catch (error: any) {

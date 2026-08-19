@@ -498,42 +498,6 @@ export default function TaskAddEditModal({
               <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
 
-                {masterLocations.length > 0 && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
-                      Pilih dari Master Lokasi:
-                    </label>
-                    <select
-                      className="input"
-                      value=""
-                      onChange={(e) => {
-                        const selected = e.target.value;
-                        if (!selected) return;
-                        const lower = selected.toLowerCase();
-                        if (lower.startsWith('online:') || lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('zoom.us') || lower.includes('meet.google.com') || lower.includes('teams.microsoft')) {
-                          const clean = selected.replace(/^online:\s*/i, '').trim();
-                          setEditingTask({
-                            ...editingTask,
-                            lokasiData: { tipe: 'online', linkZoom: clean, lokasiFisik: '', jam: '' } as any
-                          });
-                        } else {
-                          const clean = selected.replace(/^offline:\s*/i, '').trim();
-                          setEditingTask({
-                            ...editingTask,
-                            lokasiData: { tipe: 'offline', linkZoom: '', lokasiFisik: clean, jam: '' } as any
-                          });
-                        }
-                      }}
-                      style={{ width: '100%', fontSize: '12.5px' }}
-                    >
-                      <option value="">-- Pilih dari Master Lokasi --</option>
-                      {masterLocations.map((loc, idx) => (
-                        <option key={idx} value={loc}>{loc}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
                     <input
@@ -568,22 +532,12 @@ export default function TaskAddEditModal({
                       type="text"
                       className="input"
                       placeholder="https://zoom.us/j/... atau Online Meeting"
-                      list="online-locations-list"
                       value={editingTask.lokasiData?.linkZoom || ''}
                       onChange={e => setEditingTask({
                         ...editingTask,
                         lokasiData: { ...editingTask.lokasiData, linkZoom: e.target.value } as any
                       })}
                     />
-                    <datalist id="online-locations-list">
-                      {masterLocations
-                        .filter(loc => loc.toLowerCase().startsWith('online:') || loc.toLowerCase().startsWith('http://') || loc.toLowerCase().startsWith('https://'))
-                        .map(loc => loc.replace(/^online:\s*/i, '').trim())
-                        .filter(Boolean)
-                        .map((loc, idx) => (
-                          <option key={idx} value={loc} />
-                        ))}
-                    </datalist>
                   </div>
                 )}
 
@@ -594,21 +548,12 @@ export default function TaskAddEditModal({
                       type="text"
                       className="input"
                       placeholder="Contoh: R.R Komp TKMR / Gedung Utama"
-                      list="offline-locations-list"
                       value={editingTask.lokasiData?.lokasiFisik || ''}
                       onChange={e => setEditingTask({
                         ...editingTask,
                         lokasiData: { ...editingTask.lokasiData, lokasiFisik: e.target.value } as any
                       })}
                     />
-                    <datalist id="offline-locations-list">
-                      {masterLocations
-                        .map(loc => loc.replace(/^offline:\s*/i, '').replace(/^online:\s*/i, '').trim())
-                        .filter(Boolean)
-                        .map((loc, idx) => (
-                          <option key={idx} value={loc} />
-                        ))}
-                    </datalist>
                   </div>
                 )}
               </div>

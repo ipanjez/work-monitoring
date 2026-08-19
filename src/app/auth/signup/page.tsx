@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Lock, Mail, IdCard, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -13,8 +13,33 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('MEMBER');
+  const [availableRoles, setAvailableRoles] = useState<{ key: string; label: string }[]>([
+    { key: 'MEMBER', label: 'Member' },
+    { key: 'VIEWER', label: 'Viewer' },
+    { key: 'GUEST', label: 'Guest' },
+  ]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.labels) {
+          const roles = Object.keys(data.labels)
+            .filter(key => key !== 'ADMIN')
+            .map(key => ({
+              key,
+              label: data.labels[key]
+            }));
+          setAvailableRoles(roles);
+          if (roles.length > 0 && !roles.some(r => r.key === role)) {
+            setRole(roles[0].key);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,9 +221,11 @@ export default function SignUpPage() {
               onChange={e => setRole(e.target.value)}
               required
             >
-              <option value="MEMBER">Member (Pengelola & Pelaksana Pekerjaan)</option>
-              <option value="VIEWER">Viewer (Hanya Melihat & Monitoring)</option>
-              <option value="GUEST">Guest (Akses Terbatas & Read Only)</option>
+              {availableRoles.map(r => (
+                <option key={r.key} value={r.key}>
+                  {r.label} ({r.key === 'MEMBER' ? 'Pengelola & Pelaksana Pekerjaan' : r.key === 'VIEWER' ? 'Hanya Melihat & Monitoring' : r.key === 'GUEST' ? 'Akses Terbatas & Read Only' : `Peran ${r.label}`})
+                </option>
+              ))}
             </select>
           </div>
 
