@@ -17,10 +17,9 @@ import {
   ExternalLink, CalendarDays, X, Paperclip, Plus, Pencil, Trash2, File, Eye, Repeat, UserPlus, History, Download, Search, Filter, AlertCircle, Copy, FileText, FileSpreadsheet, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as XLSX from 'xlsx';
-import { createEvent, createEvents, EventAttributes } from 'ics';
 import toast from 'react-hot-toast';
 import FileViewer from '@/components/FileViewer';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
 
 const locales = {
   'id': id,
@@ -318,85 +317,26 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const handleExportPDF = async () => {
     try {
       setIsExportingPdf(true);
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
       const element = document.getElementById('calendar-container');
-      if (!element) {
-        setIsExportingPdf(false);
-        return;
-      }
+      if (!element) return;
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF({
-        orientation: width > height ? 'l' : 'p',
-        unit: 'px',
-        format: [width, height]
-      });
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `Kalender_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(pdfUrl);
-
-      setIsExportingPdf(false);
+      const canvas = await captureDomElement(element);
+      await exportCanvasToPdf(canvas, 'Kalender_Pekerjaan');
     } catch (err) {
       console.error('PDF Export error:', err);
-      setIsExportingPdf(false);
       toast.error('Gagal mengekspor PDF');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
   const handleCopyImage = async () => {
     try {
-      const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('calendar-container');
       if (!element) return;
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            toast.success('Gambar kalender disalin ke clipboard');
-          } catch (err) {
-            console.error(err);
-            toast.error('Gagal menyalin gambar, izin ditolak.');
-          }
-        }
-      }, 'image/png');
+      const canvas = await captureDomElement(element);
+      await copyCanvasToClipboardOrDownload(canvas, 'Kalender_Pekerjaan');
     } catch (err) {
       console.error('Copy Image error:', err);
       toast.error('Gagal menyalin gambar');

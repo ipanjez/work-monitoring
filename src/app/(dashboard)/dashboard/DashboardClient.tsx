@@ -26,6 +26,7 @@ import { format, subDays, startOfWeek, endOfWeek, parseISO, startOfDay } from 'd
 import { id } from 'date-fns/locale';
 import { getTaskLocationString, getDynamicBadgeStyle, getTaskExportRow, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
 import { picAvatarXAxisPlugin, getPicAvatarXAxisConfig } from '@/utils/chartAvatarPlugin';
 import { useTheme } from '@/context/ThemeContext';
 import Avatar from '@/components/Avatar';
@@ -747,35 +748,11 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       if (addActivityLog) {
         addActivityLog('COPY_DASHBOARD', 'Salin Dashboard', 'Menyalin gambar dashboard ke clipboard', 'info');
       }
-      const element = dashboardRef.current;
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            import('react-hot-toast').then(({ default: toast }) => toast.success('Dashboard berhasil disalin sebagai gambar!'));
-          } catch (err) {
-            console.error('Clipboard write error:', err);
-            import('react-hot-toast').then(({ default: toast }) => toast.error('Gagal menyalin gambar. Pastikan browser memberikan izin.'));
-          }
-        }
-      });
+      const canvas = await captureDomElement(dashboardRef.current);
+      await copyCanvasToClipboardOrDownload(canvas, 'Dashboard_Monitoring');
     } catch (error) {
       console.error('html2canvas error:', error);
-      toast.error('Gagal membuat gambar dashboard.');
+      toast.error('Gagal menyalin gambar dashboard.');
     }
   };
 

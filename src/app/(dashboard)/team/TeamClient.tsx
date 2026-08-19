@@ -20,6 +20,7 @@ import {
   getGoogleCalendarUrl, handleExportICS, getTaskExportRow 
 } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
@@ -265,21 +266,11 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const handleExportPDF = async () => {
     try {
       setIsExportingPdf(true);
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
       const element = document.getElementById('team-container');
-      if (!element) {
-        setIsExportingPdf(false);
-        return;
-      }
+      if (!element) return;
 
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('landscape');
-      pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
-      pdf.save(`Manajemen_Tim_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('Laporan PDF Tim berhasil diunduh 📄');
+      const canvas = await captureDomElement(element);
+      await exportCanvasToPdf(canvas, 'Manajemen_Tim');
     } catch (e) {
       console.error(e);
       toast.error('Gagal membuat PDF');
@@ -292,20 +283,11 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     const element = document.getElementById('team-container');
     if (!element) return;
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            toast.success('Gambar tim berhasil disalin ke clipboard! 📋');
-          } catch (err) {
-            toast.error('Gagal menyalin gambar.');
-          }
-        }
-      });
+      const canvas = await captureDomElement(element);
+      await copyCanvasToClipboardOrDownload(canvas, 'Manajemen_Tim');
     } catch (e) {
       console.error(e);
+      toast.error('Gagal menyalin gambar.');
     }
   };
 

@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic';
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { exportToRichExcel } from '@/utils/excelExport';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
@@ -904,45 +905,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const handleExportPDF = async () => {
     try {
       setIsExportingPdf(true);
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
       const element = document.getElementById('task-table-container');
-      if (!element) {
-        setIsExportingPdf(false);
-        return;
-      }
+      if (!element) return;
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF({
-        orientation: width > height ? 'l' : 'p',
-        unit: 'px',
-        format: [width, height]
-      });
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `Tabel_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(pdfUrl);
+      const canvas = await captureDomElement(element);
+      await exportCanvasToPdf(canvas, 'Tabel_Pekerjaan');
     } catch (err) {
       console.error('PDF Export error:', err);
       toast.error('Gagal mengekspor PDF');
@@ -953,39 +920,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   const handleCopyImage = async () => {
     try {
-      const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('task-table-container');
       if (!element) return;
 
-      const width = element.scrollWidth;
-      const height = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: width,
-        windowHeight: height,
-        width: width,
-        height: height
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            toast.success('Gambar berhasil disalin ke clipboard');
-          } catch (err) {
-            console.error(err);
-            toast.error('Gagal menyalin gambar, izin ditolak.');
-          }
-        }
-      }, 'image/png');
+      const canvas = await captureDomElement(element);
+      await copyCanvasToClipboardOrDownload(canvas, 'Tabel_Pekerjaan');
     } catch (err) {
-      console.error('Copy Image error:', err);
-      toast.error('Gagal menyalin gambar');
+      console.error('Copy image error:', err);
+      toast.error('Gagal menyalin gambar.');
     }
   };
 

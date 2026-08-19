@@ -17,15 +17,15 @@ import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
+import { exportToRichExcel } from '@/utils/excelExport';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import { useTheme } from '@/context/ThemeContext';
-import { exportToRichExcel } from '@/utils/excelExport';
-import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
 import { getDynamicColor, getTaskExportRow, getDynamicBadgeStyle } from '@/utils/taskUtils';
@@ -506,24 +506,11 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     if (!reportsRef.current) return;
     try {
       addActivityLog?.('Export', 'Copy Image', 'Menyalin gambar laporan kinerja ke clipboard', 'info');
-      const element = reportsRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: theme === 'dark' ? '#0f172a' : '#f8fafc',
-      });
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            toast.success('Gambar laporan berhasil disalin ke clipboard! 📋');
-          } catch (err) {
-            toast.error('Gagal menyalin gambar.');
-          }
-        }
-      });
+      const canvas = await captureDomElement(reportsRef.current);
+      await copyCanvasToClipboardOrDownload(canvas, 'Laporan_Kinerja');
     } catch (error) {
       console.error('html2canvas error:', error);
+      toast.error('Gagal menyalin gambar laporan.');
     }
   };
 

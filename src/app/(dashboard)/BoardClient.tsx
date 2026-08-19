@@ -12,6 +12,7 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
+import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
@@ -446,159 +447,72 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const handleExportPDF = async () => {
     try {
       setIsExportingPdf(true);
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
       const element = document.getElementById('kanban-board-container');
-      if (!element) {
-        setIsExportingPdf(false);
-        return;
-      }
+      if (!element) return;
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('kanban-board-container');
-          if (clonedElement) {
-            clonedElement.style.setProperty('width', '1600px', 'important');
-            clonedElement.style.setProperty('height', 'auto', 'important');
-            clonedElement.style.setProperty('overflow', 'visible', 'important');
-            clonedElement.style.setProperty('display', 'grid', 'important');
-            clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
-            clonedElement.style.setProperty('gap', '16px', 'important');
-            clonedElement.style.setProperty('min-height', '0', 'important');
-            clonedElement.style.setProperty('flex', 'none', 'important');
+      const canvas = await captureDomElement(element, {
+        targetWidth: 1600,
+        extraStyles: (_, clonedElement) => {
+          clonedElement.style.setProperty('width', '1600px', 'important');
+          clonedElement.style.setProperty('display', 'grid', 'important');
+          clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
+          clonedElement.style.setProperty('gap', '16px', 'important');
 
-            const cols = clonedElement.querySelectorAll('.kanban-col');
-            cols.forEach((col: any) => {
-              col.style.setProperty('height', 'auto', 'important');
-              col.style.setProperty('max-height', 'none', 'important');
-              col.style.setProperty('overflow', 'visible', 'important');
-              col.style.setProperty('display', 'flex', 'important');
-              col.style.setProperty('flex-direction', 'column', 'important');
-            });
+          const cols = clonedElement.querySelectorAll('.kanban-col');
+          cols.forEach((col: any) => {
+            col.style.setProperty('height', 'auto', 'important');
+            col.style.setProperty('max-height', 'none', 'important');
+            col.style.setProperty('overflow', 'visible', 'important');
+          });
 
-            const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
-            cardsContainers.forEach((container: any) => {
-              container.style.setProperty('height', 'auto', 'important');
-              container.style.setProperty('max-height', 'none', 'important');
-              container.style.setProperty('overflow', 'visible', 'important');
-            });
-
-            // Resolve color-mix parsing crash
-            const badges = clonedElement.querySelectorAll('.badge, [class*="badge"], [style*="color-mix"]');
-            badges.forEach((badge: any) => {
-              const bg = badge.style.backgroundColor;
-              if (bg && bg.includes('color-mix')) {
-                const colorVal = badge.style.color;
-                if (colorVal && colorVal.startsWith('#')) {
-                  badge.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
-                } else {
-                  badge.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-                }
-              }
-            });
-          }
+          const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
+          cardsContainers.forEach((container: any) => {
+            container.style.setProperty('height', 'auto', 'important');
+            container.style.setProperty('max-height', 'none', 'important');
+            container.style.setProperty('overflow', 'visible', 'important');
+          });
         }
       });
 
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdf = new jsPDF({
-        orientation: canvasWidth > canvasHeight ? 'l' : 'p',
-        unit: 'px',
-        format: [canvasWidth, canvasHeight]
-      });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvasWidth, canvasHeight);
-      
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = pdfUrl;
-      a.download = `Board_Pekerjaan_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(pdfUrl);
-      
-      setIsExportingPdf(false);
+      await exportCanvasToPdf(canvas, `Board_Pekerjaan`);
     } catch (err) {
       console.error('PDF Export error:', err);
-      setIsExportingPdf(false);
       toast.error('Gagal mengekspor PDF');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
   const handleCopyImage = async () => {
     try {
-      const html2canvas = (await import('html2canvas')).default;
       const element = document.getElementById('kanban-board-container');
       if (!element) return;
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('kanban-board-container');
-          if (clonedElement) {
-            clonedElement.style.setProperty('width', '1600px', 'important');
-            clonedElement.style.setProperty('height', 'auto', 'important');
-            clonedElement.style.setProperty('overflow', 'visible', 'important');
-            clonedElement.style.setProperty('display', 'grid', 'important');
-            clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
-            clonedElement.style.setProperty('gap', '16px', 'important');
-            clonedElement.style.setProperty('min-height', '0', 'important');
-            clonedElement.style.setProperty('flex', 'none', 'important');
+      const canvas = await captureDomElement(element, {
+        targetWidth: 1600,
+        extraStyles: (_, clonedElement) => {
+          clonedElement.style.setProperty('width', '1600px', 'important');
+          clonedElement.style.setProperty('display', 'grid', 'important');
+          clonedElement.style.setProperty('grid-template-columns', 'repeat(4, 1fr)', 'important');
+          clonedElement.style.setProperty('gap', '16px', 'important');
 
-            const cols = clonedElement.querySelectorAll('.kanban-col');
-            cols.forEach((col: any) => {
-              col.style.setProperty('height', 'auto', 'important');
-              col.style.setProperty('max-height', 'none', 'important');
-              col.style.setProperty('overflow', 'visible', 'important');
-              col.style.setProperty('display', 'flex', 'important');
-              col.style.setProperty('flex-direction', 'column', 'important');
-            });
+          const cols = clonedElement.querySelectorAll('.kanban-col');
+          cols.forEach((col: any) => {
+            col.style.setProperty('height', 'auto', 'important');
+            col.style.setProperty('max-height', 'none', 'important');
+            col.style.setProperty('overflow', 'visible', 'important');
+          });
 
-            const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
-            cardsContainers.forEach((container: any) => {
-              container.style.setProperty('height', 'auto', 'important');
-              container.style.setProperty('max-height', 'none', 'important');
-              container.style.setProperty('overflow', 'visible', 'important');
-            });
-
-            // Resolve color-mix parsing crash
-            const badges = clonedElement.querySelectorAll('.badge, [class*="badge"], [style*="color-mix"]');
-            badges.forEach((badge: any) => {
-              const bg = badge.style.backgroundColor;
-              if (bg && bg.includes('color-mix')) {
-                const colorVal = badge.style.color;
-                if (colorVal && colorVal.startsWith('#')) {
-                  badge.style.backgroundColor = `${colorVal.substring(0, 7)}26`;
-                } else {
-                  badge.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-                }
-              }
-            });
-          }
+          const cardsContainers = clonedElement.querySelectorAll('.kanban-col-cards');
+          cardsContainers.forEach((container: any) => {
+            container.style.setProperty('height', 'auto', 'important');
+            container.style.setProperty('max-height', 'none', 'important');
+            container.style.setProperty('overflow', 'visible', 'important');
+          });
         }
       });
 
-      const blobPromise = new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error('Canvas toBlob returned null'));
-        }, 'image/png');
-      });
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blobPromise })
-      ]);
-      toast.success('Gambar board disalin ke clipboard');
+      await copyCanvasToClipboardOrDownload(canvas, `Board_Pekerjaan`);
     } catch (err) {
       console.error('Copy Image error:', err);
       toast.error('Gagal menyalin gambar');
