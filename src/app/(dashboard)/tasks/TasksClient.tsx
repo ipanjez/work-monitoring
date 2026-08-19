@@ -2,7 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, Settings2, Calendar, FileDown, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2 } from 'lucide-react';
+import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, CheckCheck, Settings2, Calendar, FileDown, FileSpreadsheet, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import * as XLSX from 'xlsx';
@@ -49,7 +49,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Search & Filter State (Initialized from URL if present)
   // Search & Filter State (Initialized from URL if present)
   const {
     globalTargetFilter, setGlobalTargetFilter,
@@ -99,6 +98,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   } = useMaster();
 
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -115,19 +115,42 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const handleToggleSelectAll = () => {
     if (selectedTasks.size === processedTasks.length && processedTasks.length > 0) {
       setSelectedTasks(new Set());
+      setLastSelectedId(null);
     } else {
       setSelectedTasks(new Set(processedTasks.map(t => t.id)));
     }
   };
 
-  const handleToggleSelect = (taskId: number) => {
+  const handleToggleSelect = (taskId: number, event?: React.MouseEvent | React.ChangeEvent) => {
+    const isShiftPressed = (event as React.MouseEvent)?.shiftKey;
     const newSet = new Set(selectedTasks);
+
+    if (isShiftPressed && lastSelectedId !== null) {
+      const lastIndex = processedTasks.findIndex(t => t.id === lastSelectedId);
+      const currentIndex = processedTasks.findIndex(t => t.id === taskId);
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+        const targetTasks = processedTasks.slice(start, end + 1);
+
+        const shouldSelect = !selectedTasks.has(taskId);
+        targetTasks.forEach(t => {
+          if (shouldSelect) newSet.add(t.id);
+          else newSet.delete(t.id);
+        });
+        setSelectedTasks(newSet);
+        setLastSelectedId(taskId);
+        return;
+      }
+    }
+
     if (newSet.has(taskId)) {
       newSet.delete(taskId);
     } else {
       newSet.add(taskId);
     }
     setSelectedTasks(newSet);
+    setLastSelectedId(taskId);
   };
 
   const handleBulkDone = async () => {
@@ -1055,33 +1078,64 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             id="task-bulk-bar"
-            style={{ background: 'var(--surface-color)', border: '1px solid var(--accent-primary)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{
+              background: 'var(--surface-color)',
+              border: '1px solid var(--accent-primary)',
+              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.15)',
+              padding: '12px 18px',
+              borderRadius: '12px',
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <CheckCircle size={18} color="var(--accent-primary)" />
-              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
+              <span style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text-primary)' }}>
                 {selectedTasks.size} Pekerjaan Terpilih
               </span>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                (dari {processedTasks.length} ditampilkan)
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {selectedTasks.size < processedTasks.length && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleToggleSelectAll}
+                  style={{ padding: '6px 12px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <CheckCheck size={14} color="var(--accent-primary)" />
+                  Pilih Semua ({processedTasks.length})
+                </button>
+              )}
               <button
+                type="button"
                 className="btn btn-secondary"
-                onClick={() => setSelectedTasks(new Set())}
-                style={{ padding: '6px 12px', fontSize: '13px' }}
+                onClick={() => {
+                  setSelectedTasks(new Set());
+                  setLastSelectedId(null);
+                }}
+                style={{ padding: '6px 12px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
               >
+                <X size={14} />
                 Batal
               </button>
-              <button className="btn btn-secondary" onClick={() => setBulkEditField('status')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Status</button>
-              <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
-              <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah PIC</button>
-              <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
-              <button className="btn btn-secondary" onClick={() => setBulkEditField('jadwal')} style={{ padding: '6px 12px', fontSize: '13px', background: 'var(--surface-color)' }}>Ubah Jadwal & Waktu</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('status')} style={{ padding: '6px 12px', fontSize: '12.5px', background: 'var(--surface-color)' }}>Ubah Status</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('kategori')} style={{ padding: '6px 12px', fontSize: '12.5px', background: 'var(--surface-color)' }}>Ubah Kategori</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('pic')} style={{ padding: '6px 12px', fontSize: '12.5px', background: 'var(--surface-color)' }}>Ubah PIC</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('deskripsi')} style={{ padding: '6px 12px', fontSize: '12.5px', background: 'var(--surface-color)' }}>Ubah Deskripsi</button>
+              <button className="btn btn-secondary" onClick={() => setBulkEditField('jadwal')} style={{ padding: '6px 12px', fontSize: '12.5px', background: 'var(--surface-color)' }}>Ubah Jadwal & Waktu</button>
               <button
                 className="btn"
                 onClick={handleBulkDelete}
-                style={{ padding: '6px 12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                style={{ padding: '6px 12px', fontSize: '12.5px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
               >
-                <Trash2 size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                <Trash2 size={14} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
                 Hapus Terpilih
               </button>
             </div>
@@ -1096,12 +1150,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
                 {hasPermission(roleConfig, 'manage_task', userRole) && (
-                  <th style={{ padding: '8px 4px', width: '35px', textAlign: 'center' }}>
+                  <th style={{ padding: '8px 4px', width: '36px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
+                      ref={(el) => {
+                        if (el) el.indeterminate = selectedTasks.size > 0 && selectedTasks.size < processedTasks.length;
+                      }}
                       checked={processedTasks.length > 0 && selectedTasks.size === processedTasks.length}
                       onChange={handleToggleSelectAll}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                      title={selectedTasks.size === processedTasks.length ? 'Batalkan pilihan semua' : 'Pilih semua pekerjaan'}
                     />
                   </th>
                 )}
@@ -1157,14 +1215,23 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 const extraPics = getAdditionalPics(task);
 
                 return (
-                  <tr key={task.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.2s' }}>
+                  <tr
+                    key={task.id}
+                    className="table-row-hover"
+                    style={{
+                      borderBottom: '1px solid var(--border-color)',
+                      transition: 'background 0.15s ease',
+                      backgroundColor: selectedTasks.has(task.id) ? 'rgba(59, 130, 246, 0.08)' : undefined
+                    }}
+                  >
                     {hasPermission(roleConfig, 'delete_task', userRole) && (
                       <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedTasks.has(task.id)}
-                          onChange={() => handleToggleSelect(task.id)}
-                          style={{ cursor: 'pointer' }}
+                          onClick={(e) => handleToggleSelect(task.id, e)}
+                          onChange={() => {}}
+                          style={{ cursor: 'pointer', width: '15px', height: '15px' }}
                         />
                       </td>
                     )}
@@ -1267,20 +1334,105 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </div>
                     </td>
-                    <td className="hide-mobile" style={{ padding: '8px 6px' }}>
+                    <td className="hide-mobile" style={{ padding: '8px 6px', maxWidth: '230px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {taskFiles.length > 0 ? taskFiles.map((f, i) => (
-                          <div
-                            key={i}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent-primary)', cursor: 'pointer' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              hasPermission(roleConfig, 'view_detail', userRole) ? setPreviewFile(f) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
-                            }}
-                          >
-                            <Paperclip size={14} /> {f.name}
-                          </div>
-                        )) : '-'}
+                        {taskFiles.length > 0 ? taskFiles.map((f, i) => {
+                          const ext = f.name?.split('.').pop()?.toLowerCase() || '';
+                          const isPdf = ext === 'pdf';
+                          const isExcel = ['xlsx', 'xls', 'csv'].includes(ext);
+                          const isDoc = ['doc', 'docx'].includes(ext);
+                          const isImg = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+
+                          return (
+                            <div
+                              key={i}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'flex-start',
+                                gap: '6px',
+                                fontSize: '11px',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: 'var(--bg-secondary, rgba(0,0,0,0.03))',
+                                border: '1px solid var(--border-color)',
+                                transition: 'all 0.15s ease',
+                                maxWidth: '100%',
+                                boxSizing: 'border-box'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                e.currentTarget.style.color = 'var(--accent-primary)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-color)';
+                                e.currentTarget.style.color = 'var(--text-primary)';
+                              }}
+                              title={`Klik untuk pratinjau: ${f.name}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                hasPermission(roleConfig, 'view_detail', userRole)
+                                  ? setPreviewFile(f)
+                                  : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '4px',
+                                  backgroundColor: isPdf
+                                    ? 'rgba(239, 68, 68, 0.15)'
+                                    : isExcel
+                                    ? 'rgba(16, 185, 129, 0.15)'
+                                    : isDoc
+                                    ? 'rgba(59, 130, 246, 0.15)'
+                                    : isImg
+                                    ? 'rgba(168, 85, 247, 0.15)'
+                                    : 'rgba(59, 130, 246, 0.12)',
+                                  color: isPdf
+                                    ? '#ef4444'
+                                    : isExcel
+                                    ? '#10b981'
+                                    : isDoc
+                                    ? '#3b82f6'
+                                    : isImg
+                                    ? '#a855f7'
+                                    : 'var(--accent-primary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  marginTop: '1px'
+                                }}
+                              >
+                                {isPdf ? (
+                                  <FileText size={11} style={{ flexShrink: 0 }} />
+                                ) : isExcel ? (
+                                  <FileDown size={11} style={{ flexShrink: 0 }} />
+                                ) : (
+                                  <Paperclip size={11} style={{ flexShrink: 0 }} />
+                                )}
+                              </div>
+                              <span
+                                style={{
+                                  flex: 1,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'normal',
+                                  wordBreak: 'break-word',
+                                  lineHeight: '1.35',
+                                  fontWeight: 500
+                                }}
+                              >
+                                {f.name}
+                              </span>
+                            </div>
+                          );
+                        }) : (
+                          <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: '8px 6px', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
@@ -1437,6 +1589,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         <div className="mobile-card-view">
           {processedTasks.map(task => {
             const prog = task.progress || (masterStatusProgress[task.status] ?? (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0));
+            const taskFiles = getTaskFiles(task);
             const extraPics = getAdditionalPics(task);
             const badgePriority = getDynamicBadgeStyle('priority', task.prioritas || 'Medium', task.prioritas === 'Urgent' ? 'badge badge-urgent' : task.prioritas === 'High' ? 'badge badge-high' : task.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors);
             const badgeStatus = getDynamicBadgeStyle('status', task.status, '', masterColors);
@@ -1447,12 +1600,30 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 key={task.id}
                 className="mobile-task-card"
                 onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
-                style={{ cursor: 'pointer' }}
+                style={{
+                  cursor: 'pointer',
+                  borderLeft: selectedTasks.has(task.id) ? '4px solid var(--accent-primary)' : undefined,
+                  backgroundColor: selectedTasks.has(task.id) ? 'rgba(59, 130, 246, 0.06)' : undefined
+                }}
               >
-                {/* Header Row: Title & Priority */}
+                {/* Header Row: Checkbox, Title & Priority */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>
-                    {task.nama}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    {hasPermission(roleConfig, 'delete_task', userRole) && (
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.has(task.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleSelect(task.id, e);
+                        }}
+                        onChange={() => {}}
+                        style={{ cursor: 'pointer', width: '16px', height: '16px', flexShrink: 0 }}
+                      />
+                    )}
+                    <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>
+                      {task.nama}
+                    </div>
                   </div>
                   <span {...badgePriority} style={{ ...badgePriority.style, flexShrink: 0 }}>
                     {task.prioritas || 'Medium'}
@@ -1524,6 +1695,63 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     } catch (e) { }
                     return null;
                   })()}
+
+                  {/* Mobile Attachment Chips */}
+                  {taskFiles.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lampiran ({taskFiles.length}):</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {taskFiles.map((f, i) => {
+                          const ext = f.name?.split('.').pop()?.toLowerCase() || '';
+                          const isPdf = ext === 'pdf';
+                          const isExcel = ['xlsx', 'xls', 'csv'].includes(ext);
+
+                          return (
+                            <div
+                              key={i}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                fontSize: '11px',
+                                color: 'var(--text-primary)',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: 'var(--bg-secondary, rgba(0,0,0,0.03))',
+                                border: '1px solid var(--border-color)',
+                                cursor: 'pointer'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                hasPermission(roleConfig, 'view_detail', userRole)
+                                  ? setPreviewFile(f)
+                                  : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  borderRadius: '4px',
+                                  backgroundColor: isPdf ? 'rgba(239, 68, 68, 0.15)' : isExcel ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.12)',
+                                  color: isPdf ? '#ef4444' : isExcel ? '#10b981' : 'var(--accent-primary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0
+                                }}
+                              >
+                                {isPdf ? <FileText size={10} /> : isExcel ? <FileDown size={10} /> : <Paperclip size={10} />}
+                              </div>
+                              <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.name}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress Bar */}
