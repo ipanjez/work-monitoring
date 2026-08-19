@@ -50,8 +50,8 @@ const actionLabel: Record<string, string> = {
   DELETE_TASK: 'Hapus Task',
 };
 
-export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string }) {
-  const { masterPicAvatars, masterColors } = useMaster();
+export default function UsersClient({ userRole = '' }: { userRole?: string }) {
+  const { masterPicAvatars, masterColors, roleConfig: masterRoleConfig } = useMaster();
   const { addActivityLog, notifications, markAsRead } = useNotifications();
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
@@ -88,9 +88,15 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   const [fbSearch, setFbSearch] = useState('');
   const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<number[]>([]);
 
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(masterRoleConfig || defaultRolePermissions);
   const [savingRoles, setSavingRoles] = useState(false);
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState<PermissionFeatureDetail | null>(null);
+
+  useEffect(() => {
+    if (masterRoleConfig && Object.keys(masterRoleConfig.labels || {}).length > 0) {
+      setRoleConfig(masterRoleConfig);
+    }
+  }, [masterRoleConfig]);
 
   const canUserMgmt = hasPermission(roleConfig, 'user_management', userRole);
   const canSystemLogs = hasPermission(roleConfig, 'system_logs', userRole);
