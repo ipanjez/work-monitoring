@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role === 'VIEWER') {
-      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('manage_task', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk memindahkan pekerjaan.' }, { status: 403 });
     }
     const { updates } = await request.json(); // expected: { id: number, orderIndex: number }[]
     

@@ -44,12 +44,15 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role === 'VIEWER') {
-      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('manage_task', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menambah data pekerjaan.' }, { status: 403 });
     }
 
     const body = await req.json();

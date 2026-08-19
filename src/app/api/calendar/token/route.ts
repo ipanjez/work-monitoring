@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,10 @@ export async function GET() {
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized: Admin role required' }, { status: 401 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('system_config', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Unauthorized: Izin konfigurasi sistem diperlukan' }, { status: 403 });
     }
 
     const newToken = crypto.randomBytes(16).toString('hex');

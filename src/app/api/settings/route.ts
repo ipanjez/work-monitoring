@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 // API route for application settings
 const prisma = new PrismaClient();
@@ -65,8 +66,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('master_data', userRole) || 
+                      await checkServerPermission('system_config', userRole) ||
+                      await checkServerPermission('database_backup', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengubah pengaturan.' }, { status: 403 });
     }
     const body = await request.json();
     

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 
 const calculateProgress = async (status: string, subTasksJson: string | null | undefined): Promise<number> => {
@@ -32,8 +33,10 @@ const calculateProgress = async (status: string, subTasksJson: string | null | u
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role === 'VIEWER') {
-      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('manage_task', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengedit data pekerjaan.' }, { status: 403 });
     }
     const { id } = await params;
     const body = await req.json();
@@ -302,8 +305,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if ((session?.user as any)?.role === 'VIEWER') {
-      return NextResponse.json({ error: 'Akses ditolak.' }, { status: 403 });
+    const userRole = (session?.user as any)?.role || '';
+    const isAllowed = await checkServerPermission('delete_task', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus pekerjaan.' }, { status: 403 });
     }
     const { id } = await params;
     await prisma.task.delete({
