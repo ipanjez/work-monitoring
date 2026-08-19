@@ -18,11 +18,11 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
   return (
     <AnimatePresence>
       {previewFile && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setPreviewFile(null)} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={() => setPreviewFile(null)} />
           <motion.div 
             className="modal-content" 
-            style={{ position: 'relative', width: '100%', maxWidth: '900px', height: '85vh', background: 'var(--surface-color)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '900px', height: '85vh', background: 'var(--surface-color)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
