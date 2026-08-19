@@ -75,6 +75,17 @@ model User {
   sessions      Session[]
   createdTasks  Task[]    @relation("CreatedBy")
   resetRequests PasswordResetRequest[]
+  notificationState UserNotificationState?
+}
+
+model UserNotificationState {
+  id          Int       @id @default(autoincrement())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readIds     String    @default("[]") // JSON string of read activity IDs, e.g. "[1, 2, 3]"
+  clearedAt   DateTime?
+  soundMuted  Boolean   @default(false)
+  updatedAt   DateTime  @updatedAt
 }
 
 model PasswordResetRequest {
