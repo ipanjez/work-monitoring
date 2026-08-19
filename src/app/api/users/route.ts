@@ -3,14 +3,21 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 const prisma = new PrismaClient();
 
-// GET /api/users — list all users (ADMIN only)
+// GET /api/users — list all users
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any)?.role !== 'ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role || 'VIEWER';
+  const isAllowed = await checkServerPermission('user_management', userRole);
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat daftar user.' }, { status: 403 });
   }
 
   const users = await prisma.user.findMany({
@@ -29,11 +36,17 @@ export async function GET() {
   return NextResponse.json(users);
 }
 
-// POST /api/users — create new user (ADMIN only)
+// POST /api/users — create new user
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any)?.role !== 'ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role || 'VIEWER';
+  const isAllowed = await checkServerPermission('user_management', userRole);
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menambah user.' }, { status: 403 });
   }
 
   const body = await request.json();

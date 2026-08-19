@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { defaultRolePermissions } from '@/lib/permissions';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export async function GET() {
   try {
@@ -25,10 +26,14 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
-    
-    if (userRole !== 'ADMIN') {
-      return NextResponse.json({ error: 'Akses ditolak. Hanya Admin yang dapat mengubah role.' }, { status: 403 });
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRole = (session?.user as any)?.role || 'VIEWER';
+    const isAllowed = await checkServerPermission('user_management', userRole);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengubah matriks role.' }, { status: 403 });
     }
 
     const body = await req.json();

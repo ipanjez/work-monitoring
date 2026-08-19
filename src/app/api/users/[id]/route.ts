@@ -3,15 +3,22 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 const prisma = new PrismaClient();
 
-// PUT /api/users/[id] — edit user (ADMIN only)
+// PUT /api/users/[id] — edit user
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any)?.role !== 'ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role || 'VIEWER';
+  const isAllowed = await checkServerPermission('user_management', userRole);
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengedit user.' }, { status: 403 });
   }
 
   const body = await request.json();
@@ -101,12 +108,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   return NextResponse.json({ id: user.id, npk: user.npk, name: user.name, role: user.role, status: user.status });
 }
 
-// DELETE /api/users/[id] — delete user (ADMIN only)
+// DELETE /api/users/[id] — delete user
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: deleteId } = await params;
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any)?.role !== 'ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role || 'VIEWER';
+  const isAllowed = await checkServerPermission('user_management', userRole);
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus user.' }, { status: 403 });
   }
 
   const user = await prisma.user.findUnique({ where: { id: deleteId } });

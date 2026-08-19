@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export async function GET() {
   try {
@@ -10,9 +11,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (session.user as any)?.role;
-    if (role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+    const role = (session.user as any)?.role || 'VIEWER';
+    const isAllowed = await checkServerPermission('admin_feedback', role);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat umpan balik pengguna.' }, { status: 403 });
     }
 
     const feedbacks = await prisma.activityLog.findMany({
@@ -35,9 +37,10 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (session.user as any)?.role;
-    if (role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+    const role = (session.user as any)?.role || 'VIEWER';
+    const isAllowed = await checkServerPermission('admin_feedback', role);
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus umpan balik pengguna.' }, { status: 403 });
     }
 
     const body = await request.json();

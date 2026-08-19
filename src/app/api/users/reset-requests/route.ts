@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 const prisma = new PrismaClient();
 
@@ -38,10 +39,16 @@ export async function GET(request: Request) {
     });
   }
 
-  // Otherwise, require ADMIN session to list all requests
+  // Otherwise, require user_management permission session to list all requests
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any)?.role !== 'ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as any)?.role || 'VIEWER';
+  const isAllowed = await checkServerPermission('user_management', userRole);
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat permintaan reset password.' }, { status: 403 });
   }
 
   const requests = await prisma.passwordResetRequest.findMany({

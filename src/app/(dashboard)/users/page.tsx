@@ -2,8 +2,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import UsersClient from './UsersClient';
-import { prisma } from '@/lib/prisma';
-import { defaultRolePermissions, hasPermission, RolePermissionsConfig } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
+import { getRoleConfigFromDB } from '@/lib/serverPermissions';
 
 export default async function UsersPage() {
   const session = await getServerSession(authOptions);
@@ -12,16 +12,13 @@ export default async function UsersPage() {
   }
 
   const userRole = (session.user as any)?.role || 'VIEWER';
-  
-  let roleConfig: RolePermissionsConfig = defaultRolePermissions;
-  try {
-    const setting = await prisma.appSetting.findUnique({ where: { key: 'role_permissions' } });
-    if (setting && setting.value) {
-      roleConfig = JSON.parse(setting.value);
-    }
-  } catch (e) {}
+  const roleConfig = await getRoleConfigFromDB();
 
-  if (!hasPermission(roleConfig, 'user_management', userRole)) {
+  const canAccess = hasPermission(roleConfig, 'user_management', userRole) ||
+                    hasPermission(roleConfig, 'system_logs', userRole) ||
+                    hasPermission(roleConfig, 'admin_feedback', userRole);
+
+  if (!canAccess) {
     redirect('/');
   }
 

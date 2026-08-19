@@ -964,7 +964,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   Kelola hak akses setiap role pengguna terhadap fitur aplikasi. Klik ikon <Info size={14} style={{ display: 'inline', verticalAlign: '-2px', color: 'var(--accent-primary)' }} /> untuk melihat lokasi menu dan rincian fungsinya.
                 </p>
               </div>
-              {userRole === 'ADMIN' && (
+              {canUserMgmt && (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
                     className="btn btn-secondary"
@@ -1023,7 +1023,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                   </th>
                   {Object.keys(roleConfig.labels).map(rk => (
                     <th key={rk} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '135px' }}>
-                      {userRole === 'ADMIN' ? (
+                      {canUserMgmt ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                           <button
                             type="button"
@@ -1180,7 +1180,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                             const hasPerm = !!roleConfig.permissions[feature.key]?.includes(rk);
                             return (
                               <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
-                                {userRole === 'ADMIN' ? (
+                                {canUserMgmt ? (
                                   <input
                                     type="checkbox"
                                     checked={hasPerm}
