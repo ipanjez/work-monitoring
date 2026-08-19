@@ -37,13 +37,6 @@ export default function UniversalFilterBar({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  // Reset filters when component unmounts (leaving the page)
-  React.useEffect(() => {
-    return () => {
-      resetFilters();
-    };
-  }, []);
-
   const getActiveStyle = (isActive: boolean) => isActive ? {
     borderColor: 'var(--accent-primary)',
     color: 'var(--accent-primary)'
