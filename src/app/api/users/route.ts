@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const isAllowed = await checkServerPermission('user_management', userRole);
   if (!isAllowed) {
     return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat daftar user.' }, { status: 403 });
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const isAllowed = await checkServerPermission('user_management', userRole);
   if (!isAllowed) {
     return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menambah user.' }, { status: 403 });

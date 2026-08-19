@@ -11,7 +11,7 @@ export default async function UsersPage() {
     redirect('/auth/signin');
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const roleConfig = await getRoleConfigFromDB();
 
   const canAccess = hasPermission(roleConfig, 'user_management', userRole) ||

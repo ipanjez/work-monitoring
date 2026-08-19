@@ -16,7 +16,7 @@ export default function GlobalBackupReminder() {
   const [lastBackupDate, setLastBackupDate] = useState<string>('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const userRole = (session?.user as any)?.role || '';
   const canBackup = hasPermission(roleConfig, 'database_backup', userRole);
 
   useEffect(() => {

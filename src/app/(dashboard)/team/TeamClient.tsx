@@ -39,7 +39,7 @@ type TaskTabFilter = 'all' | 'in_progress' | 'done' | 'urgent';
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const { handleGuestAction } = useGuestAccess();
-  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const userRole = (session?.user as any)?.role || '';
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,

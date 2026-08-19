@@ -56,7 +56,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const userRole = (session?.user as any)?.role || '';
   const { addActivityLog } = useNotifications();
   const { theme } = useTheme();
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();

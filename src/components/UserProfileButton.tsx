@@ -64,7 +64,7 @@ export default function UserProfileButton() {
 
   if (!session?.user) return null;
 
-  const currentRole = (session.user as any).role || 'MEMBER';
+  const currentRole = (session.user as any).role || '';
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 

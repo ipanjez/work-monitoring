@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = (session?.user as any)?.role || 'VIEWER';
+    const userRole = (session?.user as any)?.role || '';
     const isAllowed = await checkServerPermission('user_management', userRole);
     if (!isAllowed) {
       return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengubah matriks role.' }, { status: 403 });

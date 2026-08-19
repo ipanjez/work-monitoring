@@ -19,7 +19,7 @@ import { useNotifications } from '@/context/NotificationContext';
 
 export default function Sidebar() {
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'VIEWER';
+  const userRole = (session?.user as any)?.role || '';
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {

@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (session.user as any)?.role || 'VIEWER';
+    const role = (session.user as any)?.role || '';
     const isAllowed = await checkServerPermission('admin_feedback', role);
     if (!isAllowed) {
       return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat umpan balik pengguna.' }, { status: 403 });
@@ -37,7 +37,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (session.user as any)?.role || 'VIEWER';
+    const role = (session.user as any)?.role || '';
     const isAllowed = await checkServerPermission('admin_feedback', role);
     if (!isAllowed) {
       return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus umpan balik pengguna.' }, { status: 403 });

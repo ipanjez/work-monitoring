@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const isAllowed = await checkServerPermission('system_logs', userRole);
   if (!isAllowed) {
     return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk melihat log aktivitas sistem.' }, { status: 403 });

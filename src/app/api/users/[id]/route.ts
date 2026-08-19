@@ -15,7 +15,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const isAllowed = await checkServerPermission('user_management', userRole);
   if (!isAllowed) {
     return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengedit user.' }, { status: 403 });
@@ -116,7 +116,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const userRole = (session.user as any)?.role || 'VIEWER';
+  const userRole = (session.user as any)?.role || '';
   const isAllowed = await checkServerPermission('user_management', userRole);
   if (!isAllowed) {
     return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus user.' }, { status: 403 });

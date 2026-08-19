@@ -47,7 +47,7 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDuplicate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const { handleGuestAction, isGuest } = useGuestAccess();
-  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const userRole = (session?.user as any)?.role || '';
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig | null>(null);
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });

@@ -65,7 +65,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   }, [initialTasks]);
 
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'MEMBER';
+  const userRole = (session?.user as any)?.role || '';
   const { roleConfig } = useMaster();
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();

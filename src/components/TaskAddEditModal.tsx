@@ -83,7 +83,7 @@ export default function TaskAddEditModal({
   const [masterProgressMap, setMasterProgressMap] = useState<Record<string, number>>({});
 
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'VIEWER';
+  const userRole = (session?.user as any)?.role || '';
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   useEffect(() => {
     if (isOpen) {
