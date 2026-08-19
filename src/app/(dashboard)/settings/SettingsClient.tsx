@@ -84,6 +84,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [masterIcons, setMasterIcons] = useState<Record<string, string>>({});
   const [masterStatusProgress, setMasterStatusProgress] = useState<Record<string, number>>({});
   const [masterPicAvatars, setMasterPicAvatars] = useState<Record<string, string>>({});
+  const [masterSearch, setMasterSearch] = useState<Record<string, string>>({});
 
   const [newCatInput, setNewCatInput] = useState('');
   const [newPicInput, setNewPicInput] = useState('');
@@ -109,6 +110,58 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
     '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
   ];
+
+  const defaultColors: Record<string, string> = {
+    'status_To Do': '#64748b',
+    'status_In Progress': '#3b82f6',
+    'status_Review': '#f59e0b',
+    'status_Done': '#10b981',
+    'priority_Low': '#10b981',
+    'priority_Medium': '#3b82f6',
+    'priority_High': '#f59e0b',
+    'priority_Critical': '#ef4444',
+  };
+
+  const getColorForItem = (type: ListType, val: string) => {
+    return masterColors[`${type}_${val}`] || masterColors[val] || defaultColors[`${type}_${val}`] || '';
+  };
+
+  const getTaskCountForItem = (type: ListType, val: string) => {
+    if (!tasks || !Array.isArray(tasks)) return 0;
+    return tasks.filter(t => {
+      if (type === 'cat') return t.kategori === val;
+      if (type === 'pic') return t.pic === val || (t.additionalPics && t.additionalPics.split(',').map((p: string) => p.trim()).includes(val));
+      if (type === 'status') return t.status === val;
+      if (type === 'priority') return t.prioritas === val;
+      if (type === 'location') return t.lokasi === val;
+      return false;
+    }).length;
+  };
+
+  const handleColorChange = (type: ListType, val: string, color: string) => {
+    const updated = {
+      ...masterColors,
+      [`${type}_${val}`]: color,
+      [val]: color
+    };
+    setMasterColors(updated);
+    localStorage.setItem('master_colors', JSON.stringify(updated));
+  };
+
+  const handleProgressChange = (val: string, progress: number) => {
+    const updated = { ...masterStatusProgress, [val]: progress };
+    setMasterStatusProgress(updated);
+    localStorage.setItem('master_status_progress', JSON.stringify(updated));
+  };
+
+  const sortList = (type: ListType, order: 'asc' | 'desc') => {
+    const sortFn = (a: string, b: string) => order === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+    if (type === 'cat') setCategories(prev => [...prev].sort(sortFn));
+    else if (type === 'pic') setPics(prev => [...prev].sort(sortFn));
+    else if (type === 'status') setStatuses(prev => [...prev].sort(sortFn));
+    else if (type === 'priority') setPriorities(prev => [...prev].sort(sortFn));
+    else if (type === 'location') setLocations(prev => [...prev].sort(sortFn));
+  };
 
 
 
@@ -329,32 +382,42 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
   // Master Data Add Item Handler
   const handleAddItem = (type: ListType, val: string, setInput: (v: string) => void) => {
-    const trimmed = val.trim();
-    if (!trimmed) return;
+    const rawItems = val.split(',').map(s => s.trim()).filter(Boolean);
+    if (rawItems.length === 0) return;
 
     if (type === 'cat') {
-      if (categories.includes(trimmed)) return toast.error('Kategori sudah ada');
-      const updated = [...categories, trimmed];
+      const existing = new Set(categories);
+      const toAdd = rawItems.filter(item => !existing.has(item));
+      if (toAdd.length === 0) return toast.error('Semua kategori yang dimasukkan sudah ada');
+      const updated = [...categories, ...toAdd];
       setCategories(updated);
       localStorage.setItem('master_cats', JSON.stringify(updated));
     } else if (type === 'pic') {
-      if (pics.includes(trimmed)) return toast.error('PIC sudah ada');
-      const updated = [...pics, trimmed];
+      const existing = new Set(pics);
+      const toAdd = rawItems.filter(item => !existing.has(item));
+      if (toAdd.length === 0) return toast.error('Semua PIC yang dimasukkan sudah ada');
+      const updated = [...pics, ...toAdd];
       setPics(updated);
       localStorage.setItem('master_pics', JSON.stringify(updated));
     } else if (type === 'status') {
-      if (statuses.includes(trimmed)) return toast.error('Status sudah ada');
-      const updated = [...statuses, trimmed];
+      const existing = new Set(statuses);
+      const toAdd = rawItems.filter(item => !existing.has(item));
+      if (toAdd.length === 0) return toast.error('Semua status yang dimasukkan sudah ada');
+      const updated = [...statuses, ...toAdd];
       setStatuses(updated);
       localStorage.setItem('master_statuses', JSON.stringify(updated));
     } else if (type === 'priority') {
-      if (priorities.includes(trimmed)) return toast.error('Prioritas sudah ada');
-      const updated = [...priorities, trimmed];
+      const existing = new Set(priorities);
+      const toAdd = rawItems.filter(item => !existing.has(item));
+      if (toAdd.length === 0) return toast.error('Semua prioritas yang dimasukkan sudah ada');
+      const updated = [...priorities, ...toAdd];
       setPriorities(updated);
       localStorage.setItem('master_priorities', JSON.stringify(updated));
     } else if (type === 'location') {
-      if (locations.includes(trimmed)) return toast.error('Lokasi sudah ada');
-      const updated = [...locations, trimmed];
+      const existing = new Set(locations);
+      const toAdd = rawItems.filter(item => !existing.has(item));
+      if (toAdd.length === 0) return toast.error('Semua lokasi yang dimasukkan sudah ada');
+      const updated = [...locations, ...toAdd];
       setLocations(updated);
       localStorage.setItem('master_locations', JSON.stringify(updated));
     }
@@ -636,6 +699,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     icon: React.ReactNode,
     subtitle?: string
   ) => {
+    const searchQ = (masterSearch[type] || '').toLowerCase().trim();
+    const filteredList = searchQ ? items.filter(item => item.toLowerCase().includes(searchQ)) : items;
+
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
@@ -653,44 +719,76 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           </p>
         )}
 
-        {/* Add Input */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-          <input
-            type="text"
-            className="input"
-            placeholder={`Tambah ${title.toLowerCase()} baru...`}
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddItem(type, inputVal, setInputVal);
-              }
-            }}
-            style={{ fontSize: '13px' }}
-          />
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => handleAddItem(type, inputVal, setInputVal)}
-            style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', whiteSpace: 'nowrap' }}
-          >
-            <Plus size={16} /> Tambah
-          </button>
+        {/* Add Input & Search Toolbar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              className="input"
+              placeholder={`Tambah ${title.toLowerCase()}... (Pisahkan koma untuk input banyak)`}
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddItem(type, inputVal, setInputVal);
+                }
+              }}
+              style={{ fontSize: '13px', flex: 1 }}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => handleAddItem(type, inputVal, setInputVal)}
+              style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', whiteSpace: 'nowrap' }}
+            >
+              <Plus size={16} /> Tambah
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: '220px' }}>
+              <Search size={13} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                className="input"
+                placeholder="Cari item..."
+                value={masterSearch[type] || ''}
+                onChange={(e) => setMasterSearch(prev => ({ ...prev, [type]: e.target.value }))}
+                style={{ paddingLeft: '26px', paddingRight: masterSearch[type] ? '26px' : '8px', height: '28px', fontSize: '11.5px', width: '100%' }}
+              />
+              {masterSearch[type] && (
+                <button
+                  type="button"
+                  onClick={() => setMasterSearch(prev => ({ ...prev, [type]: '' }))}
+                  style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '2px' }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button type="button" onClick={() => sortList(type, 'asc')} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '11px' }}>Sort A-Z</button>
+              <button type="button" onClick={() => sortList(type, 'desc')} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '11px' }}>Sort Z-A</button>
+            </div>
+          </div>
         </div>
 
         {/* Items Badges & Manager */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '44px', padding: '12px', background: 'var(--input-bg)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-          {items.length === 0 ? (
+          {filteredList.length === 0 ? (
             <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '4px' }}>
-              Belum ada data. Silakan ketik nama lalu klik Tambah.
+              {searchQ ? `Tidak ada item yang cocok dengan pencarian "${searchQ}".` : 'Belum ada data. Silakan ketik nama lalu klik Tambah.'}
             </span>
           ) : (
-            items.map((item, index) => {
+            filteredList.map((item) => {
+              const index = items.indexOf(item);
               const isEditing = editingItem?.type === type && editingItem.oldVal === item;
               const isDragging = draggedIdx?.type === type && draggedIdx.index === index;
-              const color = masterColors[item] || (type === 'status' ? '#3b82f6' : undefined);
-              const progress = masterStatusProgress[item];
+              const rawColor = getColorForItem(type, item);
+              const color = rawColor && rawColor !== '#ffffff' ? (rawColor.length === 9 ? rawColor.substring(0, 7) : rawColor) : null;
+              const taskCount = getTaskCountForItem(type, item);
 
               return (
                 <div
@@ -704,17 +802,18 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     alignItems: 'center',
                     gap: '6px',
                     padding: isEditing ? '2px 6px' : '5px 10px',
-                    borderRadius: '8px',
-                    background: 'var(--surface-color)',
-                    border: isDragging ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    background: color ? `color-mix(in srgb, ${color} 15%, transparent)` : 'var(--surface-color)',
+                    border: isDragging ? '2px dashed var(--accent-primary)' : (color ? `1px solid ${color}` : '1px solid var(--border-color)'),
                     fontSize: '12.5px',
-                    color: 'var(--text-primary)',
+                    color: color ? color : 'var(--text-primary)',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                     opacity: isDragging ? 0.4 : 1,
-                    position: 'relative'
+                    position: 'relative',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <GripVertical size={13} style={{ color: 'var(--text-secondary)', cursor: 'grab', opacity: 0.6 }} />
+                  <GripVertical size={13} style={{ color: color || 'var(--text-secondary)', cursor: 'grab', opacity: 0.6 }} />
 
                   {type === 'pic' && (
                     <div
@@ -724,14 +823,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     >
                       <Avatar name={item} src={masterPicAvatars[item]} size={20} />
                     </div>
-                  )}
-
-                  {type === 'status' && (
-                    <div
-                      style={{ width: '10px', height: '10px', borderRadius: '50%', background: color || '#3b82f6', cursor: 'pointer' }}
-                      onClick={() => setActiveColorPicker(activeColorPicker === item ? null : item)}
-                      title="Klik untuk ubah warna status"
-                    />
                   )}
 
                   {isEditing ? (
@@ -757,18 +848,70 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     </div>
                   ) : (
                     <>
-                      <span style={{ fontWeight: 500 }}>{item}</span>
+                      <span style={{ fontWeight: 600 }}>{item}</span>
 
-                      {type === 'status' && progress !== undefined && (
-                        <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', background: 'var(--input-bg)', padding: '1px 5px', borderRadius: '4px' }}>
-                          {progress}%
-                        </span>
+                      {/* Task Count Badge */}
+                      <span
+                        title={taskCount > 0 ? `Digunakan di ${taskCount} pekerjaan aktif` : 'Belum digunakan di pekerjaan manapun'}
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          background: taskCount > 0 ? 'color-mix(in srgb, var(--accent-primary) 20%, transparent)' : 'rgba(0,0,0,0.06)',
+                          color: taskCount > 0 ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                          marginLeft: '2px'
+                        }}
+                      >
+                        {taskCount}
+                      </span>
+
+                      {/* Status Progress Editable Input */}
+                      {type === 'status' && (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={masterStatusProgress[item] ?? (item === 'Done' ? 100 : (item === 'In Progress' ? 50 : 0))}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProgressChange(item, Number(e.target.value))}
+                          style={{
+                            width: '42px',
+                            padding: '2px 4px',
+                            fontSize: '11px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '4px',
+                            background: 'var(--input-bg)',
+                            color: 'var(--text-primary)',
+                            marginLeft: '2px',
+                            textAlign: 'center',
+                            fontWeight: 600
+                          }}
+                          title="Persentase Progress Otomatis (0-100%)"
+                        />
                       )}
+
+                      {/* Color Picker Trigger */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveColorPicker(activeColorPicker === `${type}_${item}` ? null : `${type}_${item}`)}
+                        style={{
+                          width: '14px',
+                          height: '14px',
+                          padding: '0',
+                          border: 'none',
+                          background: color || 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          borderRadius: '50%',
+                          marginLeft: '2px',
+                          flexShrink: 0
+                        }}
+                        title="Pilih Warna Opsi"
+                      />
 
                       <button
                         type="button"
                         onClick={() => handleStartEdit(type, item)}
-                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                        style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: color || 'var(--text-secondary)' }}
                         title="Edit & Perbarui di Seluruh Pekerjaan"
                       >
                         <Pencil size={12} />
@@ -786,7 +929,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   )}
 
                   {/* Color Picker Popover */}
-                  {activeColorPicker === item && (
+                  {activeColorPicker === `${type}_${item}` && (
                     <div
                       style={{
                         position: 'absolute',
@@ -809,9 +952,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                         <div
                           key={c}
                           onClick={() => {
-                            const cols = { ...masterColors, [item]: c };
-                            setMasterColors(cols);
-                            localStorage.setItem('master_colors', JSON.stringify(cols));
+                            handleColorChange(type, item, c);
                             setActiveColorPicker(null);
                           }}
                           style={{ width: '22px', height: '22px', borderRadius: '4px', background: c, cursor: 'pointer', border: color === c ? '2px solid white' : 'none' }}
