@@ -153,16 +153,14 @@ export const DEFAULT_ROLE_ICONS: Record<string, string> = {
   ADMIN: 'ShieldCheck',
   MEMBER: 'User',
   VIEWER: 'Eye',
-  SPV: 'Award',
-  GUEST: 'UserCheck'
+  SPV: 'Award'
 };
 
 export const DEFAULT_ROLE_COLORS: Record<string, string> = {
   ADMIN: '#7c3aed', // Purple/Violet
   MEMBER: '#2563eb', // Blue
   VIEWER: '#059669', // Emerald
-  SPV: '#d97706',    // Amber/Gold
-  GUEST: '#64748b'   // Slate
+  SPV: '#d97706'     // Amber/Gold
 };
 
 export const AVAILABLE_ROLE_ICONS = [
@@ -205,8 +203,7 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ADMIN: 'Admin',
     MEMBER: 'Member',
     VIEWER: 'Viewer',
-    SPV: 'Supervisor',
-    GUEST: 'Guest'
+    SPV: 'Supervisor'
   },
   icons: {
     ...DEFAULT_ROLE_ICONS
@@ -215,8 +212,8 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ...DEFAULT_ROLE_COLORS
   },
   permissions: {
-    view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV', 'GUEST'],
-    view_detail: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV', 'GUEST'],
+    view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV'],
+    view_detail: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV'],
     manage_task: ['ADMIN', 'MEMBER'],
     delete_task: ['ADMIN', 'MEMBER'],
     upload_comment: ['ADMIN', 'MEMBER'],

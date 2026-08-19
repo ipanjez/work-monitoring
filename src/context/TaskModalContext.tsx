@@ -34,7 +34,7 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
 
-  const userRole = (session?.user as any)?.role || 'GUEST';
+  const userRole = (session?.user as any)?.role || '';
 
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);

@@ -14,35 +14,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.npk || !credentials?.password) return null;
 
-        if (credentials.npk.trim() === 'guest') {
-          let guestUser = await prisma.user.findUnique({
-            where: { npk: 'guest' }
-          });
-          if (!guestUser) {
-            guestUser = await prisma.user.create({
-              data: {
-                npk: 'guest',
-                name: 'Guest',
-                role: 'GUEST',
-                status: 'ACTIVE',
-                password: await bcrypt.hash('guest-password-999', 10),
-              }
-            });
-          } else if (guestUser.name !== 'Guest') {
-            guestUser = await prisma.user.update({
-              where: { npk: 'guest' },
-              data: { name: 'Guest' }
-            });
-          }
-          return {
-            id: guestUser.id,
-            name: guestUser.name,
-            email: guestUser.email,
-            npk: guestUser.npk,
-            role: guestUser.role,
-          };
-        }
-
         const user = await prisma.user.findUnique({
           where: { npk: credentials.npk.trim() },
         });

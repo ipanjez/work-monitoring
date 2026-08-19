@@ -27,7 +27,7 @@ export default function SignUpPage() {
       .then(data => {
         if (data && data.labels) {
           const roles = Object.keys(data.labels)
-            .filter(key => key !== 'ADMIN')
+            .filter(key => key !== 'ADMIN' && key !== 'GUEST')
             .map(key => ({
               key,
               label: data.labels[key]
@@ -223,7 +223,7 @@ export default function SignUpPage() {
             >
               {availableRoles.map(r => (
                 <option key={r.key} value={r.key}>
-                  {r.label} ({r.key === 'MEMBER' ? 'Pengelola & Pelaksana Pekerjaan' : r.key === 'VIEWER' ? 'Hanya Melihat & Monitoring' : r.key === 'GUEST' ? 'Akses Terbatas & Read Only' : `Peran ${r.label}`})
+                  {r.label} ({r.key === 'MEMBER' ? 'Pengelola & Pelaksana Pekerjaan' : r.key === 'VIEWER' ? 'Hanya Melihat & Monitoring' : `Peran ${r.label}`})
                 </option>
               ))}
             </select>
