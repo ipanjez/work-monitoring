@@ -12,7 +12,7 @@ type GuestAccessContextType = {
   isGuest: boolean;
   showGuestModal: boolean;
   setShowGuestModal: (show: boolean) => void;
-  handleGuestAction: (onAllowed: () => void, hasPermission?: boolean) => void;
+  handleGuestAction: (onAllowed: () => void, hasPermission?: boolean, customDeniedMessage?: string) => void;
 };
 
 const GuestAccessContext = createContext<GuestAccessContextType | undefined>(undefined);
@@ -24,13 +24,13 @@ export function GuestAccessProvider({ children }: { children: React.ReactNode })
 
   const isGuest = (session?.user as any)?.role === 'GUEST';
 
-  const handleGuestAction = (onAllowed: () => void, hasPermission?: boolean) => {
+  const handleGuestAction = (onAllowed: () => void, hasPermission?: boolean, customDeniedMessage?: string) => {
     if (hasPermission !== undefined) {
       if (!hasPermission) {
         if (isGuest) {
           setShowGuestModal(true);
         } else {
-          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melakukan tindakan ini.');
+          toast.error(customDeniedMessage || 'Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
         }
         return;
       }

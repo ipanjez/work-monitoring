@@ -6,6 +6,8 @@ import { Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, U
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
+import { useMaster } from '@/context/MasterContext';
+import { hasPermission } from '@/lib/permissions';
 import toast from 'react-hot-toast';
 import AvatarCropperModal from '@/components/AvatarCropperModal';
 import Avatar from '@/components/Avatar';
@@ -31,7 +33,12 @@ type Task = {
 export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const { addActivityLog } = useNotifications();
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const userRole = (session?.user as any)?.role || 'GUEST';
+  const { roleConfig } = useMaster();
+
+  const canMasterData = hasPermission(roleConfig, 'master_data', userRole);
+  const canSystemConfig = hasPermission(roleConfig, 'system_config', userRole);
+  const canDatabaseBackup = hasPermission(roleConfig, 'database_backup', userRole);
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
   const [deptName, setDeptName] = useState('MRK');
   const [appName, setAppName] = useState('DeptMonitor');
@@ -1021,7 +1028,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '8px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Pengaturan Aplikasi</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          {isAdmin
+          {(canMasterData || canSystemConfig || canDatabaseBackup)
             ? 'Kelola preferensi antarmuka, master opsi dropdown kategori, daftar PIC, dan cadangan data aplikasi.'
             : 'Kelola preferensi antarmuka aplikasi Anda.'}
         </p>
@@ -1034,7 +1041,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Identitas Aplikasi Card */}
-      {isAdmin && (
+      {canSystemConfig && (
         <div id="settings-app-identity" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Layout size={20} color="var(--accent-primary)" /> Identitas Aplikasi
@@ -1220,7 +1227,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
 
       {/* Quick Navigation Header for Master Data */}
-      {isAdmin && (
+      {canMasterData && (
         <div style={{ background: 'var(--surface-color)', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Layers size={18} color="var(--accent-primary)" />
@@ -1247,7 +1254,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Dropdown Master Categories Manager */}
-      {isAdmin && (
+      {canMasterData && (
         <div id="settings-categories" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
@@ -1261,7 +1268,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Dropdown Master PIC Manager */}
-      {isAdmin && (
+      {canMasterData && (
         <div id="settings-pics" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master PIC / Personil", 'pic', pics, newPicInput, setNewPicInput,
@@ -1274,7 +1281,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      {isAdmin && (
+      {canMasterData && (
         <div id="settings-statuses" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
@@ -1285,7 +1292,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      {isAdmin && (
+      {canMasterData && (
         <div id="settings-priorities" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Prioritas Pekerjaan", 'priority', priorities, newPriorityInput, setNewPriorityInput,
@@ -1297,7 +1304,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       )}
 
       {/* Master Locations Manager */}
-      {isAdmin && (
+      {canMasterData && (
         <div id="settings-locations" className="glass" style={{ padding: '24px' }}>
           {renderListEditor(
             "Master Lokasi & Ruang Rapat", 'location', locations, newLocationInput, setNewLocationInput,
@@ -1313,7 +1320,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
 
       {/* General Settings */}
-      {isAdmin && (
+      {canSystemConfig && (
         <div id="settings-general" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Settings size={20} color="var(--accent-primary)" /> Pengaturan Umum
@@ -1466,7 +1473,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         </p>
 
         {/* Timezone Configuration */}
-        {isAdmin && (
+        {canSystemConfig && (
           <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, rgba(0,0,0,0.02))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
               <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Standar Feed (Timezone)
@@ -1675,7 +1682,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   <Globe size={14} color="var(--accent-primary)" /> Buka di Apple Calendar / Outlook (webcal)
                 </a>
 
-                {isAdmin && (
+                {canSystemConfig && (
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -1710,7 +1717,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       </div>
 
       {/* Backup & Export Database */}
-      {isAdmin && (
+      {canDatabaseBackup && (
         <div id="settings-backup" className="glass" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Database size={20} color="var(--success)" /> Cadangan & Export Data Database

@@ -63,15 +63,10 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
       window.removeEventListener('click', handleActivity);
       window.removeEventListener('scroll', handleActivity);
     };
-  }, [pathname, router]);
+  }, [pathname, router, sessionDurationMs]);
 
-  const extendSession = (minutes: number) => {
-    // We cannot easily update the closure's `sessionDuration` if we use it inside useEffect directly,
-    // unless we make it a ref or a state. Let's trigger a manual activity reset and add time if needed,
-    // but the easiest is just simulating activity. If they click to extend, that IS an activity!
-    // So clicking +10m already resets the timer to 10 minutes because of handleActivity!
-    // Wait, if they want to extend it beyond 10 minutes (e.g. 30m idle time)?
-    // The requirement is usually just to prevent logout right now. By clicking, they are active.
+  const extendSession = (minutes?: number) => {
+    setTimeLeft(sessionDurationMs / 1000);
     toast.success(`Sesi di-reset, Anda kembali aktif!`);
   };
 
@@ -122,32 +117,47 @@ export default function IdleTimer({ isSidebarCollapsed }: { isSidebarCollapsed: 
           <span style={{ fontSize: '12px', fontWeight: 600 }}>Sisa Sesi</span>
           
           <div 
-            style={{ cursor: 'pointer', display: 'flex' }}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             onMouseEnter={() => setShowInfo(true)}
             onMouseLeave={() => setShowInfo(false)}
+            onClick={() => setShowInfo(!showInfo)}
+            title="Klik/arahkan kursor untuk informasi sesi"
           >
-            <Info size={14} style={{ color: 'var(--text-secondary)' }} />
+            <Info size={14} style={{ color: showInfo ? 'var(--accent-primary)' : 'var(--text-secondary)', transition: 'color 0.15s' }} />
           </div>
 
           {showInfo && (
             <div style={{
               position: 'absolute',
-              top: '100%',
-              left: 0,
-              marginTop: '4px',
-              padding: '8px',
+              bottom: 'calc(100% + 8px)',
+              left: '-8px',
+              padding: '12px 14px',
               background: 'var(--surface-color)',
               border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-              width: '180px',
-              fontSize: '10px',
+              borderRadius: '10px',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+              width: '230px',
+              fontSize: '11px',
               color: 'var(--text-primary)',
-              zIndex: 100,
-              lineHeight: 1.4
+              zIndex: 1000,
+              lineHeight: 1.45,
+              backdropFilter: 'blur(8px)',
+              animation: 'fadeIn 0.15s ease'
             }}>
-              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(59,130,246,0.1)', borderLeft: '3px solid var(--accent-primary)', borderRadius: '0 8px 8px 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                <strong>Info Keamanan:</strong> Walaupun sisa sesi Anda perpanjang, Anda akan <strong>Otomatis Terlogout</strong> jika layar dibiarkan dan tidak ada aktivitas apa pun (mouse/keyboard) selama {sessionTimeout || 10} menit berturut-turut.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)', fontWeight: 700, fontSize: '11.5px', color: 'var(--accent-primary)' }}>
+                <Clock size={13} />
+                <span>Informasi Sisa Sesi</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)' }}>
+                <div>
+                  <strong style={{ color: 'var(--text-primary)' }}>• Reset Otomatis:</strong> Timer sesi otomatis diperpanjang ke <strong style={{ color: 'var(--text-primary)' }}>{sessionTimeout || 10} menit</strong> setiap kali Anda beraktivitas <em>(mouse, keyboard, scroll, klik)</em>.
+                </div>
+                <div>
+                  <strong style={{ color: 'var(--text-primary)' }}>• Auto-Logout:</strong> Jika tidak ada aktivitas selama <strong style={{ color: 'var(--danger)' }}>{sessionTimeout || 10} menit berturut-turut</strong>, akun Anda akan otomatis terlogout demi keamanan.
+                </div>
+                <div style={{ marginTop: '2px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '10.5px', opacity: 0.9 }}>
+                  💡 Gunakan tombol <strong style={{ color: 'var(--text-primary)' }}>&quot;Tetap Aktif&quot;</strong> untuk menyegarkan timer secara manual.
+                </div>
               </div>
             </div>
           )}

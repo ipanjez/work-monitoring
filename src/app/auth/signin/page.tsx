@@ -71,6 +71,8 @@ function SignInContent() {
     if (res?.ok) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('dismissed_backup_reminder');
+        sessionStorage.removeItem('pic_auto_selected_user');
+        localStorage.removeItem('globalPicFilter');
       }
       toast.success('Berhasil masuk!');
       router.push('/');

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useMaster } from '@/context/MasterContext';
 
 type FilterContextType = {
   globalTargetFilter: string;
@@ -29,8 +30,8 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const user = session?.user;
-  const isMember = (user as any)?.role === 'MEMBER';
+  const { masterPics } = useMaster();
+  const userName = session?.user?.name?.trim();
 
   const [globalTargetFilter, setTargetFilter] = useState('Semua Waktu');
   const [globalPicFilter, setPicFilter] = useState('Semua PIC');
@@ -57,15 +58,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     const storedExactMatch = localStorage.getItem('globalSearchExactMatch');
     
     if (storedTarget) setTargetFilter(storedTarget);
-    
-    // If the logged-in user is a member, default to their own name first.
-    // Otherwise, default to the stored PIC filter or "Semua PIC".
-    if (storedPic) {
-      setPicFilter(storedPic);
-    } else {
-      setPicFilter('Semua PIC');
-    }
-    
+    if (storedPic) setPicFilter(storedPic);
     if (storedStart) setCustomStartDate(storedStart);
     if (storedEnd) setCustomEndDate(storedEnd);
     if (storedSearch) setSearchQuery(storedSearch);
@@ -73,7 +66,27 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     if (storedPriority) setFilterPriority(storedPriority);
     if (storedCategory) setFilterCategory(storedCategory);
     if (storedExactMatch) setGlobalSearchExactMatchState(storedExactMatch === 'true');
-  }, [isMember, user?.name]);
+  }, []);
+
+  // Auto-select logged-in user if their name exists in Master PIC upon each login session
+  useEffect(() => {
+    if (!userName || !masterPics || masterPics.length === 0) return;
+
+    const matchedPic = masterPics.find(p => p.trim().toLowerCase() === userName.toLowerCase());
+    const sessionAutoSelected = typeof window !== 'undefined' ? sessionStorage.getItem('pic_auto_selected_user') : null;
+
+    if (sessionAutoSelected !== userName) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('pic_auto_selected_user', userName);
+      }
+      if (matchedPic) {
+        setPicFilter(matchedPic);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('globalPicFilter', matchedPic);
+        }
+      }
+    }
+  }, [userName, masterPics]);
 
   // Update state and localStorage
   const setGlobalTargetFilter = (val: string) => {

@@ -92,6 +92,16 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   const [savingRoles, setSavingRoles] = useState(false);
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState<PermissionFeatureDetail | null>(null);
 
+  const canUserMgmt = hasPermission(roleConfig, 'user_management', userRole);
+  const canSystemLogs = hasPermission(roleConfig, 'system_logs', userRole);
+  const canAdminFeedback = hasPermission(roleConfig, 'admin_feedback', userRole);
+
+  const availableTabs: Tab[] = [
+    ...(canUserMgmt ? (['users', 'requests', 'roles'] as Tab[]) : []),
+    ...(canSystemLogs ? (['logs'] as Tab[]) : []),
+    ...(canAdminFeedback ? (['feedbacks'] as Tab[]) : [])
+  ];
+
   const fetchFeedbacks = useCallback(async () => {
     const res = await fetch('/api/admin/feedbacks');
     if (res.ok) setFeedbacks(await res.json());
@@ -120,11 +130,24 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-    fetchRequests();
-    fetchLogs();
+    if (availableTabs.length > 0 && !availableTabs.includes(tab)) {
+      setTab(availableTabs[0]);
+    }
+  }, [availableTabs, tab]);
+
+  useEffect(() => {
+    if (canUserMgmt) {
+      fetchUsers();
+      fetchRequests();
+    }
+    if (canSystemLogs) {
+      fetchLogs();
+    }
+    if (canAdminFeedback) {
+      fetchFeedbacks();
+    }
     fetchRoles();
-  }, [fetchUsers, fetchRequests, fetchLogs, fetchRoles]);
+  }, [canUserMgmt, canSystemLogs, canAdminFeedback, fetchUsers, fetchRequests, fetchLogs, fetchFeedbacks, fetchRoles]);
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
 
@@ -613,7 +636,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
       {/* Tabs */}
       <div id="users-tabs-container" className="no-scrollbar" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
-        {((['users', 'requests', 'logs', 'roles', ...(userRole === 'ADMIN' ? ['feedbacks'] : [])] as Tab[]).filter(t => t !== 'logs' || hasPermission(roleConfig, 'system_logs', userRole))).map(t => (
+        {availableTabs.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1352,7 +1375,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       )}
 
       {/* Feedbacks Tab */}
-      {tab === 'feedbacks' && userRole === 'ADMIN' && (
+      {tab === 'feedbacks' && canAdminFeedback && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>

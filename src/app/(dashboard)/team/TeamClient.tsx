@@ -499,7 +499,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   {isSelected ? 'Tutup Daftar Tugas ▲' : 'Lihat Daftar Tugas ▼'}
                 </span>
 
-                {(hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                {hasPermission(roleConfig, 'manage_task', userRole) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -673,7 +673,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                         <td style={{ padding: '11px 12px', fontSize: '12px' }}>
                           {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
                         </td>
-                        {(hasPermission(roleConfig, 'view_detail', userRole) || userRole === 'GUEST') && (
+                        {hasPermission(roleConfig, 'view_detail', userRole) && (
                           <td style={{ padding: '11px 12px', textAlign: 'right' }}>
                             <button 
                               className="btn btn-secondary" 

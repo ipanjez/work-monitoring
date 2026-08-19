@@ -165,6 +165,8 @@ export default function Sidebar() {
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('dismissed_backup_reminder');
+      sessionStorage.removeItem('pic_auto_selected_user');
+      localStorage.removeItem('globalPicFilter');
     }
     await signOut({ callbackUrl: '/auth/signin' });
   };
@@ -174,26 +176,25 @@ export default function Sidebar() {
       { href: '/', label: 'Monitoring Board', icon: Kanban },
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ] : []),
-    ...(userRole !== 'GUEST' || hasPermission(roleConfig, 'view_detail', userRole) ? [
-      { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo }
-    ] : []),
+    { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
     { href: '/calendar', label: 'Kalender', icon: Calendar },
     { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
     { href: '/team', label: 'Manajemen Tim', icon: Users },
-    ...(hasPermission(roleConfig, 'master_data', userRole) ? [
+    ...(hasPermission(roleConfig, 'master_data', userRole) || hasPermission(roleConfig, 'system_config', userRole) || hasPermission(roleConfig, 'database_backup', userRole) ? [
       { href: '/settings', label: 'Pengaturan', icon: Settings },
     ] : []),
-    ...(hasPermission(roleConfig, 'user_management', userRole) ? [
+    ...(hasPermission(roleConfig, 'user_management', userRole) || hasPermission(roleConfig, 'system_logs', userRole) || hasPermission(roleConfig, 'admin_feedback', userRole) ? [
       { href: '/users', label: 'Sistem User', icon: UserCog },
     ] : [])
   ];
 
   const { notifications } = useNotifications();
-  const systemUserUnreads = userRole === 'ADMIN' ? notifications.filter(n =>
+  const canSeeUserAlerts = hasPermission(roleConfig, 'user_management', userRole);
+  const canSeeFeedbackAlerts = hasPermission(roleConfig, 'admin_feedback', userRole);
+  const systemUserUnreads = (canSeeUserAlerts || canSeeFeedbackAlerts) ? notifications.filter(n =>
     !n.isRead && (
-      n.title === 'Registrasi User Baru' ||
-      n.title === 'Permintaan Reset Password' ||
-      n.title === 'Umpan Balik Baru'
+      (canSeeUserAlerts && (n.title === 'Registrasi User Baru' || n.title === 'Permintaan Reset Password')) ||
+      (canSeeFeedbackAlerts && n.title === 'Umpan Balik Baru')
     )
   ).length : 0;
 
