@@ -91,6 +91,12 @@ export async function exportCanvasToPdf(
 ): Promise<void> {
   const { jsPDF } = await import('jspdf');
 
+  const currentTheme = typeof document !== 'undefined'
+    ? (document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'dark')
+    : 'dark';
+  const isDark = currentTheme === 'dark';
+  const bg = isDark ? '#0f172a' : '#ffffff';
+
   const imgData = canvas.toDataURL('image/png', 1.0);
 
   // Use A4 dimensions in mm: 210 x 297
@@ -134,6 +140,8 @@ export async function exportCanvasToPdf(
     pageCanvas.height = srcH;
     const ctx = pageCanvas.getContext('2d');
     if (!ctx) break;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
     ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
 
     const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
