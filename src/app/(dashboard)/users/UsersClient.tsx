@@ -5,7 +5,7 @@ import {
   Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search,
   ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw,
   Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare,
-  Share2, Shield, HelpCircle, ExternalLink, Sparkles
+  Share2, Shield, HelpCircle, ExternalLink, Sparkles, ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMaster } from '@/context/MasterContext';
@@ -19,7 +19,7 @@ import {
 import { useNotifications } from '@/context/NotificationContext';
 import Avatar from '@/components/Avatar';
 
-type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string };
+type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string; lastActive?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
 type Log = { id: number; action: string; title: string; message: string; type: string; userId?: string; userName?: string; createdAt: string };
 type Tab = 'users' | 'requests' | 'logs' | 'roles' | 'feedbacks';
@@ -70,6 +70,18 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   const [forceResetUser, setForceResetUser] = useState<UserData | null>(null);
   const [forceNewPassword, setForceNewPassword] = useState('');
 
+  // Sorting states
+  const [userSortField, setUserSortField] = useState<'npk' | 'name' | 'role' | 'lastActive' | 'status'>('npk');
+  const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [reqSortField, setReqSortField] = useState<'npk' | 'name' | 'createdAt' | 'status' | 'note'>('createdAt');
+  const [reqSortOrder, setReqSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [logSortField, setLogSortField] = useState<'createdAt' | 'userName' | 'action' | 'message'>('createdAt');
+  const [logSortOrder, setLogSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [fbSortField, setFbSortField] = useState<'createdAt' | 'sender' | 'message'>('createdAt');
+  const [fbSortOrder, setFbSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [fbSearch, setFbSearch] = useState('');
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<number[]>([]);
+
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const [savingRoles, setSavingRoles] = useState(false);
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState<PermissionFeatureDetail | null>(null);
@@ -78,7 +90,6 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
     const res = await fetch('/api/admin/feedbacks');
     if (res.ok) setFeedbacks(await res.json());
   }, []);
-
 
   const fetchUsers = useCallback(async () => {
     const res = await fetch('/api/users');
@@ -111,10 +122,127 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
 
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
 
+  const handleUserSort = (field: 'npk' | 'name' | 'role' | 'lastActive' | 'status') => {
+    if (userSortField === field) {
+      setUserSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setUserSortField(field);
+      setUserSortOrder('asc');
+    }
+  };
+
+  const handleReqSort = (field: 'npk' | 'name' | 'createdAt' | 'status' | 'note') => {
+    if (reqSortField === field) {
+      setReqSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setReqSortField(field);
+      setReqSortOrder('asc');
+    }
+  };
+
+  const handleLogSort = (field: 'createdAt' | 'userName' | 'action' | 'message') => {
+    if (logSortField === field) {
+      setLogSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setLogSortField(field);
+      setLogSortOrder('asc');
+    }
+  };
+
+  const handleFbSort = (field: 'createdAt' | 'sender' | 'message') => {
+    if (fbSortField === field) {
+      setFbSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setFbSortField(field);
+      setFbSortOrder('asc');
+    }
+  };
+
+  const renderSortHeader = (label: string, field: string, currentField: string, currentOrder: 'asc' | 'desc', onSort: (f: any) => void, width?: string) => {
+    const isActive = currentField === field;
+    return (
+      <th
+        onClick={() => onSort(field)}
+        style={{
+          padding: '10px 12px',
+          width,
+          textAlign: 'left',
+          fontWeight: 600,
+          color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+          fontSize: '12px',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'all 0.15s ease'
+        }}
+        title={`Klik untuk mengurutkan berdasarkan ${label}`}
+      >
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span>{label}</span>
+          {isActive ? (
+            currentOrder === 'asc' ? (
+              <ArrowUp size={13} style={{ color: 'var(--accent-primary)' }} />
+            ) : (
+              <ArrowDown size={13} style={{ color: 'var(--accent-primary)' }} />
+            )
+          ) : (
+            <ArrowUpDown size={12} style={{ opacity: 0.35 }} />
+          )}
+        </div>
+      </th>
+    );
+  };
+
   const filtered = users.filter(u =>
     u.npk.toLowerCase().includes(search.toLowerCase()) ||
-    (u.name || '').toLowerCase().includes(search.toLowerCase())
-  );
+    (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
+    (roleConfig.labels[u.role] || u.role).toLowerCase().includes(search.toLowerCase())
+  ).sort((a, b) => {
+    let valA: any = (a as any)[userSortField] || '';
+    let valB: any = (b as any)[userSortField] || '';
+    if (userSortField === 'lastActive') {
+      valA = (a as any).lastActive ? new Date((a as any).lastActive).getTime() : 0;
+      valB = (b as any).lastActive ? new Date((b as any).lastActive).getTime() : 0;
+      return userSortOrder === 'asc' ? valA - valB : valB - valA;
+    }
+    if (userSortField === 'role') {
+      valA = roleConfig.labels[a.role] || a.role;
+      valB = roleConfig.labels[b.role] || b.role;
+    }
+    valA = String(valA).toLowerCase();
+    valB = String(valB).toLowerCase();
+    if (valA < valB) return userSortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return userSortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const sortedRequests = [...requests].sort((a, b) => {
+    let valA: any = '';
+    let valB: any = '';
+    if (reqSortField === 'npk') {
+      valA = a.user.npk;
+      valB = b.user.npk;
+    } else if (reqSortField === 'name') {
+      valA = a.user.name;
+      valB = b.user.name;
+    } else if (reqSortField === 'createdAt') {
+      valA = new Date(a.createdAt).getTime();
+      valB = new Date(b.createdAt).getTime();
+      return reqSortOrder === 'asc' ? valA - valB : valB - valA;
+    } else if (reqSortField === 'status') {
+      valA = a.status;
+      valB = b.status;
+    } else if (reqSortField === 'note') {
+      valA = a.note || '';
+      valB = b.note || '';
+    }
+    valA = String(valA).toLowerCase();
+    valB = String(valB).toLowerCase();
+    if (valA < valB) return reqSortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return reqSortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const LOGS_PER_PAGE = 50;
 
@@ -150,7 +278,91 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
     const matchType = filterType === 'all' || l.type === filterType;
     const matchUser = filterUser === 'all' || l.userName === filterUser;
     return matchSearch && matchType && matchUser;
+  }).sort((a, b) => {
+    let valA: any = (a as any)[logSortField] || '';
+    let valB: any = (b as any)[logSortField] || '';
+    if (logSortField === 'createdAt') {
+      valA = new Date(a.createdAt).getTime();
+      valB = new Date(b.createdAt).getTime();
+      return logSortOrder === 'asc' ? valA - valB : valB - valA;
+    }
+    valA = String(valA).toLowerCase();
+    valB = String(valB).toLowerCase();
+    if (valA < valB) return logSortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return logSortOrder === 'asc' ? 1 : -1;
+    return 0;
   });
+
+  const filteredFeedbacks = feedbacks.filter((f: any) => {
+    if (!fbSearch.trim()) return true;
+    const q = fbSearch.toLowerCase();
+    const matches = f.message.match(/Feedback dari ([^:]+): "([\s\S]+)"/);
+    const sender = matches ? matches[1] : (f.userName || 'Anonim');
+    const cleanMsg = matches ? matches[2] : f.message;
+    return sender.toLowerCase().includes(q) || cleanMsg.toLowerCase().includes(q) || (f.createdAt && f.createdAt.toLowerCase().includes(q));
+  }).sort((a: any, b: any) => {
+    let valA: any = '';
+    let valB: any = '';
+    const matchesA = a.message.match(/Feedback dari ([^:]+): "([\s\S]+)"/);
+    const senderA = matchesA ? matchesA[1] : (a.userName || 'Anonim');
+    const msgA = matchesA ? matchesA[2] : a.message;
+
+    const matchesB = b.message.match(/Feedback dari ([^:]+): "([\s\S]+)"/);
+    const senderB = matchesB ? matchesB[1] : (b.userName || 'Anonim');
+    const msgB = matchesB ? matchesB[2] : b.message;
+
+    if (fbSortField === 'createdAt') {
+      valA = new Date(a.createdAt).getTime();
+      valB = new Date(b.createdAt).getTime();
+      return fbSortOrder === 'asc' ? valA - valB : valB - valA;
+    } else if (fbSortField === 'sender') {
+      valA = senderA;
+      valB = senderB;
+    } else if (fbSortField === 'message') {
+      valA = msgA;
+      valB = msgB;
+    }
+    valA = String(valA).toLowerCase();
+    valB = String(valB).toLowerCase();
+    if (valA < valB) return fbSortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return fbSortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleDeleteSingleFeedback = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus log umpan balik ini?')) return;
+    try {
+      const res = await fetch('/api/admin/feedbacks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error('Gagal menghapus');
+      toast.success('Log umpan balik berhasil dihapus');
+      setSelectedFeedbackIds(prev => prev.filter(item => item !== id));
+      fetchFeedbacks();
+    } catch (e) {
+      toast.error('Gagal menghapus log umpan balik');
+    }
+  };
+
+  const handleBulkDeleteFeedbacks = async () => {
+    if (selectedFeedbackIds.length === 0) return;
+    if (!confirm(`Hapus ${selectedFeedbackIds.length} log umpan balik terpilih? Tindakan ini tidak dapat dibatalkan.`)) return;
+    try {
+      const res = await fetch('/api/admin/feedbacks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedFeedbackIds })
+      });
+      if (!res.ok) throw new Error('Gagal menghapus');
+      toast.success(`${selectedFeedbackIds.length} log umpan balik berhasil dihapus!`);
+      setSelectedFeedbackIds([]);
+      fetchFeedbacks();
+    } catch (e) {
+      toast.error('Gagal menghapus log umpan balik terpilih');
+    }
+  };
 
   const totalLogPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE) || 1;
   const paginatedLogs = filteredLogs.slice((logPage - 1) * LOGS_PER_PAGE, logPage * LOGS_PER_PAGE);
@@ -495,9 +707,12 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       style={{ cursor: 'pointer' }}
                     />
                   </th>
-                  {['NPK', 'Nama', 'Role', 'Terakhir Dilihat', 'Status', 'Aksi'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
+                  {renderSortHeader('NPK', 'npk', userSortField, userSortOrder, handleUserSort, '120px')}
+                  {renderSortHeader('Nama', 'name', userSortField, userSortOrder, handleUserSort)}
+                  {renderSortHeader('Role', 'role', userSortField, userSortOrder, handleUserSort, '140px')}
+                  {renderSortHeader('Terakhir Dilihat', 'lastActive', userSortField, userSortOrder, handleUserSort, '180px')}
+                  {renderSortHeader('Status', 'status', userSortField, userSortOrder, handleUserSort, '130px')}
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', width: '130px' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -579,13 +794,16 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                {['NPK', 'Nama', 'Waktu Request', 'Status', 'Catatan', 'Aksi'].map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase' }}>{h}</th>
-                ))}
+                {renderSortHeader('NPK', 'npk', reqSortField, reqSortOrder, handleReqSort, '120px')}
+                {renderSortHeader('Nama', 'name', reqSortField, reqSortOrder, handleReqSort)}
+                {renderSortHeader('Waktu Request', 'createdAt', reqSortField, reqSortOrder, handleReqSort, '180px')}
+                {renderSortHeader('Status', 'status', reqSortField, reqSortOrder, handleReqSort, '130px')}
+                {renderSortHeader('Catatan', 'note', reqSortField, reqSortOrder, handleReqSort)}
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', width: '150px' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map(r => (
+              {sortedRequests.map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600 }}>{r.user.npk}</td>
                   <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{r.user.name}</td>
@@ -648,10 +866,10 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                  <th style={{ padding: '10px 12px', width: '160px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Waktu</th>
-                  <th style={{ padding: '10px 12px', width: '150px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>User</th>
-                  <th style={{ padding: '10px 12px', width: '120px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Aksi</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '11px', textTransform: 'uppercase' }}>Detail</th>
+                  {renderSortHeader('Waktu', 'createdAt', logSortField, logSortOrder, handleLogSort, '180px')}
+                  {renderSortHeader('User', 'userName', logSortField, logSortOrder, handleLogSort, '160px')}
+                  {renderSortHeader('Aksi', 'action', logSortField, logSortOrder, handleLogSort, '140px')}
+                  {renderSortHeader('Detail', 'message', logSortField, logSortOrder, handleLogSort)}
                 </tr>
               </thead>
               <tbody>
@@ -1098,25 +1316,80 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
       {/* Feedbacks Tab */}
       {tab === 'feedbacks' && userRole === 'ADMIN' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ScrollText size={20} style={{ color: 'var(--accent-primary)' }} /> Log Umpan Balik Pengguna
-            </h2>
-            {feedbacks.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                Belum ada umpan balik yang dikirimkan.
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ScrollText size={20} style={{ color: 'var(--accent-primary)' }} />
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  Log Umpan Balik Pengguna
+                </h2>
               </div>
-            ) : (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input
+                    className="input"
+                    value={fbSearch}
+                    onChange={e => setFbSearch(e.target.value)}
+                    placeholder="Cari umpan balik..."
+                    style={{ paddingLeft: '32px' }}
+                  />
+                </div>
+                <button className="btn" onClick={fetchFeedbacks} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
+                  <RefreshCw size={14} /> Refresh
+                </button>
+              </div>
+            </div>
+
+            {/* Bulk Actions for Feedbacks */}
+            {selectedFeedbackIds.length > 0 && (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(239,68,68,0.08)', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(239,68,68,0.2)', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', marginRight: 'auto' }}>
+                  Terpilih: <strong>{selectedFeedbackIds.length}</strong> umpan balik
+                </span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setSelectedFeedbackIds([])}
+                  style={{ padding: '6px 12px', fontSize: '12px', cursor: 'pointer', borderRadius: '6px' }}
+                >
+                  Batal Pilihan
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleBulkDeleteFeedbacks}
+                  style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Trash2 size={13} /> Hapus Terpilih
+                </button>
+              </div>
+            )}
+
+            <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Tanggal</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Pengirim (Email / User)</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>Pesan Umpan Balik</th>
+                    <th style={{ padding: '10px 12px', width: '40px', textAlign: 'left' }}>
+                      <input
+                        type="checkbox"
+                        checked={filteredFeedbacks.length > 0 && selectedFeedbackIds.length === filteredFeedbacks.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedFeedbackIds(filteredFeedbacks.map((f: any) => f.id));
+                          } else {
+                            setSelectedFeedbackIds([]);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
+                    {renderSortHeader('Tanggal', 'createdAt', fbSortField, fbSortOrder, handleFbSort, '180px')}
+                    {renderSortHeader('Pengirim (Email / User)', 'sender', fbSortField, fbSortOrder, handleFbSort, '220px')}
+                    {renderSortHeader('Pesan Umpan Balik', 'message', fbSortField, fbSortOrder, handleFbSort)}
+                    <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', width: '80px' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {feedbacks.map((f: any) => {
+                  {filteredFeedbacks.map((f: any) => {
                     let sender = f.userName || 'Anonim';
                     let cleanMsg = f.message;
                     const matches = f.message.match(/Feedback dari ([^:]+): "([\s\S]+)"/);
@@ -1124,8 +1397,23 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       sender = matches[1];
                       cleanMsg = matches[2];
                     }
+                    const isSelected = selectedFeedbackIds.includes(f.id);
                     return (
-                      <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)', background: isSelected ? 'rgba(59,130,246,0.04)' : 'transparent' }}>
+                        <td style={{ padding: '12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedFeedbackIds(prev => [...prev, f.id]);
+                              } else {
+                                setSelectedFeedbackIds(prev => prev.filter(id => id !== f.id));
+                              }
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
                         <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {new Date(f.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                         </td>
@@ -1137,12 +1425,29 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                         <td style={{ padding: '12px 16px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
                           {cleanMsg}
                         </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <button
+                            className="btn"
+                            onClick={() => handleDeleteSingleFeedback(f.id)}
+                            title="Hapus Umpan Balik"
+                            style={{ padding: '6px 10px', fontSize: '12px', color: '#ef4444', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
+                  {filteredFeedbacks.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        {fbSearch ? 'Tidak ada umpan balik yang cocok dengan pencarian.' : 'Belum ada umpan balik yang dikirimkan.'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
-            )}
+            </div>
           </div>
         </div>
       )}
