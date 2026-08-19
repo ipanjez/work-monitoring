@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { Task, CommentItem, getTaskComments } from '@/utils/taskUtils';
 import { useSession } from 'next-auth/react';
+import { useMaster } from '@/context/MasterContext';
+import { hasPermission } from '@/lib/permissions';
 
 interface QuickCommentModalProps {
   task: Task | null;
@@ -23,6 +25,9 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
   const [commentAuthor, setCommentAuthor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: session } = useSession();
+  const { roleConfig } = useMaster();
+  const userRole = (session?.user as any)?.role || 'GUEST';
+  const canUploadComment = hasPermission(roleConfig, 'upload_comment', userRole);
 
   useEffect(() => {
     if (task) {
@@ -33,6 +38,10 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
   }, [task]);
 
   const handleAddComment = async () => {
+    if (!canUploadComment) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengirim komentar.');
+      return;
+    }
     const finalAuthor = session?.user?.name || commentAuthor;
     if (!newComment.trim() || !finalAuthor.trim()) {
       toast.error('Nama dan komentar tidak boleh kosong');
@@ -111,34 +120,40 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-            <input
-              type="text"
-              className="input"
-              placeholder="Nama Anda..."
-              value={session?.user?.name || commentAuthor}
-              readOnly
-              style={{ fontSize: '13px', padding: '10px 12px', background: 'var(--surface-color)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
-            />
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <textarea
+          {canUploadComment ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <input
+                type="text"
                 className="input"
-                placeholder="Tulis komentar..."
-                value={newComment}
-                onChange={e => setNewComment(e.target.value)}
-                rows={3}
-                style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '10px 12px' }}
+                placeholder="Nama Anda..."
+                value={session?.user?.name || commentAuthor}
+                readOnly
+                style={{ fontSize: '13px', padding: '10px 12px', background: 'var(--surface-color)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
               />
-              <button
-                className="btn btn-primary"
-                onClick={handleAddComment}
-                disabled={isSubmitting || !newComment.trim() || !(session?.user?.name || commentAuthor).trim()}
-                style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Send size={18} />
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <textarea
+                  className="input"
+                  placeholder="Tulis komentar..."
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  rows={3}
+                  style={{ flex: 1, resize: 'none', fontSize: '13px', padding: '10px 12px' }}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={handleAddComment}
+                  disabled={isSubmitting || !newComment.trim() || !(session?.user?.name || commentAuthor).trim()}
+                  style={{ padding: '0 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              🔒 Anda tidak memiliki izin untuk menambahkan komentar baru.
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

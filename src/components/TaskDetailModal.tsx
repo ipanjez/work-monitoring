@@ -142,7 +142,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         toast.error('Gagal menghapus komentar');
         setLocalComments(localComments); // revert
       }
-    });
+    }, hasPermission(currentRoleConfig, 'upload_comment', userRole));
   };
 
 
@@ -252,7 +252,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     } finally {
       setIsSubmittingComment(false);
     }
-    });
+    }, hasPermission(currentRoleConfig, 'upload_comment', userRole));
   };
 
   const handleCopyTaskDetails = async () => {
@@ -787,7 +787,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {(hasPermission(roleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
+                          {(hasPermission(currentRoleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -805,7 +805,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 )}
               </div>
 
-              {(hasPermission(roleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
+              {(hasPermission(currentRoleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"
