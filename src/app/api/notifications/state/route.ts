@@ -15,12 +15,12 @@ export async function GET() {
       return NextResponse.json({ error: 'User ID missing' }, { status: 400 });
     }
 
-    let state = await prisma.userNotificationState.findUnique({
+    let state = await (prisma as any).userNotificationState.findUnique({
       where: { userId }
     });
 
     if (!state) {
-      state = await prisma.userNotificationState.create({
+      state = await (prisma as any).userNotificationState.create({
         data: {
           userId,
           readIds: '[]',
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { action, id, ids, soundMuted, clearedAt } = body;
 
-    let state = await prisma.userNotificationState.findUnique({
+    let state = await (prisma as any).userNotificationState.findUnique({
       where: { userId }
     });
 
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       newReadIds = newReadIds.slice(-200);
     }
 
-    const updated = await prisma.userNotificationState.upsert({
+    const updated = await (prisma as any).userNotificationState.upsert({
       where: { userId },
       update: {
         readIds: JSON.stringify(newReadIds),

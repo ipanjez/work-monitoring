@@ -232,7 +232,7 @@ h3 {
     overflow-x: auto !important;
     width: 100% !important;
     display: block !important;
-    WebkitOverflowScrolling: 'touch';
+    -webkit-overflow-scrolling: touch;
   }
 
   .hide-mobile {
