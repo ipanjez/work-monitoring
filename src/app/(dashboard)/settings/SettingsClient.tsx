@@ -50,8 +50,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
 
-  // Active Section Tracker State
-  const [activeSection, setActiveSection] = useState<string>('section-appearance');
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
 
   // General & Branding State
@@ -112,47 +110,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
   ];
 
-  // Dynamic Navigation Sections based on RBAC
-  const navSections = [
-    { id: 'section-appearance', label: 'Tampilan & Preferensi', icon: Palette, badge: null, visible: true },
-    { id: 'section-branding', label: 'Identitas & Branding', icon: Layout, badge: null, visible: canSystemConfig },
-    { id: 'section-master', label: 'Master Data Pekerjaan', icon: Tag, badge: `${categories.length + pics.length + statuses.length}`, visible: canMasterData },
-    { id: 'section-storage', label: 'Penyimpanan & File', icon: HardDrive, badge: null, visible: canSystemConfig },
-    { id: 'section-security', label: 'Keamanan & Sesi', icon: Clock, badge: null, visible: canSystemConfig },
-    { id: 'section-backup', label: 'Database & Backup', icon: Shield, badge: null, visible: canDatabaseBackup },
-  ].filter(s => s.visible);
 
-  // Real-time Scroll Spy Listener
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 140;
-      const visibleElements = navSections
-        .map(s => document.getElementById(s.id))
-        .filter(Boolean) as HTMLElement[];
-
-      for (let i = visibleElements.length - 1; i >= 0; i--) {
-        const el = visibleElements[i];
-        if (el && el.offsetTop <= scrollPosition) {
-          setActiveSection(el.id);
-          break;
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [navSections]);
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const yOffset = -80;
-      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-      setActiveSection(id);
-    }
-  };
 
   useEffect(() => {
     // 1. Initial Load from LocalStorage
@@ -884,10 +842,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '32px', maxWidth: '1180px', margin: '0 auto', width: '100%', alignItems: 'flex-start' }}>
-      {/* MAIN SETTINGS CONTENT (Continuous Vertical Scroll) */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '850px', margin: '0 auto', width: '100%' }}>
+      {/* Header */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
           <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
             Pengaturan Aplikasi
@@ -1429,73 +1385,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             </div>
           </section>
         )}
-      </div>
-
-      {/* STICKY ON-THIS-PAGE SIDEBAR NAVIGATION */}
-      <aside 
-        style={{ 
-          position: 'sticky', 
-          top: '84px', 
-          width: '260px', 
-          flexShrink: 0,
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '12px' 
-        }}
-      >
-        <div className="glass" style={{ padding: '16px', borderRadius: '14px' }}>
-          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Layers size={14} color="var(--accent-primary)" /> Navigasi Pengaturan
-          </div>
-
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {navSections.map(sec => {
-              const Icon = sec.icon;
-              const isActive = activeSection === sec.id;
-              return (
-                <button
-                  key={sec.id}
-                  type="button"
-                  onClick={() => scrollToSection(sec.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: isActive ? 'var(--accent-primary)' : 'transparent',
-                    color: isActive ? '#ffffff' : 'var(--text-primary)',
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icon size={15} style={{ opacity: isActive ? 1 : 0.7 }} />
-                    <span>{sec.label}</span>
-                  </div>
-                  {sec.badge && (
-                    <span style={{ 
-                      fontSize: '10.5px', 
-                      padding: '1px 6px', 
-                      borderRadius: '10px', 
-                      background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)', 
-                      color: isActive ? '#ffffff' : 'var(--text-secondary)', 
-                      fontWeight: 700 
-                    }}>
-                      {sec.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
 
       {/* Modal Croppers */}
       <AvatarCropperModal
