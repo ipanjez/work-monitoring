@@ -103,8 +103,8 @@ export default function GlobalAddButton() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  const userRole = (session?.user as any)?.role || 'VIEWER';
-  if (!hasPermission(roleConfig, 'manage_task', userRole) && !isGuest) {
+  const userRole = (session?.user as any)?.role || 'GUEST';
+  if (!hasPermission(roleConfig, 'manage_task', userRole)) {
     return null;
   }
 
@@ -641,8 +641,6 @@ export default function GlobalAddButton() {
       toast.error('Gagal membuat template Excel.');
     }
   };
-
-  if (userRole === 'GUEST' && !hasPermission(roleConfig, 'manage_task', userRole)) return null;
 
   return (
     <div

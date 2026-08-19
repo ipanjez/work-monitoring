@@ -174,9 +174,7 @@ export default function Sidebar() {
       { href: '/', label: 'Monitoring Board', icon: Kanban },
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ] : []),
-    ...(userRole !== 'GUEST' || hasPermission(roleConfig, 'view_detail', userRole) ? [
-      { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo }
-    ] : []),
+    { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
     { href: '/calendar', label: 'Kalender', icon: Calendar },
     { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
     { href: '/team', label: 'Manajemen Tim', icon: Users },

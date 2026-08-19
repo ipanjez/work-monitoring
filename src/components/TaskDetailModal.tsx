@@ -364,19 +364,19 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               }}>
                 {/* Left group: Primary action buttons */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {onDuplicate && (hasPermission(currentRoleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                  {onDuplicate && hasPermission(currentRoleConfig, 'manage_task', userRole) && (
                     <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDuplicate, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menduplikasi pekerjaan.')} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
                       <Copy size={13} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
                     </button>
                   )}
 
-                  {onEdit && (hasPermission(currentRoleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                  {onEdit && hasPermission(currentRoleConfig, 'manage_task', userRole) && (
                     <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onEdit, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengedit data pekerjaan.')} title="Edit Pekerjaan Ini">
                       <Edit size={13} style={{ marginRight: '4px' }} /> Edit
                     </button>
                   )}
 
-                  {onDelete && (hasPermission(currentRoleConfig, 'delete_task', userRole) || userRole === 'GUEST') && (
+                  {onDelete && hasPermission(currentRoleConfig, 'delete_task', userRole) && (
                     <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDelete, hasPermission(currentRoleConfig, 'delete_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menghapus pekerjaan.')} title="Hapus Pekerjaan">
                       <Trash2 size={13} style={{ marginRight: '4px' }} /> Hapus
                     </button>
@@ -787,7 +787,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {(hasPermission(currentRoleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
+                          {hasPermission(currentRoleConfig, 'upload_comment', userRole) && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -805,7 +805,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 )}
               </div>
 
-              {(hasPermission(currentRoleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
+              {hasPermission(currentRoleConfig, 'upload_comment', userRole) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"

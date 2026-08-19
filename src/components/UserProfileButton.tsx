@@ -228,7 +228,6 @@ export default function UserProfileButton() {
             </div>
           </div>
 
-          {currentRole !== 'GUEST' && (
             <Link
               href="/users/profile"
               onClick={() => setIsOpen(false)}
@@ -248,7 +247,6 @@ export default function UserProfileButton() {
               <User size={14} style={{ color: 'var(--text-secondary)' }} />
               Profil Saya
             </Link>
-          )}
 
           <Link
             href="/settings"
