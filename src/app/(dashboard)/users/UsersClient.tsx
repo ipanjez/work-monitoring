@@ -1069,13 +1069,17 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                                   delete newIcons[rk];
                                   const newColors = { ...(roleConfig.colors || {}) };
                                   delete newColors[rk];
-                                  const newPermissions = { ...roleConfig.permissions };
-                                  Object.keys(newPermissions).forEach(key => {
-                                    if (newPermissions[key]) {
-                                      newPermissions[key] = newPermissions[key].filter((r: string) => r !== rk);
-                                    }
+                                  const newPermissions = { ...(roleConfig.permissions || {}) };
+                                  Object.keys(newPermissions).forEach(permKey => {
+                                    newPermissions[permKey] = (newPermissions[permKey] || []).filter(roleKey => roleKey !== rk);
                                   });
-                                  setRoleConfig({ ...roleConfig, labels: newLabels, icons: newIcons, colors: newColors, permissions: newPermissions });
+                                  setRoleConfig({
+                                    ...roleConfig,
+                                    labels: newLabels,
+                                    icons: newIcons,
+                                    colors: newColors,
+                                    permissions: newPermissions
+                                  });
                                 }
                               }}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}

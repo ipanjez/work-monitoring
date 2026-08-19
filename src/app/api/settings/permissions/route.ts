@@ -15,9 +15,6 @@ export async function GET() {
     }
 
     const parsed = JSON.parse(setting.value);
-    
-
-
     return NextResponse.json(parsed);
   } catch (error: any) {
     console.error('Error fetching role_permissions:', error);
