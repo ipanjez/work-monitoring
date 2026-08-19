@@ -11,20 +11,15 @@ import Avatar from '@/components/Avatar';
 import { RoleIconRenderer } from '@/components/RoleBadge';
 
 export default function UserProfileButton() {
-  const { data: session, update } = useSession();
-  const { masterPicAvatars, masterColors } = useMaster();
+  const { data: session } = useSession();
+  const { masterPicAvatars, masterColors, roleConfig } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const [displayName, setDisplayName] = useState('');
   const [displayImage, setDisplayImage] = useState('');
-
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
-  }, []);
+  const [displayRole, setDisplayRole] = useState('');
 
   const loadUserData = () => {
     fetch('/api/users/profile')
@@ -32,6 +27,7 @@ export default function UserProfileButton() {
       .then(data => {
         if (data.name) setDisplayName(data.name);
         if (data.image) setDisplayImage(data.image);
+        if (data.role) setDisplayRole(data.role);
       })
       .catch(e => console.error(e));
   };
@@ -40,14 +36,6 @@ export default function UserProfileButton() {
     loadUserData();
     window.addEventListener('profileUpdated', loadUserData);
     return () => window.removeEventListener('profileUpdated', loadUserData);
-  }, []);
-
-  useEffect(() => {
-    const handleMasterUpdated = () => {
-      fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
-    };
-    window.addEventListener('masterUpdated', handleMasterUpdated);
-    return () => window.removeEventListener('masterUpdated', handleMasterUpdated);
   }, []);
 
   useEffect(() => {
@@ -64,7 +52,7 @@ export default function UserProfileButton() {
 
   if (!session?.user) return null;
 
-  const currentRole = (session.user as any).role || '';
+  const currentRole = displayRole || (session.user as any).role || '';
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 

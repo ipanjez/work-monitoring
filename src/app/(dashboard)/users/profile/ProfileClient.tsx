@@ -13,16 +13,16 @@ import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions
 
 export default function ProfileClient() {
   const { data: session, update } = useSession();
-  const { masterPicAvatars } = useMaster();
+  const { masterPicAvatars, roleConfig } = useMaster();
   const [loading, setLoading] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
 
   // Profile Form States
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileNpk, setProfileNpk] = useState('');
   const [profileImage, setProfileImage] = useState('');
+  const [profileRole, setProfileRole] = useState('');
   
   // Password States
   const [currentPassword, setCurrentPassword] = useState('');
@@ -31,13 +31,6 @@ export default function ProfileClient() {
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/settings/permissions')
-      .then(res => res.json())
-      .then(setRoleConfig)
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     // Fetch user profile from API
@@ -51,6 +44,7 @@ export default function ProfileClient() {
         if (data.email) setProfileEmail(data.email || '');
         if (data.npk) setProfileNpk(data.npk);
         if (data.image) setProfileImage(data.image);
+        if (data.role) setProfileRole(data.role);
       })
       .catch(e => {
         console.error(e);
@@ -176,7 +170,7 @@ export default function ProfileClient() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Foto Profil</h3>
-            <RoleBadge role={(session.user as any)?.role || 'MEMBER'} config={roleConfig} size="md" />
+            <RoleBadge role={profileRole || (session.user as any)?.role || ''} config={roleConfig} size="md" />
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', maxWidth: '400px' }}>
             Unggah foto profil personal Anda. Gunakan gambar berformat JPG/PNG dengan aspek rasio persegi (1:1) untuk tampilan optimal.
@@ -230,7 +224,7 @@ export default function ProfileClient() {
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
                   NPK (ID Pengguna)
                 </label>
-                <RoleBadge role={(session.user as any)?.role || 'MEMBER'} config={roleConfig} size="sm" />
+                <RoleBadge role={profileRole || (session.user as any)?.role || ''} config={roleConfig} size="sm" />
               </div>
               <input
                 type="text"
