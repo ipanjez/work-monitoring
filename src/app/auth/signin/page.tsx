@@ -87,26 +87,6 @@ function SignInContent() {
     }
   };
 
-  const handleGuestLogin = async () => {
-    setLoading(true);
-    const res = await signIn('credentials', {
-      npk: 'guest',
-      password: 'guest-password-999',
-      redirect: false,
-    });
-    if (res?.ok) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('dismissed_backup_reminder');
-      }
-      toast.success('Berhasil masuk sebagai Guest!');
-      router.push('/');
-      router.refresh();
-    } else {
-      toast.error('Gagal masuk sebagai Guest!');
-      setLoading(false);
-    }
-  };
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -297,36 +277,6 @@ function SignInContent() {
           </button>
         </form>
 
-        {/* Guest Login */}
-        <div style={{ marginTop: '-8px' }}>
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            disabled={loading}
-            className="btn btn-secondary"
-            style={{
-              width: '100%',
-              padding: '12px',
-              justifyContent: 'center',
-              gap: '8px',
-              border: '1px solid var(--accent-primary)',
-              color: 'var(--accent-primary)',
-              background: 'transparent',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '8px',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <User size={18} />
-            <span>Masuk sebagai Guest (Tamu)</span>
-          </button>
-        </div>
 
         {/* Sign up link */}
         <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>

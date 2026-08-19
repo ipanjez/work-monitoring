@@ -198,6 +198,7 @@ export default function SignUpPage() {
             >
               <option value="MEMBER">Member (Pengelola & Pelaksana Pekerjaan)</option>
               <option value="VIEWER">Viewer (Hanya Melihat & Monitoring)</option>
+              <option value="GUEST">Guest (Akses Terbatas & Read Only)</option>
             </select>
           </div>
 
