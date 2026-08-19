@@ -5,8 +5,10 @@ import {
   Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search,
   ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw,
   Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare,
-  Share2, Shield, HelpCircle, ExternalLink, Sparkles, ArrowUpDown, ArrowUp, ArrowDown
+  Share2, Shield, HelpCircle, ExternalLink, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, ShieldAlert
 } from 'lucide-react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { useMaster } from '@/context/MasterContext';
 import * as XLSX from 'xlsx';
@@ -50,9 +52,11 @@ const actionLabel: Record<string, string> = {
   DELETE_TASK: 'Hapus Task',
 };
 
-export default function UsersClient({ userRole = '' }: { userRole?: string }) {
+export default function UsersClient({ userRole: initialUserRole = '' }: { userRole?: string }) {
+  const { data: session } = useSession();
   const { masterPicAvatars, masterColors, roleConfig: masterRoleConfig } = useMaster();
   const { addActivityLog, notifications, markAsRead } = useNotifications();
+  const [profileRole, setProfileRole] = useState('');
   const [tab, setTab] = useState<Tab>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [requests, setRequests] = useState<ResetReq[]>([]);
@@ -93,10 +97,21 @@ export default function UsersClient({ userRole = '' }: { userRole?: string }) {
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState<PermissionFeatureDetail | null>(null);
 
   useEffect(() => {
+    fetch('/api/users/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.role) setProfileRole(data.role);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (masterRoleConfig && Object.keys(masterRoleConfig.labels || {}).length > 0) {
       setRoleConfig(masterRoleConfig);
     }
   }, [masterRoleConfig]);
+
+  const userRole = profileRole || (session?.user as any)?.role || initialUserRole;
 
   const canUserMgmt = hasPermission(roleConfig, 'user_management', userRole);
   const canSystemLogs = hasPermission(roleConfig, 'system_logs', userRole);
@@ -640,9 +655,31 @@ export default function UsersClient({ userRole = '' }: { userRole?: string }) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div id="users-tabs-container" className="no-scrollbar" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
-        {availableTabs.map(t => (
+      {availableTabs.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 24px',
+          background: 'var(--surface-color)',
+          borderRadius: '16px',
+          border: '1px solid var(--border-color)',
+          marginTop: '20px'
+        }}>
+          <ShieldAlert size={48} style={{ color: '#ef4444', margin: '0 auto 16px' }} />
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+            Akses Ditolak
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '460px', margin: '0 auto 20px' }}>
+            Role Anda saat ini tidak memiliki izin untuk mengakses menu Sistem User. Hubungi Administrator untuk memperbarui hak akses pada matriks role.
+          </p>
+          <Link href="/" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            Kembali ke Dashboard
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Tabs */}
+          <div id="users-tabs-container" className="no-scrollbar" style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
+            {availableTabs.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1638,6 +1675,8 @@ export default function UsersClient({ userRole = '' }: { userRole?: string }) {
             toast.success(`Ikon & warna role ${roleConfig.labels[key] || key} berhasil diperbarui! Jangan lupa simpan perubahan matriks.`);
           }}
         />
+      )}
+        </>
       )}
     </div>
   );
