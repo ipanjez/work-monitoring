@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, 
-  Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
-  Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, 
+  Users, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
+  Pencil, Camera, Clock, RotateCcw, 
   Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
@@ -50,8 +50,8 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
 
-  // Active Tab State
-  const [activeTab, setActiveTab] = useState<string>('appearance');
+  // Active Section Tracker State
+  const [activeSection, setActiveSection] = useState<string>('section-appearance');
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
 
   // General & Branding State
@@ -73,17 +73,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | string>(10);
   const [backupReminderDays, setBackupReminderDays] = useState<number | string>('');
   const [backupReminderMode, setBackupReminderMode] = useState<string>('0');
-
-  // Calendar State
-  const [calendarTimezone, setCalendarTimezone] = useState('Asia/Makassar');
-  const [calendarTzPreset, setCalendarTzPreset] = useState('Asia/Makassar');
-  const [customCalendarTz, setCustomCalendarTz] = useState('');
-  const [calendarToken, setCalendarToken] = useState('');
-  const [feedFilterPic, setFeedFilterPic] = useState('');
-  const [feedFilterCategory, setFeedFilterCategory] = useState('');
-  const [feedHideCompleted, setFeedHideCompleted] = useState(false);
-  const [isResettingToken, setIsResettingToken] = useState(false);
-  const [copiedCalendarFeed, setCopiedCalendarFeed] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Master Data State
@@ -123,60 +112,47 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     '#ec4899', '#f43f5e', '#64748b', '#71717a', '#737373'
   ];
 
-  const COMMON_TIMEZONES = [
-    {
-      group: '🇮🇩 Indonesia (WIB / WITA / WIT)',
-      options: [
-        { value: 'Asia/Makassar', label: '🕒 WITA (UTC+8) - Asia/Makassar (Bontang, Bali, Sulawesi, NTT/NTB, Kaltim/Kalsel)' },
-        { value: 'Asia/Jakarta', label: '🕒 WIB (UTC+7) - Asia/Jakarta (Jawa, Sumatera, Kalbar, Kalteng)' },
-        { value: 'Asia/Jayapura', label: '🕒 WIT (UTC+9) - Asia/Jayapura (Papua, Maluku)' },
-        { value: 'Asia/Pontianak', label: '🕒 WIB (UTC+7) - Asia/Pontianak (Kalimantan Barat)' },
-      ]
-    },
-    {
-      group: '🌏 Asia & ASEAN',
-      options: [
-        { value: 'Asia/Singapore', label: '🇸🇬 Singapore (UTC+8)' },
-        { value: 'Asia/Kuala_Lumpur', label: '🇲🇾 Kuala Lumpur (UTC+8)' },
-        { value: 'Asia/Bangkok', label: '🇹🇭 Bangkok (UTC+7)' },
-        { value: 'Asia/Tokyo', label: '🇯🇵 Tokyo / JST (UTC+9)' },
-        { value: 'Asia/Seoul', label: '🇰🇷 Seoul / KST (UTC+9)' },
-        { value: 'Asia/Hong_Kong', label: '🇭🇰 Hong Kong (UTC+8)' },
-        { value: 'Asia/Dubai', label: '🇦🇪 Dubai / GST (UTC+4)' },
-      ]
-    },
-    {
-      group: '🌐 Internasional / UTC',
-      options: [
-        { value: 'UTC', label: '🌍 UTC / GMT (Universal Coordinated Time)' },
-        { value: 'Europe/London', label: '🇬🇧 London / BST' },
-        { value: 'America/New_York', label: '🇺🇸 New York / EST (UTC-5)' },
-        { value: 'America/Los_Angeles', label: '🇺🇸 Los Angeles / PST (UTC-8)' },
-        { value: 'Australia/Perth', label: '🇦🇺 Perth / AWST (UTC+8)' },
-        { value: 'Australia/Sydney', label: '🇦🇺 Sydney / AEST (UTC+10)' },
-      ]
-    }
-  ];
+  // Dynamic Navigation Sections based on RBAC
+  const navSections = [
+    { id: 'section-appearance', label: 'Tampilan & Preferensi', icon: Palette, badge: null, visible: true },
+    { id: 'section-branding', label: 'Identitas & Branding', icon: Layout, badge: null, visible: canSystemConfig },
+    { id: 'section-master', label: 'Master Data Pekerjaan', icon: Tag, badge: `${categories.length + pics.length + statuses.length}`, visible: canMasterData },
+    { id: 'section-storage', label: 'Penyimpanan & File', icon: HardDrive, badge: null, visible: canSystemConfig },
+    { id: 'section-security', label: 'Keamanan & Sesi', icon: Clock, badge: null, visible: canSystemConfig },
+    { id: 'section-backup', label: 'Database & Backup', icon: Shield, badge: null, visible: canDatabaseBackup },
+  ].filter(s => s.visible);
 
-  // Defined Settings Tabs according to RBAC permissions
-  const availableTabs = [
-    { id: 'appearance', label: 'Tampilan & Preferensi', icon: Palette, badge: null, visible: true },
-    { id: 'branding', label: 'Identitas & Branding', icon: Layout, badge: null, visible: canSystemConfig },
-    { id: 'master', label: 'Master Data Pekerjaan', icon: Tag, badge: `${categories.length + pics.length + statuses.length}`, visible: canMasterData },
-    { id: 'storage', label: 'Penyimpanan & File', icon: HardDrive, badge: null, visible: canSystemConfig },
-    { id: 'security', label: 'Keamanan & Sesi', icon: Clock, badge: null, visible: canSystemConfig },
-    { id: 'calendar', label: 'Kalender & Timezone', icon: CalendarDays, badge: null, visible: canSystemConfig },
-    { id: 'backup', label: 'Database & Backup', icon: Shield, badge: null, visible: canDatabaseBackup },
-  ].filter(t => t.visible);
-
-  // Auto-switch to available tab if current active tab is not visible
+  // Real-time Scroll Spy Listener
   useEffect(() => {
-    if (!availableTabs.some(t => t.id === activeTab)) {
-      if (availableTabs.length > 0) {
-        setActiveTab(availableTabs[0].id);
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 140;
+      const visibleElements = navSections
+        .map(s => document.getElementById(s.id))
+        .filter(Boolean) as HTMLElement[];
+
+      for (let i = visibleElements.length - 1; i >= 0; i--) {
+        const el = visibleElements[i];
+        if (el && el.offsetTop <= scrollPosition) {
+          setActiveSection(el.id);
+          break;
+        }
       }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [navSections]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const yOffset = -80;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveSection(id);
     }
-  }, [canMasterData, canSystemConfig, canDatabaseBackup, availableTabs, activeTab]);
+  };
 
   useEffect(() => {
     // 1. Initial Load from LocalStorage
@@ -241,18 +217,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           setBackupReminderMode('custom');
         }
       }
-
-      const storedTz = localStorage.getItem('calendar_timezone');
-      if (storedTz) {
-        setCalendarTimezone(storedTz);
-        const isPreset = COMMON_TIMEZONES.some(g => g.options.some(o => o.value === storedTz));
-        if (isPreset) {
-          setCalendarTzPreset(storedTz);
-        } else {
-          setCalendarTzPreset('custom');
-          setCustomCalendarTz(storedTz);
-        }
-      }
     } catch (e) {
       console.error('Error loading settings from localStorage:', e);
     }
@@ -288,29 +252,10 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             setBackupReminderMode('custom');
           }
         }
-
-        if (data.calendar_timezone) {
-          setCalendarTimezone(data.calendar_timezone);
-          const isPreset = COMMON_TIMEZONES.some(g => g.options.some(o => o.value === data.calendar_timezone));
-          if (isPreset) {
-            setCalendarTzPreset(data.calendar_timezone);
-          } else {
-            setCalendarTzPreset('custom');
-            setCustomCalendarTz(data.calendar_timezone);
-          }
-        }
       })
       .catch(err => console.error('Failed to fetch settings from API:', err));
 
-    // 3. Fetch calendar token
-    fetch('/api/calendar/token')
-      .then(res => res.json())
-      .then(data => {
-        if (data.token) setCalendarToken(data.token);
-      })
-      .catch(() => {});
-
-    // 4. Fetch storage usage
+    // 3. Fetch storage usage
     fetchStorageUsage();
   }, []);
 
@@ -356,9 +301,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('session_timeout', String(sessionTimeoutMinutes));
     localStorage.setItem('session_timeout_hours', String(sessionTimeoutHours));
 
-    const finalTz = calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset;
-    localStorage.setItem('calendar_timezone', finalTz);
-
     const finalReminderDays = backupReminderMode === 'custom' 
       ? (Number(backupReminderDays) || 7) 
       : Number(backupReminderMode);
@@ -388,7 +330,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           session_timeout_hours: Number(sessionTimeoutHours) || 24,
           session_timeout: Number(sessionTimeoutMinutes) || 10,
           backup_reminder_days: finalReminderDays,
-          calendar_timezone: finalTz
         })
       });
       
@@ -409,7 +350,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       broadcastSettingsChange('master_status_progress', masterStatusProgress);
       broadcastSettingsChange('master_pic_avatars', masterPicAvatars);
       broadcastSettingsChange('session_timeout', Number(sessionTimeoutMinutes) || 10);
-      broadcastSettingsChange('calendar_timezone', finalTz);
 
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
@@ -944,77 +884,28 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '980px', margin: '0 auto', width: '100%' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
-          Pengaturan Aplikasi
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
-          Kelola preferensi antarmuka pengguna, data master dropdown, penyimpanan file, dan pemeliharaan sistem.
-        </p>
-      </div>
-
-      {/* Success Notification */}
-      {savedSuccess && (
-        <div style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '10px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px' }}>
-          <Check size={18} /> Pengaturan berhasil disimpan dan disinkronkan ke seluruh tab!
+    <div style={{ display: 'flex', gap: '32px', maxWidth: '1180px', margin: '0 auto', width: '100%', alignItems: 'flex-start' }}>
+      {/* MAIN SETTINGS CONTENT (Continuous Vertical Scroll) */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>
+            Pengaturan Aplikasi
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', margin: 0 }}>
+            Kelola preferensi antarmuka pengguna, data master dropdown, penyimpanan file, dan pemeliharaan sistem.
+          </p>
         </div>
-      )}
 
-      {/* Modern Navigation Tabs */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          gap: '6px', 
-          borderBottom: '1px solid var(--border-color)', 
-          paddingBottom: '2px', 
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      >
-        {availableTabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 16px',
-                borderRadius: '8px 8px 0 0',
-                border: 'none',
-                borderBottom: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                background: isActive ? 'var(--surface-color)' : 'transparent',
-                color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: '13.5px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Icon size={16} />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '10px', background: isActive ? 'var(--accent-primary)' : 'var(--input-bg)', color: isActive ? 'white' : 'var(--text-secondary)', fontWeight: 700 }}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+        {/* Success Notification */}
+        {savedSuccess && (
+          <div style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', borderRadius: '10px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px' }}>
+            <Check size={18} /> Pengaturan berhasil disimpan dan disinkronkan ke seluruh tab!
+          </div>
+        )}
 
-      {/* TAB CONTENT AREA */}
-
-      {/* 1. Appearance & Theme Tab */}
-      {activeTab === 'appearance' && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* SECTION 1: Appearance & Theme */}
+        <section id="section-appearance" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
           <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Palette size={18} color="var(--accent-primary)" /> Tampilan & Preferensi Pengguna
@@ -1114,603 +1005,497 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               <Maximize size={16} /> Aktifkan Mode Fokus
             </button>
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* 2. App Identity & Branding Tab */}
-      {activeTab === 'branding' && canSystemConfig && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layout size={18} color="var(--accent-primary)" /> Identitas Aplikasi & Branding Departemen
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Ubah nama sistem, subtitle departemen, serta logo yang tampil di header dan laporan PDF/Excel.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Aplikasi</label>
-              <input
-                type="text"
-                value={appName}
-                onChange={e => setAppName(e.target.value)}
-                className="input"
-                placeholder="DeptMonitor"
-              />
+        {/* SECTION 2: App Identity & Branding */}
+        {canSystemConfig && (
+          <section id="section-branding" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layout size={18} color="var(--accent-primary)" /> Identitas Aplikasi & Branding Departemen
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Ubah nama sistem, subtitle departemen, serta logo yang tampil di header dan laporan PDF/Excel.
+              </p>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Departemen / Sub-Unit</label>
-              <input
-                type="text"
-                value={deptName}
-                onChange={e => setDeptName(e.target.value)}
-                className="input"
-                placeholder="Contoh: MRK atau Divisi TI & Sistem Informasi"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Logo Aplikasi</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {appLogo ? <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Layout size={24} color="var(--text-secondary)" />}
-              </div>
-              <button className="btn btn-secondary" onClick={() => setIsAppLogoCropperOpen(true)}>
-                <Camera size={16} /> Ubah Logo
-              </button>
-              {appLogo && (
-                <button className="btn btn-danger" onClick={() => setAppLogo('')} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
-                  Hapus Logo
-                </button>
-              )}
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              Format gambar persegi (1:1) berukuran minimal 128x128 pixel untuk hasil tampilan tajam di kop laporan.
-            </p>
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-            <button onClick={(e) => handleSaveSettings(e as any)} className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
-              <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Identitas Aplikasi'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Master Data Pekerjaan Tab */}
-      {activeTab === 'master' && canMasterData && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Tag size={18} color="var(--accent-primary)" /> Master Opsi Data Pekerjaan
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Kelola daftar pilihan dropdown yang muncul saat pembuatan tugas baru dan filter monitoring.
-            </p>
-          </div>
-
-          {/* Sub-Tabs for Master Data Items */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {[
-              { id: 'cat' as ListType, label: 'Kategori Agenda', count: categories.length, icon: Tag },
-              { id: 'pic' as ListType, label: 'Master PIC & Personil', count: pics.length, icon: Users },
-              { id: 'status' as ListType, label: 'Status & Progres %', count: statuses.length, icon: Tag },
-              { id: 'priority' as ListType, label: 'Tingkat Prioritas', count: priorities.length, icon: Tag },
-              { id: 'location' as ListType, label: 'Lokasi & Ruang Rapat', count: locations.length, icon: MapPin },
-            ].map(sub => {
-              const isSubActive = activeMasterSubTab === sub.id;
-              const SubIcon = sub.icon;
-              return (
-                <button
-                  key={sub.id}
-                  onClick={() => setActiveMasterSubTab(sub.id)}
-                  className={`btn ${isSubActive ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-                >
-                  <SubIcon size={14} /> {sub.label} <span style={{ opacity: 0.8, fontWeight: 700 }}>({sub.count})</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sub Tab Content */}
-          {activeMasterSubTab === 'cat' && renderListEditor(
-            "Master Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
-            <Tag size={18} color="var(--accent-primary)" />,
-            "Pilihan kategori agenda/pekerjaan yang muncul di dropdown dan filter sistem."
-          )}
-
-          {activeMasterSubTab === 'pic' && renderListEditor(
-            "Master PIC & Personil", 'pic', pics, newPicInput, setNewPicInput,
-            <Users size={18} color="var(--accent-primary)" />,
-            "Daftar nama penanggung jawab (PIC) yang muncul pada form tugas dan penugasan tim."
-          )}
-
-          {activeMasterSubTab === 'status' && renderListEditor(
-            "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
-            <Tag size={18} color="var(--accent-primary)" />,
-            "Kolom status pada Kanban Board dan alur progres tahapan pekerjaan."
-          )}
-
-          {activeMasterSubTab === 'priority' && renderListEditor(
-            "Master Tingkat Prioritas", 'priority', priorities, newPriorityInput, setNewPriorityInput,
-            <Tag size={18} color="var(--accent-primary)" />,
-            "Tingkat urgensi pekerjaan untuk klasifikasi matriks risiko dan filter."
-          )}
-
-          {activeMasterSubTab === 'location' && renderListEditor(
-            "Master Lokasi & Ruang Rapat", 'location', locations, newLocationInput, setNewLocationInput,
-            <MapPin size={18} color="var(--accent-primary)" />,
-            "Daftar nama ruang rapat, gedung, atau link Zoom meeting untuk opsi auto-complete form pekerjaan."
-          )}
-        </div>
-      )}
-
-      {/* 4. Storage & Files Tab */}
-      {activeTab === 'storage' && canSystemConfig && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <HardDrive size={18} color="var(--accent-primary)" /> Penyimpanan & Batas Unggah File
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Konfigurasi batas kapasitas file lampiran yang langsung disinkronkan secara <em>real-time</em> ke seluruh form upload.
-            </p>
-          </div>
-
-          <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Maksimal Ukuran per File Lampiran (MB) *
-                </label>
-                <input
-                  type="number"
-                  className="input"
-                  value={maxFileSizeMb}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
-                  placeholder="25"
-                  min="1"
-                  required
-                />
-                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                  Batas per satu file dokumen/lampiran yang diupload PIC.
-                </span>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Maksimal Total Ukuran File per Pekerjaan (MB)
-                </label>
-                <input
-                  type="number"
-                  className="input"
-                  value={maxTaskFilesSizeMb}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
-                  placeholder="100"
-                  min="1"
-                />
-                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                  Akumulasi total seluruh file lampiran pada satu tugas pekerjaan.
-                </span>
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '6px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Kapasitas Maksimal Storage Keseluruhan Aplikasi (MB)
-              </label>
-              <input
-                type="number"
-                className="input"
-                value={maxTotalStorageMb}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTotalStorageMb(e.target.value)}
-                placeholder="5000"
-                min="1"
-                style={{ maxWidth: '300px' }}
-              />
-
-              {/* Live Storage Progress Bar */}
-              <div style={{ marginTop: '16px', background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', marginBottom: '8px', color: 'var(--text-primary)', fontWeight: 600, flexWrap: 'wrap', gap: '8px' }}>
-                  <span>
-                    {isLoadingStorage ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '12.5px', fontWeight: 500 }}>
-                        <Loader2 size={14} className="animate-spin" /> Menghitung ukuran penyimpanan...
-                      </span>
-                    ) : (
-                      <span>
-                        Penyimpanan Terpakai: <strong style={{ color: 'var(--accent-primary)' }}>{storageUsedMb.toFixed(2)} MB</strong>
-                        {storageUsedMb === 0 && (
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '6px' }}>
-                            (Belum ada file lampiran)
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Kapasitas: {maxTotalStorageMb} MB</span>
-                    <button
-                      type="button"
-                      onClick={fetchStorageUsage}
-                      disabled={isLoadingStorage}
-                      className="btn btn-secondary"
-                      style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
-                      title="Hitung Ulang Penggunaan Storage"
-                    >
-                      <RefreshCw size={11} className={isLoadingStorage ? 'animate-spin' : ''} /> Hitung Ulang
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                  {isLoadingStorage ? (
-                    <div style={{
-                      height: '100%',
-                      width: '100%',
-                      background: 'linear-gradient(90deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.8) 50%, rgba(59,130,246,0.2) 100%)',
-                      backgroundSize: '200% 100%',
-                      animation: 'pulse 1.5s infinite'
-                    }} />
-                  ) : (
-                    <div style={{
-                      height: '100%',
-                      background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
-                      width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
-                      transition: 'width 0.3s'
-                    }} />
-                  )}
-                </div>
-
-                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
-                  {isLoadingStorage ? (
-                    'Sedang memeriksa seluruh direktori file lampiran...'
-                  ) : (
-                    <>Sisa kapasitas penyimpanan yang tersedia: <strong style={{ color: 'var(--text-primary)' }}>{Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB</strong></>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
-                <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Konfigurasi Storage'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* 5. Security & Session Tab */}
-      {activeTab === 'security' && canSystemConfig && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={18} color="var(--accent-primary)" /> Keamanan & Batas Waktu Sesi
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Atur durasi kedaluwarsa login otomatis dan pengingat keamanan akun.
-            </p>
-          </div>
-
-          <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Batas Waktu Sesi Login Maksimal (Token Expiration)
-              </label>
-              <select
-                className="input"
-                value={sessionTimeoutHours}
-                onChange={(e) => setSessionTimeoutHours(e.target.value)}
-                style={{ maxWidth: '320px' }}
-              >
-                <option value={1}>1 Jam</option>
-                <option value={12}>12 Jam</option>
-                <option value={24}>24 Jam (1 Hari) - Rekomendasi</option>
-                <option value={168}>7 Hari (1 Minggu)</option>
-                <option value={720}>30 Hari (1 Bulan)</option>
-              </select>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Batas durasi sesi login sebelum token kedaluwarsa dan pengguna diminta masuk kembali.
-              </p>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Waktu Sisa Sesi Inaktif / Idle Logout (Menit)
-              </label>
-              <input
-                type="number"
-                className="input"
-                value={sessionTimeoutMinutes}
-                onChange={(e) => setSessionTimeoutMinutes(e.target.value)}
-                min="1"
-                max="120"
-                placeholder="10"
-                style={{ width: '140px' }}
-              />
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Jeda waktu tanpa aktivitas (mouse, keyboard) sebelum sistem otomatis keluar demi keamanan.
-              </p>
-            </div>
-
-            {/* Session Info Card */}
-            {session?.user && (session.user as any).loginAt && (
-              <div style={{ padding: '14px', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>Informasi Sesi Anda Saat Ini:</strong>
-                <div>Waktu Login: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}</div>
-              </div>
-            )}
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
-                <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan Keamanan'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* 6. Calendar & Timezone Tab */}
-      {activeTab === 'calendar' && canSystemConfig && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarDays size={18} color="#4285F4" /> Sinkronisasi Kalender & Zona Waktu
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Integrasikan jadwal tugas ke Google Calendar, Outlook, atau Apple Calendar secara otomatis via feed iCal.
-            </p>
-          </div>
-
-          {/* Timezone Configuration */}
-          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              <Clock size={15} color="var(--accent-primary)" /> Zona Waktu Acuan Sistem (Timezone)
-            </label>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-              Basis zona waktu untuk jam kegiatan di kalender departemen.
-            </p>
-
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
-              <select
-                className="input"
-                style={{ width: 'auto', minWidth: '320px', fontWeight: 500 }}
-                value={calendarTzPreset}
-                onChange={e => {
-                  const val = e.target.value;
-                  setCalendarTzPreset(val);
-                  if (val !== 'custom') setCalendarTimezone(val);
-                }}
-              >
-                {COMMON_TIMEZONES.map(group => (
-                  <optgroup key={group.group} label={group.group}>
-                    {group.options.map(opt => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-                <optgroup label="⚙️ Kustom Lainnya">
-                  <option value="custom">✍️ Ketik Kode Zona Waktu IANA Manual...</option>
-                </optgroup>
-              </select>
-
-              {calendarTzPreset === 'custom' && (
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Aplikasi</label>
                 <input
                   type="text"
+                  value={appName}
+                  onChange={e => setAppName(e.target.value)}
                   className="input"
-                  value={customCalendarTz}
-                  onChange={e => {
-                    setCustomCalendarTz(e.target.value);
-                    setCalendarTimezone(e.target.value.trim());
-                  }}
-                  style={{ width: '200px' }}
-                  placeholder="Contoh: Asia/Bangkok"
-                  autoFocus
+                  placeholder="DeptMonitor"
                 />
-              )}
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Nama Departemen / Sub-Unit</label>
+                <input
+                  type="text"
+                  value={deptName}
+                  onChange={e => setDeptName(e.target.value)}
+                  className="input"
+                  placeholder="Contoh: MRK atau Divisi TI & Sistem Informasi"
+                />
+              </div>
+            </div>
 
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={(e) => handleSaveSettings(e as any)} 
-                disabled={isSavingSettings}
-                style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Save size={14} /> Simpan Zona Waktu
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Logo Aplikasi</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {appLogo ? <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Layout size={24} color="var(--text-secondary)" />}
+                </div>
+                <button className="btn btn-secondary" onClick={() => setIsAppLogoCropperOpen(true)}>
+                  <Camera size={16} /> Ubah Logo
+                </button>
+                {appLogo && (
+                  <button className="btn btn-danger" onClick={() => setAppLogo('')} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
+                    Hapus Logo
+                  </button>
+                )}
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                Format gambar persegi (1:1) berukuran minimal 128x128 pixel untuk hasil tampilan tajam di kop laporan.
+              </p>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={(e) => handleSaveSettings(e as any)} className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+                <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Identitas Aplikasi'}
               </button>
             </div>
-            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              Zona aktif: <strong style={{ color: 'var(--accent-primary)' }}>{calendarTzPreset === 'custom' ? (customCalendarTz.trim() || 'Asia/Makassar') : calendarTzPreset}</strong>
-            </span>
-          </div>
+          </section>
+        )}
 
-          {/* Feed URL & Action Links */}
-          {(() => {
-            let computedFeedUrl = '';
-            if (typeof window !== 'undefined' && calendarToken) {
-              const params = new URLSearchParams();
-              params.set('token', calendarToken);
-              if (feedFilterPic) params.set('pic', feedFilterPic);
-              if (feedFilterCategory) params.set('kategori', feedFilterCategory);
-              if (feedHideCompleted) params.set('hideCompleted', 'true');
-              computedFeedUrl = `${window.location.origin}/calendar.ics?${params.toString()}`;
-            }
+        {/* SECTION 3: Master Data Pekerjaan */}
+        {canMasterData && (
+          <section id="section-master" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tag size={18} color="var(--accent-primary)" /> Master Opsi Data Pekerjaan
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Kelola daftar pilihan dropdown yang muncul saat pembuatan tugas baru dan filter monitoring.
+              </p>
+            </div>
 
-            const webcalUrl = computedFeedUrl ? computedFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
-            const gcalDirectUrl = computedFeedUrl ? `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcalUrl || computedFeedUrl)}` : '';
-
-            return (
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-                  URL Feed Kalender (.ics)
-                </label>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <input
-                    type="text"
-                    readOnly
-                    className="input"
-                    value={computedFeedUrl || 'Memuat URL kalender...'}
-                    style={{ flex: 1, minWidth: '260px', fontFamily: 'monospace', fontSize: '12px', background: 'var(--input-bg)' }}
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                  />
+            {/* Sub-Tabs for Master Data Items */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'cat' as ListType, label: 'Kategori Agenda', count: categories.length, icon: Tag },
+                { id: 'pic' as ListType, label: 'Master PIC & Personil', count: pics.length, icon: Users },
+                { id: 'status' as ListType, label: 'Status & Progres %', count: statuses.length, icon: Tag },
+                { id: 'priority' as ListType, label: 'Tingkat Prioritas', count: priorities.length, icon: Tag },
+                { id: 'location' as ListType, label: 'Lokasi & Ruang Rapat', count: locations.length, icon: MapPin },
+              ].map(sub => {
+                const isSubActive = activeMasterSubTab === sub.id;
+                const SubIcon = sub.icon;
+                return (
                   <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                    onClick={async () => {
-                      if (!computedFeedUrl) return;
-                      await navigator.clipboard.writeText(computedFeedUrl);
-                      setCopiedCalendarFeed(true);
-                      setTimeout(() => setCopiedCalendarFeed(false), 2500);
-                      toast.success('URL Kalender disalin ke clipboard!');
-                    }}
+                    key={sub.id}
+                    onClick={() => setActiveMasterSubTab(sub.id)}
+                    className={`btn ${isSubActive ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
                   >
-                    {copiedCalendarFeed ? <Check size={16} /> : <Copy size={16} />}
-                    {copiedCalendarFeed ? 'Tersalin!' : 'Salin URL'}
+                    <SubIcon size={14} /> {sub.label} <span style={{ opacity: 0.8, fontWeight: 700 }}>({sub.count})</span>
                   </button>
-                </div>
+                );
+              })}
+            </div>
 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <a
-                    href={gcalDirectUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-secondary"
-                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', textDecoration: 'none' }}
-                  >
-                    <ExternalLink size={14} color="#4285F4" /> Tambah ke Google Calendar
-                  </a>
-                  <a
-                    href={webcalUrl || '#'}
-                    className="btn btn-secondary"
-                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', textDecoration: 'none' }}
-                  >
-                    <Globe size={14} color="var(--accent-primary)" /> Buka di Outlook / Apple iCal
-                  </a>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    disabled={isResettingToken}
-                    style={{ padding: '8px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginLeft: 'auto' }}
-                    onClick={async () => {
-                      if (!confirm('Peringatan: Membuat ulang token akan membatalkan seluruh link sinkronisasi kalender yang sudah terpasang sebelumnya di Google Calendar / Outlook seluruh pengguna.\n\nApakah Anda yakin ingin membuat token baru?')) return;
-                      setIsResettingToken(true);
-                      try {
-                        const res = await fetch('/api/calendar/token', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.token) {
-                          setCalendarToken(data.token);
-                          toast.success('Token kalender berhasil di-reset!');
-                        } else {
-                          toast.error(data.error || 'Gagal mereset token');
-                        }
-                      } catch {
-                        toast.error('Terjadi kesalahan jaringan');
-                      } finally {
-                        setIsResettingToken(false);
-                      }
-                    }}
-                  >
-                    <RotateCcw size={14} /> {isResettingToken ? 'Mereset...' : 'Reset Token'}
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
+            {/* Sub Tab Content */}
+            {activeMasterSubTab === 'cat' && renderListEditor(
+              "Master Kategori Pekerjaan", 'cat', categories, newCatInput, setNewCatInput,
+              <Tag size={18} color="var(--accent-primary)" />,
+              "Pilihan kategori agenda/pekerjaan yang muncul di dropdown dan filter sistem."
+            )}
 
-      {/* 7. Database Backup & Maintenance Tab */}
-      {activeTab === 'backup' && canDatabaseBackup && (
-        <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Shield size={18} color="var(--success)" /> Cadangan & Pemeliharaan Database
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-              Unduh cadangan data pekerjaan secara berkala atau pulihkan data dari file arsip cadangan sebelumnya.
-            </p>
-          </div>
+            {activeMasterSubTab === 'pic' && renderListEditor(
+              "Master PIC & Personil", 'pic', pics, newPicInput, setNewPicInput,
+              <Users size={18} color="var(--accent-primary)" />,
+              "Daftar nama penanggung jawab (PIC) yang muncul pada form tugas dan penugasan tim."
+            )}
 
-          {/* Backup Reminder Settings */}
-          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-            <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
-              Jadwal Pengingat Cadangan Otomatis
-            </label>
-            
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
-              <select
-                className="input"
-                style={{ width: 'auto', minWidth: '220px', fontWeight: 500 }}
-                value={backupReminderMode}
-                onChange={e => {
-                  const val = e.target.value;
-                  setBackupReminderMode(val);
-                  if (val === 'custom') {
-                    if (['0', '-1', ''].includes(String(backupReminderDays))) {
-                      setBackupReminderDays(5);
-                    }
-                  } else {
-                    setBackupReminderDays(Number(val));
-                  }
-                }}
-              >
-                <option value="0">❌ Nonaktif (Tanpa pengingat)</option>
-                <option value="-1">🔔 Setiap Kali Login</option>
-                <option value="1">⏱️ Setiap 1 Hari</option>
-                <option value="3">⏱️ Setiap 3 Hari</option>
-                <option value="7">⏱️ Setiap 7 Hari (1 Minggu) - Rekomendasi</option>
-                <option value="14">⏱️ Setiap 14 Hari (2 Minggu)</option>
-                <option value="30">⏱️ Setiap 30 Hari (1 Bulan)</option>
-                <option value="custom">⚙️ Kustom (Isi jumlah hari)</option>
-              </select>
+            {activeMasterSubTab === 'status' && renderListEditor(
+              "Master Status Pekerjaan", 'status', statuses, newStatusInput, setNewStatusInput,
+              <Tag size={18} color="var(--accent-primary)" />,
+              "Kolom status pada Kanban Board dan alur progres tahapan pekerjaan."
+            )}
 
-              {backupReminderMode === 'custom' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {activeMasterSubTab === 'priority' && renderListEditor(
+              "Master Tingkat Prioritas", 'priority', priorities, newPriorityInput, setNewPriorityInput,
+              <Tag size={18} color="var(--accent-primary)" />,
+              "Tingkat urgensi pekerjaan untuk klasifikasi matriks risiko dan filter."
+            )}
+
+            {activeMasterSubTab === 'location' && renderListEditor(
+              "Master Lokasi & Ruang Rapat", 'location', locations, newLocationInput, setNewLocationInput,
+              <MapPin size={18} color="var(--accent-primary)" />,
+              "Daftar nama ruang rapat, gedung, atau link Zoom meeting untuk opsi auto-complete form pekerjaan."
+            )}
+          </section>
+        )}
+
+        {/* SECTION 4: Storage & Files */}
+        {canSystemConfig && (
+          <section id="section-storage" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <HardDrive size={18} color="var(--accent-primary)" /> Penyimpanan & Batas Unggah File
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Konfigurasi batas kapasitas file lampiran yang langsung disinkronkan secara <em>real-time</em> ke seluruh form upload.
+              </p>
+            </div>
+
+            <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Maksimal Ukuran per File Lampiran (MB) *
+                  </label>
                   <input
                     type="number"
                     className="input"
-                    value={backupReminderDays}
-                    onChange={e => setBackupReminderDays(e.target.value)}
+                    value={maxFileSizeMb}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxFileSizeMb(e.target.value)}
+                    placeholder="25"
                     min="1"
-                    style={{ width: '90px' }}
-                    placeholder="Hari"
-                    autoFocus
+                    required
                   />
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Hari</span>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                    Batas per satu file dokumen/lampiran yang diupload PIC.
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Maksimal Total Ukuran File per Pekerjaan (MB)
+                  </label>
+                  <input
+                    type="number"
+                    className="input"
+                    value={maxTaskFilesSizeMb}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTaskFilesSizeMb(e.target.value)}
+                    placeholder="100"
+                    min="1"
+                  />
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                    Akumulasi total seluruh file lampiran pada satu tugas pekerjaan.
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '6px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Kapasitas Maksimal Storage Keseluruhan Aplikasi (MB)
+                </label>
+                <input
+                  type="number"
+                  className="input"
+                  value={maxTotalStorageMb}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxTotalStorageMb(e.target.value)}
+                  placeholder="5000"
+                  min="1"
+                  style={{ maxWidth: '300px' }}
+                />
+
+                {/* Live Storage Progress Bar */}
+                <div style={{ marginTop: '16px', background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', marginBottom: '8px', color: 'var(--text-primary)', fontWeight: 600, flexWrap: 'wrap', gap: '8px' }}>
+                    <span>
+                      {isLoadingStorage ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '12.5px', fontWeight: 500 }}>
+                          <Loader2 size={14} className="animate-spin" /> Menghitung ukuran penyimpanan...
+                        </span>
+                      ) : (
+                        <span>
+                          Penyimpanan Terpakai: <strong style={{ color: 'var(--accent-primary)' }}>{storageUsedMb.toFixed(2)} MB</strong>
+                          {storageUsedMb === 0 && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '6px' }}>
+                              (Belum ada file lampiran)
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Kapasitas: {maxTotalStorageMb} MB</span>
+                      <button
+                        type="button"
+                        onClick={fetchStorageUsage}
+                        disabled={isLoadingStorage}
+                        className="btn btn-secondary"
+                        style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
+                        title="Hitung Ulang Penggunaan Storage"
+                      >
+                        <RefreshCw size={11} className={isLoadingStorage ? 'animate-spin' : ''} /> Hitung Ulang
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                    {isLoadingStorage ? (
+                      <div style={{
+                        height: '100%',
+                        width: '100%',
+                        background: 'linear-gradient(90deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.8) 50%, rgba(59,130,246,0.2) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'pulse 1.5s infinite'
+                      }} />
+                    ) : (
+                      <div style={{
+                        height: '100%',
+                        background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
+                        width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
+                        transition: 'width 0.3s'
+                      }} />
+                    )}
+                  </div>
+
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
+                    {isLoadingStorage ? (
+                      'Sedang memeriksa seluruh direktori file lampiran...'
+                    ) : (
+                      <>Sisa kapasitas penyimpanan yang tersedia: <strong style={{ color: 'var(--text-primary)' }}>{Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB</strong></>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+                  <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Konfigurasi Storage'}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* SECTION 5: Security & Session */}
+        {canSystemConfig && (
+          <section id="section-security" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="var(--accent-primary)" /> Keamanan & Batas Waktu Sesi
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Atur durasi kedaluwarsa login otomatis dan pengingat keamanan akun.
+              </p>
+            </div>
+
+            <form onSubmit={(e) => handleSaveSettings(e as any)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Batas Waktu Sesi Login Maksimal (Token Expiration)
+                </label>
+                <select
+                  className="input"
+                  value={sessionTimeoutHours}
+                  onChange={(e) => setSessionTimeoutHours(e.target.value)}
+                  style={{ maxWidth: '320px' }}
+                >
+                  <option value={1}>1 Jam</option>
+                  <option value={12}>12 Jam</option>
+                  <option value={24}>24 Jam (1 Hari) - Rekomendasi</option>
+                  <option value={168}>7 Hari (1 Minggu)</option>
+                  <option value={720}>30 Hari (1 Bulan)</option>
+                </select>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Batas durasi sesi login sebelum token kedaluwarsa dan pengguna diminta masuk kembali.
+                </p>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Waktu Sisa Sesi Inaktif / Idle Logout (Menit)
+                </label>
+                <input
+                  type="number"
+                  className="input"
+                  value={sessionTimeoutMinutes}
+                  onChange={(e) => setSessionTimeoutMinutes(e.target.value)}
+                  min="1"
+                  max="120"
+                  placeholder="10"
+                  style={{ width: '140px' }}
+                />
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Jeda waktu tanpa aktivitas (mouse, keyboard) sebelum sistem otomatis keluar demi keamanan.
+                </p>
+              </div>
+
+              {/* Session Info Card */}
+              {session?.user && (session.user as any).loginAt && (
+                <div style={{ padding: '14px', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>Informasi Sesi Anda Saat Ini:</strong>
+                  <div>Waktu Login: {new Date((session.user as any).loginAt).toLocaleString('id-ID')}</div>
                 </div>
               )}
 
-              <button 
-                type="button" 
-                className="btn btn-primary" 
-                onClick={(e) => handleSaveSettings(e as any)} 
-                disabled={isSavingSettings}
-                style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Save size={14} /> Simpan Jadwal
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" className="btn btn-primary" disabled={isSavingSettings} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px' }}>
+                  <Save size={15} /> {isSavingSettings ? 'Menyimpan...' : 'Simpan Pengaturan Keamanan'}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* SECTION 6: Database & Backup */}
+        {canDatabaseBackup && (
+          <section id="section-backup" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
+            <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={18} color="var(--success)" /> Cadangan & Pemeliharaan Database
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Unduh cadangan data pekerjaan secara berkala atau pulihkan data dari file arsip cadangan sebelumnya.
+              </p>
+            </div>
+
+            {/* Backup Reminder Settings */}
+            <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+              <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+                Jadwal Pengingat Cadangan Otomatis
+              </label>
+              
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <select
+                  className="input"
+                  style={{ width: 'auto', minWidth: '220px', fontWeight: 500 }}
+                  value={backupReminderMode}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setBackupReminderMode(val);
+                    if (val === 'custom') {
+                      if (['0', '-1', ''].includes(String(backupReminderDays))) {
+                        setBackupReminderDays(5);
+                      }
+                    } else {
+                      setBackupReminderDays(Number(val));
+                    }
+                  }}
+                >
+                  <option value="0">❌ Nonaktif (Tanpa pengingat)</option>
+                  <option value="-1">🔔 Setiap Kali Login</option>
+                  <option value="1">⏱️ Setiap 1 Hari</option>
+                  <option value="3">⏱️ Setiap 3 Hari</option>
+                  <option value="7">⏱️ Setiap 7 Hari (1 Minggu) - Rekomendasi</option>
+                  <option value="14">⏱️ Setiap 14 Hari (2 Minggu)</option>
+                  <option value="30">⏱️ Setiap 30 Hari (1 Bulan)</option>
+                  <option value="custom">⚙️ Kustom (Isi jumlah hari)</option>
+                </select>
+
+                {backupReminderMode === 'custom' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="number"
+                      className="input"
+                      value={backupReminderDays}
+                      onChange={e => setBackupReminderDays(e.target.value)}
+                      min="1"
+                      style={{ width: '90px' }}
+                      placeholder="Hari"
+                      autoFocus
+                    />
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Hari</span>
+                  </div>
+                )}
+
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={(e) => handleSaveSettings(e as any)} 
+                  disabled={isSavingSettings}
+                  style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Save size={14} /> Simpan Jadwal
+                </button>
+              </div>
+            </div>
+
+            {/* Backup & Restore Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
+                <Download size={16} /> Unduh Backup Database (.zip)
+              </button>
+              <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
+                <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore / Pulihkan Database'}
               </button>
             </div>
+          </section>
+        )}
+      </div>
+
+      {/* STICKY ON-THIS-PAGE SIDEBAR NAVIGATION */}
+      <aside 
+        style={{ 
+          position: 'sticky', 
+          top: '84px', 
+          width: '260px', 
+          flexShrink: 0,
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px' 
+        }}
+      >
+        <div className="glass" style={{ padding: '16px', borderRadius: '14px' }}>
+          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Layers size={14} color="var(--accent-primary)" /> Navigasi Pengaturan
           </div>
 
-          {/* Backup & Restore Action Buttons */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-            <button className="btn btn-secondary" onClick={handleBackupDatabase} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
-              <Download size={16} /> Unduh Backup Database (.zip)
-            </button>
-            <button className="btn btn-primary" onClick={handleRestoreDatabase} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '13px' }}>
-              <Database size={16} /> {loading ? 'Memulihkan...' : 'Restore / Pulihkan Database'}
-            </button>
-          </div>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {navSections.map(sec => {
+              const Icon = sec.icon;
+              const isActive = activeSection === sec.id;
+              return (
+                <button
+                  key={sec.id}
+                  type="button"
+                  onClick={() => scrollToSection(sec.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: isActive ? 'var(--accent-primary)' : 'transparent',
+                    color: isActive ? '#ffffff' : 'var(--text-primary)',
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon size={15} style={{ opacity: isActive ? 1 : 0.7 }} />
+                    <span>{sec.label}</span>
+                  </div>
+                  {sec.badge && (
+                    <span style={{ 
+                      fontSize: '10.5px', 
+                      padding: '1px 6px', 
+                      borderRadius: '10px', 
+                      background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)', 
+                      color: isActive ? '#ffffff' : 'var(--text-secondary)', 
+                      fontWeight: 700 
+                    }}>
+                      {sec.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
-      )}
+      </aside>
 
       {/* Modal Croppers */}
       <AvatarCropperModal
