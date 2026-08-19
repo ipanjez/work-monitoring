@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import CalendarSyncModal from './CalendarSyncModal';
 import { Task } from '@/utils/taskUtils';
+import { useGuestAccess } from '@/context/GuestAccessContext';
 
 interface UniversalActionBarProps {
   onExportExcel?: () => void;
@@ -29,13 +30,14 @@ export default function UniversalActionBar({
   canExport = true,
   children 
 }: UniversalActionBarProps) {
+  const { isGuest, handleGuestAction } = useGuestAccess();
   const [copiedImage, setCopiedImage] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const disabledStyle: React.CSSProperties = {
     opacity: 0.45,
     cursor: 'not-allowed',
-    pointerEvents: 'none' as const
+    pointerEvents: isGuest ? 'auto' : 'none' as const
   };
 
   const disabledTitle = 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.';
@@ -89,9 +91,15 @@ export default function UniversalActionBar({
           {/* 1. Export Excel Button */}
           {onExportExcel && (
             <button 
-              onClick={canExport ? onExportExcel : undefined}
-              title={canExport ? 'Ekspor ke Rich Excel (.xlsx)' : disabledTitle}
-              disabled={!canExport}
+              onClick={(e) => {
+                if (isGuest) {
+                  handleGuestAction(() => {});
+                } else if (canExport) {
+                  onExportExcel();
+                }
+              }}
+              title={isGuest ? 'Akses Terbatas: Masuk/Daftar untuk ekspor' : (canExport ? 'Ekspor ke Rich Excel (.xlsx)' : disabledTitle)}
+              disabled={!canExport && !isGuest}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -103,19 +111,19 @@ export default function UniversalActionBar({
                 color: '#10b981',
                 fontSize: '12px',
                 fontWeight: 700,
-                cursor: canExport ? 'pointer' : 'not-allowed',
+                cursor: (canExport || isGuest) ? 'pointer' : 'not-allowed',
                 transition: 'all 0.15s ease',
                 boxShadow: '0 1px 3px rgba(16, 185, 129, 0.1)'
               }}
               onMouseEnter={(e) => {
-                if (canExport) {
+                if (canExport && !isGuest) {
                   e.currentTarget.style.background = '#10b981';
                   e.currentTarget.style.color = '#ffffff';
                   e.currentTarget.style.boxShadow = '0 3px 8px rgba(16, 185, 129, 0.3)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (canExport) {
+                if (canExport && !isGuest) {
                   e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
                   e.currentTarget.style.color = '#10b981';
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(16, 185, 129, 0.1)';
@@ -130,9 +138,15 @@ export default function UniversalActionBar({
           {/* 2. Export PDF Button */}
           {onExportPDF && (
             <button 
-              onClick={canExport ? onExportPDF : undefined} 
-              disabled={isExportingPdf || !canExport}
-              title={canExport ? 'Unduh Dokumen Laporan PDF' : disabledTitle}
+              onClick={(e) => {
+                if (isGuest) {
+                  handleGuestAction(() => {});
+                } else if (canExport) {
+                  onExportPDF();
+                }
+              }}
+              disabled={(isExportingPdf || !canExport) && !isGuest}
+              title={isGuest ? 'Akses Terbatas: Masuk/Daftar untuk ekspor' : (canExport ? 'Unduh Dokumen Laporan PDF' : disabledTitle)}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -144,20 +158,20 @@ export default function UniversalActionBar({
                 color: '#ef4444',
                 fontSize: '12px',
                 fontWeight: 700,
-                cursor: canExport && !isExportingPdf ? 'pointer' : 'not-allowed',
+                cursor: (canExport || isGuest) && !isExportingPdf ? 'pointer' : 'not-allowed',
                 transition: 'all 0.15s ease',
-                opacity: (isExportingPdf || !canExport) ? 0.6 : 1,
+                opacity: (isExportingPdf || !canExport) && !isGuest ? 0.6 : 1,
                 boxShadow: '0 1px 3px rgba(239, 68, 68, 0.1)'
               }}
               onMouseEnter={(e) => {
-                if (canExport && !isExportingPdf) {
+                if (canExport && !isExportingPdf && !isGuest) {
                   e.currentTarget.style.background = '#ef4444';
                   e.currentTarget.style.color = '#ffffff';
                   e.currentTarget.style.boxShadow = '0 3px 8px rgba(239, 68, 68, 0.3)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (canExport && !isExportingPdf) {
+                if (canExport && !isExportingPdf && !isGuest) {
                   e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
                   e.currentTarget.style.color = '#ef4444';
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(239, 68, 68, 0.1)';
@@ -176,9 +190,15 @@ export default function UniversalActionBar({
           {/* 3. Copy Image Button */}
           {onCopyImage && (
             <button 
-              onClick={handleCopyImageClick}
-              title={canExport ? 'Salin screenshot tampilan tabel/papan ke clipboard' : disabledTitle}
-              disabled={!canExport}
+              onClick={(e) => {
+                if (isGuest) {
+                  handleGuestAction(() => {});
+                } else {
+                  handleCopyImageClick();
+                }
+              }}
+              title={isGuest ? 'Akses Terbatas: Masuk/Daftar untuk salin gambar' : (canExport ? 'Salin screenshot tampilan tabel/papan ke clipboard' : disabledTitle)}
+              disabled={!canExport && !isGuest}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -190,19 +210,19 @@ export default function UniversalActionBar({
                 color: copiedImage ? '#10b981' : '#3b82f6',
                 fontSize: '12px',
                 fontWeight: 700,
-                cursor: canExport ? 'pointer' : 'not-allowed',
+                cursor: (canExport || isGuest) ? 'pointer' : 'not-allowed',
                 transition: 'all 0.15s ease',
                 boxShadow: '0 1px 3px rgba(59, 130, 246, 0.1)'
               }}
               onMouseEnter={(e) => {
-                if (canExport) {
+                if (canExport && !isGuest) {
                   e.currentTarget.style.background = copiedImage ? '#10b981' : '#3b82f6';
                   e.currentTarget.style.color = '#ffffff';
                   e.currentTarget.style.boxShadow = '0 3px 8px rgba(59, 130, 246, 0.3)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (canExport) {
+                if (canExport && !isGuest) {
                   e.currentTarget.style.background = copiedImage ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.12)';
                   e.currentTarget.style.color = copiedImage ? '#10b981' : '#3b82f6';
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(59, 130, 246, 0.1)';
@@ -221,7 +241,13 @@ export default function UniversalActionBar({
           {/* 4. Calendar Sync / iCal Button (Universal across all menus) */}
           {showSyncCalendar && (
             <button 
-              onClick={() => setIsSyncModalOpen(true)}
+              onClick={() => {
+                if (isGuest) {
+                  handleGuestAction(() => {});
+                } else {
+                  setIsSyncModalOpen(true);
+                }
+              }}
               title="Sinkronisasi Otomatis Google Calendar / Outlook & Unduh .ics"
               style={{ 
                 display: 'flex', 
@@ -239,14 +265,18 @@ export default function UniversalActionBar({
                 boxShadow: '0 1px 3px rgba(245, 158, 11, 0.1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f59e0b';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.boxShadow = '0 3px 8px rgba(245, 158, 11, 0.3)';
+                if (!isGuest) {
+                  e.currentTarget.style.background = '#f59e0b';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(245, 158, 11, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
-                e.currentTarget.style.color = '#f59e0b';
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(245, 158, 11, 0.1)';
+                if (!isGuest) {
+                  e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                  e.currentTarget.style.color = '#f59e0b';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(245, 158, 11, 0.1)';
+                }
               }}
             >
               <CalendarDays size={15} />

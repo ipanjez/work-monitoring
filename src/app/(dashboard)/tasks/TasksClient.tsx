@@ -29,6 +29,7 @@ import FilePreviewModal from '@/components/FilePreviewModal';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { useGuestAccess } from '@/context/GuestAccessContext';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran';
 
@@ -36,6 +37,7 @@ type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progres
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
+  const { handleGuestAction } = useGuestAccess();
   const userRole: string = (session?.user as any)?.role || 'PIC';
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -1178,7 +1180,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </td>
                     )}
                     <td style={{ padding: '8px 6px' }}>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' }} onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? setDetailTask(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleGuestAction(() => setDetailTask(task), hasPermission(roleConfig, 'view_detail', userRole))}>
                         {task.nama}
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
@@ -1455,8 +1457,8 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <div
                 key={task.id}
                 className="mobile-task-card"
-                onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? setDetailTask(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
-                style={{ cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' }}
+                onClick={() => handleGuestAction(() => setDetailTask(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                style={{ cursor: 'pointer' }}
               >
                 {/* Header Row: Title & Priority */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>

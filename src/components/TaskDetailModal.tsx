@@ -12,6 +12,7 @@ import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, ge
 import TaskTimeline from './TaskTimeline';
 import { exportTaskPdf } from '@/utils/exportPdf';
 import TaskEmailModal from './TaskEmailModal';
+import { useGuestAccess } from '@/context/GuestAccessContext';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   if (!logs || logs.length === 0) return null;
@@ -45,6 +46,7 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDuplicate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
+  const { handleGuestAction, isGuest } = useGuestAccess();
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig | null>(null);
   useEffect(() => {
@@ -111,22 +113,24 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('Hapus komentar ini?')) return;
-    const updatedComments = localComments.filter(c => c.id !== commentId);
-    setLocalComments(updatedComments);
-    try {
-      await fetch(`/api/tasks/${task!.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
-      });
-      router.refresh();
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      toast.success('Komentar dihapus');
-    } catch {
-      toast.error('Gagal menghapus komentar');
-      setLocalComments(localComments); // revert
-    }
+    handleGuestAction(async () => {
+      if (!confirm('Hapus komentar ini?')) return;
+      const updatedComments = localComments.filter(c => c.id !== commentId);
+      setLocalComments(updatedComments);
+      try {
+        await fetch(`/api/tasks/${task!.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
+        });
+        router.refresh();
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+        toast.success('Komentar dihapus');
+      } catch {
+        toast.error('Gagal menghapus komentar');
+        setLocalComments(localComments); // revert
+      }
+    });
   };
 
 
@@ -187,11 +191,12 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
-    const finalAuthor = session?.user?.name || commentAuthor;
-    if (!newComment.trim() || !finalAuthor.trim()) {
-      toast.error('Nama dan komentar tidak boleh kosong');
-      return;
-    }
+    handleGuestAction(async () => {
+      const finalAuthor = session?.user?.name || commentAuthor;
+      if (!newComment.trim() || !finalAuthor.trim()) {
+        toast.error('Nama dan komentar tidak boleh kosong');
+        return;
+      }
 
     localStorage.setItem('commentAuthor', finalAuthor.trim());
 
@@ -235,6 +240,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     } finally {
       setIsSubmittingComment(false);
     }
+    });
   };
 
   const handleCopyTaskDetails = async () => {
@@ -346,20 +352,20 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               }}>
                 {/* Left group: Primary action buttons */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {onDuplicate && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                  {onDuplicate && (hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDuplicate)} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
                       <Copy size={13} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
                     </button>
                   )}
 
-                  {onEdit && hasPermission(roleConfig, 'manage_task', userRole) && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onEdit} title="Edit Pekerjaan Ini">
+                  {onEdit && (hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onEdit)} title="Edit Pekerjaan Ini">
                       <Edit size={13} style={{ marginRight: '4px' }} /> Edit
                     </button>
                   )}
 
-                  {onDelete && hasPermission(roleConfig, 'delete_task', userRole) && (
-                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={onDelete} title="Hapus Pekerjaan">
+                  {onDelete && (hasPermission(roleConfig, 'delete_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDelete)} title="Hapus Pekerjaan">
                       <Trash2 size={13} style={{ marginRight: '4px' }} /> Hapus
                     </button>
                   )}
@@ -370,18 +376,24 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <button
                     className="btn btn-secondary"
                     style={{ padding: '7px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    onClick={handleCopyTaskDetails}
+                    onClick={() => handleGuestAction(handleCopyTaskDetails)}
                     title="Salin Detail Pekerjaan ke Teks"
                   >
                     <Copy size={15} />
                   </button>
 
                   <a
-                    href={getGoogleCalendarUrl(task)}
-                    target="_blank"
+                    href={isGuest ? undefined : getGoogleCalendarUrl(task)}
+                    target={isGuest ? undefined : "_blank"}
                     rel="noopener noreferrer"
                     className="btn btn-secondary"
-                    style={{ padding: '7px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '7px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    onClick={(e) => {
+                      if (isGuest) {
+                        e.preventDefault();
+                        handleGuestAction(() => {});
+                      }
+                    }}
                     title="Tambah ke Google Calendar"
                   >
                     <ExternalLink size={15} />
@@ -389,7 +401,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
                   <button
                     className="btn btn-secondary"
-                    onClick={() => handleExportICS(task)}
+                    onClick={() => handleGuestAction(() => handleExportICS(task))}
                     style={{ padding: '7px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Download .ics"
                   >
@@ -413,10 +425,12 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <button
                     className="btn"
                     onClick={() => {
-                      const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
-                      const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
-                      exportTaskPdf(task, currentAppName, siteUrl);
-                      toast.success('PDF berhasil di-download!');
+                      handleGuestAction(() => {
+                        const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
+                        const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
+                        exportTaskPdf(task, currentAppName, siteUrl);
+                        toast.success('PDF berhasil di-download!');
+                      });
                     }}
                     style={{ padding: '7px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
                     title="Export PDF"
@@ -426,7 +440,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
                   <button
                     className="btn"
-                    onClick={() => setIsEmailModalOpen(true)}
+                    onClick={() => handleGuestAction(() => setIsEmailModalOpen(true))}
                     style={{
                       padding: '7px',
                       borderRadius: '8px',
@@ -761,7 +775,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {hasPermission(roleConfig, 'upload_comment', userRole) && (
+                          {(hasPermission(roleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -779,7 +793,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 )}
               </div>
 
-              {hasPermission(roleConfig, 'upload_comment', userRole) && (
+              {(hasPermission(roleConfig, 'upload_comment', userRole) || userRole === 'GUEST') && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"

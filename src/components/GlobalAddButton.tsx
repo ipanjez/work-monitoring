@@ -13,8 +13,11 @@ import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { defaultRolePermissions, RolePermissionsConfig, hasPermission } from '@/lib/permissions';
 
+import { useGuestAccess } from '@/context/GuestAccessContext';
+
 export default function GlobalAddButton() {
   const { data: session } = useSession();
+  const { isGuest, handleGuestAction } = useGuestAccess();
   const { addActivityLog } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -101,7 +104,7 @@ export default function GlobalAddButton() {
   }, [isOpen]);
 
   const userRole = (session?.user as any)?.role || 'VIEWER';
-  if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+  if (!hasPermission(roleConfig, 'manage_task', userRole) && !isGuest) {
     return null;
   }
 
@@ -639,19 +642,29 @@ export default function GlobalAddButton() {
     }
   };
 
-  if ((session?.user as any)?.role === 'VIEWER') return null;
+  if (userRole === 'GUEST' && !hasPermission(roleConfig, 'manage_task', userRole)) return null;
 
   return (
     <div
       id="global-add-btn-container"
       style={isMobile ? undefined : { position: 'relative', zIndex: 1000 }}
       ref={panelRef}
-      onMouseEnter={isMobile ? undefined : () => setIsOpen(true)}
-      onMouseLeave={isMobile ? undefined : () => setIsOpen(false)}
+      onMouseEnter={isMobile ? undefined : () => {
+        if (isGuest) return;
+        setIsOpen(true);
+      }}
+      onMouseLeave={isMobile ? undefined : () => {
+        if (isGuest) return;
+        setIsOpen(false);
+      }}
     >
       {isMobile ? (
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            handleGuestAction(() => {
+              setIsOpen(!isOpen);
+            });
+          }}
           className="mobile-fab"
           title="Tambah Pekerjaan"
         >
@@ -659,7 +672,11 @@ export default function GlobalAddButton() {
         </button>
       ) : (
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            handleGuestAction(() => {
+              setIsOpen(!isOpen);
+            });
+          }}
           className="btn btn-primary"
           style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}
         >

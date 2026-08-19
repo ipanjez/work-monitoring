@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 type FilterContextType = {
@@ -22,6 +22,7 @@ type FilterContextType = {
   setGlobalFilterCategory: (category: string) => void;
   globalSearchExactMatch: boolean;
   setGlobalSearchExactMatch: (exactMatch: boolean) => void;
+  resetFilters: () => void;
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -120,6 +121,18 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('globalSearchExactMatch', val ? 'true' : 'false');
   };
 
+  const resetFilters = useCallback(() => {
+    setGlobalTargetFilter('Semua Waktu');
+    setGlobalPicFilter('Semua PIC');
+    setGlobalCustomStartDate('');
+    setGlobalCustomEndDate('');
+    setGlobalSearchQuery('');
+    setGlobalFilterStatus('All');
+    setGlobalFilterPriority('All');
+    setGlobalFilterCategory('All');
+    setGlobalSearchExactMatch(false);
+  }, []);
+
   return (
     <FilterContext.Provider value={{
       globalTargetFilter,
@@ -139,7 +152,8 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       globalFilterCategory,
       setGlobalFilterCategory,
       globalSearchExactMatch,
-      setGlobalSearchExactMatch
+      setGlobalSearchExactMatch,
+      resetFilters
     }}>
       {children}
     </FilterContext.Provider>

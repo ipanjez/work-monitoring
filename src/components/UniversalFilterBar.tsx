@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useFilter } from '@/context/FilterContext';
 
 interface UniversalFilterBarProps {
@@ -31,10 +31,18 @@ export default function UniversalFilterBar({
     globalTargetFilter, setGlobalTargetFilter,
     globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
-    globalPicFilter, setGlobalPicFilter
+    globalPicFilter, setGlobalPicFilter,
+    resetFilters
   } = useFilter();
 
   const [isOpen, setIsOpen] = useState(false);
+
+  // Reset filters when component unmounts (leaving the page)
+  React.useEffect(() => {
+    return () => {
+      resetFilters();
+    };
+  }, []);
 
   const getActiveStyle = (isActive: boolean) => isActive ? {
     borderColor: 'var(--accent-primary)',
@@ -47,7 +55,8 @@ export default function UniversalFilterBar({
     globalFilterPriority !== 'All' || 
     globalFilterCategory !== 'All' || 
     globalTargetFilter !== 'Semua Waktu' || 
-    globalPicFilter !== 'Semua PIC';
+    globalPicFilter !== 'Semua PIC' ||
+    globalSearchQuery !== '';
 
   return (
     <div id="universal-filter-bar" className="glass filter-bar-container" style={{ padding: '8px 12px', marginBottom: '20px', borderRadius: '12px', width: '100%' }}>
@@ -180,6 +189,31 @@ export default function UniversalFilterBar({
               {Array.from(new Set(pics)).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
+
+          {isAnyFilterActive && (
+            <button
+              onClick={resetFilters}
+              style={{
+                height: '32px',
+                padding: '0 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--danger)',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: 'var(--danger)',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: '0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Hapus semua filter aktif"
+            >
+              <X size={13} />
+              <span>Hapus Filter</span>
+            </button>
+          )}
 
           {filteredCount !== undefined && totalCount !== undefined && (
             <div className="filter-count-label" style={{ display: 'flex', alignItems: 'center', paddingLeft: '8px', borderLeft: '1px solid var(--border-color)', marginLeft: '4px' }}>

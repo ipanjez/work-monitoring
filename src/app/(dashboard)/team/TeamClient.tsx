@@ -32,12 +32,14 @@ import Avatar from '@/components/Avatar';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import { copyToClipboard } from '@/utils/clipboard';
+import { useGuestAccess } from '@/context/GuestAccessContext';
 
 type WorkloadFilter = 'all' | 'high' | 'optimal' | 'low';
 type TaskTabFilter = 'all' | 'in_progress' | 'done' | 'urgent';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
+  const { handleGuestAction } = useGuestAccess();
   const userRole = (session?.user as any)?.role || 'MEMBER';
   const { masterColors, masterPicAvatars, roleConfig } = useMaster();
   const { 
@@ -630,15 +632,17 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
               {/* Quick Actions Footer */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '11.5px', color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {isSelected ? 'Tutup Daftar Tugas ▲' : 'Lihat Daftar Tugas ▼'}
+                <span style={{ fontSize: '11.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  Lihat Daftar Tugas ▼
                 </span>
 
-                {hasPermission(roleConfig, 'manage_task', userRole) && (
+                {(hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleAddNewTaskForPic(picName);
+                      handleGuestAction(() => {
+                        handleAddNewTaskForPic(picName);
+                      });
                     }}
                     title={`Tambah pekerjaan untuk ${picName}`}
                     style={{
@@ -671,164 +675,224 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         )}
       </div>
 
-      {/* Selected PIC Detail Table Section */}
-      {selectedPic && picStatsMap[selectedPic] && (
-        <motion.div 
-          id="team-pic-detail-table" 
-          className="glass" 
-          style={{ padding: '22px', borderRadius: '14px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Avatar 
-                name={selectedPic} 
-                src={masterPicAvatars?.[selectedPic]} 
-                size={36} 
-                masterColors={masterColors} 
-              />
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  Daftar Pekerjaan Ditangani: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
-                </h3>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  Total {picStatsMap[selectedPic].tasks.length} pekerjaan terdaftar
-                </span>
+      {/* Selected PIC Detail Table Modal Overlay */}
+      <AnimatePresence>
+        {selectedPic && picStatsMap[selectedPic] && (
+          <div 
+            style={{ 
+              position: 'fixed', 
+              inset: 0, 
+              zIndex: 90, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              background: 'rgba(15, 23, 42, 0.65)', 
+              backdropFilter: 'blur(8px)',
+              padding: '16px'
+            }}
+            onClick={() => setSelectedPic(null)}
+          >
+            <motion.div 
+              id="team-pic-detail-table" 
+              className="glass modal-content" 
+              style={{ 
+                padding: '24px', 
+                borderRadius: '16px', 
+                width: '100%', 
+                maxWidth: '960px', 
+                maxHeight: '85vh', 
+                overflowY: 'auto',
+                border: '1px solid var(--border-color)',
+                boxShadow: 'var(--card-shadow)',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedPic(null)}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '16px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s',
+                  zIndex: 10
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px', paddingRight: '36px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Avatar 
+                    name={selectedPic} 
+                    src={masterPicAvatars?.[selectedPic]} 
+                    size={36} 
+                    masterColors={masterColors} 
+                  />
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                      Daftar Pekerjaan Ditangani: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
+                    </h3>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      Total {picStatsMap[selectedPic].tasks.length} pekerjaan terdaftar
+                    </span>
+                  </div>
+                </div>
+
+                {/* Task Status Filters */}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {[
+                    { id: 'all', label: 'Semua', count: picStatsMap[selectedPic].tasks.length },
+                    { id: 'in_progress', label: 'On Progress', count: picStatsMap[selectedPic].inProgress },
+                    { id: 'done', label: 'Selesai', count: picStatsMap[selectedPic].done },
+                    { id: 'urgent', label: 'Urgent/Overdue', count: picStatsMap[selectedPic].urgent + picStatsMap[selectedPic].overdue },
+                  ].map(tTab => (
+                    <button
+                      key={tTab.id}
+                      onClick={() => setTaskTabFilter(tTab.id as TaskTabFilter)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid',
+                        borderColor: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--border-color)',
+                        background: taskTabFilter === tTab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--input-bg)',
+                        color: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                        fontSize: '11.5px',
+                        fontWeight: taskTabFilter === tTab.id ? 700 : 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {tTab.label} ({tTab.count})
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Task Status Filters */}
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {[
-                { id: 'all', label: 'Semua', count: picStatsMap[selectedPic].tasks.length },
-                { id: 'in_progress', label: 'On Progress', count: picStatsMap[selectedPic].inProgress },
-                { id: 'done', label: 'Selesai', count: picStatsMap[selectedPic].done },
-                { id: 'urgent', label: 'Urgent/Overdue', count: picStatsMap[selectedPic].urgent + picStatsMap[selectedPic].overdue },
-              ].map(tTab => (
-                <button
-                  key={tTab.id}
-                  onClick={() => setTaskTabFilter(tTab.id as TaskTabFilter)}
-                  style={{
-                    padding: '5px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid',
-                    borderColor: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--border-color)',
-                    background: taskTabFilter === tTab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--input-bg)',
-                    color: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                    fontSize: '11.5px',
-                    fontWeight: taskTabFilter === tTab.id ? 700 : 500,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {tTab.label} ({tTab.count})
-                </button>
-              ))}
-            </div>
-          </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
+                      <th style={{ padding: '10px 12px', borderRadius: '6px 0 0 6px' }}>Nama Pekerjaan</th>
+                      <th style={{ padding: '10px 12px' }}>Kategori</th>
+                      <th style={{ padding: '10px 12px' }}>Prioritas</th>
+                      <th style={{ padding: '10px 12px' }}>Status</th>
+                      <th style={{ padding: '10px 12px' }}>Progress</th>
+                      <th style={{ padding: '10px 12px' }}>Tenggat Waktu</th>
+                      {hasPermission(roleConfig, 'view_detail', userRole) && (
+                        <th style={{ padding: '10px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Aksi</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {picStatsMap[selectedPic].tasks
+                      .filter(t => {
+                        const isDone = t.status === 'Done' || t.status === 'Selesai';
+                        const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+                        if (taskTabFilter === 'in_progress') return t.status === 'In Progress' || t.status === 'Sedang Dikerjakan';
+                        if (taskTabFilter === 'done') return isDone;
+                        if (taskTabFilter === 'urgent') return t.prioritas === 'Urgent' || isOverdue;
+                        return true;
+                      })
+                      .map(t => {
+                        const isDone = t.status === 'Done' || t.status === 'Selesai';
+                        const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
-                  <th style={{ padding: '10px 12px', borderRadius: '6px 0 0 6px' }}>Nama Pekerjaan</th>
-                  <th style={{ padding: '10px 12px' }}>Kategori</th>
-                  <th style={{ padding: '10px 12px' }}>Prioritas</th>
-                  <th style={{ padding: '10px 12px' }}>Status</th>
-                  <th style={{ padding: '10px 12px' }}>Progress</th>
-                  <th style={{ padding: '10px 12px' }}>Tenggat Waktu</th>
-                  {hasPermission(roleConfig, 'view_detail', userRole) && (
-                    <th style={{ padding: '10px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Aksi</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {picStatsMap[selectedPic].tasks
-                  .filter(t => {
-                    const isDone = t.status === 'Done' || t.status === 'Selesai';
-                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
-                    if (taskTabFilter === 'in_progress') return t.status === 'In Progress' || t.status === 'Sedang Dikerjakan';
-                    if (taskTabFilter === 'done') return isDone;
-                    if (taskTabFilter === 'urgent') return t.prioritas === 'Urgent' || isOverdue;
-                    return true;
-                  })
-                  .map(t => {
-                    const isDone = t.status === 'Done' || t.status === 'Selesai';
-                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
-
-                    return (
-                      <tr 
-                        key={t.id} 
-                        style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s ease' }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <td 
-                          style={{ 
-                            padding: '11px 12px', 
-                            fontWeight: 600, 
-                            color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
-                            cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
-                          }} 
-                          onClick={() => { 
-                            if (hasPermission(roleConfig, 'view_detail', userRole)) {
-                              setDetailTask(t); 
-                              setEditForm(t); 
-                              setIsEditing(false); 
-                            }
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>{t.nama}</span>
-                            {isOverdue && (
-                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}>
-                                Terlewat
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>{t.kategori || 'Umum'}</td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
-                            {t.prioritas || 'Medium'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
-                            {t.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <div className="progress-container" style={{ width: '60px', height: '6px', borderRadius: '3px' }}>
-                              <div className="progress-bar" style={{ width: `${t.progress || 0}%`, backgroundColor: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
-                            </div>
-                            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '11px 12px', fontSize: '12px' }}>
-                          {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
-                        </td>
-                        {hasPermission(roleConfig, 'view_detail', userRole) && (
-                          <td style={{ padding: '11px 12px', textAlign: 'right' }}>
-                            <button 
-                              className="btn btn-secondary" 
-                              style={{ padding: '4px 8px', fontSize: '11.5px' }} 
-                              onClick={() => { setDetailTask(t); setEditForm(t); setIsEditing(false); }}
+                        return (
+                          <tr 
+                            key={t.id} 
+                            style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <td 
+                              style={{ 
+                                padding: '11px 12px', 
+                                fontWeight: 600, 
+                                color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
+                                cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                              }} 
+                              onClick={() => { 
+                                handleGuestAction(() => {
+                                  setDetailTask(t); 
+                                  setEditForm(t); 
+                                  setIsEditing(false); 
+                                }, hasPermission(roleConfig, 'view_detail', userRole));
+                              }}
                             >
-                              Detail
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>{t.nama}</span>
+                                {isOverdue && (
+                                  <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}>
+                                    Terlewat
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '11px 12px' }}>{t.kategori || 'Umum'}</td>
+                            <td style={{ padding: '11px 12px' }}>
+                              <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
+                                {t.prioritas || 'Medium'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '11px 12px' }}>
+                              <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
+                                {t.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '11px 12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div className="progress-container" style={{ width: '60px', height: '6px', borderRadius: '3px' }}>
+                                  <div className="progress-bar" style={{ width: `${t.progress || 0}%`, backgroundColor: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
+                                </div>
+                                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '11px 12px', fontSize: '12px' }}>
+                              {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
+                            </td>
+                            {(hasPermission(roleConfig, 'view_detail', userRole) || userRole === 'GUEST') && (
+                              <td style={{ padding: '11px 12px', textAlign: 'right' }}>
+                                <button 
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '4px 8px', fontSize: '11.5px' }} 
+                                  onClick={() => {
+                                    handleGuestAction(() => {
+                                      setDetailTask(t); 
+                                      setEditForm(t); 
+                                      setIsEditing(false); 
+                                    }, hasPermission(roleConfig, 'view_detail', userRole));
+                                  }}
+                                >
+                                  Detail
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Task Modals */}
       <TaskDetailModal

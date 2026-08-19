@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, LogIn, Eye, EyeOff, IdCard } from 'lucide-react';
+import { Lock, LogIn, Eye, EyeOff, IdCard, User } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -12,11 +12,11 @@ function SignInContent() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Status check for password resets
   const [resetStatus, setResetStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'>('NONE');
   const [resetNote, setResetNote] = useState<string | null>(null);
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -83,6 +83,26 @@ function SignInContent() {
       setLoading(false);
     } else {
       toast.error('NPK atau Password salah!');
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    const res = await signIn('credentials', {
+      npk: 'guest',
+      password: 'guest-password-999',
+      redirect: false,
+    });
+    if (res?.ok) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('dismissed_backup_reminder');
+      }
+      toast.success('Berhasil masuk sebagai Guest!');
+      router.push('/');
+      router.refresh();
+    } else {
+      toast.error('Gagal masuk sebagai Guest!');
       setLoading(false);
     }
   };
@@ -212,7 +232,7 @@ function SignInContent() {
               className="input"
               value={npk}
               onChange={e => setNpk(e.target.value)}
-              placeholder="Masukkan NPK (contoh: PKT-001)"
+              placeholder="Masukkan NPK"
               autoFocus
               required
             />
@@ -276,6 +296,37 @@ function SignInContent() {
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
+
+        {/* Guest Login */}
+        <div style={{ marginTop: '-8px' }}>
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loading}
+            className="btn btn-secondary"
+            style={{
+              width: '100%',
+              padding: '12px',
+              justifyContent: 'center',
+              gap: '8px',
+              border: '1px solid var(--accent-primary)',
+              color: 'var(--accent-primary)',
+              background: 'transparent',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: '8px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <User size={18} />
+            <span>Masuk sebagai Guest (Tamu)</span>
+          </button>
+        </div>
 
         {/* Sign up link */}
         <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>

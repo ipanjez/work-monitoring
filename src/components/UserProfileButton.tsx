@@ -20,7 +20,7 @@ export default function UserProfileButton() {
   const [displayImage, setDisplayImage] = useState('');
 
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  
+
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
@@ -78,8 +78,8 @@ export default function UserProfileButton() {
   return (
     <div
       id="user-profile-btn-container"
-      className="relative" 
-      ref={dropdownRef} 
+      className="relative"
+      ref={dropdownRef}
       style={{ position: 'relative' }}
     >
       <button
@@ -167,7 +167,7 @@ export default function UserProfileButton() {
 
             <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '6px' }}>Role Akses</div>
-              <div 
+              <div
                 style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
                 title={activeFeatures.length > 0 ? `Hak Akses Aktif:\n${activeFeatures.map(f => `• ${f.label}`).join('\n')}` : 'Tidak ada hak akses aktif'}
               >
@@ -212,25 +212,27 @@ export default function UserProfileButton() {
             </div>
           </div>
 
-          <Link
-            href="/users/profile"
-            onClick={() => setIsOpen(false)}
-            style={{
-              padding: '10px 16px',
-              fontSize: '13px',
-              color: 'var(--text-primary)',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <User size={14} style={{ color: 'var(--text-secondary)' }} />
-            Profil Saya
-          </Link>
+          {currentRole !== 'GUEST' && (
+            <Link
+              href="/users/profile"
+              onClick={() => setIsOpen(false)}
+              style={{
+                padding: '10px 16px',
+                fontSize: '13px',
+                color: 'var(--text-primary)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <User size={14} style={{ color: 'var(--text-secondary)' }} />
+              Profil Saya
+            </Link>
+          )}
 
           <Link
             href="/settings"
@@ -249,7 +251,7 @@ export default function UserProfileButton() {
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <Settings size={14} style={{ color: 'var(--text-secondary)' }} />
-            Pengaturan Akun
+            Pengaturan Aplikasi
           </Link>
 
           <button

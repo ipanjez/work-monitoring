@@ -3,6 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
 import { copyToClipboard } from '@/utils/clipboard';
 import { checkSearchMatch } from '@/utils/searchUtils';
+import { useGuestAccess } from '@/context/GuestAccessContext';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -46,6 +47,7 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 
 export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
+  const { handleGuestAction } = useGuestAccess();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
   const {
@@ -637,7 +639,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           events={events}
           selectable={true}
           onSelectSlot={handleSelectSlot}
-          onSelectEvent={(event) => hasPermission(roleConfig, 'view_detail', userRole) ? setSelectedTask(event.resource) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
+          onSelectEvent={(event) => handleGuestAction(() => setSelectedTask(event.resource))}
           startAccessor="start"
           endAccessor="end"
           view={view}
