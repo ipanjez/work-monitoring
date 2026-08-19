@@ -60,9 +60,10 @@ export default function RoleBadge({
   className = '',
   style = {}
 }: RoleBadgeProps) {
-  const label = getRoleLabel(config, role);
-  const iconName = getRoleIconName(config, role);
-  const color = getRoleColor(config, role);
+  const cleanRole = (role || '').trim();
+  const label = cleanRole ? getRoleLabel(config, cleanRole) : 'Anggota Tim';
+  const iconName = cleanRole ? getRoleIconName(config, cleanRole) : 'User';
+  const color = cleanRole ? getRoleColor(config, cleanRole) : '#64748b';
 
   const iconSize = size === 'sm' ? 12 : size === 'lg' ? 16 : 13;
   const padding = size === 'sm' ? '2px 8px' : size === 'lg' ? '6px 14px' : '3px 10px';

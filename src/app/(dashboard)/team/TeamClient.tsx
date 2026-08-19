@@ -41,6 +41,20 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { handleGuestAction } = useGuestAccess();
   const userRole = (session?.user as any)?.role || '';
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
+
+  const getPicRole = (name: string): string => {
+    if (!name) return '';
+    const trimmed = name.trim();
+    const lower = trimmed.toLowerCase();
+    if (userRoles[trimmed]) return userRoles[trimmed];
+    if (userRoles[lower]) return userRoles[lower];
+    const match = Object.entries(userRoles).find(([k]) => k.trim().toLowerCase() === lower);
+    if (match) return match[1];
+    if (session?.user?.name && session.user.name.trim().toLowerCase() === lower && (session.user as any)?.role) {
+      return (session.user as any).role;
+    }
+    return '';
+  };
   const { 
     globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
     globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
@@ -448,7 +462,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   <div>
                     <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, marginBottom: '2px' }}>{picName}</h3>
                     <RoleBadge 
-                      role={userRoles[picName] || userRoles[picName.trim()] || 'MEMBER'} 
+                      role={getPicRole(picName)} 
                       config={roleConfig} 
                       size="sm" 
                     />

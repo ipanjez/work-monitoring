@@ -11,7 +11,6 @@ export async function GET() {
     }
 
     const users = await prisma.user.findMany({
-      where: { status: 'ACTIVE' },
       select: { name: true, role: true }
     });
 
@@ -19,6 +18,7 @@ export async function GET() {
     users.forEach(u => {
       if (u.name && u.role) {
         roleMap[u.name.trim()] = u.role;
+        roleMap[u.name.trim().toLowerCase()] = u.role;
       }
     });
 

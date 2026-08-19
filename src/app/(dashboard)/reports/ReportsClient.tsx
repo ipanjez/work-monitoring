@@ -62,6 +62,20 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  const getPicRole = (name: string): string => {
+    if (!name) return '';
+    const trimmed = name.trim();
+    const lower = trimmed.toLowerCase();
+    if (userRoles[trimmed]) return userRoles[trimmed];
+    if (userRoles[lower]) return userRoles[lower];
+    const match = Object.entries(userRoles).find(([k]) => k.trim().toLowerCase() === lower);
+    if (match) return match[1];
+    if (session?.user?.name && session.user.name.trim().toLowerCase() === lower && (session.user as any)?.role) {
+      return (session.user as any).role;
+    }
+    return '';
+  };
   
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Review', 'Done']);
   const [masterPriorities, setMasterPriorities] = useState<string[]>(['Urgent', 'High', 'Medium', 'Low']);
@@ -786,7 +800,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
                             </div>
                             <div style={{ marginTop: '2px' }}>
                               <RoleBadge 
-                                role={userRoles[item.pic] || userRoles[item.pic.trim()] || 'MEMBER'} 
+                                role={getPicRole(item.pic)} 
                                 config={roleConfig} 
                                 size="sm" 
                               />

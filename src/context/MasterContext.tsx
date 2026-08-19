@@ -77,6 +77,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
       setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
       setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
+      setUserRoles(JSON.parse(localStorage.getItem('user_roles') || '{}'));
     } catch {}
 
     setMounted(true);
@@ -173,6 +174,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       .then(data => {
         if (data && typeof data === 'object') {
           setUserRoles(data);
+          localStorage.setItem('user_roles', JSON.stringify(data));
         }
       })
       .catch(() => {});
@@ -193,6 +195,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'master_status_progress' && e.newValue) setMasterStatusProgress(JSON.parse(e.newValue));
         if (e.key === 'master_pics' && e.newValue) setMasterPics(JSON.parse(e.newValue));
         if (e.key === 'role_config' && e.newValue) setRoleConfig(JSON.parse(e.newValue));
+        if (e.key === 'user_roles' && e.newValue) setUserRoles(JSON.parse(e.newValue));
         if (e.key === 'session_timeout' && e.newValue) setSessionTimeout(Number(e.newValue));
       } catch (err) {}
     };
@@ -214,12 +217,16 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
             setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
             setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
             setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
+            setUserRoles(JSON.parse(localStorage.getItem('user_roles') || '{}'));
         } catch(e) {}
 
         fetch('/api/users/roles')
           .then(res => res.json())
           .then(data => {
-            if (data && typeof data === 'object') setUserRoles(data);
+            if (data && typeof data === 'object') {
+              setUserRoles(data);
+              localStorage.setItem('user_roles', JSON.stringify(data));
+            }
           })
           .catch(() => {});
     }
