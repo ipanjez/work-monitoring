@@ -31,7 +31,7 @@ import UniversalActionBar from '@/components/UniversalActionBar';
 import { useGuestAccess } from '@/context/GuestAccessContext';
 import { useTaskModal } from '@/context/TaskModalContext';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi';
 
 
 
@@ -303,6 +303,18 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     } else if (sortField === 'lampiran') {
       valA = getTaskFiles(a).length;
       valB = getTaskFiles(b).length;
+    } else if (sortField === 'lokasi') {
+      const getLocStr = (t: Task) => {
+        if (!t.lokasi) return '';
+        try {
+          const loc = JSON.parse(t.lokasi);
+          return (loc.tipe === 'online' ? `Online ${loc.linkZoom || ''}` : `Offline ${loc.lokasiFisik || ''}`).toLowerCase();
+        } catch (e) {
+          return String(t.lokasi).toLowerCase();
+        }
+      };
+      valA = getLocStr(a);
+      valB = getLocStr(b);
     } else if (typeof valA === 'string') {
       valA = valA.toLowerCase();
       valB = (valB || '').toLowerCase();
@@ -1204,7 +1216,11 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Tenggat Waktu {renderSortIcon('endDate')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '8px 6px' }}>Lokasi</th>
+                <th className="hide-tablet" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lokasi')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Lokasi {renderSortIcon('lokasi')}
+                  </div>
+                </th>
                 <th style={{ padding: '8px 4px', textAlign: 'center', width: '40px' }}>Aksi</th>
               </tr>
             </thead>
