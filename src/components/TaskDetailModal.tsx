@@ -50,7 +50,14 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
-  const { masterColors, roleConfig: masterRoleConfig } = useMaster();
+  const { 
+    masterColors, 
+    roleConfig: masterRoleConfig,
+    maxFileSizeMb: masterMaxFileSize,
+    maxTaskFilesSizeMb: masterMaxTaskFilesSize,
+    appName: masterAppName,
+    appSubtitle: masterDeptName
+  } = useMaster();
   const currentRoleConfig = roleConfig || masterRoleConfig;
 
   useEffect(() => {
@@ -79,6 +86,9 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
   const [picEmails, setPicEmails] = useState<Record<string, string>>({});
   const [isMobile, setIsMobile] = useState(false);
+
+  const effectiveMaxFileSizeMb = masterMaxFileSize || maxFileSizeMb || 25;
+  const effectiveMaxTaskFilesSizeMb = masterMaxTaskFilesSize || maxTaskFilesSizeMb || 100;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -738,13 +748,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    File Lampiran ({getTaskFiles(task).length} File, Maks {maxFileSizeMb} MB/file)
+                    File Lampiran ({getTaskFiles(task).length} File, Maks {effectiveMaxFileSizeMb} MB/file)
                   </h4>
                   {(() => {
                     const totalSize = getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0);
                     return (
                       <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-                        Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
+                        Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {effectiveMaxTaskFilesSizeMb} MB
                       </span>
                     );
                   })()}
