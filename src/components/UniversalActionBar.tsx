@@ -91,9 +91,10 @@ export default function UniversalActionBar({
           <button
             id="btn-sync-calendar"
             type="button"
-            className="btn"
-            onClick={() => setIsSyncModalOpen(true)}
-            title="Sinkronisasi Kalender (Google Calendar, Apple, Outlook via iCal Feed URL)"
+            className="btn btn-secondary"
+            onClick={() => canExport && setIsSyncModalOpen(true)}
+            title={canExport ? "Sinkronisasi Kalender (Google Calendar, Apple, Outlook via iCal Feed URL)" : disabledTitle}
+            disabled={!canExport}
             style={{
               padding: '6px 10px',
               fontSize: '12px',
@@ -104,12 +105,26 @@ export default function UniversalActionBar({
               border: '1px solid var(--border-color)',
               background: 'var(--surface-color)',
               color: 'var(--text-primary)',
-              cursor: 'pointer',
+              cursor: canExport ? 'pointer' : 'not-allowed',
+              opacity: canExport ? 1 : 0.45,
               whiteSpace: 'nowrap',
-              height: '32px'
+              height: '32px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (canExport) {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.color = 'var(--accent-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canExport) {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
             }}
           >
-            <CalendarDays size={14} color="var(--accent-primary)" />
+            <CalendarDays size={14} color={canExport ? "var(--accent-primary)" : "var(--text-secondary)"} />
             <span className="hide-mobile">Sinkron Kalender</span>
           </button>
         )}
