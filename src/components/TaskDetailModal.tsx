@@ -646,7 +646,6 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 </div>
               </div>
             )}
-
             {/* Sub-Tasks Display */}
             {task.subTasksJson && (() => {
               let subTasks: SubTask[] = [];
@@ -665,13 +664,6 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 .map(([status, count]) => `${count} ${status}`)
                 .join(', ');
 
-              const groupedSubTasks = subTasks.reduce((acc, st) => {
-                const dateKey = st.tenggatWaktu ? format(new Date(st.tenggatWaktu), 'yyyy-MM-dd') : 'Tanpa Tenggat Waktu';
-                if (!acc[dateKey]) acc[dateKey] = [];
-                acc[dateKey].push(st);
-                return acc;
-              }, {} as Record<string, SubTask[]>);
-
               return (
                 <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -680,43 +672,39 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       {statusSummary ? `(${statusSummary})` : ''}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
-                    {Object.entries(groupedSubTasks)
-                      .sort(([dateA], [dateB]) => dateA === 'Tanpa Tenggat Waktu' ? 1 : dateB === 'Tanpa Tenggat Waktu' ? -1 : dateA.localeCompare(dateB))
-                      .map(([dateKey, tasksGroup]) => (
-                        <div key={dateKey} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }}>
-                            {dateKey === 'Tanpa Tenggat Waktu' ? 'Tanpa Tenggat Waktu' : `Tenggat Waktu: ${format(new Date(dateKey), 'dd MMM yyyy')}`}
-                          </div>
-                          {tasksGroup.map((subTask, sidx) => (
-                            <div key={subTask.id ? `${subTask.id}-${sidx}` : `subtask-${sidx}`} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
-                                  {subTask.pic && (
-                                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <User size={12} /> {subTask.pic}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                {(() => {
-                                  const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
-                                  return (
-                                    <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
-                                      {subTask.status}
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                              {subTask.logs && subTask.logs.length > 0 && (
-                                <SubTaskLogViewer logs={subTask.logs} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {subTasks.map((subTask, sidx) => (
+                      <div key={subTask.id ? `${subTask.id}-${sidx}` : `subtask-${sidx}`} style={{ padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', gap: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                              {subTask.pic && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <User size={12} /> {subTask.pic}
+                                </span>
+                              )}
+                              {subTask.tenggatWaktu && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <CalendarDays size={12} /> Tenggat: {format(new Date(subTask.tenggatWaktu), 'dd MMM yyyy')}
+                                </span>
                               )}
                             </div>
-                          ))}
+                          </div>
+                          {(() => {
+                            const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
+                            return (
+                              <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
+                                {subTask.status}
+                              </span>
+                            );
+                          })()}
                         </div>
-                      ))}
+                        {subTask.logs && subTask.logs.length > 0 && (
+                          <SubTaskLogViewer logs={subTask.logs} />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
