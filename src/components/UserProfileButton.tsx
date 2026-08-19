@@ -72,6 +72,8 @@ export default function UserProfileButton() {
     setIsLoggingOut(true);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('dismissed_backup_reminder');
+      sessionStorage.removeItem('pic_auto_selected_user');
+      localStorage.removeItem('globalPicFilter');
     }
     await signOut({ callbackUrl: '/auth/signin' });
   };
