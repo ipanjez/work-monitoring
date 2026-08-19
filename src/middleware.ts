@@ -43,22 +43,5 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // RBAC: Protect admin-only routes
-  const isAdminOnlyPath =
-    (pathname.startsWith('/users') && pathname !== '/users/profile') ||
-    pathname.startsWith('/logs') ||
-    pathname.startsWith('/api/logs') ||
-    (pathname.startsWith('/api/users') &&
-      pathname !== '/api/users/profile' &&
-      pathname !== '/api/users/pics' &&
-      !pathname.startsWith('/api/users/reset-requests'));
-
-  if (isAdminOnlyPath && (session as any)?.role !== 'ADMIN') {
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
   return NextResponse.next();
 }
