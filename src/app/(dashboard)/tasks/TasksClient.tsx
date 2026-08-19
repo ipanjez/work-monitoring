@@ -18,7 +18,7 @@ import dynamic from 'next/dynamic';
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { exportToRichExcel } from '@/utils/excelExport';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
@@ -918,16 +918,16 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     try {
       const element = document.getElementById('task-table-container');
       if (!element) return;
 
       const canvas = await captureDomElement(element);
-      await copyCanvasToClipboardOrDownload(canvas, 'Tabel_Pekerjaan');
+      await exportCanvasToImage(canvas, 'Tabel_Pekerjaan');
     } catch (err) {
-      console.error('Copy image error:', err);
-      toast.error('Gagal menyalin gambar.');
+      console.error('Export image error:', err);
+      toast.error('Gagal mengekspor gambar.');
     }
   };
 
@@ -1015,7 +1015,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={processedTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />

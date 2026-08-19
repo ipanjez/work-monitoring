@@ -18,7 +18,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToRichExcel } from '@/utils/excelExport';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 import { picAvatarXAxisPlugin } from '@/utils/chartAvatarPlugin';
 import { useNotifications } from '@/context/NotificationContext';
 import { useFilter } from '@/context/FilterContext';
@@ -472,15 +472,15 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     if (!reportsRef.current) return;
     try {
-      addActivityLog?.('Export', 'Copy Image', 'Menyalin gambar laporan kinerja ke clipboard', 'info');
+      addActivityLog?.('Export', 'Export Image', 'Mengekspor gambar laporan kinerja sebagai PNG', 'info');
       const canvas = await captureDomElement(reportsRef.current);
-      await copyCanvasToClipboardOrDownload(canvas, 'Laporan_Kinerja');
+      await exportCanvasToImage(canvas, 'Laporan_Kinerja');
     } catch (error) {
       console.error('html2canvas error:', error);
-      toast.error('Gagal menyalin gambar laporan.');
+      toast.error('Gagal mengekspor gambar laporan.');
     }
   };
 
@@ -519,7 +519,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
           onExportExcel={handleExportFullReport}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />

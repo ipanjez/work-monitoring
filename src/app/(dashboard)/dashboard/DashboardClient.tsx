@@ -26,7 +26,7 @@ import { format, subDays, startOfWeek, endOfWeek, parseISO, startOfDay } from 'd
 import { id } from 'date-fns/locale';
 import { getTaskLocationString, getDynamicBadgeStyle, getTaskExportRow, getLocalTimezone, getTaskFiles, getAdditionalPics, SubTask, Task } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 import { picAvatarXAxisPlugin, getPicAvatarXAxisConfig } from '@/utils/chartAvatarPlugin';
 import { useTheme } from '@/context/ThemeContext';
 import Avatar from '@/components/Avatar';
@@ -687,17 +687,17 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     if (!dashboardRef.current) return;
     try {
       if (addActivityLog) {
-        addActivityLog('COPY_DASHBOARD', 'Salin Dashboard', 'Menyalin gambar dashboard ke clipboard', 'info');
+        addActivityLog('EXPORT_IMAGE', 'Export Gambar', 'Mengekspor gambar dashboard sebagai PNG', 'info');
       }
       const canvas = await captureDomElement(dashboardRef.current);
-      await copyCanvasToClipboardOrDownload(canvas, 'Dashboard_Monitoring');
+      await exportCanvasToImage(canvas, 'Dashboard_Monitoring');
     } catch (error) {
       console.error('html2canvas error:', error);
-      toast.error('Gagal menyalin gambar dashboard.');
+      toast.error('Gagal mengekspor gambar dashboard.');
     }
   };
 
@@ -807,7 +807,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           onExportExcel={handleExportExcelSummary}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />

@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import FileViewer from '@/components/FileViewer';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 
 const locales = {
   'id': id,
@@ -330,16 +330,16 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     try {
       const element = document.getElementById('calendar-container');
       if (!element) return;
 
       const canvas = await captureDomElement(element);
-      await copyCanvasToClipboardOrDownload(canvas, 'Kalender_Pekerjaan');
+      await exportCanvasToImage(canvas, 'Kalender_Pekerjaan');
     } catch (err) {
-      console.error('Copy Image error:', err);
-      toast.error('Gagal menyalin gambar');
+      console.error('Export Image error:', err);
+      toast.error('Gagal mengekspor gambar');
     }
   };
 
@@ -402,7 +402,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />

@@ -12,7 +12,7 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 import { getTaskComments, getTaskFiles, getHistoryLogs, getDynamicBadgeStyle, getTaskExportRow, getPriorityBadgeClass, getTaskLocationString } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
@@ -483,7 +483,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     try {
       const element = document.getElementById('kanban-board-container');
       if (!element) return;
@@ -512,10 +512,10 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         }
       });
 
-      await copyCanvasToClipboardOrDownload(canvas, `Board_Pekerjaan`);
+      await exportCanvasToImage(canvas, `Board_Pekerjaan`);
     } catch (err) {
-      console.error('Copy Image error:', err);
-      toast.error('Gagal menyalin gambar');
+      console.error('Export Image error:', err);
+      toast.error('Gagal mengekspor gambar');
     }
   };
 
@@ -582,7 +582,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />

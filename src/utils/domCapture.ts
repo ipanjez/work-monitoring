@@ -89,6 +89,25 @@ export async function captureDomElement(
           }
         });
 
+        // 5. Fix chart canvases - ensure they have proper sizing and aren't clipped
+        const chartContainers = clonedDoc.querySelectorAll('[class*="chart"], [class*="Chart"], [class*="graph"], [class*="Graph"]');
+        chartContainers.forEach((container: any) => {
+          container.style.setProperty('overflow', 'visible', 'important');
+          container.style.setProperty('display', 'flex', 'important');
+          container.style.setProperty('justify-content', 'center', 'important');
+          container.style.setProperty('align-items', 'center', 'important');
+          container.style.setProperty('min-height', 'auto', 'important');
+        });
+
+        // 6. Ensure all canvas elements (charts) maintain aspect ratio
+        const canvases = clonedDoc.querySelectorAll('canvas');
+        canvases.forEach((cvs: any) => {
+          cvs.style.setProperty('max-width', '100%', 'important');
+          cvs.style.setProperty('height', 'auto', 'important');
+          cvs.style.setProperty('display', 'block', 'important');
+          cvs.style.setProperty('margin', '0 auto', 'important');
+        });
+
         if (options?.extraStyles) {
           options.extraStyles(clonedDoc, clonedEl as HTMLElement);
         }
@@ -99,40 +118,31 @@ export async function captureDomElement(
   return canvas;
 }
 
-export async function copyCanvasToClipboardOrDownload(
+/**
+ * Export canvas as PNG image file (always downloads).
+ */
+export async function exportCanvasToImage(
   canvas: HTMLCanvasElement,
-  fallbackFilename: string = 'Screenshot'
+  fileNamePrefix: string = 'Screenshot'
 ): Promise<void> {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
   if (!blob) {
     throw new Error('Gagal menghasilkan gambar');
   }
 
-  let copied = false;
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function') {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      copied = true;
-      toast.success('Halaman berhasil disalin ke clipboard! 📋');
-    }
-  } catch (err) {
-    console.warn('Clipboard write API failed or was blocked by browser permissions, downloading instead:', err);
-  }
-
-  if (!copied) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fallbackFilename}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Gambar berhasil diunduh (browser membatasi izin clipboard) 📥');
-  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast.success('Gambar berhasil diunduh! 📥');
 }
+
+/** @deprecated Use exportCanvasToImage instead */
+export const copyCanvasToClipboardOrDownload = exportCanvasToImage;
 
 export async function exportCanvasToPdf(
   canvas: HTMLCanvasElement,

@@ -20,7 +20,7 @@ import {
   getGoogleCalendarUrl, handleExportICS, getTaskExportRow 
 } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
-import { captureDomElement, copyCanvasToClipboardOrDownload, exportCanvasToPdf } from '@/utils/domCapture';
+import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
@@ -279,15 +279,15 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     }
   };
 
-  const handleCopyImage = async () => {
+  const handleExportImage = async () => {
     const element = document.getElementById('team-container');
     if (!element) return;
     try {
       const canvas = await captureDomElement(element);
-      await copyCanvasToClipboardOrDownload(canvas, 'Manajemen_Tim');
+      await exportCanvasToImage(canvas, 'Manajemen_Tim');
     } catch (e) {
       console.error(e);
-      toast.error('Gagal menyalin gambar.');
+      toast.error('Gagal mengekspor gambar.');
     }
   };
 
@@ -360,7 +360,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
-          onCopyImage={handleCopyImage}
+          onExportImage={handleExportImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
