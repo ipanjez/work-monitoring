@@ -1247,18 +1247,57 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       })() : '-'}
                     </td>
                     <td style={{ padding: '8px 6px', fontWeight: '500' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Avatar name={task.pic} src={masterPicAvatars?.[task.pic]} size={20} masterColors={masterColors} />
-                          <span style={{ fontSize: '12px', fontWeight: '600' }}>{task.pic}</span>
-                        </div>
-                        {extraPics.length > 0 && extraPics.map((p, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
-                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{p}</span>
+                      {(() => {
+                        const allPics = [task.pic, ...extraPics].filter(Boolean);
+                        if (allPics.length === 0) return '-';
+
+                        const maxVisible = 3;
+                        const visiblePics = allPics.slice(0, maxVisible);
+                        const remainingCount = allPics.length - maxVisible;
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-start' }}>
+                            {visiblePics.map((p, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
+                                <span style={{ fontSize: i === 0 ? '12px' : '11px', fontWeight: i === 0 ? '600' : 'normal', color: i === 0 ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                                  {p}
+                                </span>
+                              </div>
+                            ))}
+                            {remainingCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  hasPermission(roleConfig, 'view_detail', userRole)
+                                    ? openDetail(task)
+                                    : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas.');
+                                }}
+                                title={`Seluruh PIC:\n${allPics.map((p, i) => `${i + 1}. ${p}`).join('\n')}`}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--accent-primary)',
+                                  fontSize: '10.5px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  padding: '1px 2px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  textDecoration: 'none'
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                              >
+                                +{remainingCount} PIC lainnya
+                              </button>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </td>
                     <td className="hide-mobile" style={{ padding: '8px 6px' }}>
                       {(() => {
@@ -1631,14 +1670,40 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   {/* PIC Badge */}
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600 }}>PIC:</span>
-                    <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                      {task.pic}
-                    </span>
-                    {extraPics.map((p, i) => (
-                      <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                        {p}
-                      </span>
-                    ))}
+                    {(() => {
+                      const allPics = [task.pic, ...extraPics].filter(Boolean);
+                      const maxVisible = 3;
+                      const visiblePics = allPics.slice(0, maxVisible);
+                      const remainingCount = allPics.length - maxVisible;
+
+                      return (
+                        <>
+                          {visiblePics.map((p, i) => (
+                            <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                              {p}
+                            </span>
+                          ))}
+                          {remainingCount > 0 && (
+                            <span
+                              title={`Seluruh PIC:\n${allPics.map((p, i) => `${i + 1}. ${p}`).join('\n')}`}
+                              style={{
+                                fontSize: '10.5px',
+                                fontWeight: 600,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                background: 'rgba(59, 130, 246, 0.12)',
+                                color: 'var(--accent-primary)',
+                                border: '1px solid rgba(59, 130, 246, 0.25)',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => openDetail(task)}
+                            >
+                              +{remainingCount} lainnya
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Category & Date */}
