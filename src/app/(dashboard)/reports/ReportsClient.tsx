@@ -457,43 +457,13 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    if (!reportsRef.current) return;
     setIsExportingPdf(true);
     addActivityLog?.('Export', 'Download PDF', `Mengunduh Laporan Kinerja PDF (${filteredTasks.length} pekerjaan)`, 'success');
     try {
-      const doc = new jsPDF('landscape');
-      doc.setFontSize(16);
-      doc.text('Laporan Analisis Kinerja & Manajemen Pekerjaan', 14, 18);
-      doc.setFontSize(10);
-      doc.text(`Dicetak pada: ${format(new Date(), 'dd MMMM yyyy HH:mm')} | Total Pekerjaan: ${filteredTasks.length} | Tingkat Penyelesaian: ${completionRate}%`, 14, 26);
-      
-      const tableColumn = ['No', 'Nama Pekerjaan', 'PIC', 'Kategori', 'Prioritas', 'Status', 'Progress', 'Tenggat Waktu'];
-      const tableRows: any[] = [];
-
-      filteredTasks.forEach((t, idx) => {
-        tableRows.push([
-          idx + 1,
-          t.nama,
-          t.pic || '-',
-          t.kategori || 'Umum',
-          t.prioritas || 'Medium',
-          t.status,
-          `${t.progress || 0}%`,
-          format(new Date(t.endDate), 'dd MMM yyyy')
-        ]);
-      });
-
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 32,
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [59, 130, 246] },
-      });
-
-      doc.save(`Laporan_Kinerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('Laporan PDF berhasil diunduh 📄');
+      const canvas = await captureDomElement(reportsRef.current);
+      await exportCanvasToPdf(canvas, 'Laporan_Kinerja');
     } catch (error) {
       console.error('PDF Export error:', error);
       toast.error('Gagal membuat PDF');
@@ -516,6 +486,7 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
 
   return (
     <motion.div 
+      id="reports-container"
       style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}

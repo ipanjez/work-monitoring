@@ -670,76 +670,21 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     return acc;
   }, {} as Record<string, number>);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
     setIsExportingPdf(true);
-    setTimeout(() => {
-      try {
-        if (addActivityLog) {
-          addActivityLog('EXPORT_PDF', 'Export Laporan', 'Mengekspor laporan Dashboard ke format PDF', 'info');
-        }
-
-        const doc = new jsPDF('landscape');
-        
-        doc.setFontSize(16);
-        doc.text('Laporan Eksekutif Pekerjaan', 14, 15);
-        
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Dicetak pada: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, 22);
-        
-        // Summary Metrics
-        doc.setFontSize(11);
-        doc.setTextColor(0);
-        const statusText = Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join('   |   ');
-        doc.text(`Total Pekerjaan: ${total}   |   ${statusText}   |   Rata-rata Progress: ${avgProgress}%`, 14, 30);
-
-        // Detail Table
-        const tableColumn = ["Pekerjaan", "PIC", "Kategori", "Prioritas", "Status", "Progress", "Tenggat Waktu", "Deskripsi"];
-        const tableRows: any[] = [];
-
-        filteredTasks.forEach(t => {
-          const row = [
-            t.nama,
-            t.pic,
-            t.kategori || 'Umum',
-            t.prioritas || 'Medium',
-            t.status,
-            `${t.progress || 0}%`,
-            format(new Date(t.endDate), 'dd MMM yyyy') + (!(t as any).isAllDay && (t as any).endTime ? `, ${(t as any).endTime}` : ''),
-            t.deskripsi || '-'
-          ];
-          tableRows.push(row);
-        });
-
-        autoTable(doc, {
-          head: [tableColumn],
-          body: tableRows,
-          startY: 35,
-          theme: 'grid',
-          styles: { fontSize: 8, cellPadding: 3 },
-          headStyles: { fillColor: [59, 130, 246] },
-          columnStyles: {
-            0: { cellWidth: 40 }, // Pekerjaan
-            6: { cellWidth: 25 }, // Tenggat
-            7: { cellWidth: 50 }, // Deskripsi
-          }
-        });
-
-        const pdfBlob = doc.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = pdfUrl;
-        a.download = `Dashboard_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(pdfUrl);
-      } catch (error) {
-        console.error('PDF Export error:', error);
-      } finally {
-        setIsExportingPdf(false);
+    try {
+      if (addActivityLog) {
+        addActivityLog('EXPORT_PDF', 'Export Laporan', 'Mengekspor laporan Dashboard ke format PDF', 'info');
       }
-    }, 800);
+      const canvas = await captureDomElement(dashboardRef.current);
+      await exportCanvasToPdf(canvas, 'Dashboard_Monitoring');
+    } catch (error) {
+      console.error('PDF Export error:', error);
+      toast.error('Gagal membuat PDF');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleCopyImage = async () => {

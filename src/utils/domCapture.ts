@@ -11,10 +11,15 @@ export async function captureDomElement(
 ): Promise<HTMLCanvasElement> {
   const html2canvas = (await import('html2canvas')).default;
 
-  const bg = options?.backgroundColor || (document.documentElement.classList.contains('dark') ? '#0f172a' : '#f8fafc');
+  const currentTheme = typeof document !== 'undefined'
+    ? (document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'dark')
+    : 'dark';
+  const isDark = currentTheme === 'dark';
 
-  const scrollW = options?.targetWidth || Math.max(element.scrollWidth, element.offsetWidth, 1200);
-  const scrollH = Math.max(element.scrollHeight, element.offsetHeight, 600);
+  const bg = options?.backgroundColor || (isDark ? '#0f172a' : '#f1f5f9');
+  const textColor = isDark ? '#f8fafc' : '#0f172a';
+
+  const scrollW = options?.targetWidth || Math.max(element.scrollWidth, element.offsetWidth, 1280);
 
   const canvas = await html2canvas(element, {
     scale: 2,
@@ -23,18 +28,32 @@ export async function captureDomElement(
     logging: false,
     backgroundColor: bg,
     windowWidth: scrollW,
-    windowHeight: scrollH,
-    width: scrollW,
-    height: scrollH,
+    scrollX: 0,
+    scrollY: 0,
     onclone: (clonedDoc) => {
-      const clonedEl = clonedDoc.getElementById(element.id) || clonedDoc.body;
+      // 1. Synchronize theme attributes & root styles
+      clonedDoc.documentElement.setAttribute('data-theme', currentTheme);
+      clonedDoc.documentElement.style.backgroundColor = bg;
+      clonedDoc.documentElement.style.color = textColor;
+      clonedDoc.body.style.backgroundColor = bg;
+      clonedDoc.body.style.color = textColor;
+      clonedDoc.body.style.margin = '0';
+      clonedDoc.body.style.padding = '0';
+
+      const clonedEl = clonedDoc.getElementById(element.id) || (clonedDoc.querySelector(`[data-capture-root]`) as HTMLElement) || clonedDoc.body;
       if (clonedEl) {
-        // Expand scroll containers
+        // 2. Set generous padding & full visibility
+        clonedEl.style.setProperty('box-sizing', 'border-box', 'important');
+        clonedEl.style.setProperty('padding', '24px', 'important');
+        clonedEl.style.setProperty('padding-bottom', '48px', 'important');
+        clonedEl.style.setProperty('background', bg, 'important');
+        clonedEl.style.setProperty('color', textColor, 'important');
         clonedEl.style.setProperty('overflow', 'visible', 'important');
         clonedEl.style.setProperty('height', 'auto', 'important');
         clonedEl.style.setProperty('max-height', 'none', 'important');
+        clonedEl.style.setProperty('width', '100%', 'important');
 
-        // Fix all color-mix or gradient crashes in html2canvas
+        // 3. Fix all color-mix or gradient crashes in html2canvas
         const badges = clonedDoc.querySelectorAll('[style*="color-mix"], .badge, [class*="badge"]');
         badges.forEach((b: any) => {
           const bgStyle = b.style.backgroundColor;
@@ -46,6 +65,13 @@ export async function captureDomElement(
               b.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
             }
           }
+        });
+
+        // 4. Ensure tables, cards, and grid containers don't clip contents
+        const containers = clonedEl.querySelectorAll('table, .glass, [class*="card"], [class*="container"], [class*="table"]');
+        containers.forEach((c: any) => {
+          c.style.setProperty('overflow', 'visible', 'important');
+          c.style.setProperty('max-height', 'none', 'important');
         });
 
         if (options?.extraStyles) {
