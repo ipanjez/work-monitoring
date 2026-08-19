@@ -1402,7 +1402,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                                     e.stopPropagation();
                                     hasPermission(roleConfig, 'view_detail', userRole)
                                       ? setPreviewFile(f)
-                                      : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                                      : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
                                   }}
                                 >
                                   <div
@@ -1465,7 +1465,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                                   e.stopPropagation();
                                   hasPermission(roleConfig, 'view_detail', userRole)
                                     ? openDetail(task)
-                                    : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                                    : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
                                 }}
                                 style={{
                                   background: 'none',
@@ -1781,7 +1781,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                                 e.stopPropagation();
                                 hasPermission(roleConfig, 'view_detail', userRole)
                                   ? setPreviewFile(f)
-                                  : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                                  : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
                               }}
                             >
                               <div

@@ -1020,7 +1020,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                     if (hasPermission(roleConfig, 'view_detail', userRole)) {
                       openDetail(t);
                     } else {
-                      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
                     }
                   }}
                 >
@@ -1128,7 +1128,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
                         if (hasPermission(roleConfig, 'view_detail', userRole)) {
                           openDetail(t);
                         } else {
-                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
                         }
                       }}
                     >

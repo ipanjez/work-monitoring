@@ -661,9 +661,10 @@ export default function GlobalAddButton() {
       {isMobile ? (
         <button
           onClick={() => {
+            const userRole = (session?.user as any)?.role || 'GUEST';
             handleGuestAction(() => {
               setIsOpen(!isOpen);
-            });
+            }, hasPermission(roleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menambah data pekerjaan.');
           }}
           className="mobile-fab"
           title="Tambah Pekerjaan"
@@ -673,9 +674,10 @@ export default function GlobalAddButton() {
       ) : (
         <button
           onClick={() => {
+            const userRole = (session?.user as any)?.role || 'GUEST';
             handleGuestAction(() => {
               setIsOpen(!isOpen);
-            });
+            }, hasPermission(roleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menambah data pekerjaan.');
           }}
           className="btn btn-primary"
           style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, borderRadius: '8px' }}

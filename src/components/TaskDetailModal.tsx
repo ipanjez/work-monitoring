@@ -364,20 +364,20 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               }}>
                 {/* Left group: Primary action buttons */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {onDuplicate && (hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDuplicate)} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
+                  {onDuplicate && (hasPermission(currentRoleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDuplicate, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menduplikasi pekerjaan.')} title="Duplikasi / Salin Pekerjaan Ini Sebagai Pekerjaan Baru">
                       <Copy size={13} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
                     </button>
                   )}
 
-                  {onEdit && (hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
-                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onEdit)} title="Edit Pekerjaan Ini">
+                  {onEdit && (hasPermission(currentRoleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-secondary" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onEdit, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengedit data pekerjaan.')} title="Edit Pekerjaan Ini">
                       <Edit size={13} style={{ marginRight: '4px' }} /> Edit
                     </button>
                   )}
 
-                  {onDelete && (hasPermission(roleConfig, 'delete_task', userRole) || userRole === 'GUEST') && (
-                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDelete)} title="Hapus Pekerjaan">
+                  {onDelete && (hasPermission(currentRoleConfig, 'delete_task', userRole) || userRole === 'GUEST') && (
+                    <button className="btn btn-danger" style={{ padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 500 }} onClick={() => handleGuestAction(onDelete, hasPermission(currentRoleConfig, 'delete_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menghapus pekerjaan.')} title="Hapus Pekerjaan">
                       <Trash2 size={13} style={{ marginRight: '4px' }} /> Hapus
                     </button>
                   )}
@@ -413,7 +413,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
                   <button
                     className="btn btn-secondary"
-                    onClick={() => handleGuestAction(() => handleExportICS(task))}
+                    onClick={() => handleGuestAction(() => handleExportICS(task), hasPermission(currentRoleConfig, 'export_data', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.')}
                     style={{ padding: '7px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Download .ics"
                   >
@@ -442,7 +442,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
                         exportTaskPdf(task, currentAppName, siteUrl);
                         toast.success('PDF berhasil di-download!');
-                      });
+                      }, hasPermission(currentRoleConfig, 'export_data', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
                     }}
                     style={{ padding: '7px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
                     title="Export PDF"
@@ -755,7 +755,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                             type="button"
                             className="btn btn-secondary"
                             style={{ padding: '4px 8px' }}
-                            onClick={() => handleGuestAction(() => setPreviewFile(f))}
+                            onClick={() => handleGuestAction(() => setPreviewFile(f), hasPermission(currentRoleConfig, 'view_detail', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.')}
                           >
                             <Eye size={14} color="var(--text-secondary)" />
                           </button>
