@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info, GripVertical } from 'lucide-react';
+import { X, UserPlus, Users, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -238,6 +238,22 @@ export default function TaskAddEditModal({
     });
   };
 
+  const handleSelectAllPics = () => {
+    if (!editingTask) return;
+    const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
+    if (validPics.length === 0) return toast.error('Belum ada data Master PIC yang tersedia');
+
+    const primaryPic = editingTask.pic && validPics.includes(editingTask.pic) ? editingTask.pic : validPics[0];
+    const otherPics = validPics.filter(p => p !== primaryPic);
+
+    setEditingTask({
+      ...editingTask,
+      pic: primaryPic,
+      additionalPicsList: otherPics
+    });
+    toast.success(`Berhasil memilih seluruh ${validPics.length} PIC!`);
+  };
+
   const handleUpdateAdditionalPic = (idx: number, value: string) => {
     if (!editingTask) return;
     const updated = [...(editingTask.additionalPicsList || [])];
@@ -451,14 +467,25 @@ export default function TaskAddEditModal({
                     Penanggung Jawab (PIC Utama & Tambahan) *
                     <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
                   </label>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onClick={handleAddAnotherPic}
-                  >
-                    <UserPlus size={14} /> + Tambah PIC Lain
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={handleSelectAllPics}
+                      title="Pilih seluruh nama PIC personil yang terdaftar"
+                    >
+                      <Users size={14} color="var(--accent-primary)" /> Semua PIC
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={handleAddAnotherPic}
+                    >
+                      <UserPlus size={14} /> + Tambah PIC Lain
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -996,6 +1023,25 @@ export default function TaskAddEditModal({
                                 >
                                   {safePicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
                                 </select>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ padding: '0 8px' }}
+                                  title="Pilih Seluruh PIC"
+                                  onClick={() => {
+                                    const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
+                                    if (validPics.length === 0) return toast.error('Belum ada data PIC');
+                                    const updated = [...(editingTask.subTasksList || [])];
+                                    const currentPrimary = updated[idx].pic && validPics.includes(updated[idx].pic) ? updated[idx].pic : validPics[0];
+                                    const others = validPics.filter(p => p !== currentPrimary);
+                                    updated[idx].pic = currentPrimary;
+                                    updated[idx].additionalPics = others;
+                                    setEditingTask({ ...editingTask, subTasksList: updated });
+                                    toast.success('Berhasil memilih seluruh PIC untuk sub pekerjaan ini!');
+                                  }}
+                                >
+                                  <Users size={14} color="var(--accent-primary)" />
+                                </button>
                                 <button
                                   type="button"
                                   className="btn btn-secondary"
