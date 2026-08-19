@@ -19,11 +19,9 @@ import EmptyState from '@/components/EmptyState';
 
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
-import { useGuestAccess } from '@/context/GuestAccessContext';
 
 export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { data: session } = useSession();
-  const { handleGuestAction } = useGuestAccess();
   const userRole: string = (session?.user as any)?.role || 'PIC';
 
   const {
@@ -704,7 +702,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       }}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                      onClick={() => openDetail(task)}
                       style={{
                         backgroundColor: 'var(--surface-color)',
                         padding: '8px',

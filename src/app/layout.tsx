@@ -11,7 +11,6 @@ import IdleTimer from '@/components/IdleTimer';
 import FocusModeToggle from '@/components/FocusModeToggle';
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import NextTopLoader from 'nextjs-toploader';
-import { GuestAccessProvider } from "@/context/GuestAccessContext";
 
 export const metadata: Metadata = {
   title: "Dashboard Monitoring Pekerjaan",
@@ -28,12 +27,11 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <NextTopLoader color="var(--accent-primary)" showSpinner={false} height={3} />
         <SessionProviderWrapper>
-          <GuestAccessProvider>
-            <ThemeProvider>
-              <MasterProvider>
-                <FilterProvider>
-                  <NotificationProvider>
-                    {children}
+          <ThemeProvider>
+            <MasterProvider>
+              <FilterProvider>
+                <NotificationProvider>
+                  {children}
                   <Toaster 
                     position="top-right" 
                     containerStyle={{
@@ -60,11 +58,10 @@ export default function RootLayout({
                       },
                     }} 
                   />
-                  </NotificationProvider>
-                </FilterProvider>
-              </MasterProvider>
-            </ThemeProvider>
-          </GuestAccessProvider>
+                </NotificationProvider>
+              </FilterProvider>
+            </MasterProvider>
+          </ThemeProvider>
         </SessionProviderWrapper>
       </body>
     </html>

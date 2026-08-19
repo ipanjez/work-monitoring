@@ -29,7 +29,6 @@ import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
-import { useGuestAccess } from '@/context/GuestAccessContext';
 import { useTaskModal } from '@/context/TaskModalContext';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi';
@@ -38,7 +37,6 @@ type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progres
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
-  const { handleGuestAction } = useGuestAccess();
   const userRole: string = (session?.user as any)?.role || 'PIC';
   const { addActivityLog } = useNotifications();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -1200,7 +1198,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                           color: 'var(--text-primary)',
                           cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default'
                         }}
-                        onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                        onClick={() => openDetail(task)}
                       >
                         {task.nama}
                       </div>
@@ -1597,7 +1595,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <div
                 key={task.id}
                 className="mobile-task-card"
-                onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                onClick={() => openDetail(task)}
                 style={{
                   cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default',
                   borderLeft: selectedTasks.has(task.id) ? '4px solid var(--accent-primary)' : undefined,

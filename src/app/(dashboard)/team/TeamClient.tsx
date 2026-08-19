@@ -31,7 +31,6 @@ import Avatar from '@/components/Avatar';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import { copyToClipboard } from '@/utils/clipboard';
-import { useGuestAccess } from '@/context/GuestAccessContext';
 import RoleBadge from '@/components/RoleBadge';
 
 type WorkloadFilter = 'all' | 'high' | 'optimal' | 'low';
@@ -39,7 +38,6 @@ type TaskTabFilter = 'all' | 'in_progress' | 'done' | 'urgent';
 
 export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
-  const { handleGuestAction } = useGuestAccess();
   const userRole = (session?.user as any)?.role || '';
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
 
@@ -504,9 +502,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleGuestAction(() => {
-                        openCreate({ pic: picName });
-                      }, hasPermission(roleConfig, 'manage_task', userRole));
+                      openCreate({ pic: picName });
                     }}
                     title={`Tambah pekerjaan untuk ${picName}`}
                     style={{
@@ -640,7 +636,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                             cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
                           }} 
                           onClick={() => { 
-                            handleGuestAction(() => openDetail(t), hasPermission(roleConfig, 'view_detail', userRole));
+                            openDetail(t);
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -679,7 +675,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                             <button 
                               className="btn btn-secondary" 
                               style={{ padding: '4px 8px', fontSize: '11.5px' }} 
-                              onClick={() => handleGuestAction(() => openDetail(t), hasPermission(roleConfig, 'view_detail', userRole))}
+                              onClick={() => openDetail(t)}
                             >
                               Detail
                             </button>

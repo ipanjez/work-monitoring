@@ -12,7 +12,6 @@ import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, ge
 import TaskTimeline from './TaskTimeline';
 import { exportTaskPdf } from '@/utils/exportPdf';
 import TaskEmailModal from './TaskEmailModal';
-import { useGuestAccess } from '@/context/GuestAccessContext';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
   if (!logs || logs.length === 0) return null;
@@ -46,7 +45,6 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 
 export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit, onDuplicate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
-  const { handleGuestAction, isGuest } = useGuestAccess();
   const userRole = (session?.user as any)?.role || '';
   const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig | null>(null);
   useEffect(() => {
@@ -125,24 +123,26 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
-    handleGuestAction(async () => {
-      if (!confirm('Hapus komentar ini?')) return;
-      const updatedComments = localComments.filter(c => c.id !== commentId);
-      setLocalComments(updatedComments);
-      try {
-        await fetch(`/api/tasks/${task!.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
-        });
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-        toast.success('Komentar dihapus');
-      } catch {
-        toast.error('Gagal menghapus komentar');
-        setLocalComments(localComments); // revert
-      }
-    }, hasPermission(currentRoleConfig, 'upload_comment', userRole));
+    if (!hasPermission(currentRoleConfig, 'upload_comment', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengelola komentar.');
+      return;
+    }
+    if (!confirm('Hapus komentar ini?')) return;
+    const updatedComments = localComments.filter(c => c.id !== commentId);
+    setLocalComments(updatedComments);
+    try {
+      await fetch(`/api/tasks/${task!.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
+      });
+      router.refresh();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      toast.success('Komentar dihapus');
+    } catch (err) {
+      toast.error('Gagal menghapus komentar');
+      setLocalComments(localComments);
+    }
   };
 
 
@@ -203,12 +203,15 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
-    handleGuestAction(async () => {
-      const finalAuthor = session?.user?.name || commentAuthor;
-      if (!newComment.trim() || !finalAuthor.trim()) {
-        toast.error('Nama dan komentar tidak boleh kosong');
-        return;
-      }
+    if (!hasPermission(currentRoleConfig, 'upload_comment', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengelola komentar.');
+      return;
+    }
+    const finalAuthor = session?.user?.name || commentAuthor;
+    if (!newComment.trim() || !finalAuthor.trim()) {
+      toast.error('Nama dan komentar tidak boleh kosong');
+      return;
+    }
 
     localStorage.setItem('commentAuthor', finalAuthor.trim());
 
@@ -219,16 +222,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       createdAt: new Date().toISOString()
     };
 
-    const newLog: LogItem = {
-      action: `Menambahkan komentar`,
-      details: `"${newComment.trim()}"`,
-      timestamp: new Date().toISOString()
-    };
-    const updatedLogs = [...localHistoryLogs, newLog];
     const updatedComments = [...localComments, comment];
-
     setLocalComments(updatedComments);
-    setLocalHistoryLogs(updatedLogs);
     setNewComment('');
     setIsSubmittingComment(true);
 
@@ -236,23 +231,27 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       const res = await fetch(`/api/tasks/${task!.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          commentsJson: JSON.stringify(updatedComments),
-          historyLogsJson: JSON.stringify(updatedLogs)
-        })
+        body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
       });
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
-      toast.success('Komentar berhasil ditambahkan');
-      if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${finalAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
+
+      addActivityLog(
+        'TASK_COMMENT',
+        `Komentar Baru: ${task!.nama}`,
+        `${finalAuthor} menambahkan komentar: "${comment.text.length > 60 ? comment.text.slice(0, 60) + '...' : comment.text}"`,
+        'info',
+        task!.id
+      );
+
       router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
+      toast.success('Komentar berhasil ditambahkan');
     } catch (e) {
       toast.error('Gagal menyimpan komentar');
-      setLocalComments(localComments); // revert
+      setLocalComments(localComments);
     } finally {
       setIsSubmittingComment(false);
     }
-    }, hasPermission(currentRoleConfig, 'upload_comment', userRole));
   };
 
   const handleCopyTaskDetails = async () => {
@@ -367,19 +366,19 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   {/* Primary actions group */}
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     {onDuplicate && hasPermission(currentRoleConfig, 'manage_task', userRole) && (
-                      <button className="btn btn-secondary" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px' }} onClick={() => handleGuestAction(onDuplicate, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menduplikasi pekerjaan.')} title="Duplikasi / Salin Pekerjaan Ini">
+                      <button className="btn btn-secondary" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px' }} onClick={onDuplicate} title="Duplikasi / Salin Pekerjaan Ini">
                         <Copy size={14} style={{ marginRight: '4px', color: 'var(--accent-primary)' }} /> Duplikasi
                       </button>
                     )}
 
                     {onEdit && hasPermission(currentRoleConfig, 'manage_task', userRole) && (
-                      <button className="btn btn-secondary" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px' }} onClick={() => handleGuestAction(onEdit, hasPermission(currentRoleConfig, 'manage_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengedit data pekerjaan.')} title="Edit Pekerjaan Ini">
+                      <button className="btn btn-secondary" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px' }} onClick={onEdit} title="Edit Pekerjaan Ini">
                         <Edit size={14} style={{ marginRight: '4px' }} /> Edit
                       </button>
                     )}
 
                     {onDelete && hasPermission(currentRoleConfig, 'delete_task', userRole) && (
-                      <button className="btn btn-danger" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => handleGuestAction(onDelete, hasPermission(currentRoleConfig, 'delete_task', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk menghapus pekerjaan.')} title="Hapus Pekerjaan">
+                      <button className="btn btn-danger" style={{ padding: '6px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, height: '36px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={onDelete} title="Hapus Pekerjaan">
                         <Trash2 size={14} style={{ marginRight: '4px' }} /> Hapus
                       </button>
                     )}
@@ -393,24 +392,18 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     <button
                       className="btn btn-secondary"
                       style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={() => handleGuestAction(handleCopyTaskDetails)}
+                      onClick={handleCopyTaskDetails}
                       title="Salin Detail Pekerjaan"
                     >
                       <Copy size={15} />
                     </button>
 
                     <a
-                      href={isGuest ? undefined : getGoogleCalendarUrl(task)}
-                      target={isGuest ? undefined : "_blank"}
+                      href={getGoogleCalendarUrl(task)}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-secondary"
                       style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                      onClick={(e) => {
-                        if (isGuest) {
-                          e.preventDefault();
-                          handleGuestAction(() => {});
-                        }
-                      }}
                       title="Tambah ke Google Calendar"
                     >
                       <ExternalLink size={15} />
@@ -418,7 +411,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
                     <button
                       className="btn btn-secondary"
-                      onClick={() => handleGuestAction(() => handleExportICS(task), hasPermission(currentRoleConfig, 'export_data', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.')}
+                      onClick={() => {
+                        if (!hasPermission(currentRoleConfig, 'export_data', userRole)) {
+                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
+                          return;
+                        }
+                        handleExportICS(task);
+                      }}
                       style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Download .ics"
                     >
@@ -442,12 +441,14 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     <button
                       className="btn"
                       onClick={() => {
-                        handleGuestAction(() => {
-                          const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
-                          const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
-                          const { url, fileName } = exportTaskPdf(task, currentAppName, siteUrl, false);
-                          setPreviewFile({ name: fileName, url: url });
-                        }, hasPermission(currentRoleConfig, 'export_data', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
+                        if (!hasPermission(currentRoleConfig, 'export_data', userRole)) {
+                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
+                          return;
+                        }
+                        const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
+                        const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
+                        const { url, fileName } = exportTaskPdf(task, currentAppName, siteUrl, false);
+                        setPreviewFile({ name: fileName, url: url });
                       }}
                       style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}
                       title="Export PDF"
@@ -457,7 +458,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
                     <button
                       className="btn"
-                      onClick={() => handleGuestAction(() => setIsEmailModalOpen(true))}
+                      onClick={() => setIsEmailModalOpen(true)}
                       style={{
                         width: '36px',
                         height: '36px',
@@ -763,7 +764,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                             type="button"
                             className="btn btn-secondary"
                             style={{ padding: '4px 8px' }}
-                            onClick={() => handleGuestAction(() => setPreviewFile(f), hasPermission(currentRoleConfig, 'view_detail', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.')}
+                            onClick={() => {
+                              if (!hasPermission(currentRoleConfig, 'view_detail', userRole)) {
+                                toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.');
+                                return;
+                              }
+                              setPreviewFile(f);
+                            }}
                           >
                             <Eye size={14} color="var(--text-secondary)" />
                           </button>
