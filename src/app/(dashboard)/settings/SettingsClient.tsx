@@ -48,7 +48,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const canSystemConfig = hasPermission(roleConfig, 'system_config', userRole);
   const canDatabaseBackup = hasPermission(roleConfig, 'database_backup', userRole);
 
-  const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity, toggleFocusMode } = useTheme();
+  const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity } = useTheme();
 
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
 
@@ -947,19 +947,6 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 Padat (Compact)
               </button>
             </div>
-          </div>
-
-          <div style={{ height: '1px', background: 'var(--border-color)' }} />
-
-          {/* Focus Mode (Zen Mode) */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'block', fontSize: '14px' }}>Mode Fokus (Zen Mode)</span>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Sembunyikan bilah navigasi samping untuk tampilan layar penuh saat presentasi.</span>
-            </div>
-            <button className="btn btn-primary" onClick={toggleFocusMode} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', fontSize: '13px' }}>
-              <Maximize size={16} /> Aktifkan Mode Fokus
-            </button>
           </div>
         </section>
 
