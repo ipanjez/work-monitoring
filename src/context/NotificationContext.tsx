@@ -33,10 +33,9 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 // Synthesized clean 2-tone notification chime using Web Audio API (no external file required)
-function playNotificationChime() {
+function playNotificationChime(isMuted: boolean) {
   try {
     if (typeof window === 'undefined') return;
-    const isMuted = localStorage.getItem('notification_sound_muted') === 'true';
     if (isMuted) return;
 
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -83,35 +82,45 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const userId = (session?.user as any)?.id || session?.user?.email || 'guest';
 
   const storageKey = `dashboard_notifications_${userId}`;
-  const clearedAtKey = `dashboard_notifications_cleared_at_${userId}`;
 
   const notificationsRef = useRef<NotificationItem[]>([]);
   const lastCheckTimeRef = useRef<Date>(new Date());
   const isFetchingRef = useRef<boolean>(false);
+  const isSoundEnabledRef = useRef<boolean>(true);
+  const userNotificationStateRef = useRef<{ readIds: number[]; clearedAt: number; soundMuted: boolean }>({
+    readIds: [],
+    clearedAt: 0,
+    soundMuted: false
+  });
 
   // Keep ref synced with state
   useEffect(() => {
     notificationsRef.current = notifications;
   }, [notifications]);
 
-  // Load sound preference
   useEffect(() => {
-    try {
-      const savedMuted = localStorage.getItem('notification_sound_muted');
-      if (savedMuted === 'true') {
-        setIsSoundEnabled(false);
-      }
-    } catch (e) { }
-  }, []);
+    isSoundEnabledRef.current = isSoundEnabled;
+  }, [isSoundEnabled]);
 
   const toggleSound = useCallback(() => {
     setIsSoundEnabled(prev => {
       const next = !prev;
+      isSoundEnabledRef.current = next;
       localStorage.setItem('notification_sound_muted', String(!next));
+      
+      // Sync sound setting to database
+      if (status === 'authenticated') {
+        fetch('/api/notifications/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'TOGGLE_SOUND', soundMuted: !next })
+        }).catch(err => console.error('Failed to sync sound setting:', err));
+      }
+
       toast.success(next ? 'Suara notifikasi aktif 🔔' : 'Suara notifikasi dibisukan 🔕', { duration: 2000 });
       return next;
     });
-  }, []);
+  }, [status]);
 
   // Register Service Worker for Push Notifications
   useEffect(() => {
@@ -122,237 +131,269 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             Notification.requestPermission().catch(() => {});
           }
         })
-        .catch(function(err) {
+        .catch(function() {
           // Silent catch in dev/unsupported env
         });
     }
   }, []);
 
-  // Load local state on mount or user change
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    const saved = localStorage.getItem(storageKey);
-    let initialNotifs: NotificationItem[] = [];
-    if (saved) {
-      try {
-        initialNotifs = JSON.parse(saved);
-      } catch (e) { }
-    }
-    setNotifications(initialNotifs);
-    notificationsRef.current = initialNotifs;
-    lastCheckTimeRef.current = new Date();
-  }, [userId, status, storageKey]);
-
-  // Save to local storage whenever notifications change
-  useEffect(() => {
-    if (status === 'loading') return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(notifications));
-    } catch (e) { }
-  }, [notifications, userId, status, storageKey]);
-
-  // Core fetch function with Anti-Flood Toast Batching & Smart Sound
+  // Core fetch function with Multi-device Database State Sync & Anti-Flood Toast
   const fetchActivities = useCallback(async (isInitial = false) => {
     if (isFetchingRef.current || status === 'loading') return;
     isFetchingRef.current = true;
 
     try {
-      const res = await fetch('/api/activities');
-      if (!res.ok) return;
-      const activities = await res.json();
+      // 1. Fetch both activities and user notification state in parallel
+      const [activitiesRes, stateRes] = await Promise.all([
+        fetch('/api/activities'),
+        status === 'authenticated' ? fetch('/api/notifications/state') : Promise.resolve(null)
+      ]);
+
+      if (!activitiesRes.ok) return;
+      const activities = await activitiesRes.json();
       if (!Array.isArray(activities)) return;
 
-      const clearedAtStr = localStorage.getItem(clearedAtKey);
-      const clearedAt = clearedAtStr ? new Date(clearedAtStr).getTime() : 0;
+      // 2. Parse database user notification state
+      if (stateRes && stateRes.ok) {
+        try {
+          const stateData = await stateRes.json();
+          if (stateData) {
+            userNotificationStateRef.current = {
+              readIds: Array.isArray(stateData.readIds) ? stateData.readIds : [],
+              clearedAt: stateData.clearedAt ? new Date(stateData.clearedAt).getTime() : 0,
+              soundMuted: Boolean(stateData.soundMuted)
+            };
+            if (typeof stateData.soundMuted === 'boolean') {
+              setIsSoundEnabled(!stateData.soundMuted);
+              isSoundEnabledRef.current = !stateData.soundMuted;
+            }
+          }
+        } catch (e) { }
+      }
 
+      const { readIds, clearedAt } = userNotificationStateRef.current;
       const prev = notificationsRef.current;
-      const newItems: NotificationItem[] = [];
+      const newIncomingForToast: NotificationItem[] = [];
+      const updatedList: NotificationItem[] = [];
 
       activities.forEach((act: any) => {
         const actTime = new Date(act.createdAt);
+        // Filter out items cleared by the user in the database
         if (actTime.getTime() <= clearedAt) return;
 
-        // Skip login notification logs for non-admin roles (member, staff, guest, viewer/view)
+        // Skip login notification logs for non-admin roles
         const userRole = (session?.user as any)?.role?.toLowerCase() || 'guest';
         const isLoginAct = act.action === 'LOGIN' || (act.title && act.title.toLowerCase().includes('login'));
         if (isLoginAct && userRole !== 'admin') {
           return;
         }
 
-        if (isInitial) {
-          // Initial population without toasts
+        const isRead = readIds.includes(act.id);
+        const notifItem: NotificationItem = {
+          id: act.id,
+          title: act.title,
+          message: act.message,
+          type: act.type,
+          updatedAt: act.createdAt,
+          isRead,
+          taskId: act.taskId,
+          linkUrl: act.linkUrl
+        };
+
+        updatedList.push(notifItem);
+
+        if (!isInitial && actTime > lastCheckTimeRef.current) {
           const existing = prev.find(p => p.id === act.id);
           if (!existing) {
-            newItems.push({
-              id: act.id,
-              title: act.title,
-              message: act.message,
-              type: act.type,
-              updatedAt: act.createdAt,
-              isRead: false,
-              taskId: act.taskId,
-              linkUrl: act.linkUrl
-            });
-          }
-        } else if (actTime > lastCheckTimeRef.current) {
-          const existing = prev.find(p => p.id === act.id);
-          if (!existing) {
-            newItems.push({
-              id: act.id,
-              title: act.title,
-              message: act.message,
-              type: act.type,
-              updatedAt: act.createdAt,
-              isRead: false,
-              taskId: act.taskId,
-              linkUrl: act.linkUrl
-            });
+            newIncomingForToast.push(notifItem);
           }
         }
       });
 
-      if (newItems.length > 0) {
-        // Merge & limit to 50 latest
-        const merged = [...newItems, ...prev.filter(p => !newItems.find(n => n.id === p.id))];
-        const sorted = merged.slice(0, 50).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-        setNotifications(sorted);
+      // Sort by newest
+      const sorted = updatedList.slice(0, 50).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      setNotifications(sorted);
 
-        if (!isInitial) {
-          // Play audio chime
-          playNotificationChime();
+      // Save local cache fallback
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(sorted));
+      } catch (e) { }
 
-          // Native browser notification if tab is in background
-          if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-            try {
-              new Notification('Pembaruan Pekerjaan', {
-                body: newItems.length === 1 ? `${newItems[0].title}: ${newItems[0].message}` : `${newItems.length} pembaruan pekerjaan baru.`,
-                icon: '/favicon.ico'
-              });
-            } catch (e) { }
-          }
+      if (!isInitial && newIncomingForToast.length > 0) {
+        // Play audio chime if sound is enabled
+        playNotificationChime(!isSoundEnabledRef.current);
 
-          // Anti-flood toast logic
-          if (newItems.length === 1) {
-            const item = newItems[0];
+        // Native browser notification if tab is in background
+        if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            new Notification('Pembaruan Pekerjaan', {
+              body: newIncomingForToast.length === 1 ? `${newIncomingForToast[0].title}: ${newIncomingForToast[0].message}` : `${newIncomingForToast.length} pembaruan pekerjaan baru.`,
+              icon: '/favicon.ico'
+            });
+          } catch (e) { }
+        }
+
+        // Anti-flood toast logic
+        if (newIncomingForToast.length === 1) {
+          const item = newIncomingForToast[0];
+          toast.custom((t) => (
+            <div
+              style={{
+                background: 'var(--surface-color)',
+                color: 'var(--text-primary)',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                border: '1px solid var(--border-color)',
+                maxWidth: '360px',
+                animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
+                  {item.title} 🔔
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Baru saja</span>
+              </div>
+              <p style={{ fontSize: '12px', margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4, maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {item.message}
+              </p>
+            </div>
+          ), { duration: 4500, position: 'bottom-right' });
+        } else if (newIncomingForToast.length <= 3) {
+          newIncomingForToast.forEach((item) => {
             toast.custom((t) => (
               <div
                 style={{
                   background: 'var(--surface-color)',
                   color: 'var(--text-primary)',
-                  padding: '14px 16px',
+                  padding: '12px 14px',
                   borderRadius: '12px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '6px',
+                  gap: '4px',
                   border: '1px solid var(--border-color)',
-                  maxWidth: '360px',
+                  maxWidth: '340px',
                   animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
                     {item.title} 🔔
                   </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Baru saja</span>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>Baru</span>
                 </div>
-                <p style={{ fontSize: '12px', margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4, maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <p style={{ fontSize: '11.5px', margin: 0, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {item.message}
                 </p>
               </div>
-            ), { duration: 4500, position: 'bottom-right' });
-          } else if (newItems.length <= 3) {
-            // Show up to 2-3 items
-            newItems.forEach((item) => {
-              toast.custom((t) => (
-                <div
-                  style={{
-                    background: 'var(--surface-color)',
-                    color: 'var(--text-primary)',
-                    padding: '12px 14px',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    border: '1px solid var(--border-color)',
-                    maxWidth: '340px',
-                    animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
-                      {item.title} 🔔
-                    </span>
-                    <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>Baru</span>
-                  </div>
-                  <p style={{ fontSize: '11.5px', margin: 0, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {item.message}
-                  </p>
-                </div>
-              ), { duration: 4000, position: 'bottom-right' });
-            });
-          } else {
-            // Batch Summary Toast (Anti-Flood)
-            toast.custom((t) => (
-              <div
-                style={{
-                  background: 'var(--surface-color)',
-                  color: 'var(--text-primary)',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  border: '1px solid var(--accent-primary)',
-                  maxWidth: '360px',
-                  animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-primary)' }}>
-                    🔔 {newItems.length} Pembaruan Baru Sekaligus
-                  </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Baru saja</span>
-                </div>
-                <p style={{ fontSize: '12px', margin: 0, color: 'var(--text-secondary)' }}>
-                  Aktivitas tim terbaru telah diperbarui di daftar notifikasi Anda.
-                </p>
+            ), { duration: 4000, position: 'bottom-right' });
+          });
+        } else {
+          // Batch Summary Toast (Anti-Flood)
+          toast.custom((t) => (
+            <div
+              style={{
+                background: 'var(--surface-color)',
+                color: 'var(--text-primary)',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                border: '1px solid var(--border-color)',
+                maxWidth: '360px',
+                animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
+              }}
+            >
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(59, 130, 246, 0.15)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: '18px'
+              }}>
+                🔔
               </div>
-            ), { duration: 5000, position: 'bottom-right' });
-          }
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {newIncomingForToast.length} Pembaruan Baru
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  Terdapat {newIncomingForToast.length} aktivitas tugas baru di dashboard.
+                </div>
+              </div>
+            </div>
+          ), { duration: 4500, position: 'bottom-right' });
         }
       }
 
       lastCheckTimeRef.current = new Date();
-    } catch (e) {
-      // Ignore polling errors
+    } catch (error) {
+      console.error('Error fetching activities:', error);
     } finally {
       isFetchingRef.current = false;
     }
-  }, [status, clearedAtKey]);
+  }, [session, status, storageKey]);
 
-  // Initial load
-  useEffect(() => {
-    if (status !== 'loading') {
-      fetchActivities(true);
-    }
-  }, [fetchActivities, status]);
-
-  // Adaptive polling (12s when active tab, 30s when hidden, instant on tab focus & local events)
+  // Load state on mount or user change
   useEffect(() => {
     if (status === 'loading') return;
 
-    let timerId: any = null;
+    // 1. Initial fast local cache load
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const initialNotifs = JSON.parse(saved);
+        if (Array.isArray(initialNotifs)) {
+          setNotifications(initialNotifs);
+          notificationsRef.current = initialNotifs;
+        }
+      } catch (e) { }
+    }
+
+    // 2. Fetch authoritative database state
+    fetchActivities(true);
+    lastCheckTimeRef.current = new Date();
+  }, [userId, status, storageKey, fetchActivities]);
+
+  // Dynamic Polling with Adaptive Interval
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    let timerId: NodeJS.Timeout | null = null;
+    let consecutiveUnchanged = 0;
 
     const scheduleNextPoll = () => {
-      const isHidden = typeof document !== 'undefined' && document.hidden;
-      const delay = isHidden ? 30000 : 12000; // 30s background, 12s active
+      // Faster polling when tab is active (8s to 15s), slower when hidden (30s)
+      const isTabActive = typeof document !== 'undefined' && !document.hidden;
+      let delay = isTabActive ? 8000 : 30000;
+
+      if (isTabActive && consecutiveUnchanged > 3) {
+        delay = 14000;
+      }
 
       timerId = setTimeout(async () => {
+        const prevCount = notificationsRef.current.length;
         await fetchActivities(false);
+        const currentCount = notificationsRef.current.length;
+
+        if (prevCount === currentCount) {
+          consecutiveUnchanged++;
+        } else {
+          consecutiveUnchanged = 0;
+        }
+
         scheduleNextPoll();
       }, delay);
     };
@@ -383,18 +424,48 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, [fetchActivities, status]);
 
+  // Mark single item as read (Synced to Database)
   const markAsRead = (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    if (!userNotificationStateRef.current.readIds.includes(id)) {
+      userNotificationStateRef.current.readIds.push(id);
+    }
+    if (status === 'authenticated') {
+      fetch('/api/notifications/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'MARK_READ', id })
+      }).catch(err => console.error('Failed to sync markAsRead to DB:', err));
+    }
   };
 
+  // Mark all items as read (Synced to Database)
   const markAllAsRead = () => {
+    const allIds = notifications.map(n => n.id);
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    userNotificationStateRef.current.readIds = Array.from(new Set([...userNotificationStateRef.current.readIds, ...allIds]));
+    if (status === 'authenticated') {
+      fetch('/api/notifications/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'MARK_ALL_READ', ids: allIds })
+      }).catch(err => console.error('Failed to sync markAllAsRead to DB:', err));
+    }
     toast.success('Semua notifikasi ditandai sudah dibaca', { duration: 2000 });
   };
 
+  // Clear all notifications (Synced to Database)
   const clearAll = () => {
     setNotifications([]);
-    localStorage.setItem(clearedAtKey, new Date().toISOString());
+    userNotificationStateRef.current.clearedAt = Date.now();
+    userNotificationStateRef.current.readIds = [];
+    if (status === 'authenticated') {
+      fetch('/api/notifications/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'CLEAR_ALL' })
+      }).catch(err => console.error('Failed to sync clearAll to DB:', err));
+    }
     toast.success('Riwayat notifikasi dibersihkan', { duration: 2000 });
   };
 

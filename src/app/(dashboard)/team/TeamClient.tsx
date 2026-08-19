@@ -22,11 +22,9 @@ import {
 import { exportToRichExcel } from '@/utils/excelExport';
 import { useMaster } from '@/context/MasterContext';
 import { useFilter } from '@/context/FilterContext';
-import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { useTaskModal } from '@/context/TaskModalContext';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import Avatar from '@/components/Avatar';
 import { useSession } from 'next-auth/react';
@@ -51,12 +49,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
   const [taskTabFilter, setTaskTabFilter] = useState<TaskTabFilter>('all');
+  const { openDetail, openCreate } = useTaskModal();
   
-  const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -69,15 +63,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   useEffect(() => {
     setLocalTasks(initialTasks);
   }, [initialTasks]);
-
-  useEffect(() => {
-    if (detailTask) {
-      const updated = localTasks.find(t => t.id === detailTask.id);
-      if (updated && updated !== detailTask) {
-        setDetailTask(updated);
-      }
-    }
-  }, [localTasks, detailTask]);
 
   useEffect(() => {
     const loadMasterPics = () => {
@@ -228,111 +213,12 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const totalTeamDone = filteredTasks.filter(t => t.status === 'Done' || t.status === 'Selesai').length;
   const teamDoneRate = totalTeamTasks > 0 ? Math.round((totalTeamDone / totalTeamTasks) * 100) : 0;
 
-  const handleSaveEdit = async () => {
-    setLoading(true);
-    try {
-      const isNew = !editForm.id;
-      const url = isNew ? '/api/tasks' : `/api/tasks/${editForm.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-
-      const payload = {
-        ...editForm,
-        startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
-        endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
-      };
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Gagal menyimpan pekerjaan');
-      const savedTask = await res.json();
-      
-      if (isNew) {
-        setLocalTasks(prev => [savedTask, ...prev]);
-      } else {
-        setLocalTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
-      }
-      setDetailTask(savedTask);
-      setIsEditing(false);
-      toast.success(isNew ? 'Pekerjaan baru berhasil dibuat' : 'Pekerjaan berhasil diperbarui');
-      
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-    } catch (error) {
-      console.error(error);
-      toast.error('Terjadi kesalahan saat menyimpan data');
-    } finally {
-      setLoading(false);
+  const handleAddNewTaskForPic = (picName: string) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah pekerjaan baru.');
+      return;
     }
-  };
-
-  const handleDuplicate = (task: Task) => {
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = JSON.parse(task.subTasksJson);
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
-
-    const startStr = task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const endStr = task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-    setEditForm({
-      nama: task.nama,
-      pic: task.pic,
-      status: task.status,
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      repetisi: repetisiValue,
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks
-    } as any);
-    setDetailTask(null);
-    setIsEditing(true);
-    toast.success('Pekerjaan berhasil diduplikasi.');
-  };
-
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini? Tindakan ini tidak dapat dibatalkan.')) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Gagal menghapus pekerjaan');
-      
-      setLocalTasks(prev => prev.filter(t => t.id !== id));
-      if (detailTask && detailTask.id === id) setDetailTask(null);
-      
-      toast.success('Pekerjaan berhasil dihapus');
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'Terjadi kesalahan');
-    } finally {
-      setLoading(false);
-    }
+    openCreate({ pic: picName });
   };
 
   const handleExportExcel = async () => {
@@ -406,29 +292,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     } catch (e) {
       console.error(e);
     }
-  };
-
-  const handleAddNewTaskForPic = (picName: string) => {
-    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
-      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah pekerjaan baru.');
-      return;
-    }
-    setEditForm({
-      nama: '',
-      pic: picName,
-      status: masterStatuses[0] || 'To Do',
-      prioritas: 'Medium',
-      kategori: 'Umum',
-      progress: 0,
-      deskripsi: '',
-      catatan: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-      filesList: [],
-      additionalPicsList: [],
-      subTasksList: []
-    });
-    setIsEditing(true);
   };
 
   return (
@@ -632,8 +495,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
 
               {/* Quick Actions Footer */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--accent-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Lihat Daftar Tugas ▼
+                <span style={{ fontSize: '11.5px', color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {isSelected ? 'Tutup Daftar Tugas ▲' : 'Lihat Daftar Tugas ▼'}
                 </span>
 
                 {(hasPermission(roleConfig, 'manage_task', userRole) || userRole === 'GUEST') && (
@@ -641,8 +504,8 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                     onClick={(e) => {
                       e.stopPropagation();
                       handleGuestAction(() => {
-                        handleAddNewTaskForPic(picName);
-                      });
+                        openCreate({ pic: picName });
+                      }, hasPermission(roleConfig, 'manage_task', userRole));
                     }}
                     title={`Tambah pekerjaan untuk ${picName}`}
                     style={{
@@ -675,269 +538,160 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         )}
       </div>
 
-      {/* Selected PIC Detail Table Modal Overlay */}
-      <AnimatePresence>
-        {selectedPic && picStatsMap[selectedPic] && (
-          <div 
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              zIndex: 90, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              background: 'rgba(15, 23, 42, 0.65)', 
-              backdropFilter: 'blur(8px)',
-              padding: '16px'
-            }}
-            onClick={() => setSelectedPic(null)}
-          >
-            <motion.div 
-              id="team-pic-detail-table" 
-              className="glass modal-content" 
-              style={{ 
-                padding: '24px', 
-                borderRadius: '16px', 
-                width: '100%', 
-                maxWidth: '960px', 
-                maxHeight: '85vh', 
-                overflowY: 'auto',
-                border: '1px solid var(--border-color)',
-                boxShadow: 'var(--card-shadow)',
-                position: 'relative'
-              }}
-              onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedPic(null)}
-                style={{
-                  position: 'absolute',
-                  right: '16px',
-                  top: '16px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  padding: '6px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background 0.2s',
-                  zIndex: 10
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <X size={20} />
-              </button>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px', paddingRight: '36px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Avatar 
-                    name={selectedPic} 
-                    src={masterPicAvatars?.[selectedPic]} 
-                    size={36} 
-                    masterColors={masterColors} 
-                  />
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                      Daftar Pekerjaan Ditangani: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
-                    </h3>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Total {picStatsMap[selectedPic].tasks.length} pekerjaan terdaftar
-                    </span>
-                  </div>
-                </div>
-
-                {/* Task Status Filters */}
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {[
-                    { id: 'all', label: 'Semua', count: picStatsMap[selectedPic].tasks.length },
-                    { id: 'in_progress', label: 'On Progress', count: picStatsMap[selectedPic].inProgress },
-                    { id: 'done', label: 'Selesai', count: picStatsMap[selectedPic].done },
-                    { id: 'urgent', label: 'Urgent/Overdue', count: picStatsMap[selectedPic].urgent + picStatsMap[selectedPic].overdue },
-                  ].map(tTab => (
-                    <button
-                      key={tTab.id}
-                      onClick={() => setTaskTabFilter(tTab.id as TaskTabFilter)}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid',
-                        borderColor: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--border-color)',
-                        background: taskTabFilter === tTab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--input-bg)',
-                        color: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                        fontSize: '11.5px',
-                        fontWeight: taskTabFilter === tTab.id ? 700 : 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {tTab.label} ({tTab.count})
-                    </button>
-                  ))}
-                </div>
+      {/* Selected PIC Detail Table Section */}
+      {selectedPic && picStatsMap[selectedPic] && (
+        <motion.div 
+          id="team-pic-detail-table" 
+          className="glass" 
+          style={{ padding: '22px', borderRadius: '14px' }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Avatar 
+                name={selectedPic} 
+                src={masterPicAvatars?.[selectedPic]} 
+                size={36} 
+                masterColors={masterColors} 
+              />
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  Daftar Pekerjaan Ditangani: <span style={{ color: 'var(--accent-primary)' }}>{selectedPic}</span>
+                </h3>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Total {picStatsMap[selectedPic].tasks.length} pekerjaan terdaftar
+                </span>
               </div>
+            </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
-                      <th style={{ padding: '10px 12px', borderRadius: '6px 0 0 6px' }}>Nama Pekerjaan</th>
-                      <th style={{ padding: '10px 12px' }}>Kategori</th>
-                      <th style={{ padding: '10px 12px' }}>Prioritas</th>
-                      <th style={{ padding: '10px 12px' }}>Status</th>
-                      <th style={{ padding: '10px 12px' }}>Progress</th>
-                      <th style={{ padding: '10px 12px' }}>Tenggat Waktu</th>
-                      {hasPermission(roleConfig, 'view_detail', userRole) && (
-                        <th style={{ padding: '10px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Aksi</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {picStatsMap[selectedPic].tasks
-                      .filter(t => {
-                        const isDone = t.status === 'Done' || t.status === 'Selesai';
-                        const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
-                        if (taskTabFilter === 'in_progress') return t.status === 'In Progress' || t.status === 'Sedang Dikerjakan';
-                        if (taskTabFilter === 'done') return isDone;
-                        if (taskTabFilter === 'urgent') return t.prioritas === 'Urgent' || isOverdue;
-                        return true;
-                      })
-                      .map(t => {
-                        const isDone = t.status === 'Done' || t.status === 'Selesai';
-                        const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
-
-                        return (
-                          <tr 
-                            key={t.id} 
-                            style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s ease' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                          >
-                            <td 
-                              style={{ 
-                                padding: '11px 12px', 
-                                fontWeight: 600, 
-                                color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
-                                cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
-                              }} 
-                              onClick={() => { 
-                                handleGuestAction(() => {
-                                  setDetailTask(t); 
-                                  setEditForm(t); 
-                                  setIsEditing(false); 
-                                }, hasPermission(roleConfig, 'view_detail', userRole));
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span>{t.nama}</span>
-                                {isOverdue && (
-                                  <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}>
-                                    Terlewat
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td style={{ padding: '11px 12px' }}>{t.kategori || 'Umum'}</td>
-                            <td style={{ padding: '11px 12px' }}>
-                              <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
-                                {t.prioritas || 'Medium'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '11px 12px' }}>
-                              <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
-                                {t.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '11px 12px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div className="progress-container" style={{ width: '60px', height: '6px', borderRadius: '3px' }}>
-                                  <div className="progress-bar" style={{ width: `${t.progress || 0}%`, backgroundColor: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
-                                </div>
-                                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
-                              </div>
-                            </td>
-                            <td style={{ padding: '11px 12px', fontSize: '12px' }}>
-                              {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
-                            </td>
-                            {(hasPermission(roleConfig, 'view_detail', userRole) || userRole === 'GUEST') && (
-                              <td style={{ padding: '11px 12px', textAlign: 'right' }}>
-                                <button 
-                                  className="btn btn-secondary" 
-                                  style={{ padding: '4px 8px', fontSize: '11.5px' }} 
-                                  onClick={() => {
-                                    handleGuestAction(() => {
-                                      setDetailTask(t); 
-                                      setEditForm(t); 
-                                      setIsEditing(false); 
-                                    }, hasPermission(roleConfig, 'view_detail', userRole));
-                                  }}
-                                >
-                                  Detail
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
+            {/* Task Status Filters */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[
+                { id: 'all', label: 'Semua', count: picStatsMap[selectedPic].tasks.length },
+                { id: 'in_progress', label: 'On Progress', count: picStatsMap[selectedPic].inProgress },
+                { id: 'done', label: 'Selesai', count: picStatsMap[selectedPic].done },
+                { id: 'urgent', label: 'Urgent/Overdue', count: picStatsMap[selectedPic].urgent + picStatsMap[selectedPic].overdue },
+              ].map(tTab => (
+                <button
+                  key={tTab.id}
+                  onClick={() => setTaskTabFilter(tTab.id as TaskTabFilter)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--border-color)',
+                    background: taskTabFilter === tTab.id ? 'rgba(59, 130, 246, 0.12)' : 'var(--input-bg)',
+                    color: taskTabFilter === tTab.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    fontSize: '11.5px',
+                    fontWeight: taskTabFilter === tTab.id ? 700 : 500,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tTab.label} ({tTab.count})
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
 
-      {/* Task Modals */}
-      <TaskDetailModal
-        task={detailTask}
-        onClose={() => setDetailTask(null)}
-        setPreviewFile={setPreviewFile}
-        onDuplicate={() => {
-          if (detailTask) handleDuplicate(detailTask);
-        }}
-        onEdit={() => {
-          let repetisiValue = detailTask!.repetisi || 'Tidak Berulang';
-          let parsedSubTasks: SubTask[] = [];
-          if (detailTask!.subTasksJson) {
-            try {
-              parsedSubTasks = JSON.parse(detailTask!.subTasksJson);
-            } catch (e) {}
-          }
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
+                  <th style={{ padding: '10px 12px', borderRadius: '6px 0 0 6px' }}>Nama Pekerjaan</th>
+                  <th style={{ padding: '10px 12px' }}>Kategori</th>
+                  <th style={{ padding: '10px 12px' }}>Prioritas</th>
+                  <th style={{ padding: '10px 12px' }}>Status</th>
+                  <th style={{ padding: '10px 12px' }}>Progress</th>
+                  <th style={{ padding: '10px 12px' }}>Tenggat Waktu</th>
+                  {hasPermission(roleConfig, 'view_detail', userRole) && (
+                    <th style={{ padding: '10px 12px', textAlign: 'right', borderRadius: '0 6px 6px 0' }}>Aksi</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {picStatsMap[selectedPic].tasks
+                  .filter(t => {
+                    const isDone = t.status === 'Done' || t.status === 'Selesai';
+                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+                    if (taskTabFilter === 'in_progress') return t.status === 'In Progress' || t.status === 'Sedang Dikerjakan';
+                    if (taskTabFilter === 'done') return isDone;
+                    if (taskTabFilter === 'urgent') return t.prioritas === 'Urgent' || isOverdue;
+                    return true;
+                  })
+                  .map(t => {
+                    const isDone = t.status === 'Done' || t.status === 'Selesai';
+                    const isOverdue = !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
 
-          setEditForm({
-            ...detailTask!,
-            repetisi: repetisiValue,
-            startDate: detailTask!.startDate ? new Date(detailTask!.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            endDate: detailTask!.endDate ? new Date(detailTask!.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            isCustomCategory: false,
-            isCustomPic: false,
-            filesList: getTaskFiles(detailTask!),
-            additionalPicsList: getAdditionalPics(detailTask!),
-            subTasksList: parsedSubTasks
-          });
-          setIsEditing(true);
-        }}
-        onDelete={() => handleDeleteTask(detailTask!.id)}
-      />
-
-      <TaskAddEditModal
-        isOpen={isEditing}
-        onClose={() => setIsEditing(false)}
-        taskToEdit={editForm as Task}
-        onSave={handleSaveEdit}
-        formPicOptions={[...masterPics]}
-        formCategoryOptions={masterCategories} 
-        setPreviewFile={setPreviewFile}
-      />
-      
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
+                    return (
+                      <tr 
+                        key={t.id} 
+                        style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s ease' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td 
+                          style={{ 
+                            padding: '11px 12px', 
+                            fontWeight: 600, 
+                            color: hasPermission(roleConfig, 'view_detail', userRole) ? 'var(--accent-primary)' : 'var(--text-primary)', 
+                            cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                          }} 
+                          onClick={() => { 
+                            handleGuestAction(() => openDetail(t), hasPermission(roleConfig, 'view_detail', userRole));
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{t.nama}</span>
+                            {isOverdue && (
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}>
+                                Terlewat
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>{t.kategori || 'Umum'}</td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <span className={`badge ${getPriorityBadgeClass(t.prioritas)}`}>
+                            {t.prioritas || 'Medium'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <span {...getDynamicBadgeStyle('status', t.status, 'badge', masterColors)}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '11px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div className="progress-container" style={{ width: '60px', height: '6px', borderRadius: '3px' }}>
+                              <div className="progress-bar" style={{ width: `${t.progress || 0}%`, backgroundColor: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
+                            </div>
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '11px 12px', fontSize: '12px' }}>
+                          {format(new Date(t.endDate), 'dd MMM yyyy')}{!t.isAllDay && t.endTime ? `, ${t.endTime}` : ''}
+                        </td>
+                        {(hasPermission(roleConfig, 'view_detail', userRole) || userRole === 'GUEST') && (
+                          <td style={{ padding: '11px 12px', textAlign: 'right' }}>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '4px 8px', fontSize: '11.5px' }} 
+                              onClick={() => handleGuestAction(() => openDetail(t), hasPermission(roleConfig, 'view_detail', userRole))}
+                            >
+                              Detail
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -37,11 +37,9 @@ const localizer = dateFnsLocalizer({
 import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText, getTaskExportRow } from '@/utils/taskUtils';
 import { exportToRichExcel } from '@/utils/excelExport';
 import { expandTasksForCalendar } from '@/utils/recurrenceUtils';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
-import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
+import { useTaskModal } from '@/context/TaskModalContext';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 
@@ -70,13 +68,8 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     globalSearchExactMatch
   } = useFilter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { openDetail, openCreate } = useTaskModal();
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [detailTask, setDetailTask] = useState<Task | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<any | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -141,15 +134,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
     fetchHolidays();
   }, [date]);
-
-  useEffect(() => {
-    if (selectedTask) {
-      const updated = tasks.find(t => t.id === selectedTask.id);
-      if (updated && updated !== selectedTask) {
-        setSelectedTask(updated);
-      }
-    }
-  }, [tasks, selectedTask]);
 
   const customDayPropGetter = (d: Date) => {
     const dateStr = format(d, 'yyyy-MM-dd');
@@ -298,93 +282,11 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     };
   };
 
-  const handleOpenEditModal = (task: Task) => {
-    setSelectedTask(null);
-    setEditingTask({
-      ...task,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      repetisi: task.repetisi || 'Tidak Berulang',
-      startDate: typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0],
-      endDate: typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0],
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleOpenDuplicateModal = (task: Task) => {
-    setSelectedTask(null);
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = JSON.parse(task.subTasksJson);
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
-
-    const startStr = task.startDate ? (typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
-    const endStr = task.endDate ? (typeof task.endDate === 'string' ? task.endDate.split('T')[0] : new Date(task.endDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
-
-    setEditingTask({
-      nama: `${task.nama} (Salinan)`,
-      pic: task.pic,
-      status: task.status || 'To Do',
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      repetisi: repetisiValue,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-      filesList: getTaskFiles(task),
-      additionalPicsList: getAdditionalPics(task),
-      subTasksList: parsedSubTasks
-    });
-    setIsEditModalOpen(true);
-  };
-
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     if (!hasPermission(roleConfig, 'manage_task', userRole)) return;
     const startStr = slotInfo.start.toISOString().split('T')[0];
     const endStr = slotInfo.end.toISOString().split('T')[0];
-    setEditingTask({
-      nama: '',
-      pic: '',
-      status: 'To Do',
-      prioritas: 'Medium',
-      kategori: 'Umum',
-      progress: 0,
-      deskripsi: '',
-      catatan: '',
-      filesList: [],
-      additionalPicsList: [],
-      isAllDay: false,
-      startTime: '',
-      endTime: '',
-      repetisi: 'Tidak Berulang',
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setIsEditModalOpen(true);
+    openCreate({ startDate: startStr, endDate: endStr });
   };
 
   const handleExportExcel = async () => {
@@ -501,83 +403,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     }
   };
 
-  const handleSaveModal = async (payloadData: any) => {
-    setLoading(true);
-    try {
-      const isNew = !payloadData.id;
-      const realId = isNew ? null : Math.floor(Number(payloadData.id));
-
-      const url = isNew ? '/api/tasks' : `/api/tasks/${realId}`;
-      const method = isNew ? 'POST' : 'PUT';
-
-      const payloadToSave = { ...payloadData };
-      if (!isNew) {
-        payloadToSave.id = realId;
-      }
-
-      const saveRes = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadToSave),
-      });
-
-      if (!saveRes.ok) {
-        const errorText = await saveRes.text();
-        setErrorMessage(`Server Error (${saveRes.status}):\n${errorText}`);
-        return;
-      }
-
-      const savedTask: Task = await saveRes.json();
-
-      if (isNew) {
-        setTasks(prev => [savedTask, ...prev]);
-      } else {
-        setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
-      }
-
-      setIsEditModalOpen(false);
-      setEditingTask(null);
-
-      const res = await fetch('/api/tasks');
-      if (res.ok) {
-        const updated = await res.json();
-        if (Array.isArray(updated)) setTasks(updated);
-      }
-
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-      toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
-    } catch (error: any) {
-      console.error('Save error:', error);
-      setErrorMessage(`Network / Application Error:\n${error?.stack || error?.message || error}`);
-      toast.error(`Gagal menyimpan pekerjaan: ${error?.message || error}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini dari kalender?')) return;
-    const realId = Math.floor(id);
-    try {
-      await fetch(`/api/tasks/${realId}`, { method: 'DELETE' });
-      setTasks(prev => prev.filter(t => t.id !== realId));
-      setSelectedTask(null);
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-      toast.success('Pekerjaan berhasil dihapus dari kalender.');
-    } catch (error: any) {
-      console.error(error);
-      setErrorMessage(`Delete Error:\n${error?.message || error}`);
-      toast.error('Gagal menghapus pekerjaan.');
-    }
-  };
-
-
   const getPriorityBadgeClass = (p?: string | null) => {
     switch (p) {
       case 'Urgent': return 'badge-urgent';
@@ -592,28 +417,40 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
       {isPending && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
+          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(1px)',
+          borderRadius: '12px'
         }}>
-          <div style={{
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)',
-            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            border: '1px solid var(--border-color)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
-          }}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
-            Menyinkronkan data...
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '12px 24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+            <Loader2 className="animate-spin" size={20} color="var(--accent-primary)" />
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Memperbarui Kalender...</span>
           </div>
         </div>
       )}
-      <datalist id="calendar-pics-list">
-        {existingPics.map((p, idx) => (
-          <option key={idx} value={p} />
-        ))}
-      </datalist>
 
-      {/* Search & Interactive Filter Action Bar */}
+      {isExportingPdf && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{ background: 'var(--surface-color)', padding: '24px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <Loader2 className="animate-spin" size={32} color="var(--accent-primary)" />
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Sedang Mengekspor PDF Kalender...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Compact Universal Filter Bar */}
       <UniversalFilterBar
         categories={allCategoryOptions}
         pics={existingPics}
@@ -625,7 +462,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
         <UniversalActionBar
           onExportExcel={handleExportExcel}
           onExportPDF={handleExportPDF}
-          isExportingPdf={isExportingPdf}
           onCopyImage={handleCopyImage}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
@@ -639,7 +475,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           events={events}
           selectable={true}
           onSelectSlot={handleSelectSlot}
-          onSelectEvent={(event) => handleGuestAction(() => setSelectedTask(event.resource))}
+          onSelectEvent={(event) => handleGuestAction(() => openDetail(event.resource), hasPermission(roleConfig, 'view_detail', userRole))}
           startAccessor="start"
           endAccessor="end"
           view={view}
@@ -687,27 +523,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           }}
         />
       </div>
-
-      <TaskDetailModal
-        task={selectedTask}
-        onClose={() => setSelectedTask(null)}
-        setPreviewFile={setPreviewFile}
-        onDuplicate={() => handleOpenDuplicateModal(selectedTask!)}
-        onEdit={() => handleOpenEditModal(selectedTask!)}
-        onDelete={() => handleDeleteTask(selectedTask!.id)}
-      />
-
-      <TaskAddEditModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        taskToEdit={editingTask}
-        onSave={handleSaveModal}
-        formPicOptions={[...masterPics]}
-        formCategoryOptions={[...masterCats, 'Umum']}
-        formStatusOptions={masterStatuses}
-        formPriorityOptions={masterPriorities}
-        setPreviewFile={setPreviewFile}
-      />
 
       {/* Interactive Copyable Error Details Modal */}
       <AnimatePresence>
@@ -763,9 +578,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
           </div>
         )}
       </AnimatePresence>
-
-
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
     </div>
   );
 }

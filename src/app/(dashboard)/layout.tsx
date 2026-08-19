@@ -15,6 +15,7 @@ import { useMaster } from '@/context/MasterContext';
 import SessionMonitor from '@/components/SessionMonitor';
 import HelpSupportButton from '@/components/HelpSupportButton';
 import GlobalBackupReminder from '@/components/GlobalBackupReminder';
+import { TaskModalProvider } from '@/context/TaskModalContext';
 
 import { useState } from 'react';
 
@@ -33,7 +34,7 @@ export default function DashboardLayout({
   }, [router]);
 
   return (
-    <>
+    <TaskModalProvider>
       <SessionMonitor />
       <GlobalBackupReminder />
       {/* Mobile Header */}
@@ -64,6 +65,6 @@ export default function DashboardLayout({
       </div>
 
       <FocusModeToggle />
-    </>
+    </TaskModalProvider>
   );
 }

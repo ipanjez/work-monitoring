@@ -26,10 +26,10 @@ import SmartAddModal from '@/components/SmartAddModal';
 import { checkSearchMatch } from '@/utils/searchUtils';
 import BulkEditModal from '@/components/BulkEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
 import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useGuestAccess } from '@/context/GuestAccessContext';
+import { useTaskModal } from '@/context/TaskModalContext';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran';
 
@@ -70,13 +70,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal State
+  const { openDetail } = useTaskModal();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const [bulkEditField, setBulkEditField] = useState<'status' | 'kategori' | 'pic' | 'deskripsi' | 'jadwal' | null>(null);
-  const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
 
   // Interactive Copyable Error Modal State
@@ -105,15 +104,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
-
-  useEffect(() => {
-    if (detailTask) {
-      const updated = tasks.find(t => t.id === detailTask.id);
-      if (updated && updated !== detailTask) {
-        setDetailTask(updated);
-      }
-    }
-  }, [tasks, detailTask]);
 
   const refreshData = () => {
     startTransition(() => {
@@ -434,7 +424,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       isCustomCategory: false,
       isCustomPic: false,
     });
-    setDetailTask(null);
     setIsModalOpen(true);
     toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
   };
@@ -1180,7 +1169,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </td>
                     )}
                     <td style={{ padding: '8px 6px' }}>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleGuestAction(() => setDetailTask(task), hasPermission(roleConfig, 'view_detail', userRole))}>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}>
                         {task.nama}
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
@@ -1457,7 +1446,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
               <div
                 key={task.id}
                 className="mobile-task-card"
-                onClick={() => handleGuestAction(() => setDetailTask(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
                 style={{ cursor: 'pointer' }}
               >
                 {/* Header Row: Title & Priority */}
@@ -1659,19 +1648,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             setLoading(false);
           }
         }}
-      />
-
-      <TaskDetailModal
-        task={detailTask}
-        onClose={() => setDetailTask(null)}
-        setPreviewFile={setPreviewFile}
-        onDuplicate={() => {
-          if (detailTask) handleOpenDuplicateModal(detailTask);
-        }}
-        onEdit={() => {
-          handleOpenEditModal(detailTask!);
-        }}
-        onDelete={() => handleDelete(detailTask!.id)}
       />
 
       {/* Interactive Copyable Error Details Modal */}

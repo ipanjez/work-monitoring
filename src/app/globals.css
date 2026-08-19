@@ -232,7 +232,7 @@ h3 {
     overflow-x: auto !important;
     width: 100% !important;
     display: block !important;
-    WebkitOverflowScrolling: 'touch';
+    -webkit-overflow-scrolling: touch;
   }
 
   .hide-mobile {
@@ -596,6 +596,16 @@ th[style*="cursor: pointer"]:hover,
 
   /* Style Lonceng Notifikasi (NotificationBell) di mobile */
   #notification-bell-container>button {
+    padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  /* Style Salin Agenda Tim (CopyAgendaButton) di mobile */
+  #copy-agenda-btn-container>button {
     padding: 4px !important;
     height: 40px !important;
     width: 40px !important;

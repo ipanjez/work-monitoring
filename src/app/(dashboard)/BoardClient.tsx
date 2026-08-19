@@ -3,9 +3,7 @@ import { useMaster } from '@/context/MasterContext';
 import { useState, useEffect, useTransition, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import FilePreviewModal from '@/components/FilePreviewModal';
-import TaskDetailModal from '@/components/TaskDetailModal';
-import TaskAddEditModal from '@/components/TaskAddEditModal';
+import { useTaskModal } from '@/context/TaskModalContext';
 import { Calendar as CalendarIcon, Clock, Edit2, Plus, Search, MapPin, AlignLeft, CheckSquare, MessageSquare, History, FileText, Download, Filter, ArrowUpDown, Copy, ChevronUp, ChevronDown, Paperclip, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -61,10 +59,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [colSorts, setColSorts] = useState<Record<string, string>>({});
 
-  const [previewFile, setPreviewFile] = useState<any | null>(null);
-  const [selectedTask, setSelectedTask] = useState<any | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const { openDetail } = useTaskModal();
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -78,15 +73,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       router.replace('/tasks');
     }
   }, [session, roleConfig, userRole, router]);
-
-  useEffect(() => {
-    if (selectedTask) {
-      const updated = tasks.find(t => t.id === selectedTask.id);
-      if (updated && updated !== selectedTask) {
-        setSelectedTask(updated);
-      }
-    }
-  }, [tasks, selectedTask]);
 
   const handleDragStart = (e: React.DragEvent, id: number) => {
     setDraggedTaskId(id);
@@ -218,24 +204,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       await handleDropCard(fakeDragEvent, targetStatus, targetCardId);
     } else {
       await handleDropColumn(fakeDragEvent, targetStatus);
-    }
-  };
-
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pekerjaan ini?')) return;
-    try {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Gagal menghapus');
-      toast.success('Pekerjaan berhasil dihapus');
-      setIsDetailOpen(false);
-      setSelectedTask(null);
-      setTasks(prev => prev.filter(t => t.id !== id));
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
-    } catch (e) {
-      toast.error('Gagal menghapus pekerjaan');
     }
   };
 
@@ -394,132 +362,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
     setDraggedTaskId(null);
   };
 
-  const openTaskDetail = (task: any) => {
-    handleGuestAction(() => {
-      setSelectedTask(task);
-      setIsDetailOpen(true);
-    }, hasPermission(roleConfig, 'view_detail', userRole));
-  };
-
-  const openTaskEdit = (task: any) => {
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
-
-    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
-      try {
-        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
-        while (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed);
-        }
-        customRecurrenceSettings = parsed;
-        repetisiValue = 'Custom';
-      } catch (e) { }
-    }
-
-    let parsedSubTasks: any[] = [];
-    if (task.subTasksJson) {
-      try { parsedSubTasks = JSON.parse(task.subTasksJson); } catch (e) { }
-    }
-
-    let parsedFiles: any[] = [];
-    if (task.filesJson) {
-      try { parsedFiles = JSON.parse(task.filesJson); } catch (e) { }
-    } else if (task.fileUrl) {
-      parsedFiles = [{ url: task.fileUrl, name: task.fileName || 'Attachment' }];
-    }
-
-    let parsedPics: string[] = [];
-    if (task.additionalPics) {
-      try { parsedPics = JSON.parse(task.additionalPics); } catch (e) { }
-    }
-
-    setSelectedTask({
-      ...task,
-      repetisi: repetisiValue,
-      customRecurrenceSettings,
-      startDate: task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      endDate: task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      isCustomCategory: false,
-      isCustomPic: false,
-      filesList: parsedFiles,
-      additionalPicsList: parsedPics,
-      subTasksList: parsedSubTasks
-    });
-
-    setIsDetailOpen(false);
-    setIsEditOpen(true);
-  };
-
-  const openTaskDuplicate = (task: any) => {
-    let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let customRecurrenceSettings = { every: 1, unit: 'Minggu', days: [] as string[], endType: 'never', endDate: new Date().toISOString().split('T')[0], endOccurrences: 1 };
-
-    if (repetisiValue.startsWith('CUSTOM_RECURRENCE:')) {
-      try {
-        let parsed = JSON.parse(repetisiValue.replace('CUSTOM_RECURRENCE:', ''));
-        while (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed);
-        }
-        customRecurrenceSettings = parsed;
-        repetisiValue = 'Custom';
-      } catch (e) { }
-    }
-
-    let parsedSubTasks: any[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) { }
-    }
-
-    let parsedFiles: any[] = [];
-    if (task.filesJson) {
-      try { parsedFiles = JSON.parse(task.filesJson); } catch (e) { }
-    } else if (task.fileUrl) {
-      parsedFiles = [{ url: task.fileUrl, name: task.fileName || 'Attachment' }];
-    }
-
-    let parsedPics: string[] = [];
-    if (task.additionalPics) {
-      try { parsedPics = JSON.parse(task.additionalPics); } catch (e) { }
-    }
-
-    const startStr = task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const endStr = task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-    setSelectedTask({
-      nama: task.nama,
-      pic: task.pic,
-      status: task.status,
-      prioritas: task.prioritas || 'Medium',
-      kategori: task.kategori || 'Umum',
-      progress: task.progress || 0,
-      deskripsi: task.deskripsi || '',
-      catatan: task.catatan || '',
-      lokasi: task.lokasi,
-      filesList: parsedFiles,
-      additionalPicsList: parsedPics,
-      subTasksList: parsedSubTasks,
-      isAllDay: task.isAllDay !== undefined ? Boolean(task.isAllDay) : false,
-      startTime: task.startTime || '',
-      endTime: task.endTime || '',
-      repetisi: repetisiValue,
-      customRecurrenceSettings,
-      startDate: startStr,
-      endDate: endStr,
-      isCustomCategory: false,
-      isCustomPic: false,
-    });
-    setIsDetailOpen(false);
-    setIsEditOpen(true);
-    toast.success('Pekerjaan berhasil diduplikasi. Silakan edit dan klik Simpan.');
-  };
 
   const filteredTasks = tasks.filter((t: any) => {
     let matchSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
@@ -948,7 +790,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                       }}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      onClick={() => hasPermission(roleConfig, 'view_detail', userRole) ? openTaskDetail(task) : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.')}
+                      onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
                       style={{
                         backgroundColor: 'var(--surface-color)',
                         padding: '8px',
@@ -1126,54 +968,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         })}
       </div>
       )}
-
-      {isDetailOpen && selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          onClose={() => setIsDetailOpen(false)}
-          onDuplicate={() => openTaskDuplicate(selectedTask)}
-          onEdit={() => openTaskEdit(selectedTask)}
-          onDelete={() => handleDeleteTask(selectedTask.id)}
-          setPreviewFile={setPreviewFile}
-        />
-      )}
-
-      {isEditOpen && selectedTask && (
-        <TaskAddEditModal
-          isOpen={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
-          taskToEdit={selectedTask}
-          onSave={async (payload: any) => {
-            const isNew = !selectedTask.id;
-            const toastId = toast.loading(isNew ? 'Menyimpan data baru...' : 'Memperbarui data...');
-            try {
-              const url = isNew ? '/api/tasks' : `/api/tasks/${selectedTask.id}`;
-              const method = isNew ? 'POST' : 'PUT';
-              const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-              if (!res.ok) throw new Error('Failed to save task');
-              setIsEditOpen(false);
-              toast.success(isNew ? 'Pekerjaan berhasil dibuat' : 'Berhasil diperbarui', { id: toastId });
-              startTransition(() => {
-                router.refresh();
-                if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-              });
-            } catch (err) {
-              toast.error('Gagal menyimpan', { id: toastId });
-            }
-          }}
-          formPicOptions={formPicOptions}
-          formCategoryOptions={formCategoryOptions}
-          formStatusOptions={masterStatuses}
-          formPriorityOptions={masterPriorities}
-          setPreviewFile={setPreviewFile}
-        />
-      )}
-
-      <FilePreviewModal previewFile={previewFile} setPreviewFile={setPreviewFile} />
 
       {/* Floating touch ghost card for mobile drag-and-drop */}
       {touchActive && (
