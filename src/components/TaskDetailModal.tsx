@@ -445,8 +445,8 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         handleGuestAction(() => {
                           const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://internal-work-monitoring.vercel.app';
                           const currentAppName = localStorage.getItem('app_name') || 'DeptMonitor';
-                          exportTaskPdf(task, currentAppName, siteUrl);
-                          toast.success('PDF berhasil di-download!');
+                          const { url, fileName } = exportTaskPdf(task, currentAppName, siteUrl, false);
+                          setPreviewFile({ name: fileName, url: url });
                         }, hasPermission(currentRoleConfig, 'export_data', userRole), 'Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
                       }}
                       style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#dc2626', color: 'white', border: 'none' }}

@@ -14,7 +14,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
 }
 
-export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
+export function exportTaskPdf(task: Task, appName: string, siteUrl: string, autoDownload: boolean = true): { blob: Blob; url: string; fileName: string } {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -411,7 +411,15 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string) {
     addFooter(i, totalPages);
   }
 
-  // Save
+  // Save or return
   const safeFileName = task.nama.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
-  doc.save(`${appName}_Monitoring_${safeFileName}.pdf`);
+  const fileName = `${appName}_Monitoring_${safeFileName}.pdf`;
+  const blob = doc.output('blob');
+  const url = typeof window !== 'undefined' ? URL.createObjectURL(blob) : '';
+
+  if (autoDownload) {
+    doc.save(fileName);
+  }
+
+  return { blob, url, fileName };
 }
