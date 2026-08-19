@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info } from 'lucide-react';
+import { X, UserPlus, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Info, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -97,6 +97,8 @@ export default function TaskAddEditModal({
 
   const [activeTab, setActiveTab] = useState<'info' | 'subtasks' | 'attachments'>('info');
   const [masterLocations, setMasterLocations] = useState<string[]>([]);
+  const [draggedFileIndex, setDraggedFileIndex] = useState<number | null>(null);
+  const [dragOverFileIndex, setDragOverFileIndex] = useState<number | null>(null);
 
   const attachmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -191,6 +193,24 @@ export default function TaskAddEditModal({
       } else if (!Array.isArray(cloned.subTasksList)) {
         console.warn('DEBUG: subTasksList was not an array in cloned taskToEdit!', cloned.subTasksList);
         cloned.subTasksList = [];
+      }
+
+      // Force parsing from filesJson to ensure filesList is properly populated and order preserved
+      if (cloned.filesJson && (!cloned.filesList || cloned.filesList.length === 0)) {
+        try {
+          const parsed = typeof cloned.filesJson === 'string' ? JSON.parse(cloned.filesJson) : cloned.filesJson;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cloned.filesList = parsed;
+          }
+        } catch (e) {
+          console.error("Failed to parse filesJson in modal", e);
+        }
+      }
+      if (!cloned.filesList && cloned.fileUrl) {
+        cloned.filesList = [{ url: cloned.fileUrl, name: cloned.fileName || 'File Lampiran' }];
+      }
+      if (!cloned.filesList) {
+        cloned.filesList = [];
       }
 
       // Fix date formats for <input type="date"> (expects YYYY-MM-DD)
@@ -309,6 +329,38 @@ export default function TaskAddEditModal({
       updatedList.splice(idx, 1);
     }
     setEditingTask({ ...editingTask, filesList: updatedList });
+  };
+
+  const handleMoveFileUp = (idx: number) => {
+    if (!editingTask?.filesList || idx <= 0) return;
+    const list = [...editingTask.filesList];
+    const temp = list[idx - 1];
+    list[idx - 1] = list[idx];
+    list[idx] = temp;
+    setEditingTask({ ...editingTask, filesList: list });
+  };
+
+  const handleMoveFileDown = (idx: number) => {
+    if (!editingTask?.filesList || idx >= editingTask.filesList.length - 1) return;
+    const list = [...editingTask.filesList];
+    const temp = list[idx + 1];
+    list[idx + 1] = list[idx];
+    list[idx] = temp;
+    setEditingTask({ ...editingTask, filesList: list });
+  };
+
+  const handleDropFileReorder = (targetIdx: number) => {
+    if (draggedFileIndex === null || draggedFileIndex === targetIdx || !editingTask?.filesList) {
+      setDraggedFileIndex(null);
+      setDragOverFileIndex(null);
+      return;
+    }
+    const list = [...editingTask.filesList];
+    const [movedItem] = list.splice(draggedFileIndex, 1);
+    list.splice(targetIdx, 0, movedItem);
+    setEditingTask({ ...editingTask, filesList: list });
+    setDraggedFileIndex(null);
+    setDragOverFileIndex(null);
   };
 
   const handleSave = async () => {
@@ -1129,43 +1181,213 @@ export default function TaskAddEditModal({
                     </div>
 
                     {editingTask.filesList && editingTask.filesList.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-color)', padding: '12px', borderRadius: '10px' }}>
-                        {editingTask.filesList.map((f, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', opacity: f.isDeleted ? 0.6 : 1 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)', cursor: 'pointer', textDecoration: f.isDeleted ? 'line-through' : 'none' }} onClick={() => !f.isDeleted && setPreviewFile?.(f)}>
-                                <File size={15} />
-                                <span style={{ fontWeight: 500 }}>{f.name}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            Daftar Lampiran ({editingTask.filesList.filter(f => !f.isDeleted).length} File)
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            Tarik (drag) baris atau klik panah untuk mengubah urutan
+                          </span>
+                        </div>
+
+                        {editingTask.filesList.map((f, idx) => {
+                          const isDragging = draggedFileIndex === idx;
+                          const isDragOver = dragOverFileIndex === idx;
+
+                          return (
+                            <div
+                              key={f.url || idx}
+                              draggable={!f.isDeleted}
+                              onDragStart={(e) => {
+                                if (f.isDeleted) return;
+                                setDraggedFileIndex(idx);
+                                e.dataTransfer.effectAllowed = 'move';
+                                e.dataTransfer.setData('text/plain', idx.toString());
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                                if (dragOverFileIndex !== idx) {
+                                  setDragOverFileIndex(idx);
+                                }
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverFileIndex === idx) {
+                                  setDragOverFileIndex(null);
+                                }
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                handleDropFileReorder(idx);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedFileIndex(null);
+                                setDragOverFileIndex(null);
+                              }}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                fontSize: '13px',
+                                opacity: f.isDeleted ? 0.5 : isDragging ? 0.4 : 1,
+                                background: isDragOver ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg-color)',
+                                border: isDragOver ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                gap: '8px',
+                                transition: 'all 0.15s ease',
+                                cursor: f.isDeleted ? 'default' : 'grab'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                {/* Drag Grip Handle */}
+                                {!f.isDeleted && (
+                                  <div
+                                    title="Tarik untuk memindahkan urutan"
+                                    style={{
+                                      cursor: 'grab',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      color: 'var(--text-secondary)',
+                                      opacity: 0.7,
+                                      padding: '2px 0'
+                                    }}
+                                  >
+                                    <GripVertical size={16} />
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      color: f.isDeleted ? 'var(--text-secondary)' : 'var(--accent-primary)',
+                                      cursor: f.isDeleted ? 'default' : 'pointer',
+                                      textDecoration: f.isDeleted ? 'line-through' : 'none'
+                                    }}
+                                    onClick={() => !f.isDeleted && setPreviewFile?.(f)}
+                                  >
+                                    <File size={15} style={{ flexShrink: 0 }} />
+                                    <span
+                                      style={{
+                                        fontWeight: 500,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      title={f.name}
+                                    >
+                                      {f.name}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                    {f.uploadedAt && (
+                                      <span>
+                                        Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}
+                                        {f.size ? ` • ${(f.size / (1024 * 1024)).toFixed(2)} MB` : ''}
+                                      </span>
+                                    )}
+                                    {f.isDeleted && f.deletedAt && (
+                                      <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>
+                                        • Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` • ${(f.size / (1024 * 1024)).toFixed(2)} MB` : ''}</span>}
-                                {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                {!f.isDeleted && (
+                                  <>
+                                    {/* Reorder Buttons (Up & Down) */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginRight: '4px' }}>
+                                      <button
+                                        type="button"
+                                        style={{
+                                          background: 'none',
+                                          border: '1px solid var(--border-color)',
+                                          borderRadius: '4px',
+                                          color: 'var(--text-secondary)',
+                                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                                          padding: '3px 4px',
+                                          opacity: idx === 0 ? 0.3 : 1,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center'
+                                        }}
+                                        disabled={idx === 0}
+                                        title="Pindahkan ke Atas"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMoveFileUp(idx);
+                                        }}
+                                      >
+                                        <ArrowUp size={13} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        style={{
+                                          background: 'none',
+                                          border: '1px solid var(--border-color)',
+                                          borderRadius: '4px',
+                                          color: 'var(--text-secondary)',
+                                          cursor: idx === (editingTask.filesList?.length || 0) - 1 ? 'not-allowed' : 'pointer',
+                                          padding: '3px 4px',
+                                          opacity: idx === (editingTask.filesList?.length || 0) - 1 ? 0.3 : 1,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center'
+                                        }}
+                                        disabled={idx === (editingTask.filesList?.length || 0) - 1}
+                                        title="Pindahkan ke Bawah"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleMoveFileDown(idx);
+                                        }}
+                                      >
+                                        <ArrowDown size={13} />
+                                      </button>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        padding: '4px 6px',
+                                        borderRadius: '4px'
+                                      }}
+                                      onClick={() => setPreviewFile?.(f)}
+                                      title="Pratinjau File"
+                                    >
+                                      <Eye size={15} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--danger)',
+                                        cursor: 'pointer',
+                                        padding: '4px 6px',
+                                        borderRadius: '4px'
+                                      }}
+                                      onClick={() => handleRemoveFileFromEdit(idx)}
+                                      title="Hapus Lampiran Ini"
+                                    >
+                                      <X size={15} />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {!f.isDeleted && (
-                                <>
-                                  <button
-                                    type="button"
-                                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px 6px' }}
-                                    onClick={() => setPreviewFile?.(f)}
-                                    title="Pratinjau File"
-                                  >
-                                    <Eye size={15} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px 6px' }}
-                                    onClick={() => handleRemoveFileFromEdit(idx)}
-                                    title="Hapus Lampiran Ini"
-                                  >
-                                    <X size={15} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
