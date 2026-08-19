@@ -8,6 +8,7 @@ import { HelpCircle, Sparkles, BookOpen, MessageSquare, X, Send, Maximize2, Mini
 import toast from 'react-hot-toast';
 import { useNotifications } from '@/context/NotificationContext';
 import { useTheme } from '@/context/ThemeContext';
+import { hasPermission, defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
 import 'driver.js/dist/driver.css';
 
 export default function HelpSupportButton() {
@@ -21,6 +22,14 @@ export default function HelpSupportButton() {
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackEmail, setFeedbackEmail] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
+
+  useEffect(() => {
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(setRoleConfig)
+      .catch(() => {});
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const driverRef = useRef<any>(null);
   const pathname = usePathname();
@@ -75,7 +84,7 @@ export default function HelpSupportButton() {
     // 3. Dynamic import driver.js to keep initial bundle size small
     const { driver } = await import('driver.js');
 
-    const isAdmin = userRole === 'ADMIN';
+    const isAdmin = hasPermission(roleConfig, 'manage_task', userRole) || hasPermission(roleConfig, 'user_management', userRole);
     let steps: any[] = [];
 
     // Define page-specific tour steps. Each tour starts by highlighting its own active sidebar menu.

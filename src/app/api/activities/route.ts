@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkServerPermission } from '@/lib/serverPermissions';
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (session.user as any)?.role;
+    const role = (session.user as any)?.role || '';
     const userId = (session.user as any)?.id;
 
     let activities = await prisma.activityLog.findMany({
@@ -18,7 +19,8 @@ export async function GET() {
       take: 100, // Fetch more to allow for filtering
     });
 
-    if (role === 'MEMBER') {
+    const hasFullLogAccess = await checkServerPermission('system_logs', role);
+    if (!hasFullLogAccess) {
       const memberName = session.user?.name;
       const memberNpk = (session.user as any)?.npk;
 

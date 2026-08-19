@@ -839,7 +839,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button className="btn" onClick={() => openEdit(u)} title="Edit" style={{ padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}><Pencil size={13} /></button>
-                        {u.role === 'MEMBER' && (
+                        {u.npk !== 'guest' && u.email !== 'guest@monitoring.internal' && (
                           <button className="btn" onClick={() => setForceResetUser(u)} title="Ganti Password Paksa" style={{ padding: '6px 10px', fontSize: '12px', color: 'var(--accent-primary)', cursor: 'pointer' }}>
                             <KeyRound size={13} />
                           </button>

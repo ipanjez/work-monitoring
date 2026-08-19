@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const assignedRole = role && role !== 'ADMIN' ? role : 'MEMBER';
+    const assignedRole = role || 'MEMBER';
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({

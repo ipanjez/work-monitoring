@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
+import { hasPermission, defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
 
 export type NotificationItem = {
   id: number;
@@ -78,8 +79,16 @@ function playNotificationChime(isMuted: boolean) {
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(true);
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
   const { data: session, status } = useSession();
   const userId = (session?.user as any)?.id || session?.user?.email || 'guest';
+
+  useEffect(() => {
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(setRoleConfig)
+      .catch(() => {});
+  }, []);
 
   const storageKey = `dashboard_notifications_${userId}`;
 
@@ -181,10 +190,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Filter out items cleared by the user in the database
         if (actTime.getTime() <= clearedAt) return;
 
-        // Skip login notification logs for non-admin roles
-        const userRole = (session?.user as any)?.role?.toLowerCase() || 'guest';
+        // Skip login notification logs for roles without system_logs permission
+        const userRole = (session?.user as any)?.role || '';
         const isLoginAct = act.action === 'LOGIN' || (act.title && act.title.toLowerCase().includes('login'));
-        if (isLoginAct && userRole !== 'admin') {
+        if (isLoginAct && !hasPermission(roleConfig, 'system_logs', userRole)) {
           return;
         }
 
