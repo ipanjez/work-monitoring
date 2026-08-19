@@ -1194,7 +1194,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lampiran')}>
+                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none', width: '180px', minWidth: '150px' }} onClick={() => handleSort('lampiran')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Lampiran {renderSortIcon('lampiran')}
                   </div>
@@ -1334,103 +1334,136 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </div>
                     </td>
-                    <td className="hide-mobile" style={{ padding: '8px 6px', maxWidth: '230px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {taskFiles.length > 0 ? taskFiles.map((f, i) => {
-                          const ext = f.name?.split('.').pop()?.toLowerCase() || '';
-                          const isPdf = ext === 'pdf';
-                          const isExcel = ['xlsx', 'xls', 'csv'].includes(ext);
-                          const isDoc = ['doc', 'docx'].includes(ext);
-                          const isImg = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+                    <td className="hide-mobile" style={{ padding: '8px 6px', width: '180px', minWidth: '150px', maxWidth: '200px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%' }}>
+                        {taskFiles.length > 0 ? (
+                          <>
+                            {taskFiles.slice(0, 3).map((f, i) => {
+                              const ext = f.name?.split('.').pop()?.toLowerCase() || '';
+                              const isPdf = ext === 'pdf';
+                              const isExcel = ['xlsx', 'xls', 'csv'].includes(ext);
+                              const isDoc = ['doc', 'docx'].includes(ext);
+                              const isImg = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
 
-                          return (
-                            <div
-                              key={i}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'flex-start',
-                                gap: '6px',
-                                fontSize: '11px',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                background: 'var(--bg-secondary, rgba(0,0,0,0.03))',
-                                border: '1px solid var(--border-color)',
-                                transition: 'all 0.15s ease',
-                                maxWidth: '100%',
-                                boxSizing: 'border-box'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                                e.currentTarget.style.color = 'var(--accent-primary)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = 'var(--border-color)';
-                                e.currentTarget.style.color = 'var(--text-primary)';
-                              }}
-                              title={`Klik untuk pratinjau: ${f.name}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                hasPermission(roleConfig, 'view_detail', userRole)
-                                  ? setPreviewFile(f)
-                                  : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
-                              }}
-                            >
-                              <div
+                              return (
+                                <div
+                                  key={i}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '11px',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px',
+                                    background: 'var(--bg-secondary, rgba(0,0,0,0.03))',
+                                    border: '1px solid var(--border-color)',
+                                    transition: 'all 0.15s ease',
+                                    width: '100%',
+                                    minWidth: 0,
+                                    boxSizing: 'border-box'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                    e.currentTarget.style.color = 'var(--accent-primary)';
+                                    e.currentTarget.style.background = 'var(--surface-color)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                    e.currentTarget.style.background = 'var(--bg-secondary, rgba(0,0,0,0.03))';
+                                  }}
+                                  title={`Klik untuk pratinjau: ${f.name}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    hasPermission(roleConfig, 'view_detail', userRole)
+                                      ? setPreviewFile(f)
+                                      : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail atau lampiran.');
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: '16px',
+                                      height: '16px',
+                                      borderRadius: '4px',
+                                      backgroundColor: isPdf
+                                        ? 'rgba(239, 68, 68, 0.15)'
+                                        : isExcel
+                                        ? 'rgba(16, 185, 129, 0.15)'
+                                        : isDoc
+                                        ? 'rgba(59, 130, 246, 0.15)'
+                                        : isImg
+                                        ? 'rgba(168, 85, 247, 0.15)'
+                                        : 'rgba(59, 130, 246, 0.12)',
+                                      color: isPdf
+                                        ? '#ef4444'
+                                        : isExcel
+                                        ? '#10b981'
+                                        : isDoc
+                                        ? '#3b82f6'
+                                        : isImg
+                                        ? '#a855f7'
+                                        : 'var(--accent-primary)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    {isPdf ? (
+                                      <FileText size={10} style={{ flexShrink: 0 }} />
+                                    ) : isExcel ? (
+                                      <FileDown size={10} style={{ flexShrink: 0 }} />
+                                    ) : (
+                                      <Paperclip size={10} style={{ flexShrink: 0 }} />
+                                    )}
+                                  </div>
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      lineHeight: '1.2',
+                                      fontWeight: 500,
+                                      minWidth: 0
+                                    }}
+                                  >
+                                    {f.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                            {taskFiles.length > 3 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  hasPermission(roleConfig, 'view_detail', userRole)
+                                    ? openDetail(task)
+                                    : toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat detail.');
+                                }}
                                 style={{
-                                  width: '18px',
-                                  height: '18px',
-                                  borderRadius: '4px',
-                                  backgroundColor: isPdf
-                                    ? 'rgba(239, 68, 68, 0.15)'
-                                    : isExcel
-                                    ? 'rgba(16, 185, 129, 0.15)'
-                                    : isDoc
-                                    ? 'rgba(59, 130, 246, 0.15)'
-                                    : isImg
-                                    ? 'rgba(168, 85, 247, 0.15)'
-                                    : 'rgba(59, 130, 246, 0.12)',
-                                  color: isPdf
-                                    ? '#ef4444'
-                                    : isExcel
-                                    ? '#10b981'
-                                    : isDoc
-                                    ? '#3b82f6'
-                                    : isImg
-                                    ? '#a855f7'
-                                    : 'var(--accent-primary)',
-                                  display: 'flex',
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--accent-primary)',
+                                  fontSize: '10.5px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  padding: '1px 4px',
+                                  display: 'inline-flex',
                                   alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                  marginTop: '1px'
+                                  gap: '3px'
                                 }}
+                                title="Lihat semua lampiran di detail pekerjaan"
                               >
-                                {isPdf ? (
-                                  <FileText size={11} style={{ flexShrink: 0 }} />
-                                ) : isExcel ? (
-                                  <FileDown size={11} style={{ flexShrink: 0 }} />
-                                ) : (
-                                  <Paperclip size={11} style={{ flexShrink: 0 }} />
-                                )}
-                              </div>
-                              <span
-                                style={{
-                                  flex: 1,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'normal',
-                                  wordBreak: 'break-word',
-                                  lineHeight: '1.35',
-                                  fontWeight: 500
-                                }}
-                              >
-                                {f.name}
-                              </span>
-                            </div>
-                          );
-                        }) : (
+                                +{taskFiles.length - 3} berkas lainnya
+                              </button>
+                            )}
+                          </>
+                        ) : (
                           <span style={{ color: 'var(--text-secondary)' }}>-</span>
                         )}
                       </div>
