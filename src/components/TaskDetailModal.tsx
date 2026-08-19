@@ -679,11 +679,53 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'normal', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) }} />
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                              {subTask.pic && (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <User size={12} /> {subTask.pic}
-                                </span>
-                              )}
+                              {(() => {
+                                const allSubPics: string[] = [];
+                                if (subTask.pic && subTask.pic.trim()) allSubPics.push(subTask.pic.trim());
+                                if (Array.isArray(subTask.additionalPics)) {
+                                  subTask.additionalPics.forEach(p => {
+                                    if (p && typeof p === 'string' && p.trim() && !allSubPics.includes(p.trim())) {
+                                      allSubPics.push(p.trim());
+                                    }
+                                  });
+                                }
+
+                                if (allSubPics.length === 0) return null;
+
+                                const maxVisiblePics = 2;
+                                const visiblePics = allSubPics.slice(0, maxVisiblePics);
+                                const extraCount = allSubPics.length - maxVisiblePics;
+
+                                return (
+                                  <span 
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}
+                                    title={`PIC: ${allSubPics.join(', ')}`}
+                                  >
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      <User size={12} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} /> 
+                                      <span>{visiblePics.join(', ')}</span>
+                                    </span>
+                                    {extraCount > 0 && (
+                                      <span
+                                        title={`Seluruh PIC Sub Pekerjaan:\n${allSubPics.map((p, i) => `${i + 1}. ${p}`).join('\n')}`}
+                                        style={{
+                                          fontSize: '10px',
+                                          fontWeight: 600,
+                                          padding: '1px 6px',
+                                          borderRadius: '10px',
+                                          background: 'rgba(59, 130, 246, 0.12)',
+                                          color: 'var(--accent-primary)',
+                                          border: '1px solid rgba(59, 130, 246, 0.25)',
+                                          cursor: 'pointer',
+                                          userSelect: 'none'
+                                        }}
+                                      >
+                                        +{extraCount} lainnya
+                                      </span>
+                                    )}
+                                  </span>
+                                );
+                              })()}
                               {subTask.tenggatWaktu && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <CalendarDays size={12} /> Tenggat: {format(new Date(subTask.tenggatWaktu), 'dd MMM yyyy')}
