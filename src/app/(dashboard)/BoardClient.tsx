@@ -796,7 +796,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
                         padding: '8px',
                         borderRadius: '8px',
                         border: isDragOverThisCard ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
-                        cursor: canDrag ? 'grab' : 'pointer',
+                        cursor: canDrag ? 'grab' : (hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default'),
                         opacity: isDragged ? 0.5 : 1,
                         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                         display: 'flex',

@@ -52,7 +52,19 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => { });
   }, []);
-  const { masterColors } = useMaster();
+  const { masterColors, roleConfig: masterRoleConfig } = useMaster();
+  const currentRoleConfig = roleConfig || masterRoleConfig;
+
+  useEffect(() => {
+    if (currentRoleConfig && !hasPermission(currentRoleConfig, 'view_detail', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
+      onClose();
+    }
+  }, [currentRoleConfig, userRole, onClose]);
+
+  if (currentRoleConfig && !hasPermission(currentRoleConfig, 'view_detail', userRole)) {
+    return null;
+  }
   const router = useRouter();
   const pathname = usePathname();
   const { addActivityLog } = useNotifications();

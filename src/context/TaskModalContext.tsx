@@ -7,6 +7,8 @@ import { Task, FileItem, SubTask, getTaskFiles, getAdditionalPics } from '@/util
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal, { EditingTaskType } from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
+import { useSession } from 'next-auth/react';
+import { hasPermission } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -27,9 +29,12 @@ const TaskModalContext = createContext<TaskModalContextType | undefined>(undefin
 
 export function TaskModalProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { masterPics, masterCats, masterStatuses, masterPriorities } = useMaster();
+  const { data: session } = useSession();
+  const { masterPics, masterCats, masterStatuses, masterPriorities, roleConfig } = useMaster();
   const { theme } = useTheme();
   const { addActivityLog } = useNotifications();
+
+  const userRole = (session?.user as any)?.role || 'GUEST';
 
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<EditingTaskType | null>(null);
@@ -37,6 +42,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null);
 
   const openDetail = (task: Task) => {
+    if (!hasPermission(roleConfig, 'view_detail', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
+      return;
+    }
     setDetailTask(task);
   };
 
@@ -45,6 +54,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const openEdit = (task: Task) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengedit data pekerjaan.');
+      return;
+    }
     setDetailTask(null);
     let repetisiValue = task.repetisi || 'Tidak Berulang';
     let parsedSubTasks: SubTask[] = [];
@@ -93,6 +106,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const openDuplicate = (task: Task) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menduplikasi pekerjaan.');
+      return;
+    }
     setDetailTask(null);
     let repetisiValue = task.repetisi || 'Tidak Berulang';
     let parsedSubTasks: SubTask[] = [];
@@ -128,7 +145,7 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
     }
 
     setEditingTask({
-      nama: `${task.nama} (Salinan)`,
+      nama: task.nama,
       pic: task.pic,
       status: task.status || 'To Do',
       prioritas: task.prioritas || 'Medium',
@@ -155,6 +172,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const openCreate = (defaultValues?: Partial<Task>) => {
+    if (!hasPermission(roleConfig, 'manage_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menambah data pekerjaan.');
+      return;
+    }
     setDetailTask(null);
     const todayStr = new Date().toISOString().split('T')[0];
     setEditingTask({
@@ -183,6 +204,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteTask = async (taskOrId: Task | string | number): Promise<boolean> => {
+    if (!hasPermission(roleConfig, 'delete_task', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk menghapus pekerjaan.');
+      return false;
+    }
     const id = typeof taskOrId === 'object' ? taskOrId.id : taskOrId;
     const taskName = typeof taskOrId === 'object' ? taskOrId.nama : 'Pekerjaan';
 
@@ -282,6 +307,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const openPreviewFile = (file: { name: string; url: string }) => {
+    if (!hasPermission(roleConfig, 'view_detail', userRole)) {
+      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.');
+      return;
+    }
     setPreviewFile(file);
   };
 

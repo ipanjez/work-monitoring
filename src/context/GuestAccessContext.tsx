@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Lock, X, LogIn, UserPlus } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { toast } from 'react-hot-toast';
+
 type GuestAccessContextType = {
   isGuest: boolean;
   showGuestModal: boolean;
@@ -22,12 +24,21 @@ export function GuestAccessProvider({ children }: { children: React.ReactNode })
 
   const isGuest = (session?.user as any)?.role === 'GUEST';
 
-  const handleGuestAction = (onAllowed: () => void, hasPermission: boolean = false) => {
-    if (isGuest && !hasPermission) {
+  const handleGuestAction = (onAllowed: () => void, hasPermission?: boolean) => {
+    if (hasPermission !== undefined) {
+      if (!hasPermission) {
+        if (isGuest) {
+          setShowGuestModal(true);
+        } else {
+          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melakukan tindakan ini.');
+        }
+        return;
+      }
+    } else if (isGuest) {
       setShowGuestModal(true);
-    } else {
-      onAllowed();
+      return;
     }
+    onAllowed();
   };
 
   const handleGoToLogin = async () => {

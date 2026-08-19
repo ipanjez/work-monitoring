@@ -1252,7 +1252,14 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                       </td>
                     )}
                     <td style={{ padding: '8px 6px' }}>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}>
+                      <div
+                        style={{
+                          fontWeight: '600',
+                          color: 'var(--text-primary)',
+                          cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default'
+                        }}
+                        onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
+                      >
                         {task.nama}
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '3px', flexWrap: 'wrap' }}>
@@ -1650,7 +1657,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                 className="mobile-task-card"
                 onClick={() => handleGuestAction(() => openDetail(task), hasPermission(roleConfig, 'view_detail', userRole))}
                 style={{
-                  cursor: 'pointer',
+                  cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default',
                   borderLeft: selectedTasks.has(task.id) ? '4px solid var(--accent-primary)' : undefined,
                   backgroundColor: selectedTasks.has(task.id) ? 'rgba(59, 130, 246, 0.06)' : undefined
                 }}
