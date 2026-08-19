@@ -604,6 +604,16 @@ th[style*="cursor: pointer"]:hover,
     gap: 0 !important;
   }
 
+  /* Style Salin Agenda Tim (CopyAgendaButton) di mobile */
+  #copy-agenda-btn-container>button {
+    padding: 4px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border-radius: 50% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
   #notification-bell-container div[style*="width: 350px"] {
     width: 300px !important;
     max-width: 90vw !important;

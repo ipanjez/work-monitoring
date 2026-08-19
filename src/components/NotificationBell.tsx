@@ -104,30 +104,45 @@ export default function NotificationBell() {
         }}
         title="Notifikasi Pembaruan"
         style={{
-          width: '42px',
-          height: '42px',
-          borderRadius: '10px',
-          background: isOpen ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-color)',
+          width: '45px',
+          height: '45px',
+          borderRadius: '50%',
+          background: isOpen ? 'var(--accent-primary)' : 'var(--surface-color)',
           border: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          color: isOpen ? 'white' : 'var(--text-secondary)',
           cursor: 'pointer',
           position: 'relative',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          transition: 'all 0.2s ease',
-          color: isOpen ? 'var(--accent-primary)' : 'var(--text-primary)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          transition: 'all 0.2s',
+          outline: 'none',
+        }}
+        onMouseEnter={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)';
+            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+            e.currentTarget.style.color = 'var(--accent-primary)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+            e.currentTarget.style.borderColor = 'var(--border-color)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }
         }}
       >
-        <Bell size={19} style={{ transform: isOpen ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.2s ease' }} />
+        <Bell size={20} style={{ transform: isOpen ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.2s ease' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
-            top: '-4px',
-            right: '-4px',
+            top: '-3px',
+            right: '-3px',
             background: '#ef4444',
             color: 'white',
-            fontSize: '10.5px',
+            fontSize: '10px',
             fontWeight: 800,
             minWidth: '18px',
             height: '18px',
