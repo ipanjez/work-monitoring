@@ -6,7 +6,7 @@ import {
   Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, 
   Users, CalendarDays, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
   Pencil, Camera, Globe, Clock, Copy, RotateCcw, Filter, ExternalLink, 
-  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive
+  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -66,6 +66,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number | string>(100);
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number | string>(5000);
   const [storageUsedMb, setStorageUsedMb] = useState<number>(0);
+  const [isLoadingStorage, setIsLoadingStorage] = useState<boolean>(true);
 
   // Session & Security State
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState<number | string>(24);
@@ -310,15 +311,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       .catch(() => {});
 
     // 4. Fetch storage usage
-    fetch('/api/settings/storage')
-      .then(res => res.json())
-      .then(data => {
-        if (data && typeof data.totalUsedMb === 'number') {
-          setStorageUsedMb(data.totalUsedMb);
-        }
-      })
-      .catch(() => {});
+    fetchStorageUsage();
   }, []);
+
+  const fetchStorageUsage = async () => {
+    setIsLoadingStorage(true);
+    try {
+      const res = await fetch('/api/settings/storage');
+      if (res.ok) {
+        const data = await res.json();
+        const used = typeof data.usedMb === 'number' ? data.usedMb : (typeof data.totalUsedMb === 'number' ? data.totalUsedMb : 0);
+        setStorageUsedMb(used);
+      }
+    } catch (e) {
+      console.warn('Failed to load storage usage:', e);
+    } finally {
+      setIsLoadingStorage(false);
+    }
+  };
 
   // Save Settings Handler with Real-Time Broadcasting
   const handleSaveSettings = async (e?: React.FormEvent) => {
@@ -1305,20 +1315,63 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
               {/* Live Storage Progress Bar */}
               <div style={{ marginTop: '16px', background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px', color: 'var(--text-primary)', fontWeight: 600 }}>
-                  <span>Penyimpanan Terpakai: {storageUsedMb.toFixed(2)} MB</span>
-                  <span>Kapasitas: {maxTotalStorageMb} MB</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', marginBottom: '8px', color: 'var(--text-primary)', fontWeight: 600, flexWrap: 'wrap', gap: '8px' }}>
+                  <span>
+                    {isLoadingStorage ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '12.5px', fontWeight: 500 }}>
+                        <Loader2 size={14} className="animate-spin" /> Menghitung ukuran penyimpanan...
+                      </span>
+                    ) : (
+                      <span>
+                        Penyimpanan Terpakai: <strong style={{ color: 'var(--accent-primary)' }}>{storageUsedMb.toFixed(2)} MB</strong>
+                        {storageUsedMb === 0 && (
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '6px' }}>
+                            (Belum ada file lampiran)
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Kapasitas: {maxTotalStorageMb} MB</span>
+                    <button
+                      type="button"
+                      onClick={fetchStorageUsage}
+                      disabled={isLoadingStorage}
+                      className="btn btn-secondary"
+                      style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
+                      title="Hitung Ulang Penggunaan Storage"
+                    >
+                      <RefreshCw size={11} className={isLoadingStorage ? 'animate-spin' : ''} /> Hitung Ulang
+                    </button>
+                  </div>
                 </div>
+
                 <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
-                    width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
-                    transition: 'width 0.3s'
-                  }} />
+                  {isLoadingStorage ? (
+                    <div style={{
+                      height: '100%',
+                      width: '100%',
+                      background: 'linear-gradient(90deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.8) 50%, rgba(59,130,246,0.2) 100%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'pulse 1.5s infinite'
+                    }} />
+                  ) : (
+                    <div style={{
+                      height: '100%',
+                      background: (storageUsedMb / (Number(maxTotalStorageMb) || 1)) > 0.9 ? 'var(--danger)' : 'var(--accent-primary)',
+                      width: `${Math.min((storageUsedMb / (Number(maxTotalStorageMb) || 1)) * 100, 100)}%`,
+                      transition: 'width 0.3s'
+                    }} />
+                  )}
                 </div>
+
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
-                  Sisa kapasitas penyimpanan yang tersedia: <strong style={{ color: 'var(--text-primary)' }}>{Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB</strong>
+                  {isLoadingStorage ? (
+                    'Sedang memeriksa seluruh direktori file lampiran...'
+                  ) : (
+                    <>Sisa kapasitas penyimpanan yang tersedia: <strong style={{ color: 'var(--text-primary)' }}>{Math.max((Number(maxTotalStorageMb) || 0) - storageUsedMb, 0).toFixed(2)} MB</strong></>
+                  )}
                 </p>
               </div>
             </div>

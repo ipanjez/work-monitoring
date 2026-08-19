@@ -21,29 +21,65 @@ export async function GET() {
 
     if (isLocal) {
       // Local mode: calculate from public/uploads directory
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      if (fs.existsSync(uploadsDir)) {
-        const allFiles = fs.readdirSync(uploadsDir);
-        for (const f of allFiles) {
-          const stat = fs.statSync(path.join(uploadsDir, f));
-          usedBytes += stat.size;
+      try {
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+          const allFiles = fs.readdirSync(uploadsDir);
+          for (const f of allFiles) {
+            const stat = fs.statSync(path.join(uploadsDir, f));
+            usedBytes += stat.size;
+          }
         }
+      } catch (e) {
+        console.warn('Could not scan local uploads directory:', e);
       }
-    } else {
+    } else if (process.env.BLOB_READ_WRITE_TOKEN) {
       // Cloud mode: calculate from Vercel Blob
-      const { list } = await import('@vercel/blob');
-      let cursor: string | undefined;
-      do {
-        const listResult: any = await list({ cursor });
-        usedBytes += listResult.blobs.reduce((acc: number, b: any) => acc + b.size, 0);
-        cursor = listResult.cursor;
-      } while (cursor);
+      try {
+        const { list } = await import('@vercel/blob');
+        let cursor: string | undefined;
+        do {
+          const listResult: any = await list({ cursor });
+          usedBytes += listResult.blobs.reduce((acc: number, b: any) => acc + (b.size || 0), 0);
+          cursor = listResult.cursor;
+        } while (cursor);
+      } catch (e) {
+        console.warn('Could not list Vercel blobs:', e);
+      }
     }
+
+    // Fallback: Calculate from task records metadata if usedBytes is still 0
+    if (usedBytes === 0) {
+      try {
+        const allTasks = await prisma.task.findMany({
+          select: { filesJson: true }
+        });
+        for (const t of allTasks) {
+          if (t.filesJson) {
+            try {
+              const files = JSON.parse(t.filesJson);
+              if (Array.isArray(files)) {
+                for (const f of files) {
+                  if (f && typeof f.size === 'number' && !f.isDeleted) {
+                    usedBytes += f.size;
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (e) {
+        console.warn('Could not calculate from task records:', e);
+      }
+    }
+
+    const usedMb = Number((usedBytes / (1024 * 1024)).toFixed(2));
 
     return NextResponse.json({
       usedBytes,
+      usedMb,
+      totalUsedMb: usedMb,
       maxTotalStorageMb,
-      usedMb: usedBytes / (1024 * 1024),
     });
   } catch (error) {
     console.error('Storage API error:', error);
