@@ -8,12 +8,15 @@ import toast from 'react-hot-toast';
 import AvatarCropperModal from '@/components/AvatarCropperModal';
 import Avatar from '@/components/Avatar';
 import { useMaster } from '@/context/MasterContext';
+import RoleBadge from '@/components/RoleBadge';
+import { defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
 
 export default function ProfileClient() {
   const { data: session, update } = useSession();
   const { masterPicAvatars } = useMaster();
   const [loading, setLoading] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
 
   // Profile Form States
   const [profileName, setProfileName] = useState('');
@@ -28,6 +31,13 @@ export default function ProfileClient() {
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings/permissions')
+      .then(res => res.json())
+      .then(setRoleConfig)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Fetch user profile from API
@@ -164,7 +174,10 @@ export default function ProfileClient() {
           </button>
         </div>
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>Foto Profil</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>Foto Profil</h3>
+            <RoleBadge role={(session.user as any)?.role || 'MEMBER'} config={roleConfig} size="md" />
+          </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', maxWidth: '400px' }}>
             Unggah foto profil personal Anda. Gunakan gambar berformat JPG/PNG dengan aspek rasio persegi (1:1) untuk tampilan optimal.
           </p>
@@ -213,9 +226,12 @@ export default function ProfileClient() {
         <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                NPK (ID Pengguna)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
+                  NPK (ID Pengguna)
+                </label>
+                <RoleBadge role={(session.user as any)?.role || 'MEMBER'} config={roleConfig} size="sm" />
+              </div>
               <input
                 type="text"
                 className="input"

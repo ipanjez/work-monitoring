@@ -14,10 +14,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import {
   defaultRolePermissions, RolePermissionsConfig, hasPermission,
-  PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail
+  PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail,
+  getRoleIconName, getRoleColor
 } from '@/lib/permissions';
 import { useNotifications } from '@/context/NotificationContext';
 import Avatar from '@/components/Avatar';
+import RoleBadge, { RoleIconRenderer } from '@/components/RoleBadge';
+import RoleCustomizationModal from '@/components/RoleCustomizationModal';
 
 type UserData = { id: string; npk: string; name: string; role: string; status: string; email?: string; image?: string; lastActive?: string };
 type ResetReq = { id: number; status: string; note: string | null; createdAt: string; user: { npk: string; name: string; role: string } };
@@ -69,6 +72,9 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
   const [rejectModal, setRejectModal] = useState<{ req: ResetReq; note: string } | null>(null);
   const [forceResetUser, setForceResetUser] = useState<UserData | null>(null);
   const [forceNewPassword, setForceNewPassword] = useState('');
+
+  // Role Customization Modal state
+  const [editingRoleCustomizationKey, setEditingRoleCustomizationKey] = useState<string | null>(null);
 
   // Sorting states
   const [userSortField, setUserSortField] = useState<'npk' | 'name' | 'role' | 'lastActive' | 'status'>('npk');
@@ -743,9 +749,7 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                     </td>
                     <td style={{ padding: '12px', color: 'var(--text-primary)' }}>{u.name}</td>
                     <td style={{ padding: '12px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '9999px', fontSize: '12px', fontWeight: 600, background: u.role === 'ADMIN' ? 'rgba(139,92,246,0.15)' : 'rgba(59,130,246,0.12)', color: u.role === 'ADMIN' ? '#7c3aed' : '#2563eb' }}>
-                        {u.role === 'ADMIN' ? <ShieldCheck size={12} /> : <User size={12} />} {roleConfig.labels[u.role] || u.role}
-                      </span>
+                      <RoleBadge role={u.role} config={roleConfig} />
                     </td>
                     <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '13px' }}>
                       {(u as any).lastActive ? new Date((u as any).lastActive).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum aktif'}
@@ -945,7 +949,9 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                       const newKey = `ROLE_${Date.now()}`;
                       setRoleConfig(prev => ({
                         ...prev,
-                        labels: { ...prev.labels, [newKey]: 'Role Baru' }
+                        labels: { ...prev.labels, [newKey]: 'Role Baru' },
+                        icons: { ...(prev.icons || {}), [newKey]: 'User' },
+                        colors: { ...(prev.colors || {}), [newKey]: '#3b82f6' }
                       }));
                     }}
                     disabled={savingRoles}
@@ -992,12 +998,35 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                     Fitur & Lokasi Menu
                   </th>
                   {Object.keys(roleConfig.labels).map(rk => (
-                    <th key={rk} style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '110px' }}>
+                    <th key={rk} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '135px' }}>
                       {userRole === 'ADMIN' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingRoleCustomizationKey(rk)}
+                            title="Klik untuk kustom ikon & warna role"
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '8px',
+                              backgroundColor: `${getRoleColor(roleConfig, rk)}20`,
+                              border: `1px solid ${getRoleColor(roleConfig, rk)}50`,
+                              color: getRoleColor(roleConfig, rk),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              flexShrink: 0
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                          >
+                            <RoleIconRenderer iconName={getRoleIconName(roleConfig, rk)} size={14} color={getRoleColor(roleConfig, rk)} />
+                          </button>
                           <input
                             className="input"
-                            style={{ padding: '4px 8px', fontSize: '12.5px', textAlign: 'center', width: '90px', fontWeight: 600 }}
+                            style={{ padding: '4px 6px', fontSize: '12px', textAlign: 'center', width: '82px', fontWeight: 600 }}
                             value={roleConfig.labels[rk] || ''}
                             onChange={(e) => {
                               setRoleConfig({
@@ -1012,20 +1041,22 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
                                 if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
                                   const newLabels = { ...roleConfig.labels };
                                   delete newLabels[rk];
-                                  setRoleConfig({ ...roleConfig, labels: newLabels });
+                                  const newIcons = { ...(roleConfig.icons || {}) };
+                                  delete newIcons[rk];
+                                  const newColors = { ...(roleConfig.colors || {}) };
+                                  delete newColors[rk];
+                                  setRoleConfig({ ...roleConfig, labels: newLabels, icons: newIcons, colors: newColors });
                                 }
                               }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}
                               title="Hapus Role"
                             >
-                              <X size={15} />
+                              <X size={14} />
                             </button>
                           )}
                         </div>
                       ) : (
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {roleConfig.labels[rk] || rk}
-                        </span>
+                        <RoleBadge role={rk} config={roleConfig} />
                       )}
                     </th>
                   ))}
@@ -1549,6 +1580,24 @@ export default function UsersClient({ userRole = 'ADMIN' }: { userRole?: string 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Role Customization Modal */}
+      {editingRoleCustomizationKey && (
+        <RoleCustomizationModal
+          isOpen={!!editingRoleCustomizationKey}
+          onClose={() => setEditingRoleCustomizationKey(null)}
+          roleKey={editingRoleCustomizationKey}
+          config={roleConfig}
+          onSave={(key, icon, color) => {
+            setRoleConfig(prev => ({
+              ...prev,
+              icons: { ...(prev.icons || {}), [key]: icon },
+              colors: { ...(prev.colors || {}), [key]: color }
+            }));
+            toast.success(`Ikon & warna role ${roleConfig.labels[key] || key} berhasil diperbarui! Jangan lupa simpan perubahan matriks.`);
+          }}
+        />
       )}
     </div>
   );

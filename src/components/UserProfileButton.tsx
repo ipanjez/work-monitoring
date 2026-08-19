@@ -5,9 +5,10 @@ import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, hasPermission, PERMISSION_FEATURE_DETAILS } from '@/lib/permissions';
+import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, getRoleIconName, getRoleColor, hasPermission, PERMISSION_FEATURE_DETAILS } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
+import { RoleIconRenderer } from '@/components/RoleBadge';
 
 export default function UserProfileButton() {
   const { data: session, update } = useSession();
@@ -171,14 +172,29 @@ export default function UserProfileButton() {
                 style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
                 title={activeFeatures.length > 0 ? `Hak Akses Aktif:\n${activeFeatures.map(f => `• ${f.label}`).join('\n')}` : 'Tidak ada hak akses aktif'}
               >
-                {(() => {
-                  if (currentRole === 'ADMIN') return <ShieldAlert size={16} color="var(--danger)" style={{ marginTop: '2px', flexShrink: 0 }} />;
-                  if (currentRole === 'VIEWER') return <Eye size={16} color="var(--text-secondary)" style={{ marginTop: '2px', flexShrink: 0 }} />;
-                  return <Shield size={16} color="var(--accent-primary)" style={{ marginTop: '2px', flexShrink: 0 }} />;
-                })()}
+                <div
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '7px',
+                    backgroundColor: `${getRoleColor(roleConfig, currentRole)}18`,
+                    border: `1px solid ${getRoleColor(roleConfig, currentRole)}35`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '1px'
+                  }}
+                >
+                  <RoleIconRenderer
+                    iconName={getRoleIconName(roleConfig, currentRole)}
+                    size={14}
+                    color={getRoleColor(roleConfig, currentRole)}
+                  />
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: getRoleColor(roleConfig, currentRole) }}>
                       {getRoleLabel(roleConfig, currentRole)}
                     </span>
                     <span style={{

@@ -1,6 +1,8 @@
 export interface RolePermissionsConfig {
   labels: Record<string, string>;
   permissions: Record<string, string[]>;
+  icons?: Record<string, string>;
+  colors?: Record<string, string>;
 }
 
 export interface PermissionFeatureDetail {
@@ -48,7 +50,7 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     label: 'Melihat Rincian Detail Tugas & Lampiran',
     shortLabel: 'Detail & Lampiran',
     menuLocation: 'Seluruh Menu Pekerjaan (Board, Tasks, Calendar, Reports, Team)',
-    description: 'Membuka modal popup detail tugas untuk membaca deskripsi, subtask, riwayat, dan mempratinjau file lampiran.',
+    description: 'Membuka dan melihat rincian detail tugas saat kartu diklik untuk membaca deskripsi, subtask, riwayat, dan mempratinjau file lampiran.',
     impact: 'Jika tidak dicentang, pengguna tidak diizinkan membuka modal rincian detail tugas saat kartu diklik.'
   },
   {
@@ -147,6 +149,57 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
   }
 ];
 
+export const DEFAULT_ROLE_ICONS: Record<string, string> = {
+  ADMIN: 'ShieldCheck',
+  MEMBER: 'User',
+  VIEWER: 'Eye',
+  SPV: 'Award',
+  GUEST: 'UserCheck'
+};
+
+export const DEFAULT_ROLE_COLORS: Record<string, string> = {
+  ADMIN: '#7c3aed', // Purple/Violet
+  MEMBER: '#2563eb', // Blue
+  VIEWER: '#059669', // Emerald
+  SPV: '#d97706',    // Amber/Gold
+  GUEST: '#64748b'   // Slate
+};
+
+export const AVAILABLE_ROLE_ICONS = [
+  { id: 'ShieldCheck', label: 'Shield Check' },
+  { id: 'Shield', label: 'Shield' },
+  { id: 'ShieldAlert', label: 'Shield Alert' },
+  { id: 'User', label: 'User' },
+  { id: 'Users', label: 'Users' },
+  { id: 'UserCheck', label: 'User Check' },
+  { id: 'Crown', label: 'Crown' },
+  { id: 'Award', label: 'Award' },
+  { id: 'Star', label: 'Star' },
+  { id: 'Zap', label: 'Zap' },
+  { id: 'Eye', label: 'Eye' },
+  { id: 'Briefcase', label: 'Briefcase' },
+  { id: 'Settings', label: 'Settings' },
+  { id: 'KeyRound', label: 'Key' },
+  { id: 'Sparkles', label: 'Sparkles' },
+  { id: 'Lock', label: 'Lock' },
+  { id: 'Compass', label: 'Compass' }
+];
+
+export const AVAILABLE_ROLE_COLORS = [
+  '#7c3aed', // Ungu
+  '#2563eb', // Biru
+  '#059669', // Emerald
+  '#0284c7', // Sky Blue
+  '#d97706', // Amber Gold
+  '#ea580c', // Oranye
+  '#dc2626', // Merah
+  '#db2777', // Pink
+  '#4f46e5', // Indigo
+  '#0d9488', // Teal
+  '#64748b', // Slate
+  '#334155'  // Dark Slate
+];
+
 export const defaultRolePermissions: RolePermissionsConfig = {
   labels: {
     ADMIN: 'Admin',
@@ -154,6 +207,12 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     VIEWER: 'Viewer',
     SPV: 'Supervisor',
     GUEST: 'Guest'
+  },
+  icons: {
+    ...DEFAULT_ROLE_ICONS
+  },
+  colors: {
+    ...DEFAULT_ROLE_COLORS
   },
   permissions: {
     view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER', 'SPV', 'GUEST'],
@@ -188,4 +247,26 @@ export const getRoleLabel = (
 ): string => {
   if (!config) config = defaultRolePermissions;
   return config.labels[userRole] || userRole;
+};
+
+export const getRoleIconName = (
+  config: RolePermissionsConfig | null | undefined,
+  userRole: string
+): string => {
+  if (!config) config = defaultRolePermissions;
+  if (config.icons && config.icons[userRole]) {
+    return config.icons[userRole];
+  }
+  return DEFAULT_ROLE_ICONS[userRole] || 'User';
+};
+
+export const getRoleColor = (
+  config: RolePermissionsConfig | null | undefined,
+  userRole: string
+): string => {
+  if (!config) config = defaultRolePermissions;
+  if (config.colors && config.colors[userRole]) {
+    return config.colors[userRole];
+  }
+  return DEFAULT_ROLE_COLORS[userRole] || '#3b82f6';
 };
