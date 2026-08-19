@@ -172,10 +172,32 @@ export default function TaskAddEditModal({
             cloned.isAllDay = false;
           }
         } catch (e) {
-          cloned.lokasiData = { tipe: 'offline', lokasiFisik: cloned.lokasi, jam: '' };
+          const locStr = (cloned.lokasi || '').trim();
+          const isOnline = /online|zoom|meet|teams|webex|http/i.test(locStr);
+          cloned.lokasiData = {
+            tipe: isOnline ? 'online' : 'offline',
+            linkZoom: isOnline ? locStr : '',
+            lokasiFisik: !isOnline ? locStr : '',
+            jam: ''
+          };
         }
       } else {
-        cloned.lokasiData = { tipe: '', linkZoom: '', lokasiFisik: '', jam: '' };
+        cloned.lokasiData = { tipe: 'offline', linkZoom: '', lokasiFisik: '', jam: '' };
+      }
+
+      if (cloned.lokasiData) {
+        const textToCheck = `${cloned.lokasiData.linkZoom || ''} ${cloned.lokasiData.lokasiFisik || ''}`.trim();
+        if (/online|zoom|meet|teams|webex|http/i.test(textToCheck) && !/offline/i.test(textToCheck)) {
+          cloned.lokasiData.tipe = 'online';
+          if (!cloned.lokasiData.linkZoom && cloned.lokasiData.lokasiFisik) {
+            cloned.lokasiData.linkZoom = cloned.lokasiData.lokasiFisik;
+          }
+        } else if (/offline/i.test(textToCheck)) {
+          cloned.lokasiData.tipe = 'offline';
+          if (!cloned.lokasiData.lokasiFisik && cloned.lokasiData.linkZoom) {
+            cloned.lokasiData.lokasiFisik = cloned.lokasiData.linkZoom;
+          }
+        }
       }
 
       // Force parsing from subTasksJson to prevent any missing list issues

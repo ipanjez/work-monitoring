@@ -374,7 +374,36 @@ export default function TaskFormFields({
 
       {/* Lokasi Pekerjaan */}
       <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
+          
+          {masterLocations && masterLocations.length > 0 && (
+            <select
+              className="input"
+              value=""
+              onChange={e => {
+                const val = e.target.value;
+                if (!val) return;
+                const isOnline = /online|zoom|meet|teams|webex|http/i.test(val) && !/offline/i.test(val);
+                onChange({
+                  ...task,
+                  lokasiData: {
+                    tipe: isOnline ? 'online' : 'offline',
+                    linkZoom: isOnline ? val : '',
+                    lokasiFisik: !isOnline ? val : '',
+                    jam: task.lokasiData?.jam || ''
+                  } as any
+                });
+              }}
+              style={{ fontSize: '11.5px', padding: '3px 8px', height: '28px', maxWidth: '240px' }}
+            >
+              <option value="">-- Master Lokasi Cepat --</option>
+              {masterLocations.map((loc, lIdx) => (
+                <option key={lIdx} value={loc}>{loc}</option>
+              ))}
+            </select>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-primary)' }}>
@@ -382,10 +411,18 @@ export default function TaskFormFields({
               type="radio"
               name={`lokasiTipe-${task.id || 'new'}`}
               checked={task.lokasiData?.tipe === 'online'}
-              onChange={() => onChange({
-                ...task,
-                lokasiData: { ...task.lokasiData, tipe: 'online' } as any
-              })}
+              onChange={() => {
+                const currentText = (task.lokasiData?.linkZoom || task.lokasiData?.lokasiFisik || '').trim();
+                onChange({
+                  ...task,
+                  lokasiData: { 
+                    ...task.lokasiData, 
+                    tipe: 'online',
+                    linkZoom: currentText,
+                    lokasiFisik: ''
+                  } as any
+                });
+              }}
             />
             Online
           </label>
@@ -394,10 +431,18 @@ export default function TaskFormFields({
               type="radio"
               name={`lokasiTipe-${task.id || 'new'}`}
               checked={task.lokasiData?.tipe === 'offline'}
-              onChange={() => onChange({
-                ...task,
-                lokasiData: { ...task.lokasiData, tipe: 'offline' } as any
-              })}
+              onChange={() => {
+                const currentText = (task.lokasiData?.lokasiFisik || task.lokasiData?.linkZoom || '').trim();
+                onChange({
+                  ...task,
+                  lokasiData: { 
+                    ...task.lokasiData, 
+                    tipe: 'offline',
+                    lokasiFisik: currentText,
+                    linkZoom: ''
+                  } as any
+                });
+              }}
             />
             Offline
           </label>
@@ -405,32 +450,58 @@ export default function TaskFormFields({
 
         {task.lokasiData?.tipe === 'online' && (
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Link Zoom / Meeting</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              Link Zoom / Meeting / Lokasi Online
+            </label>
             <input
               type="text"
               className="input"
               placeholder="https://zoom.us/j/... atau Online Meeting"
               value={task.lokasiData?.linkZoom || ''}
-              onChange={e => onChange({
-                ...task,
-                lokasiData: { ...task.lokasiData, linkZoom: e.target.value } as any
-              })}
+              onChange={e => {
+                const val = e.target.value;
+                const isOfflineDetected = /offline/i.test(val);
+                if (isOfflineDetected) {
+                  onChange({
+                    ...task,
+                    lokasiData: { ...task.lokasiData, tipe: 'offline', lokasiFisik: val, linkZoom: '' } as any
+                  });
+                } else {
+                  onChange({
+                    ...task,
+                    lokasiData: { ...task.lokasiData, linkZoom: val } as any
+                  });
+                }
+              }}
             />
           </div>
         )}
 
         {task.lokasiData?.tipe === 'offline' && (
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Lokasi Fisik / Tempat</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              Lokasi Fisik / Tempat
+            </label>
             <input
               type="text"
               className="input"
               placeholder="Contoh: R.R Komp TKMR / Gedung Utama"
               value={task.lokasiData?.lokasiFisik || ''}
-              onChange={e => onChange({
-                ...task,
-                lokasiData: { ...task.lokasiData, lokasiFisik: e.target.value } as any
-              })}
+              onChange={e => {
+                const val = e.target.value;
+                const isOnlineDetected = /online|zoom|meet|teams|webex|http/i.test(val) && !/offline/i.test(val);
+                if (isOnlineDetected) {
+                  onChange({
+                    ...task,
+                    lokasiData: { ...task.lokasiData, tipe: 'online', linkZoom: val, lokasiFisik: '' } as any
+                  });
+                } else {
+                  onChange({
+                    ...task,
+                    lokasiData: { ...task.lokasiData, lokasiFisik: val } as any
+                  });
+                }
+              }}
             />
           </div>
         )}
