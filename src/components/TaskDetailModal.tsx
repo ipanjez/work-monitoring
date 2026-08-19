@@ -53,10 +53,10 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const { 
     masterColors, 
     roleConfig: masterRoleConfig,
-    maxFileSizeMb: masterMaxFileSize,
-    maxTaskFilesSizeMb: masterMaxTaskFilesSize,
-    appName: masterAppName,
-    appSubtitle: masterDeptName
+    maxFileSizeMb,
+    maxTaskFilesSizeMb,
+    appName,
+    appSubtitle: deptName
   } = useMaster();
   const currentRoleConfig = roleConfig || masterRoleConfig;
 
@@ -80,15 +80,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isSendingMail, setIsSendingMail] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [appName, setAppName] = useState('DeptMonitor');
-  const [deptName, setDeptName] = useState('MRK');
-  const [maxFileSizeMb, setMaxFileSizeMb] = useState(25);
-  const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState(100);
   const [picEmails, setPicEmails] = useState<Record<string, string>>({});
   const [isMobile, setIsMobile] = useState(false);
-
-  const effectiveMaxFileSizeMb = masterMaxFileSize || maxFileSizeMb || 25;
-  const effectiveMaxTaskFilesSizeMb = masterMaxTaskFilesSize || maxTaskFilesSizeMb || 100;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -105,19 +98,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       if (savedAuthor) setCommentAuthor(savedAuthor);
     }
 
-    const loadSettings = async () => {
-      try {
-        const res = await fetch('/api/settings');
-        const data = await res.json();
-        if (data.max_file_size_mb) setMaxFileSizeMb(Number(data.max_file_size_mb));
-        if (data.max_task_files_size_mb) setMaxTaskFilesSizeMb(Number(data.max_task_files_size_mb));
-        if (data.dept_name) setDeptName(data.dept_name);
-        if (data.app_name) setAppName(data.app_name);
-      } catch (err) {
-        console.error('Failed to load settings:', err);
-      }
-    };
-
     const loadPicEmails = async () => {
       try {
         const res = await fetch('/api/users/emails');
@@ -128,7 +108,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       } catch (e) { }
     };
 
-    loadSettings();
     loadPicEmails();
   }, [task]);
 
@@ -748,13 +727,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    File Lampiran ({getTaskFiles(task).length} File, Maks {effectiveMaxFileSizeMb} MB/file)
+                    File Lampiran ({getTaskFiles(task).length} File, Maks {maxFileSizeMb} MB/file)
                   </h4>
                   {(() => {
                     const totalSize = getTaskFiles(task).filter(f => !f.isDeleted).reduce((acc, f) => acc + (f.size || 0), 0);
                     return (
                       <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-secondary)' }}>
-                        Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {effectiveMaxTaskFilesSizeMb} MB
+                        Total terpakai: {(totalSize / (1024 * 1024)).toFixed(2)} MB dari batas maksimal {maxTaskFilesSizeMb} MB
                       </span>
                     );
                   })()}
