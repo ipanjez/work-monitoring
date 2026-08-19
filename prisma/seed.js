@@ -35,7 +35,7 @@ async function main() {
     console.log(`  ✓ ${user.npk} - ${user.name} (${user.role})`);
   }
   console.log('Seeding settings (master_pics)...');
-  const picNames = users.filter(u => u.role === 'MEMBER').map(u => u.name);
+  const picNames = users.filter(u => u.npk !== '0001').map(u => u.name);
   await prisma.appSetting.upsert({
     where: { key: 'master_pics' },
     update: { value: JSON.stringify(picNames) },

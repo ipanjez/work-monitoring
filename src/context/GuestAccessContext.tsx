@@ -22,7 +22,7 @@ export function GuestAccessProvider({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  const isGuest = (session?.user as any)?.role === 'GUEST';
+  const isGuest = (session?.user as any)?.npk === 'guest';
 
   const handleGuestAction = (onAllowed: () => void, hasPermission?: boolean, customDeniedMessage?: string) => {
     if (hasPermission !== undefined) {
