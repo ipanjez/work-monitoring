@@ -1051,33 +1051,36 @@ th[style*="cursor: pointer"]:hover,
   }
 }
 
-/* Dashboard Charts Carousel Slide for Mobile */
+/* Dashboard Charts Responsive Layout */
 .dashboard-charts-carousel {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.dashboard-charts-carousel>.full-width-chart {
+.dashboard-charts-carousel > div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-charts-carousel > .full-width-chart {
   grid-column: span 2;
+  min-width: 0;
+  max-width: 100%;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .dashboard-charts-carousel {
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    scroll-snap-type: x mandatory !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 16px !important;
-    padding: 8px 4px 16px 4px !important;
-    width: 100% !important;
   }
 
-  .dashboard-charts-carousel>div {
-    flex: 0 0 85vw !important;
-    grid-column: auto !important;
-    scroll-snap-align: center !important;
-    min-height: 380px !important;
+  .dashboard-charts-carousel > .full-width-chart {
+    grid-column: span 1 !important;
   }
 }
 
