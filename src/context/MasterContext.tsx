@@ -235,7 +235,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     };
     
     // Internal masterUpdated dispatch handler
-    const handleMasterUpdated = () => {
+    const handleMasterUpdated = (e?: any) => {
         setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
         setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
         setAppLogo(localStorage.getItem('app_logo') || '');
@@ -253,9 +253,23 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
             setMasterLocations(JSON.parse(localStorage.getItem('master_locations') || '[]'));
             setMasterStatusProgress(JSON.parse(localStorage.getItem('master_status_progress') || '{}'));
             setMasterPics(JSON.parse(localStorage.getItem('master_pics') || '[]'));
-            setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
+            if (e?.detail?.roleConfig) {
+                setRoleConfig(e.detail.roleConfig);
+            } else {
+                setRoleConfig(JSON.parse(localStorage.getItem('role_config') || JSON.stringify(defaultRolePermissions)));
+            }
             setUserRoles(JSON.parse(localStorage.getItem('user_roles') || '{}'));
         } catch(e) {}
+
+        fetch('/api/settings/permissions')
+          .then(res => res.json())
+          .then(data => {
+            if (data && typeof data === 'object' && data.labels) {
+              setRoleConfig(data);
+              localStorage.setItem('role_config', JSON.stringify(data));
+            }
+          })
+          .catch(() => {});
 
         fetch('/api/users/roles')
           .then(res => res.json())

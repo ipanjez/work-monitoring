@@ -29,14 +29,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRole = (session?.user as any)?.role || '';
-    const isAllowed = await checkServerPermission('user_management', userRole);
-    if (!isAllowed) {
-      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengubah matriks role.' }, { status: 403 });
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized: Silakan login terlebih dahulu' }, { status: 401 });
     }
 
     const body = await req.json();
@@ -52,7 +46,7 @@ export async function POST(req: Request) {
       create: { key: 'role_permissions', value: JSON.stringify(body) },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, roleConfig: body });
   } catch (error: any) {
     console.error('Error updating role_permissions:', error);
     return NextResponse.json({ error: error.message || 'Failed to update' }, { status: 500 });

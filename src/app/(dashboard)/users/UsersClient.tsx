@@ -1173,12 +1173,14 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                           body: JSON.stringify(roleConfig)
                         });
                         if (res.ok) {
-                          toast.success('Matriks Role berhasil disimpan');
+                          toast.success('Matriks Role berhasil disimpan!');
                           localStorage.setItem('role_config', JSON.stringify(roleConfig));
+                          window.dispatchEvent(new CustomEvent('masterUpdated', { detail: { roleConfig } }));
                           window.dispatchEvent(new Event('masterUpdated'));
                           fetchRoles();
                         } else {
-                          toast.error('Gagal menyimpan matriks role');
+                          const errData = await res.json().catch(() => ({}));
+                          toast.error(errData.error || 'Gagal menyimpan matriks role');
                         }
                       } catch (e) {
                         toast.error('Gagal menyimpan matriks role');
