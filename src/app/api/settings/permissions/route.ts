@@ -19,32 +19,36 @@ export async function GET() {
     }
 
     const parsed = JSON.parse(setting.value);
+    const labels = (parsed.labels && Object.keys(parsed.labels).length > 0) ? parsed.labels : defaultRolePermissions.labels;
+    const validRoleKeys = new Set(Object.keys(labels));
     const permissions: Record<string, string[]> = {};
     const featKeys = ['view_tasks', 'manage_task', 'delete_task', 'export_data', 'system_settings', 'user_administration'];
     featKeys.forEach(k => {
+      let rawList: string[] = [];
       if (parsed.permissions && Array.isArray(parsed.permissions[k])) {
-        permissions[k] = parsed.permissions[k];
+        rawList = parsed.permissions[k];
       } else {
         if (k === 'view_tasks') {
-          permissions[k] = parsed.permissions?.view_tasks || parsed.permissions?.view_dashboard || ['ADMIN'];
+          rawList = parsed.permissions?.view_tasks || parsed.permissions?.view_dashboard || ['ADMIN'];
         } else if (k === 'manage_task') {
-          permissions[k] = parsed.permissions?.manage_task || ['ADMIN'];
+          rawList = parsed.permissions?.manage_task || ['ADMIN'];
         } else if (k === 'delete_task') {
-          permissions[k] = parsed.permissions?.delete_task || ['ADMIN'];
+          rawList = parsed.permissions?.delete_task || ['ADMIN'];
         } else if (k === 'export_data') {
-          permissions[k] = parsed.permissions?.export_data || ['ADMIN'];
+          rawList = parsed.permissions?.export_data || ['ADMIN'];
         } else if (k === 'system_settings') {
-          permissions[k] = parsed.permissions?.system_settings || parsed.permissions?.master_data || ['ADMIN'];
+          rawList = parsed.permissions?.system_settings || parsed.permissions?.master_data || ['ADMIN'];
         } else if (k === 'user_administration') {
-          permissions[k] = parsed.permissions?.user_administration || parsed.permissions?.user_management || ['ADMIN'];
+          rawList = parsed.permissions?.user_administration || parsed.permissions?.user_management || ['ADMIN'];
         } else {
-          permissions[k] = ['ADMIN'];
+          rawList = ['ADMIN'];
         }
       }
+      permissions[k] = rawList.filter(rk => rk === 'ADMIN' || validRoleKeys.has(rk));
     });
 
     const merged = {
-      labels: (parsed.labels && Object.keys(parsed.labels).length > 0) ? parsed.labels : defaultRolePermissions.labels,
+      labels,
       icons: parsed.icons || defaultRolePermissions.icons,
       colors: parsed.colors || defaultRolePermissions.colors,
       permissions
@@ -70,13 +74,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Format data tidak valid' }, { status: 400 });
     }
 
-    await prisma.appSetting.upsert({
-      where: { key: 'role_permissions' },
-      update: { value: JSON.stringify(body) },
-      create: { key: 'role_permissions', value: JSON.stringify(body) },
+    const validRoleKeys = new Set(Object.keys(body.labels));
+    const sanitizedPermissions: Record<string, string[]> = {};
+    Object.entries(body.permissions).forEach(([k, list]) => {
+      if (Array.isArray(list)) {
+        sanitizedPermissions[k] = list.filter((rk: any) => typeof rk === 'string' && (rk === 'ADMIN' || validRoleKeys.has(rk)));
+      }
     });
 
-    return NextResponse.json({ success: true, roleConfig: body });
+    const sanitizedBody = {
+      ...body,
+      permissions: sanitizedPermissions
+    };
+
+    await prisma.appSetting.upsert({
+      where: { key: 'role_permissions' },
+      update: { value: JSON.stringify(sanitizedBody) },
+      create: { key: 'role_permissions', value: JSON.stringify(sanitizedBody) },
+    });
+
+    return NextResponse.json({ success: true, roleConfig: sanitizedBody });
   } catch (error: any) {
     console.error('Error updating role_permissions:', error);
     return NextResponse.json({ error: error.message || 'Failed to update' }, { status: 500 });

@@ -166,55 +166,49 @@ export const hasPermission = (
   if (!userRole) return false;
   if (!config) config = defaultRolePermissions;
 
-  // Mapping legacy or specific keys to the 6 streamlined keys
-  let targetKey = feature;
+  // 1. Mapping legacy or specific keys to the 6 streamlined keys
+  let canonicalFeatureKey = feature;
   if (feature === 'view_dashboard' || feature === 'view_detail') {
-    targetKey = 'view_tasks';
+    canonicalFeatureKey = 'view_tasks';
   } else if (feature === 'upload_comment') {
-    targetKey = 'manage_task';
+    canonicalFeatureKey = 'manage_task';
   } else if (feature === 'master_data' || feature === 'system_config' || feature === 'database_backup') {
-    targetKey = 'system_settings';
+    canonicalFeatureKey = 'system_settings';
   } else if (feature === 'user_management' || feature === 'role_management' || feature === 'system_logs' || feature === 'admin_feedback') {
-    targetKey = 'user_administration';
+    canonicalFeatureKey = 'user_administration';
   }
 
-  let allowedRoles: string[] | undefined = config.permissions?.[targetKey];
+  let allowedRoles: string[] | undefined = config.permissions?.[canonicalFeatureKey];
   if (allowedRoles === undefined) {
     allowedRoles = config.permissions?.[feature];
   }
   if (allowedRoles === undefined) {
-    allowedRoles = defaultRolePermissions.permissions?.[targetKey] || defaultRolePermissions.permissions?.[feature];
+    allowedRoles = defaultRolePermissions.permissions?.[canonicalFeatureKey] || defaultRolePermissions.permissions?.[feature];
   }
 
   if (!allowedRoles || !Array.isArray(allowedRoles) || allowedRoles.length === 0) return false;
 
   const cleanRole = userRole.trim().toLowerCase();
 
-  // 1. Direct match with key or label in allowedRoles (case-insensitive)
-  if (allowedRoles.some(r => r && r.trim().toLowerCase() === cleanRole)) {
-    return true;
-  }
-
-  // 2. Find any role key in config.labels where key or label matches userRole
-  const matchingKeys: string[] = [];
+  // 2. Resolve userRole to its actual role key in config.labels
+  let targetRoleKey = userRole.trim();
   if (config.labels) {
-    Object.entries(config.labels).forEach(([k, label]) => {
-      if (k.trim().toLowerCase() === cleanRole || (label && label.trim().toLowerCase() === cleanRole)) {
-        matchingKeys.push(k);
+    if (config.labels[targetRoleKey]) {
+      // Direct key match
+    } else {
+      const match = Object.entries(config.labels).find(([k, label]) =>
+        k.toLowerCase() === cleanRole || (label && label.trim().toLowerCase() === cleanRole)
+      );
+      if (match) {
+        targetRoleKey = match[0];
       }
-    });
+    }
   }
 
-  // 3. Check if any matching key or its corresponding label is in allowedRoles
-  return allowedRoles.some(r => {
-    if (!r) return false;
-    const rClean = r.trim().toLowerCase();
-    return matchingKeys.some(mk => {
-      const mkClean = mk.trim().toLowerCase();
-      const labelClean = config?.labels?.[mk]?.trim().toLowerCase();
-      return mkClean === rClean || labelClean === rClean;
-    });
-  });
+  const targetRoleKeyClean = targetRoleKey.toLowerCase();
+
+  // 3. Strict match: is targetRoleKey in allowedRoles?
+  return allowedRoles.some(r => r && r.trim().toLowerCase() === targetRoleKeyClean);
 };
 
 export const getRoleLabel = (
