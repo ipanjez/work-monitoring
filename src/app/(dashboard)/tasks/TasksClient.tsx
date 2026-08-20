@@ -1024,7 +1024,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
 
       <AnimatePresence>
-        {selectedTasks.size > 0 && (
+        {hasPermission(roleConfig, 'delete_task', userRole) && selectedTasks.size > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1101,7 +1101,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
-                {hasPermission(roleConfig, 'manage_task', userRole) && (
+                {hasPermission(roleConfig, 'delete_task', userRole) && (
                   <th style={{ padding: '8px 4px', width: '36px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
@@ -1575,30 +1575,30 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                                 <CalendarDays size={13} />
                               </button>
                               {hasPermission(roleConfig, 'manage_task', userRole) && (
-                                <>
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                    onClick={() => {
-                                      handleOpenEditModal(task);
-                                      setActiveDropdownId(null);
-                                    }}
-                                    title="Edit Pekerjaan"
-                                  >
-                                    <Pencil size={13} />
-                                  </button>
-                                  <button
-                                    className="btn btn-danger"
-                                    style={{ padding: '5px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                    onClick={() => {
-                                      handleDelete(task.id);
-                                      setActiveDropdownId(null);
-                                    }}
-                                    title="Hapus"
-                                  >
-                                    <Trash2 size={13} color="var(--danger)" />
-                                  </button>
-                                </>
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  onClick={() => {
+                                    handleOpenEditModal(task);
+                                    setActiveDropdownId(null);
+                                  }}
+                                  title="Edit Pekerjaan"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              )}
+                              {hasPermission(roleConfig, 'delete_task', userRole) && (
+                                <button
+                                  className="btn btn-danger"
+                                  style={{ padding: '5px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  onClick={() => {
+                                    handleDelete(task.id);
+                                    setActiveDropdownId(null);
+                                  }}
+                                  title="Hapus"
+                                >
+                                  <Trash2 size={13} color="var(--danger)" />
+                                </button>
                               )}
                             </div>
                           </>
