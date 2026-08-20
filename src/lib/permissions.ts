@@ -178,30 +178,15 @@ export const hasPermission = (
     targetKey = 'user_administration';
   }
 
-  let allowedRoles = config.permissions?.[targetKey];
-  if (!allowedRoles || !Array.isArray(allowedRoles) || allowedRoles.length === 0) {
-    // Check fallback to specific key in permissions object
+  let allowedRoles: string[] | undefined = config.permissions?.[targetKey];
+  if (allowedRoles === undefined) {
     allowedRoles = config.permissions?.[feature];
   }
-
-  if (!allowedRoles || !Array.isArray(allowedRoles)) {
-    // Check legacy aliases
-    if (feature === 'view_dashboard' || feature === 'view_detail' || feature === 'view_tasks') {
-      allowedRoles = config.permissions?.['view_tasks'] || config.permissions?.['view_dashboard'] || config.permissions?.['view_detail'];
-    } else if (feature === 'upload_comment' || feature === 'manage_task') {
-      allowedRoles = config.permissions?.['manage_task'] || config.permissions?.['upload_comment'];
-    } else if (feature === 'master_data' || feature === 'system_config' || feature === 'database_backup' || feature === 'system_settings') {
-      allowedRoles = config.permissions?.['system_settings'] || config.permissions?.[feature];
-    } else if (feature === 'user_management' || feature === 'role_management' || feature === 'system_logs' || feature === 'admin_feedback' || feature === 'user_administration') {
-      allowedRoles = config.permissions?.['user_administration'] || config.permissions?.[feature];
-    }
-
-    if (!allowedRoles || !Array.isArray(allowedRoles)) {
-      allowedRoles = defaultRolePermissions.permissions?.[targetKey] || defaultRolePermissions.permissions?.[feature];
-    }
+  if (allowedRoles === undefined) {
+    allowedRoles = defaultRolePermissions.permissions?.[targetKey] || defaultRolePermissions.permissions?.[feature];
   }
 
-  if (!allowedRoles || !Array.isArray(allowedRoles)) return false;
+  if (!allowedRoles || !Array.isArray(allowedRoles) || allowedRoles.length === 0) return false;
 
   const cleanRole = userRole.trim().toLowerCase();
 
