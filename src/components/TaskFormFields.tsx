@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   X, UserPlus, Users, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, 
   Info, GripVertical, FileText, FileDown, Trash2, MapPin, ChevronDown, Check,
-  User, Calendar
+  User, Calendar, UploadCloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/
 import toast from 'react-hot-toast';
 import { EditingTaskType } from './TaskAddEditModal';
 import { useTheme } from '@/context/ThemeContext';
+import FilePreviewModal from './FilePreviewModal';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -217,12 +218,38 @@ export default function TaskFormFields({
   isBulkMode = false
 }: TaskFormFieldsProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [localPreviewFile, setLocalPreviewFile] = useState<{ name: string; url: string } | null>(null);
   const [draggedFileIndex, setDraggedFileIndex] = useState<number | null>(null);
   const [dragOverFileIndex, setDragOverFileIndex] = useState<number | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (canUploadAttachment && !uploadingFile) {
+      setIsDraggingFiles(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+    if (!canUploadAttachment || uploadingFile) return;
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -333,7 +360,7 @@ export default function TaskFormFields({
     onChange({ ...task, additionalPicsList: updated });
   };
 
-  const processFiles = async (files: FileList) => {
+  const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     setUploadingFile(true);
 
@@ -1486,6 +1513,40 @@ export default function TaskFormFields({
             )}
           </div>
 
+          {/* Drag & Drop Dropzone */}
+          {canUploadAttachment && (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => !uploadingFile && attachmentInputRef.current?.click()}
+              style={{
+                border: isDraggingFiles ? '2px dashed var(--accent-primary)' : '1.5px dashed var(--border-color)',
+                borderRadius: '10px',
+                padding: '16px 12px',
+                textAlign: 'center',
+                background: isDraggingFiles ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-color)',
+                cursor: uploadingFile ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                marginBottom: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <UploadCloud size={24} color={isDraggingFiles ? "var(--accent-primary)" : "var(--text-secondary)"} />
+              <div style={{ fontSize: '12.5px', fontWeight: 600, color: isDraggingFiles ? "var(--accent-primary)" : "var(--text-primary)" }}>
+                {uploadingFile ? 'Sedang mengunggah file...' : (isDraggingFiles ? 'Lepaskan file untuk mengunggah' : 'Tarik & lepas file ke sini, atau klik untuk memilih')}
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                Mendukung PDF, Word, Excel, Gambar, ZIP, dan dokumen lainnya (Maks {maxFileSizeMb || 25} MB)
+              </span>
+            </div>
+          )}
+
+          {/* Attached Files List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {task.filesList?.map((f, idx) => (
               <div
@@ -1501,21 +1562,46 @@ export default function TaskFormFields({
                   opacity: f.isDeleted ? 0.5 : 1
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                  <File size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, marginRight: '10px' }}>
+                  <File size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: f.isDeleted ? 'line-through' : 'none' }} title={f.name}>
                     {f.name}
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                  {!f.isDeleted && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => {
+                        if (setPreviewFile) {
+                          setPreviewFile(f);
+                        } else {
+                          setLocalPreviewFile(f);
+                        }
+                      }}
+                      title="Lihat Pratinjau File"
+                    >
+                      <Eye size={13} />
+                      <span>Preview</span>
+                    </button>
+                  )}
+
                   {f.isDeleted ? (
-                    <button type="button" className="btn btn-secondary" style={{ padding: '2px 6px', fontSize: '11px' }} onClick={() => handleRestoreFile(idx)}>
+                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleRestoreFile(idx)}>
                       Pulihkan
                     </button>
                   ) : (
-                    <button type="button" style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }} onClick={() => handleRemoveFile(idx)} title="Hapus File">
-                      <Trash2 size={15} />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', color: 'var(--danger)', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={() => handleRemoveFile(idx)}
+                      title="Hapus File"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
@@ -1524,6 +1610,13 @@ export default function TaskFormFields({
           </div>
         </div>
       )}
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        previewFile={localPreviewFile}
+        setPreviewFile={setLocalPreviewFile}
+        theme={currentTheme}
+      />
     </div>
   );
 }
