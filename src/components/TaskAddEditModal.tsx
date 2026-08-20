@@ -424,8 +424,13 @@ export default function TaskAddEditModal({
       const lokasiJson = updatedLokasiData ? JSON.stringify(updatedLokasiData) : null;
 
       const { historyLogsJson, commentsJson, ...restEditingTask } = editingTask;
+      const finalRepetisi = editingTask.repetisi === 'Custom' && editingTask.customRecurrenceSettings
+        ? `CUSTOM_RECURRENCE:${JSON.stringify(editingTask.customRecurrenceSettings)}`
+        : (editingTask.repetisi || 'Tidak Berulang');
+
       const payload = {
         ...restEditingTask,
+        repetisi: finalRepetisi,
         filesJson,
         additionalPics: additionalPicsJson,
         subTasksJson,

@@ -48,15 +48,15 @@ export function expandTasksForCalendar(tasks: Task[], rangeStart: Date, rangeEnd
         while (typeof settings === 'string') {
           settings = JSON.parse(settings);
         }
-        every = settings.every || 1;
+        every = Number(settings.every) || 1;
         unit = settings.unit || 'Hari';
         days = settings.days || [];
         endType = settings.endType || 'never';
-        if (endType === 'date' && settings.endDate) {
+        if ((endType === 'date' || endType === 'on_date') && settings.endDate) {
           endDate = new Date(settings.endDate);
         }
-        if (endType === 'occurrences') {
-          endOccurrences = settings.endOccurrences || 1;
+        if (endType === 'occurrences' || endType === 'after_occurrences') {
+          endOccurrences = Number(settings.endOccurrences) || 1;
         }
       } catch (e) {
         // Fallback
@@ -76,7 +76,15 @@ export function expandTasksForCalendar(tasks: Task[], rangeStart: Date, rangeEnd
       let isValidDay = true;
       if (days.length > 0) {
         // days map: 0 = Sunday, 1 = Monday...
-        const mapDays: Record<string, number> = { 'Minggu': 0, 'Senin': 1, 'Selasa': 2, 'Rabu': 3, 'Kamis': 4, 'Jumat': 5, 'Sabtu': 6 };
+        const mapDays: Record<string, number> = { 
+          'Minggu': 0, 'Min': 0,
+          'Senin': 1, 'Sen': 1,
+          'Selasa': 2, 'Sel': 2,
+          'Rabu': 3, 'Rab': 3,
+          'Kamis': 4, 'Kam': 4,
+          'Jumat': 5, 'Jum': 5,
+          'Sabtu': 6, 'Sab': 6 
+        };
         const currentDayIndex = currentStart.getDay();
         const allowedIndices = days.map(d => mapDays[d]).filter(d => d !== undefined);
         if (allowedIndices.length > 0 && !allowedIndices.includes(currentDayIndex)) {
@@ -85,16 +93,14 @@ export function expandTasksForCalendar(tasks: Task[], rangeStart: Date, rangeEnd
       }
 
       // Ensure we don't generate past the end condition.
-      // Since task.endDate represents the end of the RECURRENCE period in the UI,
-      // we must stop if currentStart > taskEnd.
       if (currentStart > taskEnd) {
         break;
       }
 
-      if (endType === 'date' && endDate && currentStart > endDate) {
+      if ((endType === 'date' || endType === 'on_date') && endDate && currentStart > endDate) {
         break;
       }
-      if (endType === 'occurrences' && endOccurrences && occurrencesCount >= endOccurrences) {
+      if ((endType === 'occurrences' || endType === 'after_occurrences') && endOccurrences && occurrencesCount >= endOccurrences) {
         break;
       }
 

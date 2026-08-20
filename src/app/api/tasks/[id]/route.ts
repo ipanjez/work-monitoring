@@ -110,7 +110,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
       }
       
-      if (repetisi !== undefined && repetisi !== existingTask.repetisi) changes.push(`Pengulangan (${existingTask.repetisi || 'Tidak Berulang'} ➔ ${repetisi})`);
+      if (repetisi !== undefined && repetisi !== existingTask.repetisi) {
+        const formatRep = (r: string | null | undefined) => {
+          if (!r) return 'Tidak Berulang';
+          if (r.startsWith('CUSTOM_RECURRENCE:')) {
+            try {
+              const s = JSON.parse(r.replace('CUSTOM_RECURRENCE:', ''));
+              let str = `Setiap ${s.every || 1} ${s.unit || 'Minggu'}`;
+              if (s.unit === 'Minggu' && s.days?.length) str += ` (${s.days.join(', ')})`;
+              if ((s.endType === 'date' || s.endType === 'on_date') && s.endDate) str += `, berakhir ${s.endDate}`;
+              else if ((s.endType === 'occurrences' || s.endType === 'after_occurrences') && s.endOccurrences) str += `, berakhir setelah ${s.endOccurrences}x`;
+              return str;
+            } catch (e) { return 'Custom'; }
+          }
+          return r;
+        };
+        changes.push(`Pengulangan (${formatRep(existingTask.repetisi)} ➔ ${formatRep(repetisi)})`);
+      }
       if (catatan !== undefined && catatan !== existingTask.catatan) changes.push(`Catatan diperbarui`);
       
       // PIC Tambahan detail

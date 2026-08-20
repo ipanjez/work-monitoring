@@ -381,8 +381,13 @@ export const handleExportICS = (task: Task) => {
   });
 };
 
-export const formatRecurrenceText = (repetisi: string | null | undefined): string => {
+export const formatRecurrenceText = (repetisi: string | null | undefined, customSettings?: any): string => {
   if (!repetisi) return 'Tidak Berulang';
+
+  if (repetisi === 'Custom' && customSettings) {
+    return formatCustomRecurrenceObject(customSettings);
+  }
+
   if (!repetisi.startsWith('CUSTOM_RECURRENCE:')) return repetisi;
 
   try {
@@ -391,27 +396,34 @@ export const formatRecurrenceText = (repetisi: string | null | undefined): strin
     while (typeof settings === 'string') {
       settings = JSON.parse(settings);
     }
-    
-    let base = `Setiap ${settings.every} ${settings.unit}`;
-    
-    if (settings.unit === 'Minggu' && settings.days && settings.days.length > 0) {
-      base += ` pada hari ${settings.days.join(', ')}`;
-    }
-    
-    if (settings.endType === 'date' && settings.endDate) {
-      try {
-        base += ` (Berakhir pada ${format(new Date(settings.endDate), 'dd MMM yyyy')})`;
-      } catch (e) {
-        base += ` (Berakhir pada ${settings.endDate})`;
-      }
-    } else if (settings.endType === 'occurrences' && settings.endOccurrences) {
-      base += ` (Berakhir setelah ${settings.endOccurrences} kali)`;
-    }
-    
-    return base;
+    return formatCustomRecurrenceObject(settings);
   } catch (e) {
-    return 'Custom (Format Tidak Dikenali)';
+    return 'Custom (Kustom)';
   }
+};
+
+export const formatCustomRecurrenceObject = (settings: any): string => {
+  if (!settings) return 'Custom (Kustom)';
+  const every = settings.every || 1;
+  const unit = settings.unit || 'Minggu';
+  let base = `Setiap ${every} ${unit}`;
+
+  if (unit === 'Minggu' && settings.days && settings.days.length > 0) {
+    base += ` (${settings.days.join(', ')})`;
+  }
+
+  const endType = settings.endType;
+  if ((endType === 'date' || endType === 'on_date') && settings.endDate) {
+    try {
+      base += `, berakhir ${format(new Date(settings.endDate), 'dd MMM yyyy')}`;
+    } catch (e) {
+      base += `, berakhir ${settings.endDate}`;
+    }
+  } else if ((endType === 'occurrences' || endType === 'after_occurrences') && settings.endOccurrences) {
+    base += `, berakhir setelah ${settings.endOccurrences}x kejadian`;
+  }
+
+  return base;
 };
 
 export const formatDescription = (htmlOrText: string): string => {
