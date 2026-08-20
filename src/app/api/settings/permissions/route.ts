@@ -19,7 +19,19 @@ export async function GET() {
     }
 
     const parsed = JSON.parse(setting.value);
-    return NextResponse.json(parsed);
+    const merged = {
+      labels: { ...defaultRolePermissions.labels, ...(parsed.labels || {}) },
+      icons: { ...defaultRolePermissions.icons, ...(parsed.icons || {}) },
+      colors: { ...defaultRolePermissions.colors, ...(parsed.colors || {}) },
+      permissions: {
+        ...defaultRolePermissions.permissions,
+        ...(parsed.permissions || {})
+      }
+    };
+    if (!parsed.permissions?.role_management && parsed.permissions?.user_management) {
+      merged.permissions.role_management = parsed.permissions.user_management;
+    }
+    return NextResponse.json(merged);
   } catch (error: any) {
     console.error('Error fetching role_permissions:', error);
     return NextResponse.json(defaultRolePermissions);

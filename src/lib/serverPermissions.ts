@@ -7,7 +7,20 @@ export async function getRoleConfigFromDB(): Promise<RolePermissionsConfig> {
       where: { key: 'role_permissions' }
     });
     if (setting && setting.value) {
-      return JSON.parse(setting.value);
+      const parsed = JSON.parse(setting.value);
+      const merged: RolePermissionsConfig = {
+        labels: { ...defaultRolePermissions.labels, ...(parsed.labels || {}) },
+        icons: { ...defaultRolePermissions.icons, ...(parsed.icons || {}) },
+        colors: { ...defaultRolePermissions.colors, ...(parsed.colors || {}) },
+        permissions: {
+          ...defaultRolePermissions.permissions,
+          ...(parsed.permissions || {})
+        }
+      };
+      if (!parsed.permissions?.role_management && parsed.permissions?.user_management) {
+        merged.permissions.role_management = parsed.permissions.user_management;
+      }
+      return merged;
     }
   } catch (e) {
     console.error('Error fetching role config from DB:', e);

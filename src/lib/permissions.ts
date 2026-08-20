@@ -244,7 +244,15 @@ export const hasPermission = (
 ): boolean => {
   if (!userRole) return false;
   if (!config) config = defaultRolePermissions;
-  const allowedRoles = config.permissions?.[feature];
+  
+  let allowedRoles = config.permissions?.[feature];
+  if (!allowedRoles || !Array.isArray(allowedRoles)) {
+    if (feature === 'role_management') {
+      allowedRoles = config.permissions?.['user_management'] || defaultRolePermissions.permissions?.['role_management'];
+    } else {
+      allowedRoles = defaultRolePermissions.permissions?.[feature];
+    }
+  }
   if (!allowedRoles || !Array.isArray(allowedRoles)) return false;
 
   const cleanRole = userRole.trim().toLowerCase();
