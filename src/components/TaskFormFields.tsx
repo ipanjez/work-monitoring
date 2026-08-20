@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { EditingTaskType } from './TaskAddEditModal';
+import { useTheme } from '@/context/ThemeContext';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -227,6 +228,57 @@ export default function TaskFormFields({
     });
     return opts;
   }, [formPicOptions, task.pic, task.additionalPicsList]);
+
+  const themeContext = useTheme();
+  const currentTheme = themeContext?.theme || 'light';
+
+  const joditConfig = useMemo(() => ({
+    readonly: false,
+    placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, daftar poin, tabel, tautan)...',
+    height: 220,
+    minHeight: 180,
+    toolbarSticky: false,
+    theme: currentTheme === 'dark' ? 'dark' : 'default',
+    showCharsCounter: false,
+    showWordsCounter: false,
+    showXPathInStatusbar: false,
+    statusbar: false,
+    toolbarAdaptive: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    defaultActionOnPaste: 'insert_clear_html' as const,
+    buttons: [
+      'bold', 'italic', 'underline', 'strikethrough', '|',
+      'ul', 'ol', '|',
+      'font', 'fontsize', 'paragraph', '|',
+      'table', 'link', '|',
+      'align', 'undo', 'redo', 'eraser'
+    ],
+    buttonsMD: [
+      'bold', 'italic', 'underline', '|',
+      'ul', 'ol', '|',
+      'paragraph', '|',
+      'table', 'link', '|',
+      'undo', 'redo'
+    ],
+    buttonsSM: [
+      'bold', 'italic', 'underline', '|',
+      'ul', 'ol', '|',
+      'table', 'link', '|',
+      'undo', 'redo'
+    ],
+    buttonsXS: [
+      'bold', 'italic', '|',
+      'ul', 'ol', '|',
+      'link'
+    ],
+    style: {
+      background: 'var(--input-bg)',
+      color: 'var(--text-primary)',
+      fontFamily: 'inherit',
+      fontSize: '13.5px'
+    }
+  }), [currentTheme]);
 
   const safeCategoryOptions = useMemo(() => {
     const opts = Array.from(new Set([...formCategoryOptions]));
@@ -868,19 +920,7 @@ export default function TaskFormFields({
         </label>
         <JoditEditor
           value={task.deskripsi || ''}
-          config={{
-            readonly: false,
-            placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, tabel, dll)...',
-            height: 220,
-            toolbarSticky: false,
-            theme: 'dark',
-            style: {
-              background: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px'
-            }
-          }}
+          config={joditConfig}
           onBlur={newContent => {
             const cleaned = newContent === '<p><br></p>' ? '' : newContent;
             onChange({ ...task, deskripsi: cleaned });
