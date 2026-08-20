@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { EditingTaskType } from './TaskAddEditModal';
+import { useTheme } from '@/context/ThemeContext';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -227,6 +228,57 @@ export default function TaskFormFields({
     });
     return opts;
   }, [formPicOptions, task.pic, task.additionalPicsList]);
+
+  const themeContext = useTheme();
+  const currentTheme = themeContext?.theme || 'light';
+
+  const joditConfig = useMemo(() => ({
+    readonly: false,
+    placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, daftar poin, tabel, tautan)...',
+    height: 220,
+    minHeight: 180,
+    toolbarSticky: false,
+    theme: currentTheme === 'dark' ? 'dark' : 'default',
+    showCharsCounter: false,
+    showWordsCounter: false,
+    showXPathInStatusbar: false,
+    statusbar: false,
+    toolbarAdaptive: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    defaultActionOnPaste: 'insert_clear_html' as const,
+    buttons: [
+      'bold', 'italic', 'underline', 'strikethrough', '|',
+      'ul', 'ol', '|',
+      'font', 'fontsize', 'paragraph', '|',
+      'table', 'link', '|',
+      'align', 'undo', 'redo', 'eraser'
+    ],
+    buttonsMD: [
+      'bold', 'italic', 'underline', '|',
+      'ul', 'ol', '|',
+      'paragraph', '|',
+      'table', 'link', '|',
+      'undo', 'redo'
+    ],
+    buttonsSM: [
+      'bold', 'italic', 'underline', '|',
+      'ul', 'ol', '|',
+      'table', 'link', '|',
+      'undo', 'redo'
+    ],
+    buttonsXS: [
+      'bold', 'italic', '|',
+      'ul', 'ol', '|',
+      'link'
+    ],
+    style: {
+      background: 'var(--input-bg)',
+      color: 'var(--text-primary)',
+      fontFamily: 'inherit',
+      fontSize: '13.5px'
+    }
+  }), [currentTheme]);
 
   const safeCategoryOptions = useMemo(() => {
     const opts = Array.from(new Set([...formCategoryOptions]));
@@ -858,6 +910,212 @@ export default function TaskFormFields({
             options={['Tidak Berulang', 'Harian', 'Mingguan', 'Bulanan', 'Tahunan', 'Hari Kerja (Senin - Jumat)', 'Custom']}
             placeholder="Pengulangan"
           />
+
+          {task.repetisi === 'Custom' && (
+            <div style={{
+              background: 'var(--input-bg)',
+              padding: '14px',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginTop: '10px'
+            }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Pengaturan Pengulangan Kustom
+              </div>
+
+              {/* Ulangi Setiap X Unit */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Ulangi setiap:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  className="input"
+                  style={{ width: '70px', padding: '6px 8px' }}
+                  value={task.customRecurrenceSettings?.every ?? 1}
+                  onChange={e => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    onChange({
+                      ...task,
+                      customRecurrenceSettings: {
+                        ...(task.customRecurrenceSettings || { unit: 'Minggu', days: [], endType: 'never' }),
+                        every: val
+                      }
+                    });
+                  }}
+                />
+                <select
+                  className="input"
+                  style={{ width: '120px', padding: '6px 8px' }}
+                  value={task.customRecurrenceSettings?.unit || 'Minggu'}
+                  onChange={e => {
+                    const unit = e.target.value;
+                    onChange({
+                      ...task,
+                      customRecurrenceSettings: {
+                        ...(task.customRecurrenceSettings || { every: 1, days: [], endType: 'never' }),
+                        unit
+                      }
+                    });
+                  }}
+                >
+                  <option value="Hari">Hari</option>
+                  <option value="Minggu">Minggu</option>
+                  <option value="Bulan">Bulan</option>
+                  <option value="Tahun">Tahun</option>
+                </select>
+              </div>
+
+              {/* Jika unit === 'Minggu', pilih hari */}
+              {(task.customRecurrenceSettings?.unit === 'Minggu' || !task.customRecurrenceSettings?.unit) && (
+                <div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                    Ulangi pada hari:
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => {
+                      const activeDays = task.customRecurrenceSettings?.days || [];
+                      const isSelected = activeDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            borderRadius: '8px',
+                            minWidth: '38px',
+                            textAlign: 'center'
+                          }}
+                          onClick={() => {
+                            const updatedDays = isSelected
+                              ? activeDays.filter((d: string) => d !== day)
+                              : [...activeDays, day];
+                            onChange({
+                              ...task,
+                              customRecurrenceSettings: {
+                                ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', endType: 'never' }),
+                                days: updatedDays
+                              }
+                            });
+                          }}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Berakhir pada / End Type */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Berakhir:</span>
+                
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'never' || !task.customRecurrenceSettings?.endType}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'never'
+                        }
+                      });
+                    }}
+                  />
+                  Tidak pernah
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', flexWrap: 'wrap' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'on_date'}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'on_date',
+                          endDate: task.customRecurrenceSettings?.endDate || format(new Date(), 'yyyy-MM-dd')
+                        }
+                      });
+                    }}
+                  />
+                  <span>Pada tanggal:</span>
+                  {task.customRecurrenceSettings?.endType === 'on_date' && (
+                    <input
+                      type="date"
+                      className="input"
+                      style={{ width: '150px', padding: '4px 8px', fontSize: '12px' }}
+                      value={task.customRecurrenceSettings?.endDate || format(new Date(), 'yyyy-MM-dd')}
+                      onChange={e => {
+                        onChange({
+                          ...task,
+                          customRecurrenceSettings: {
+                            ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                            endType: 'on_date',
+                            endDate: e.target.value
+                          }
+                        });
+                      }}
+                    />
+                  )}
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', flexWrap: 'wrap' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'after_occurrences'}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'after_occurrences',
+                          endOccurrences: task.customRecurrenceSettings?.endOccurrences || 10
+                        }
+                      });
+                    }}
+                  />
+                  <span>Setelah:</span>
+                  {task.customRecurrenceSettings?.endType === 'after_occurrences' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        className="input"
+                        style={{ width: '70px', padding: '4px 8px', fontSize: '12px' }}
+                        value={task.customRecurrenceSettings?.endOccurrences ?? 10}
+                        onChange={e => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          onChange({
+                            ...task,
+                            customRecurrenceSettings: {
+                              ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                              endType: 'after_occurrences',
+                              endOccurrences: val
+                            }
+                          });
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>kali kejadian</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -868,19 +1126,7 @@ export default function TaskFormFields({
         </label>
         <JoditEditor
           value={task.deskripsi || ''}
-          config={{
-            readonly: false,
-            placeholder: 'Tambahkan deskripsi lengkap di sini (mendukung tebal, miring, tabel, dll)...',
-            height: 220,
-            toolbarSticky: false,
-            theme: 'dark',
-            style: {
-              background: 'var(--input-bg)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px'
-            }
-          }}
+          config={joditConfig}
           onBlur={newContent => {
             const cleaned = newContent === '<p><br></p>' ? '' : newContent;
             onChange({ ...task, deskripsi: cleaned });
@@ -951,25 +1197,27 @@ export default function TaskFormFields({
                     }}
                     dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
                   />
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <CustomSelect
-                          value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
-                          onChange={val => {
-                            const updated = [...(task.subTasksList || [])];
-                            updated[idx].pic = val;
-                            onChange({ ...task, subTasksList: updated });
-                          }}
-                          options={safePicOptions}
-                          placeholder="PIC"
-                          style={{ minWidth: '130px' }}
-                        />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', alignItems: 'start' }}>
+                    {/* PIC Controls Column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <div style={{ flex: 1, minWidth: '110px' }}>
+                          <CustomSelect
+                            value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
+                            onChange={val => {
+                              const updated = [...(task.subTasksList || [])];
+                              updated[idx].pic = val;
+                              onChange({ ...task, subTasksList: updated });
+                            }}
+                            options={safePicOptions}
+                            placeholder="Pilih PIC"
+                          />
+                        </div>
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ padding: '0 8px' }}
-                          title="Pilih Seluruh PIC"
+                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
+                          title="Pilih Seluruh PIC untuk Sub Pekerjaan ini"
                           onClick={() => {
                             const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
                             if (validPics.length === 0) return toast.error('Belum ada data PIC');
@@ -982,13 +1230,14 @@ export default function TaskFormFields({
                             toast.success('Berhasil memilih seluruh PIC untuk sub pekerjaan ini!');
                           }}
                         >
-                          <Users size={14} color="var(--accent-primary)" />
+                          <Users size={13} color="var(--accent-primary)" />
+                          <span>Semua</span>
                         </button>
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ padding: '0 8px' }}
-                          title="Tambah PIC"
+                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
+                          title="Tambah PIC Tambahan untuk Sub Pekerjaan ini"
                           onClick={() => {
                             const updated = [...(task.subTasksList || [])];
                             if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
@@ -996,42 +1245,48 @@ export default function TaskFormFields({
                             onChange({ ...task, subTasksList: updated });
                           }}
                         >
-                          <UserPlus size={14} />
+                          <UserPlus size={13} />
+                          <span>+ PIC</span>
                         </button>
                       </div>
+
                       {subTask.additionalPics?.map((p, pIdx) => (
-                        <div key={pIdx} style={{ display: 'flex', gap: '4px' }}>
-                          <CustomSelect
-                            value={p}
-                            onChange={val => {
-                              const updated = [...(task.subTasksList || [])];
-                              updated[idx].additionalPics![pIdx] = val;
-                              onChange({ ...task, subTasksList: updated });
-                            }}
-                            options={safePicOptions}
-                            placeholder="PIC Tambahan"
-                            style={{ minWidth: '130px' }}
-                          />
+                        <div key={pIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <div style={{ flex: 1, minWidth: '110px' }}>
+                            <CustomSelect
+                              value={p}
+                              onChange={val => {
+                                const updated = [...(task.subTasksList || [])];
+                                updated[idx].additionalPics![pIdx] = val;
+                                onChange({ ...task, subTasksList: updated });
+                              }}
+                              options={safePicOptions}
+                              placeholder="PIC Tambahan"
+                            />
+                          </div>
                           <button
                             type="button"
                             className="btn btn-secondary"
-                            style={{ padding: '0 8px', color: 'var(--error-color)' }}
+                            style={{ padding: '0 8px', height: '36px', color: 'var(--danger)', flexShrink: 0 }}
                             onClick={() => {
                               const updated = [...(task.subTasksList || [])];
                               updated[idx].additionalPics!.splice(pIdx, 1);
                               onChange({ ...task, subTasksList: updated });
                             }}
+                            title="Hapus PIC tambahan ini"
                           >
                             <X size={14} />
                           </button>
                         </div>
                       ))}
                     </div>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
+
+                    {/* Tenggat Waktu Column */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                       <input
                         type="date"
                         className="input"
-                        style={{ width: '100%', fontSize: '13px' }}
+                        style={{ width: '100%', height: '36px', fontSize: '13px' }}
                         value={subTask.tenggatWaktu || ''}
                         onChange={e => {
                           const updated = [...(task.subTasksList || [])];

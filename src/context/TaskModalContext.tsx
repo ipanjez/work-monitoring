@@ -267,8 +267,13 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      const finalRepetisi = payloadData.repetisi === 'Custom' && payloadData.customRecurrenceSettings
+        ? `CUSTOM_RECURRENCE:${JSON.stringify(payloadData.customRecurrenceSettings)}`
+        : (payloadData.repetisi || 'Tidak Berulang');
+
       const payload = {
         ...payloadData,
+        repetisi: finalRepetisi,
         filesJson: JSON.stringify(filesListToSave),
         additionalPics: JSON.stringify(filteredExtraPics),
         subTasksJson: JSON.stringify(processedSubTasks),

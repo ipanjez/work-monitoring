@@ -1182,3 +1182,81 @@ th[style*="cursor: pointer"]:hover,
   animation: pktSpin 2s linear infinite;
   transform-origin: center;
 }
+
+/* Jodit Editor Modern Polish */
+.jodit-container {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  background-color: var(--surface-color) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden !important;
+  font-family: inherit !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.jodit-container:focus-within {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+.jodit-toolbar__box {
+  background-color: var(--surface-color) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 4px 8px !important;
+}
+
+.jodit-toolbar-button__button {
+  border-radius: 6px !important;
+  color: var(--text-primary) !important;
+  transition: all 0.15s ease !important;
+  padding: 4px 6px !important;
+}
+
+.jodit-toolbar-button__button:hover:not([disabled]) {
+  background-color: var(--surface-hover) !important;
+  color: var(--accent-primary) !important;
+}
+
+.jodit-toolbar-button_active_true .jodit-toolbar-button__button {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: var(--accent-primary) !important;
+}
+
+.jodit-toolbar-button__icon svg {
+  fill: currentColor !important;
+}
+
+.jodit-wysiwyg {
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  padding: 14px 16px !important;
+  min-height: 180px !important;
+}
+
+.jodit-placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.6 !important;
+  font-size: 13.5px !important;
+  padding: 14px 16px !important;
+}
+
+.jodit-status-bar {
+  display: none !important;
+  border: none !important;
+  height: 0 !important;
+}
+
+.jodit-popup-container {
+  z-index: 10200 !important;
+}
+
+.jodit-popup {
+  background-color: var(--surface-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--card-shadow) !important;
+  color: var(--text-primary) !important;
+}

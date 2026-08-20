@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { checkServerPermission } from '@/lib/serverPermissions';
-
-const prisma = new PrismaClient();
 
 // GET /api/users/reset-requests — list all requests (ADMIN) OR check request status (public for NPK)
 export async function GET(request: Request) {
@@ -14,8 +12,14 @@ export async function GET(request: Request) {
 
   // If NPK is provided, it's a public status check for a user
   if (npk) {
-    const user = await prisma.user.findUnique({
-      where: { npk: npk.trim() },
+    const cleanNpk = npk.trim();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { npk: cleanNpk },
+          { npk: { equals: cleanNpk, mode: 'insensitive' } }
+        ]
+      },
     });
 
     if (!user) {
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { npk, newPassword } = body;
 
-  if (!npk) {
+  if (!npk || !npk.trim()) {
     return NextResponse.json({ error: 'NPK wajib diisi.' }, { status: 400 });
   }
 
@@ -76,7 +80,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Password baru wajib diisi minimal 6 karakter.' }, { status: 400 });
   }
 
-  const user = await prisma.user.findUnique({ where: { npk: npk.trim() } });
+  const cleanNpk = npk.trim();
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { npk: cleanNpk },
+        { npk: { equals: cleanNpk, mode: 'insensitive' } }
+      ]
+    }
+  });
   if (!user) {
     return NextResponse.json({ error: 'NPK tidak ditemukan.' }, { status: 404 });
   }

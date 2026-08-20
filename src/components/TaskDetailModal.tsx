@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail, Share2 } from 'lucide-react';
+import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail, Share2, Users, Tag, Repeat, MapPin, Video } from 'lucide-react';
 import { format } from 'date-fns';
 import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
@@ -480,59 +480,113 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
             mainPic={task.pic}
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px' }}>
-            <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'var(--surface-color)', padding: '16px', borderRadius: '12px' }}>
-              <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>PIC:</span>
-                <p style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  <span {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13.5px' }}>
+            {/* PIC Card Section (Full Width with Dedicated Card) */}
+            <div style={{ background: 'var(--surface-color)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={14} color="var(--accent-primary)" /> Penanggung Jawab (PIC):
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  Total: {[task.pic, ...getAdditionalPics(task)].filter(Boolean).length} PIC
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                {/* PIC Utama Badge */}
+                {task.pic && (
+                  <span
+                    {...getDynamicBadgeStyle('pic', task.pic, '', masterColors)}
+                    style={{
+                      ...getDynamicBadgeStyle('pic', task.pic, '', masterColors).style,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      border: '1.5px solid var(--accent-primary)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+                    }}
+                    title="PIC Utama"
+                  >
+                    <User size={12} />
                     {task.pic}
+                    <span style={{ fontSize: '9.5px', opacity: 0.85, marginLeft: '2px', background: 'rgba(0,0,0,0.12)', padding: '1px 5px', borderRadius: '4px', textTransform: 'uppercase' }}>Utama</span>
                   </span>
-                  {getAdditionalPics(task).length > 0 && getAdditionalPics(task).map((p, i) => (
-                    <span key={i} {...getDynamicBadgeStyle('pic', p, '', masterColors)} style={{ ...getDynamicBadgeStyle('pic', p, '', masterColors).style, display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
-                      {p}
+                )}
+                {/* PIC Tambahan Badges */}
+                {getAdditionalPics(task).length > 0 && getAdditionalPics(task).map((p, i) => (
+                  <span
+                    key={i}
+                    {...getDynamicBadgeStyle('pic', p, '', masterColors)}
+                    style={{
+                      ...getDynamicBadgeStyle('pic', p, '', masterColors).style,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500'
+                    }}
+                    title="PIC Tambahan"
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Properties Grid for Kategori, Status, Repetisi, Jadwal */}
+            <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', background: 'var(--surface-color)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <Tag size={12} color="var(--accent-primary)" /> Kategori:
+                </span>
+                {(() => {
+                  const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
+                  return (
+                    <span className={badge.className} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', ...badge.style }}>
+                      {task.kategori || 'Umum'}
                     </span>
-                  ))}
-                </p>
+                  );
+                })()}
               </div>
+
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Kategori:</span>
-                <p style={{ marginTop: '4px' }}>
-                  {(() => {
-                    const badge = getDynamicBadgeStyle('cat', task.kategori || 'Umum', '', masterColors);
-                    return (
-                      <span className={badge.className} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500', ...badge.style }}>
-                        {task.kategori || 'Umum'}
-                      </span>
-                    );
-                  })()}
-                </p>
-              </div>
-              <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Status:</span>
-                <p style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <History size={12} color="var(--accent-primary)" /> Status & Progres:
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   {(() => {
                     const badge = getDynamicBadgeStyle('status', task.status, '', masterColors);
                     return (
-                      <span className={badge.className} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500', ...badge.style }}>
+                      <span className={badge.className} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', ...badge.style }}>
                         {task.status}
                       </span>
                     );
                   })()}
                   <span style={{ fontWeight: '600', color: 'var(--text-secondary)', fontSize: '12px' }}>({task.progress || 0}%)</span>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <Repeat size={12} color="var(--accent-primary)" /> Repetisi / Pengulangan:
+                </span>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '12.5px' }}>
+                  {formatRecurrenceText(task.repetisi)}
                 </p>
               </div>
+
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Repetisi:</span>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', marginTop: '4px' }}>{formatRecurrenceText(task.repetisi)}</p>
-              </div>
-              <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tanggal Mulai:</span>
-                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.startDate), 'dd MMM yyyy')}{!task.isAllDay && task.startTime ? `, ${task.startTime}` : ''}</p>
-              </div>
-              <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Tenggat Waktu:</span>
-                <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{format(new Date(task.endDate), 'dd MMM yyyy')}{!task.isAllDay && task.endTime ? `, ${task.endTime}` : ''}</p>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <CalendarDays size={12} color="var(--accent-primary)" /> Jadwal Pelaksanaan:
+                </span>
+                <p style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '12.5px' }}>
+                  {format(new Date(task.startDate), 'dd MMM yyyy')} s/d {format(new Date(task.endDate), 'dd MMM yyyy')}
+                  {!task.isAllDay && task.startTime ? ` (${task.startTime} - ${task.endTime || 'selesai'})` : ''}
+                </p>
               </div>
 
               {(() => {
@@ -541,32 +595,40 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   const loc = JSON.parse(task.lokasi);
                   if (loc.tipe === 'online') {
                     return (
-                      <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi (Online):</span>
-                        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-                          <p style={{ fontWeight: '500', color: 'var(--accent-primary)' }}>
-                            <a href={loc.linkZoom} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>{loc.linkZoom || 'Tidak ada link'}</a>
+                      <div style={{ gridColumn: '1 / -1', paddingTop: '10px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Video size={12} color="var(--accent-primary)" /> Lokasi (Online):
+                        </span>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <p style={{ fontWeight: '500', color: 'var(--accent-primary)', fontSize: '13px' }}>
+                            <a href={loc.linkZoom} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {loc.linkZoom || 'Online Meeting'} <ExternalLink size={12} />
+                            </a>
                           </p>
-                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>Jam: {loc.jam ? `${loc.jam} WITA` : '-'}</p>
+                          {loc.jam && <p style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '12px' }}>Jam: {loc.jam} WITA</p>}
                         </div>
                       </div>
                     );
                   } else if (loc.tipe === 'offline') {
                     return (
-                      <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi (Offline):</span>
-                        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
-                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{loc.lokasiFisik || '-'}</p>
-                          <p style={{ fontWeight: '500', color: 'var(--text-primary)' }}>Jam: {loc.jam ? `${loc.jam} WITA` : '-'}</p>
+                      <div style={{ gridColumn: '1 / -1', paddingTop: '10px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={12} color="var(--accent-primary)" /> Lokasi (Fisik / Offline):
+                        </span>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <p style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '13px' }}>{loc.lokasiFisik || '-'}</p>
+                          {loc.jam && <p style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '12px' }}>Jam: {loc.jam} WITA</p>}
                         </div>
                       </div>
                     );
                   }
                 } catch (e) {
                   return (
-                    <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block' }}>Lokasi:</span>
-                      <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px' }}>{task.lokasi}</p>
+                    <div style={{ gridColumn: '1 / -1', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} color="var(--accent-primary)" /> Lokasi:
+                      </span>
+                      <p style={{ fontWeight: '500', color: 'var(--text-primary)', marginTop: '4px', fontSize: '13px' }}>{task.lokasi}</p>
                     </div>
                   );
                 }

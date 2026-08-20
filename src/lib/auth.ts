@@ -14,8 +14,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.npk || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { npk: credentials.npk.trim() },
+        const cleanNpk = credentials.npk.trim();
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { npk: cleanNpk },
+              { npk: { equals: cleanNpk, mode: 'insensitive' } }
+            ]
+          },
         });
 
         if (!user || !user.password) return null;
