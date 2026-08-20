@@ -1205,70 +1205,108 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                   {Object.keys(roleConfig.labels).map(rk => (
                     <th key={rk} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '135px' }}>
                       {canUserMgmt ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setEditingRoleCustomizationKey(rk)}
+                              title="Klik untuk kustom ikon & warna role"
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '8px',
+                                backgroundColor: `${getRoleColor(roleConfig, rk)}20`,
+                                border: `1px solid ${getRoleColor(roleConfig, rk)}50`,
+                                color: getRoleColor(roleConfig, rk),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                flexShrink: 0
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
+                              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            >
+                              <RoleIconRenderer iconName={getRoleIconName(roleConfig, rk)} size={14} color={getRoleColor(roleConfig, rk)} />
+                            </button>
+                            <input
+                              className="input"
+                              style={{ padding: '4px 6px', fontSize: '12px', textAlign: 'center', width: '82px', fontWeight: 600 }}
+                              value={roleConfig.labels[rk] || ''}
+                              onChange={(e) => {
+                                setRoleConfig({
+                                  ...roleConfig,
+                                  labels: { ...roleConfig.labels, [rk]: e.target.value }
+                                });
+                              }}
+                            />
+                            {rk !== 'ADMIN' && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
+                                    const newLabels = { ...roleConfig.labels };
+                                    delete newLabels[rk];
+                                    const newIcons = { ...(roleConfig.icons || {}) };
+                                    delete newIcons[rk];
+                                    const newColors = { ...(roleConfig.colors || {}) };
+                                    delete newColors[rk];
+                                    const newPermissions = { ...(roleConfig.permissions || {}) };
+                                    Object.keys(newPermissions).forEach(permKey => {
+                                      newPermissions[permKey] = (newPermissions[permKey] || []).filter(roleKey => roleKey !== rk);
+                                    });
+                                    setRoleConfig({
+                                      ...roleConfig,
+                                      labels: newLabels,
+                                      icons: newIcons,
+                                      colors: newColors,
+                                      permissions: newPermissions
+                                    });
+                                  }
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}
+                                title="Hapus Role"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+
                           <button
                             type="button"
-                            onClick={() => setEditingRoleCustomizationKey(rk)}
-                            title="Klik untuk kustom ikon & warna role"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/users/profile', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ role: rk })
+                                });
+                                if (!res.ok) throw new Error('Gagal berpindah role');
+                                toast.success(`Berhasil berpindah ke role ${roleConfig.labels[rk] || rk}!`);
+                                window.dispatchEvent(new Event('profileUpdated'));
+                                window.dispatchEvent(new Event('masterUpdated'));
+                              } catch (e: any) {
+                                toast.error(e.message || 'Gagal berpindah role');
+                              }
+                            }}
                             style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '8px',
-                              backgroundColor: `${getRoleColor(roleConfig, rk)}20`,
-                              border: `1px solid ${getRoleColor(roleConfig, rk)}50`,
-                              color: getRoleColor(roleConfig, rk),
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              background: userRole === rk ? 'var(--accent-primary)' : 'rgba(59, 130, 246, 0.08)',
+                              color: userRole === rk ? '#ffffff' : 'var(--accent-primary)',
+                              border: userRole === rk ? '1px solid var(--accent-primary)' : '1px solid rgba(59, 130, 246, 0.3)',
+                              borderRadius: '6px',
+                              padding: '2px 8px',
+                              fontSize: '10.5px',
+                              fontWeight: 600,
                               cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              flexShrink: 0
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.15s ease'
                             }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            title={`Uji coba / simulasikan role ${roleConfig.labels[rk] || rk} pada akun Anda saat ini`}
                           >
-                            <RoleIconRenderer iconName={getRoleIconName(roleConfig, rk)} size={14} color={getRoleColor(roleConfig, rk)} />
+                            <Sparkles size={11} /> {userRole === rk ? 'Aktif Saat Ini' : 'Uji Coba Role'}
                           </button>
-                          <input
-                            className="input"
-                            style={{ padding: '4px 6px', fontSize: '12px', textAlign: 'center', width: '82px', fontWeight: 600 }}
-                            value={roleConfig.labels[rk] || ''}
-                            onChange={(e) => {
-                              setRoleConfig({
-                                ...roleConfig,
-                                labels: { ...roleConfig.labels, [rk]: e.target.value }
-                              });
-                            }}
-                          />
-                          {rk !== 'ADMIN' && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
-                                  const newLabels = { ...roleConfig.labels };
-                                  delete newLabels[rk];
-                                  const newIcons = { ...(roleConfig.icons || {}) };
-                                  delete newIcons[rk];
-                                  const newColors = { ...(roleConfig.colors || {}) };
-                                  delete newColors[rk];
-                                  const newPermissions = { ...(roleConfig.permissions || {}) };
-                                  Object.keys(newPermissions).forEach(permKey => {
-                                    newPermissions[permKey] = (newPermissions[permKey] || []).filter(roleKey => roleKey !== rk);
-                                  });
-                                  setRoleConfig({
-                                    ...roleConfig,
-                                    labels: newLabels,
-                                    icons: newIcons,
-                                    colors: newColors,
-                                    permissions: newPermissions
-                                  });
-                                }
-                              }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}
-                              title="Hapus Role"
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
                         </div>
                       ) : (
                         <RoleBadge role={rk} config={roleConfig} />

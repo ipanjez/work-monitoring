@@ -51,11 +51,7 @@ export async function PUT(request: Request) {
   const userNpk = (session.user as any).npk;
   const userEmail = session.user.email;
   const body = await request.json();
-  const { name, email, currentPassword, newPassword, image } = body;
-
-  if (!name) {
-    return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 });
-  }
+  const { name, email, currentPassword, newPassword, image, role } = body;
 
   // Find user
   const user = await prisma.user.findFirst({
@@ -72,10 +68,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
   }
 
-  const updateData: any = { name, email: email || null };
-  if (image !== undefined) {
-    updateData.image = image;
-  }
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (email !== undefined) updateData.email = email || null;
+  if (role !== undefined) updateData.role = role;
+  if (image !== undefined) updateData.image = image;
 
   // If changing password
   if (newPassword && newPassword.trim() !== '') {

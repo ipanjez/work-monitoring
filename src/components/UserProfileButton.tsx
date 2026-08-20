@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { defaultRolePermissions, RolePermissionsConfig, getRoleLabel, getRoleIconName, getRoleColor, hasPermission, PERMISSION_FEATURE_DETAILS } from '@/lib/permissions';
 import { useMaster } from '@/context/MasterContext';
 import Avatar from '@/components/Avatar';
@@ -53,12 +54,37 @@ export default function UserProfileButton() {
   }, []);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
 
   if (!session?.user) return null;
 
   const currentRole = displayRole || userRoles[displayName || session.user.name || ''] || (session.user as any).role || '';
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
+
+  const handleSwitchRole = async (newRoleKey: string) => {
+    if (!newRoleKey || newRoleKey === currentRole) return;
+    setIsSwitchingRole(true);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRoleKey })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Gagal mengubah role');
+      }
+      setDisplayRole(newRoleKey);
+      toast.success(`Berhasil berpindah ke role ${getRoleLabel(roleConfig, newRoleKey)}!`);
+      window.dispatchEvent(new Event('profileUpdated'));
+      window.dispatchEvent(new Event('masterUpdated'));
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengubah role');
+    } finally {
+      setIsSwitchingRole(false);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -221,6 +247,42 @@ export default function UserProfileButton() {
                     })()}
                   </span>
                 </div>
+              </div>
+
+              {/* Role Switcher / Pretend Role Feature */}
+              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    <Sparkles size={11} style={{ color: 'var(--accent-primary)' }} /> Uji Coba Role (Pretend):
+                  </span>
+                  {isSwitchingRole && <Loader2 size={11} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />}
+                </div>
+                <select
+                  className="input"
+                  style={{
+                    width: '100%',
+                    padding: '5px 8px',
+                    fontSize: '11.5px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-secondary, var(--bg-color))',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    cursor: isSwitchingRole ? 'wait' : 'pointer',
+                    fontWeight: 600
+                  }}
+                  value={currentRole}
+                  disabled={isSwitchingRole}
+                  onChange={(e) => handleSwitchRole(e.target.value)}
+                >
+                  {Object.entries(roleConfig.labels).map(([key, label]) => {
+                    const count = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, key)).length;
+                    return (
+                      <option key={key} value={key}>
+                        {label} ({count}/{totalFeatures} Izin)
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             </div>
           </div>
