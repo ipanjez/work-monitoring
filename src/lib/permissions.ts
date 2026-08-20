@@ -19,142 +19,79 @@ export const PERMISSION_CATEGORIES = [
   {
     id: 'OPERATIONAL',
     name: 'Operasional Pekerjaan & Monitoring',
-    description: 'Hak akses halaman monitoring, manajemen tugas harian, berkas lampiran, dan ekspor laporan.'
+    description: 'Hak akses pemantauan grafik, manajemen tugas harian, kolaborasi lampiran/komentar, dan ekspor laporan.'
   },
   {
     id: 'SETTINGS',
-    name: 'Pengaturan Sistem & Basis Data',
-    description: 'Hak akses master data opsi dropdown, konfigurasi batas sesi keamanan, dan pencadangan database.'
+    name: 'Pengaturan Sistem & Master Data',
+    description: 'Hak akses master opsi dropdown, palet warna, identitas logo aplikasi, batas sesi, dan cadangan database.'
   },
   {
     id: 'ADMINISTRATION',
-    name: 'Administrasi Akun & Audit Log',
-    description: 'Hak akses manajemen user, persetujuan pendaftaran, jejak audit aktivitas, dan log umpan balik.'
+    name: 'Administrasi Akun & Keamanan',
+    description: 'Hak akses manajemen user terdaftar, matriks hak akses role & simulasi pretend, audit log, dan log umpan balik.'
   }
 ];
 
 export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
   // --- Kategori 1: Operasional Pekerjaan & Monitoring ---
   {
-    key: 'view_dashboard',
+    key: 'view_tasks',
     category: 'OPERATIONAL',
-    label: 'Melihat Dashboard & Monitoring Board',
-    shortLabel: 'Dashboard & Board',
-    menuLocation: 'Monitoring Board (/) & Dashboard Executive (/dashboard)',
-    description: 'Membuka dan melihat visualisasi grafik, metrik eksekutif, status pekerjaan departemen, dan papan kanban.',
-    impact: 'Jika tidak dicentang, menu Dashboard dan Monitoring Board disembunyikan dari navigasi pengguna.'
-  },
-  {
-    key: 'view_detail',
-    category: 'OPERATIONAL',
-    label: 'Melihat Rincian Detail Tugas & Lampiran',
-    shortLabel: 'Detail & Lampiran',
-    menuLocation: 'Seluruh Menu Pekerjaan (Board, Tasks, Calendar, Reports, Team)',
-    description: 'Membuka dan melihat rincian detail tugas saat kartu diklik untuk membaca deskripsi, subtask, riwayat, dan mempratinjau file lampiran.',
-    impact: 'Jika tidak dicentang, pengguna tidak diizinkan membuka modal rincian detail tugas saat kartu diklik.'
+    label: 'Melihat Monitoring, Kalender, Laporan & Detail Pekerjaan',
+    shortLabel: 'Monitoring & Rincian Tugas',
+    menuLocation: 'Monitoring Board, Dashboard, Daftar Pekerjaan, Kalender, Analisis Laporan, Tim & Rincian Modal',
+    description: 'Mengakses seluruh halaman monitoring dan visualisasi data, membuka modal detail pekerjaan, melihat riwayat aktivitas, dan mempratinjau file lampiran.',
+    impact: 'Jika tidak dicentang, menu monitoring disembunyikan dan pengguna tidak dapat melihat rincian detail tugas.'
   },
   {
     key: 'manage_task',
     category: 'OPERATIONAL',
-    label: 'Menambah, Mengubah & Menduplikasi Pekerjaan',
-    shortLabel: 'Tambah, Edit & Duplikasi',
-    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Tombol Duplikasi, Board (Drag & Drop), Tasks, Calendar',
-    description: 'Membuat pekerjaan baru, mengedit data, menduplikasi tugas, mengubah status (drag-and-drop), memperbarui tanggal, PIC, prioritas, dan subtask.',
-    impact: 'Jika tidak dicentang, tombol Tambah, Edit, dan Duplikasi Pekerjaan dinonaktifkan serta tugas tidak dapat dipindahkan.'
+    label: 'Kelola & Kolaborasi Pekerjaan (Tambah, Edit, Duplikasi, Upload & Komentar)',
+    shortLabel: 'Kelola & Kolaborasi Tugas',
+    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Duplikasi, Drag & Drop Board, Form Komentar & Upload Berkas',
+    description: 'Membuat pekerjaan baru, mengedit data tugas, menduplikasi, mengubah status (drag-and-drop), mengunggah file lampiran dokumen/gambar, dan mengirim pesan diskusi/komentar.',
+    impact: 'Jika tidak dicentang, tombol Tambah, Edit, Duplikasi, form komentar, dan upload berkas dinonaktifkan (pekerjaan bersifat read-only).'
   },
   {
     key: 'delete_task',
     category: 'OPERATIONAL',
-    label: 'Menghapus Tugas & Aksi Edit Massal (Bulk)',
-    shortLabel: 'Hapus & Bulk Edit',
-    menuLocation: 'Menu Daftar Pekerjaan (/tasks)',
-    description: 'Menghapus data pekerjaan secara permanen serta menggunakan fitur checklist untuk mengubah status atau menghapus banyak tugas sekaligus.',
-    impact: 'Jika tidak dicentang, tombol Hapus Pekerjaan dan checkbox aksi massal disembunyikan.'
-  },
-  {
-    key: 'upload_comment',
-    category: 'OPERATIONAL',
-    label: 'Unggah Berkas Lampiran & Kirim Komentar',
-    shortLabel: 'Upload & Komentar',
-    menuLocation: 'Modal Detail Tugas & Modal Komentar Cepat',
-    description: 'Mengunggah file lampiran dokumen/gambar ke dalam pekerjaan dan mengirimkan catatan diskusi/komentar.',
-    impact: 'Jika tidak dicentang, form komentar dan tombol unggah berkas dinonaktifkan.'
+    label: 'Menghapus Tugas & Aksi Edit Massal (Bulk Actions)',
+    shortLabel: 'Hapus & Aksi Massal',
+    menuLocation: 'Menu Daftar Pekerjaan (/tasks) & Modal Detail Tugas',
+    description: 'Menghapus tugas tunggal secara permanen serta menggunakan fitur checklist aksi massal (bulk status & bulk delete) di menu Daftar Pekerjaan.',
+    impact: 'Jika tidak dicentang, tombol Hapus Pekerjaan dan checkbox aksi massal disembunyikan dari antarmuka pengguna.'
   },
   {
     key: 'export_data',
     category: 'OPERATIONAL',
-    label: 'Ekspor Laporan (Excel, PDF, Salin Gambar)',
-    shortLabel: 'Export Data',
-    menuLocation: 'Universal Action Bar (Board, Dashboard, Tasks, Calendar, Reports, Team)',
-    description: 'Mengekspor laporan pekerjaan ke format Excel (.xlsx), mencetak dokumen PDF resmi, dan menyalin grafik (.png).',
-    impact: 'Jika tidak dicentang, tombol ekspor Excel, PDF, dan Salin Gambar dinonaktifkan.'
+    label: 'Ekspor Laporan & Kalender (Excel, PDF, Salin Gambar & Unduh .ics)',
+    shortLabel: 'Ekspor Laporan & Kalender',
+    menuLocation: 'Universal Action Bar (Board, Dashboard, Tasks, Calendar, Reports, Team) & Menu Titik Tiga',
+    description: 'Mengekspor data pekerjaan ke Excel (.xlsx), mencetak dokumen PDF resmi, menyalin grafik visual (.png), serta mengunduh file kalender (.ics) dan sinkronisasi Google Calendar.',
+    impact: 'Jika tidak dicentang, seluruh tombol ekspor laporan dan unduh kalender dinonaktifkan.'
   },
 
   // --- Kategori 2: Pengaturan Sistem & Basis Data ---
   {
-    key: 'master_data',
+    key: 'system_settings',
     category: 'SETTINGS',
-    label: 'Kelola Master Data & Warna (Dropdown, Status, PIC, Kategori & Lokasi)',
-    shortLabel: 'Master Data & Warna',
-    menuLocation: 'Menu Pengaturan (/settings) > Master Data',
-    description: 'Mengelola daftar opsi dropdown serta palet warna kustom tema untuk Kategori, PIC departemen & foto avatar, Status & progress %, Prioritas, dan Lokasi pekerjaan.',
-    impact: 'Jika tidak dicentang, bagian Master Data di menu Pengaturan disembunyikan.'
-  },
-  {
-    key: 'system_config',
-    category: 'SETTINGS',
-    label: 'Identitas Aplikasi (Nama & Logo), Batas Sesi & Kapasitas File',
-    shortLabel: 'Identitas & Konfigurasi',
-    menuLocation: 'Menu Pengaturan (/settings) > Identitas Aplikasi & Pengaturan Umum',
-    description: 'Mengatur Identitas Aplikasi (Nama Aplikasi, Singkatan Nama Departemen, dan Logo Aplikasi), batas sesi login (auto-logout), waktu inaktif, dan kapasitas maksimal penyimpanan berkas.',
-    impact: 'Jika tidak dicentang, bagian Identitas Aplikasi & Pengaturan Umum disembunyikan (otomatis mengikuti nilai default sistem).'
-  },
-  {
-    key: 'database_backup',
-    category: 'SETTINGS',
-    label: 'Cadangan & Pemulihan Database (Backup/Restore)',
-    shortLabel: 'Backup & Restore',
-    menuLocation: 'Menu Pengaturan (/settings) > Cadangan & Export Database & Pop-up Global Pengingat Backup',
-    description: 'Mengunduh salinan backup lengkap database JSON beserta file lampiran (.zip), memulihkan (restore) data, mengatur frekuensi jadwal pengingat pencadangan, serta menerima notifikasi pop-up modal "Pengingat Pencadangan Berkala".',
-    impact: 'Jika tidak dicentang, bagian Cadangan & Export Database di menu Pengaturan disembunyikan, dan pengguna tidak akan menerima notifikasi pop-up pengingat pencadangan data.'
+    label: 'Pengaturan Aplikasi, Master Data & Cadangan Database',
+    shortLabel: 'Master Data & Pengaturan',
+    menuLocation: 'Menu Pengaturan (/settings) > Master Data, Identitas Aplikasi, Kapasitas File & Backup/Restore',
+    description: 'Mengelola opsi dropdown & warna kustom (PIC, Kategori, Status, Prioritas, Lokasi), identitas aplikasi (nama/logo/sesi), kapasitas penyimpanan berkas, serta melakukan backup/restore database.',
+    impact: 'Jika tidak dicentang, menu Pengaturan disembunyikan dan pengguna tidak dapat mengakses master data atau konfigurasi sistem.'
   },
 
   // --- Kategori 3: Administrasi Akun & Audit Log ---
   {
-    key: 'user_management',
+    key: 'user_administration',
     category: 'ADMINISTRATION',
-    label: 'Manajemen Pengguna & Akun',
-    shortLabel: 'Manajemen User',
-    menuLocation: 'Menu Sistem User (/users) > Tab Pengguna & Reset Password',
-    description: 'Melihat akun terdaftar, persetujuan pendaftaran (approval akun baru), aktivasi akun, dan reset kata sandi.',
-    impact: 'Jika tidak dicentang, tab Pengguna dan Reset Password disembunyikan.'
-  },
-  {
-    key: 'role_management',
-    category: 'ADMINISTRATION',
-    label: 'Kelola Matriks Akses Role & Uji Coba Role (Pretend)',
-    shortLabel: 'Matriks & Uji Role',
-    menuLocation: 'Menu Sistem User (/users) > Tab Edit Role & Menu Profil',
-    description: 'Mengatur matriks izin seluruh role dan melakukan simulasi / uji coba role (pretend role) pada profil akun.',
-    impact: 'Jika tidak dicentang, tab Edit Role disembunyikan dan opsi Uji Coba Role (Pretend) pada profil dinonaktifkan.'
-  },
-  {
-    key: 'system_logs',
-    category: 'ADMINISTRATION',
-    label: 'Audit Log Jejak Aktivitas Sistem',
-    shortLabel: 'Sistem Log',
-    menuLocation: 'Menu Sistem User (/users) > Tab Sistem Log',
-    description: 'Melihat seluruh riwayat log aktivitas pengguna dan perubahan data sistem secara kronologis.',
-    impact: 'Jika tidak dicentang, tab Sistem Log disembunyikan dari menu Sistem User.'
-  },
-  {
-    key: 'admin_feedback',
-    category: 'ADMINISTRATION',
-    label: 'Akses & Tinjauan Umpan Balik Pengguna',
-    shortLabel: 'Log Umpan Balik',
-    menuLocation: 'Menu Sistem User (/users) > Tab Umpan Balik',
-    description: 'Membaca pesan masukan, saran, dan kendala yang dikirimkan oleh pengguna aplikasi melalui tombol bantuan.',
-    impact: 'Jika tidak dicentang, tab Umpan Balik disembunyikan dari menu Sistem User.'
+    label: 'Administrasi Akun, Matriks Hak Akses Role, Audit Log & Umpan Balik',
+    shortLabel: 'Administrasi User & Role',
+    menuLocation: 'Menu Sistem User (/users) > Pengguna, Reset Password, Edit Role (Matriks & Pretend), Sistem Logs & Umpan Balik',
+    description: 'Mengelola akun terdaftar, persetujuan pendaftaran (approval), reset password, konfigurasi matriks hak akses seluruh role & simulasi pretend role, audit log kronologis, dan umpan balik pengguna.',
+    impact: 'Jika tidak dicentang, menu Sistem User disembunyikan dari navigasi dan akses simulasi role dinonaktifkan.'
   }
 ];
 
@@ -212,19 +149,12 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ...DEFAULT_ROLE_COLORS
   },
   permissions: {
-    view_dashboard: ['ADMIN'],
-    view_detail: ['ADMIN'],
+    view_tasks: ['ADMIN'],
     manage_task: ['ADMIN'],
     delete_task: ['ADMIN'],
-    upload_comment: ['ADMIN'],
     export_data: ['ADMIN'],
-    master_data: ['ADMIN'],
-    user_management: ['ADMIN'],
-    role_management: ['ADMIN'],
-    system_logs: ['ADMIN'],
-    admin_feedback: ['ADMIN'],
-    database_backup: ['ADMIN'],
-    system_config: ['ADMIN']
+    system_settings: ['ADMIN'],
+    user_administration: ['ADMIN']
   }
 };
 
@@ -235,15 +165,42 @@ export const hasPermission = (
 ): boolean => {
   if (!userRole) return false;
   if (!config) config = defaultRolePermissions;
-  
-  let allowedRoles = config.permissions?.[feature];
+
+  // Mapping legacy or specific keys to the 6 streamlined keys
+  let targetKey = feature;
+  if (feature === 'view_dashboard' || feature === 'view_detail') {
+    targetKey = 'view_tasks';
+  } else if (feature === 'upload_comment') {
+    targetKey = 'manage_task';
+  } else if (feature === 'master_data' || feature === 'system_config' || feature === 'database_backup') {
+    targetKey = 'system_settings';
+  } else if (feature === 'user_management' || feature === 'role_management' || feature === 'system_logs' || feature === 'admin_feedback') {
+    targetKey = 'user_administration';
+  }
+
+  let allowedRoles = config.permissions?.[targetKey];
+  if (!allowedRoles || !Array.isArray(allowedRoles) || allowedRoles.length === 0) {
+    // Check fallback to specific key in permissions object
+    allowedRoles = config.permissions?.[feature];
+  }
+
   if (!allowedRoles || !Array.isArray(allowedRoles)) {
-    if (feature === 'role_management') {
-      allowedRoles = config.permissions?.['user_management'] || defaultRolePermissions.permissions?.['role_management'];
-    } else {
-      allowedRoles = defaultRolePermissions.permissions?.[feature];
+    // Check legacy aliases
+    if (feature === 'view_dashboard' || feature === 'view_detail' || feature === 'view_tasks') {
+      allowedRoles = config.permissions?.['view_tasks'] || config.permissions?.['view_dashboard'] || config.permissions?.['view_detail'];
+    } else if (feature === 'upload_comment' || feature === 'manage_task') {
+      allowedRoles = config.permissions?.['manage_task'] || config.permissions?.['upload_comment'];
+    } else if (feature === 'master_data' || feature === 'system_config' || feature === 'database_backup' || feature === 'system_settings') {
+      allowedRoles = config.permissions?.['system_settings'] || config.permissions?.[feature];
+    } else if (feature === 'user_management' || feature === 'role_management' || feature === 'system_logs' || feature === 'admin_feedback' || feature === 'user_administration') {
+      allowedRoles = config.permissions?.['user_administration'] || config.permissions?.[feature];
+    }
+
+    if (!allowedRoles || !Array.isArray(allowedRoles)) {
+      allowedRoles = defaultRolePermissions.permissions?.[targetKey] || defaultRolePermissions.permissions?.[feature];
     }
   }
+
   if (!allowedRoles || !Array.isArray(allowedRoles)) return false;
 
   const cleanRole = userRole.trim().toLowerCase();

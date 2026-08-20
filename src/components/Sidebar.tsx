@@ -293,29 +293,29 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    ...(hasPermission(roleConfig, 'view_dashboard', userRole) ? [
+    ...(hasPermission(roleConfig, 'view_tasks', userRole) ? [
       { href: '/', label: 'Monitoring Board', icon: Kanban },
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
+      { href: '/calendar', label: 'Kalender', icon: Calendar },
+      { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
+      { href: '/team', label: 'Manajemen Tim', icon: Users },
     ] : []),
-    { href: '/tasks', label: 'Daftar Pekerjaan', icon: ListTodo },
-    { href: '/calendar', label: 'Kalender', icon: Calendar },
-    { href: '/reports', label: 'Analisis Laporan', icon: BarChart3 },
-    { href: '/team', label: 'Manajemen Tim', icon: Users },
-    ...(hasPermission(roleConfig, 'master_data', userRole) || hasPermission(roleConfig, 'system_config', userRole) || hasPermission(roleConfig, 'database_backup', userRole) ? [
+    ...(hasPermission(roleConfig, 'system_settings', userRole) ? [
       { href: '/settings', label: 'Pengaturan', icon: Settings },
     ] : []),
-    ...(hasPermission(roleConfig, 'user_management', userRole) || hasPermission(roleConfig, 'role_management', userRole) || hasPermission(roleConfig, 'system_logs', userRole) || hasPermission(roleConfig, 'admin_feedback', userRole) ? [
+    ...(hasPermission(roleConfig, 'user_administration', userRole) ? [
       { href: '/users', label: 'Sistem User', icon: UserCog },
     ] : [])
   ];
 
   const { notifications } = useNotifications();
-  const canSeeUserAlerts = hasPermission(roleConfig, 'user_management', userRole);
-  const canSeeFeedbackAlerts = hasPermission(roleConfig, 'admin_feedback', userRole);
-  const systemUserUnreads = (canSeeUserAlerts || canSeeFeedbackAlerts) ? notifications.filter(n =>
+  const canSeeUserAlerts = hasPermission(roleConfig, 'user_administration', userRole);
+  const systemUserUnreads = canSeeUserAlerts ? notifications.filter(n =>
     !n.isRead && (
-      (canSeeUserAlerts && (n.title === 'Registrasi User Baru' || n.title === 'Permintaan Reset Password')) ||
-      (canSeeFeedbackAlerts && n.title === 'Umpan Balik Baru')
+      n.title === 'Registrasi User Baru' ||
+      n.title === 'Permintaan Reset Password' ||
+      n.title === 'Umpan Balik Baru'
     )
   ).length : 0;
 
