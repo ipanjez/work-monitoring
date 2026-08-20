@@ -30,16 +30,24 @@ export async function GET() {
       });
     }
 
-    let parsedReadIds: number[] = [];
-    try {
-      parsedReadIds = JSON.parse(state.readIds || '[]');
-      if (!Array.isArray(parsedReadIds)) parsedReadIds = [];
-    } catch {
-      parsedReadIds = [];
+    let parsedData = { read: [] as number[], deleted: [] as number[] };
+    if (state?.readIds) {
+      try {
+        const raw = JSON.parse(state.readIds);
+        if (Array.isArray(raw)) {
+          parsedData.read = raw;
+        } else if (raw && typeof raw === 'object') {
+          parsedData.read = Array.isArray(raw.read) ? raw.read : [];
+          parsedData.deleted = Array.isArray(raw.deleted) ? raw.deleted : [];
+        }
+      } catch {
+        parsedData = { read: [], deleted: [] };
+      }
     }
 
     return NextResponse.json({
-      readIds: parsedReadIds,
+      readIds: parsedData.read,
+      deletedIds: parsedData.deleted,
       clearedAt: state.clearedAt ? state.clearedAt.toISOString() : null,
       soundMuted: state.soundMuted
     });
@@ -68,57 +76,67 @@ export async function POST(request: Request) {
       where: { userId }
     });
 
-    let currentReadIds: number[] = [];
+    let parsedData = { read: [] as number[], deleted: [] as number[] };
     if (state?.readIds) {
       try {
-        currentReadIds = JSON.parse(state.readIds);
-        if (!Array.isArray(currentReadIds)) currentReadIds = [];
+        const raw = JSON.parse(state.readIds);
+        if (Array.isArray(raw)) {
+          parsedData.read = raw;
+        } else if (raw && typeof raw === 'object') {
+          parsedData.read = Array.isArray(raw.read) ? raw.read : [];
+          parsedData.deleted = Array.isArray(raw.deleted) ? raw.deleted : [];
+        }
       } catch {
-        currentReadIds = [];
+        parsedData = { read: [], deleted: [] };
       }
     }
 
-    let newReadIds = [...currentReadIds];
     let newClearedAt = state?.clearedAt || null;
     let newSoundMuted = state?.soundMuted ?? false;
 
     if (action === 'MARK_READ') {
-      if (typeof id === 'number' && !newReadIds.includes(id)) {
-        newReadIds.push(id);
+      if (typeof id === 'number' && !parsedData.read.includes(id)) {
+        parsedData.read.push(id);
       }
     } else if (action === 'MARK_ALL_READ') {
       if (Array.isArray(ids)) {
         ids.forEach((num: any) => {
           const parsed = Number(num);
-          if (!isNaN(parsed) && !newReadIds.includes(parsed)) {
-            newReadIds.push(parsed);
+          if (!isNaN(parsed) && !parsedData.read.includes(parsed)) {
+            parsedData.read.push(parsed);
           }
         });
       }
+    } else if (action === 'DELETE_ITEM') {
+      if (typeof id === 'number' && !parsedData.deleted.includes(id)) {
+        parsedData.deleted.push(id);
+      }
     } else if (action === 'CLEAR_ALL') {
       newClearedAt = new Date();
-      newReadIds = []; // reset read IDs since all prior notifications are cleared
+      parsedData.read = [];
+      parsedData.deleted = [];
     } else if (action === 'TOGGLE_SOUND') {
       if (typeof soundMuted === 'boolean') {
         newSoundMuted = soundMuted;
       }
     }
 
-    // Limit stored readIds to latest 200 items to keep column lightweight
-    if (newReadIds.length > 200) {
-      newReadIds = newReadIds.slice(-200);
-    }
+    // Limit stored IDs to latest 300 items to keep column lightweight
+    if (parsedData.read.length > 300) parsedData.read = parsedData.read.slice(-300);
+    if (parsedData.deleted.length > 300) parsedData.deleted = parsedData.deleted.slice(-300);
+
+    const serializedState = JSON.stringify(parsedData);
 
     const updated = await (prisma as any).userNotificationState.upsert({
       where: { userId },
       update: {
-        readIds: JSON.stringify(newReadIds),
+        readIds: serializedState,
         clearedAt: newClearedAt,
         soundMuted: newSoundMuted
       },
       create: {
         userId,
-        readIds: JSON.stringify(newReadIds),
+        readIds: serializedState,
         clearedAt: newClearedAt,
         soundMuted: newSoundMuted
       }
@@ -126,7 +144,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      readIds: newReadIds,
+      readIds: parsedData.read,
+      deletedIds: parsedData.deleted,
       clearedAt: updated.clearedAt ? updated.clearedAt.toISOString() : null,
       soundMuted: updated.soundMuted
     });

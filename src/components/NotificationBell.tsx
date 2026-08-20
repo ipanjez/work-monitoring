@@ -22,6 +22,7 @@ export default function NotificationBell() {
     markAsRead, 
     markAllAsRead, 
     clearAll,
+    deleteNotification,
     isSoundEnabled,
     toggleSound,
     refreshNotifications
@@ -427,20 +428,56 @@ export default function NotificationBell() {
                     </p>
                   </div>
 
-                  {/* Unread Indicator Dot */}
-                  {!notif.isRead && (
-                    <div 
-                      title="Belum dibaca"
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    {/* Unread Indicator Dot */}
+                    {!notif.isRead && (
+                      <div 
+                        title="Belum dibaca"
+                        style={{
+                          width: '7px',
+                          height: '7px',
+                          borderRadius: '50%',
+                          background: '#3b82f6',
+                          marginTop: '2px'
+                        }} 
+                      />
+                    )}
+
+                    {/* Delete single notification button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNotification(notif.id);
+                      }}
+                      title="Hapus notifikasi ini"
                       style={{
-                        width: '7px',
-                        height: '7px',
-                        borderRadius: '50%',
-                        background: '#3b82f6',
-                        flexShrink: 0,
-                        marginTop: '6px'
-                      }} 
-                    />
-                  )}
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '4px',
+                        opacity: 0.5,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.color = 'var(--danger)';
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.5';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                        e.currentTarget.style.background = 'none';
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               );
             })

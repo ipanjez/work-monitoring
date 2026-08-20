@@ -25,6 +25,7 @@ interface NotificationContextType {
   markAsRead: (id: number) => void;
   markAllAsRead: () => void;
   clearAll: () => void;
+  deleteNotification: (id: number) => void;
   addActivityLog: (action: string, title: string, message: string, type?: 'info' | 'success' | 'warning' | 'danger', taskId?: number, linkUrl?: string) => Promise<void>;
   isSoundEnabled: boolean;
   toggleSound: () => void;
@@ -48,12 +49,12 @@ function playNotificationChime(isMuted: boolean) {
     }
     const now = ctx.currentTime;
 
-    // First tone (D5)
+    // First tone (E5)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, now);
-    gain1.gain.setValueAtTime(0.08, now);
+    osc1.frequency.setValueAtTime(659.25, now);
+    gain1.gain.setValueAtTime(0.12, now);
     gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
@@ -96,8 +97,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const lastCheckTimeRef = useRef<Date>(new Date());
   const isFetchingRef = useRef<boolean>(false);
   const isSoundEnabledRef = useRef<boolean>(true);
-  const userNotificationStateRef = useRef<{ readIds: number[]; clearedAt: number; soundMuted: boolean }>({
+  const userNotificationStateRef = useRef<{ readIds: number[]; deletedIds: number[]; clearedAt: number; soundMuted: boolean }>({
     readIds: [],
+    deletedIds: [],
     clearedAt: 0,
     soundMuted: false
   });
@@ -169,6 +171,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           if (stateData) {
             userNotificationStateRef.current = {
               readIds: Array.isArray(stateData.readIds) ? stateData.readIds : [],
+              deletedIds: Array.isArray(stateData.deletedIds) ? stateData.deletedIds : [],
               clearedAt: stateData.clearedAt ? new Date(stateData.clearedAt).getTime() : 0,
               soundMuted: Boolean(stateData.soundMuted)
             };
@@ -180,20 +183,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         } catch (e) { }
       }
 
-      const { readIds, clearedAt } = userNotificationStateRef.current;
+      const { readIds, deletedIds, clearedAt } = userNotificationStateRef.current;
+      
+      // Merge with local storage fallback
+      let localClearedAt = 0;
+      let localDeletedIds: number[] = [];
+      if (typeof window !== 'undefined') {
+        localClearedAt = Number(localStorage.getItem(storageKey + '_clearedAt') || 0);
+        try {
+          localDeletedIds = JSON.parse(localStorage.getItem(storageKey + '_deletedIds') || '[]');
+        } catch {}
+      }
+
+      const effectiveClearedAt = Math.max(clearedAt, localClearedAt);
+      const allDeletedIds = Array.from(new Set([...deletedIds, ...localDeletedIds]));
+
       const prev = notificationsRef.current;
       const newIncomingForToast: NotificationItem[] = [];
       const updatedList: NotificationItem[] = [];
 
       activities.forEach((act: any) => {
         const actTime = new Date(act.createdAt);
-        // Filter out items cleared by the user in the database
-        if (actTime.getTime() <= clearedAt) return;
+        // Filter out items cleared by the user in the database or locally
+        if (actTime.getTime() <= effectiveClearedAt || allDeletedIds.includes(act.id)) return;
 
-        // Skip login notification logs for roles without system_logs permission
+        // Skip login notification logs for roles without user_administration permission
         const userRole = (session?.user as any)?.role || '';
         const isLoginAct = act.action === 'LOGIN' || (act.title && act.title.toLowerCase().includes('login'));
-        if (isLoginAct && !hasPermission(roleConfig, 'system_logs', userRole)) {
+        if (isLoginAct && !hasPermission(roleConfig, 'user_administration', userRole)) {
           return;
         }
 
@@ -219,11 +236,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       });
 
-      // Sort by newest
       const sorted = updatedList.slice(0, 50).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       setNotifications(sorted);
+      notificationsRef.current = sorted;
 
-      // Save local cache fallback
       try {
         localStorage.setItem(storageKey, JSON.stringify(sorted));
       } catch (e) { }
@@ -463,11 +479,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     toast.success('Semua notifikasi ditandai sudah dibaca', { duration: 2000 });
   };
 
-  // Clear all notifications (Synced to Database)
+  // Delete single notification (Synced to DB & LocalStorage)
+  const deleteNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    notificationsRef.current = notificationsRef.current.filter(n => n.id !== id);
+    const currentDeleted = Array.isArray(userNotificationStateRef.current.deletedIds) ? userNotificationStateRef.current.deletedIds : [];
+    if (!currentDeleted.includes(id)) {
+      currentDeleted.push(id);
+      userNotificationStateRef.current.deletedIds = currentDeleted;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(storageKey + '_deletedIds', JSON.stringify(currentDeleted));
+        localStorage.setItem(storageKey, JSON.stringify(notificationsRef.current));
+      }
+    }
+    if (status === 'authenticated') {
+      fetch('/api/notifications/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'DELETE_ITEM', id })
+      }).catch(err => console.error('Failed to sync deleteNotification to DB:', err));
+    }
+  };
+
+  // Clear all notifications (Synced to Database & LocalStorage)
   const clearAll = () => {
+    const now = Date.now();
     setNotifications([]);
-    userNotificationStateRef.current.clearedAt = Date.now();
+    notificationsRef.current = [];
+    userNotificationStateRef.current.clearedAt = now;
     userNotificationStateRef.current.readIds = [];
+    userNotificationStateRef.current.deletedIds = [];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, '[]');
+      localStorage.setItem(storageKey + '_clearedAt', String(now));
+      localStorage.setItem(storageKey + '_deletedIds', '[]');
+    }
     if (status === 'authenticated') {
       fetch('/api/notifications/state', {
         method: 'POST',
@@ -511,6 +557,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       markAsRead, 
       markAllAsRead, 
       clearAll, 
+      deleteNotification,
       addActivityLog,
       isSoundEnabled,
       toggleSound,
