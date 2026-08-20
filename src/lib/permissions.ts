@@ -166,6 +166,11 @@ export const hasPermission = (
   if (!userRole) return false;
   if (!config) config = defaultRolePermissions;
 
+  // All authenticated users have basic view/read access to workspace pages and task details
+  if (feature === 'view_detail' || feature === 'view_tasks' || feature === 'view_dashboard') {
+    return true;
+  }
+
   // 1. Mapping legacy or specific keys to the 6 streamlined keys
   let canonicalFeatureKey = feature;
   if (feature === 'upload_comment') {

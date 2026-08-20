@@ -42,10 +42,6 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null);
 
   const openDetail = (task: Task) => {
-    if (!hasPermission(roleConfig, 'view_detail', userRole)) {
-      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
-      return;
-    }
     setDetailTask(task);
   };
 
@@ -312,10 +308,6 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   };
 
   const openPreviewFile = (file: { name: string; url: string }) => {
-    if (!hasPermission(roleConfig, 'view_detail', userRole)) {
-      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.');
-      return;
-    }
     setPreviewFile(file);
   };
 

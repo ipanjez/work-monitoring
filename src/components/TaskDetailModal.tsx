@@ -59,17 +59,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     appSubtitle: deptName
   } = useMaster();
   const currentRoleConfig = roleConfig || masterRoleConfig;
-
-  useEffect(() => {
-    if (currentRoleConfig && !hasPermission(currentRoleConfig, 'view_detail', userRole)) {
-      toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
-      onClose();
-    }
-  }, [currentRoleConfig, userRole, onClose]);
-
-  if (currentRoleConfig && !hasPermission(currentRoleConfig, 'view_detail', userRole)) {
-    return null;
-  }
   const router = useRouter();
   const pathname = usePathname();
   const { addActivityLog } = useNotifications();
@@ -845,13 +834,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                             type="button"
                             className="btn btn-secondary"
                             style={{ padding: '4px 8px' }}
-                            onClick={() => {
-                              if (!hasPermission(currentRoleConfig, 'view_detail', userRole)) {
-                                toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat lampiran.');
-                                return;
-                              }
-                              setPreviewFile(f);
-                            }}
+                            onClick={() => setPreviewFile(f)}
                           >
                             <Eye size={14} color="var(--text-secondary)" />
                           </button>
