@@ -12,12 +12,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('MEMBER');
-  const [availableRoles, setAvailableRoles] = useState<{ key: string; label: string }[]>([
-    { key: 'MEMBER', label: 'Member' },
-    { key: 'VIEWER', label: 'Viewer' },
-    { key: 'GUEST', label: 'Guest' },
-  ]);
+  const [role, setRole] = useState('');
+  const [availableRoles, setAvailableRoles] = useState<{ key: string; label: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -27,14 +23,15 @@ export default function SignUpPage() {
       .then(data => {
         if (data && data.labels) {
           const roles = Object.keys(data.labels)
-            .filter(key => key !== 'ADMIN' && key !== 'GUEST')
+            .filter(key => key !== 'ADMIN')
             .map(key => ({
               key,
               label: data.labels[key]
             }));
-          setAvailableRoles(roles);
-          if (roles.length > 0 && !roles.some(r => r.key === role)) {
-            setRole(roles[0].key);
+          const finalRoles = roles.length > 0 ? roles : Object.keys(data.labels).map(k => ({ key: k, label: data.labels[k] }));
+          setAvailableRoles(finalRoles);
+          if (finalRoles.length > 0) {
+            setRole(finalRoles[0].key);
           }
         }
       })
@@ -223,7 +220,7 @@ export default function SignUpPage() {
             >
               {availableRoles.map(r => (
                 <option key={r.key} value={r.key}>
-                  {r.label} ({r.key === 'MEMBER' ? 'Pengelola & Pelaksana Pekerjaan' : r.key === 'VIEWER' ? 'Hanya Melihat & Monitoring' : `Peran ${r.label}`})
+                  {r.label}
                 </option>
               ))}
             </select>

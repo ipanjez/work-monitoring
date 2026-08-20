@@ -159,15 +159,11 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
 ];
 
 export const DEFAULT_ROLE_ICONS: Record<string, string> = {
-  ADMIN: 'ShieldCheck',
-  MEMBER: 'User',
-  VIEWER: 'Eye'
+  ADMIN: 'ShieldCheck'
 };
 
 export const DEFAULT_ROLE_COLORS: Record<string, string> = {
-  ADMIN: '#7c3aed', // Purple/Violet
-  MEMBER: '#2563eb', // Blue
-  VIEWER: '#059669'  // Emerald
+  ADMIN: '#7c3aed' // Purple/Violet
 };
 
 export const AVAILABLE_ROLE_ICONS = [
@@ -207,9 +203,7 @@ export const AVAILABLE_ROLE_COLORS = [
 
 export const defaultRolePermissions: RolePermissionsConfig = {
   labels: {
-    ADMIN: 'Admin',
-    MEMBER: 'Member',
-    VIEWER: 'Viewer'
+    ADMIN: 'Admin'
   },
   icons: {
     ...DEFAULT_ROLE_ICONS
@@ -218,12 +212,12 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ...DEFAULT_ROLE_COLORS
   },
   permissions: {
-    view_dashboard: ['ADMIN', 'MEMBER', 'VIEWER'],
-    view_detail: ['ADMIN', 'MEMBER', 'VIEWER'],
-    manage_task: ['ADMIN', 'MEMBER'],
-    delete_task: ['ADMIN', 'MEMBER'],
-    upload_comment: ['ADMIN', 'MEMBER'],
-    export_data: ['ADMIN', 'MEMBER'],
+    view_dashboard: ['ADMIN'],
+    view_detail: ['ADMIN'],
+    manage_task: ['ADMIN'],
+    delete_task: ['ADMIN'],
+    upload_comment: ['ADMIN'],
+    export_data: ['ADMIN'],
     master_data: ['ADMIN'],
     user_management: ['ADMIN'],
     role_management: ['ADMIN'],
