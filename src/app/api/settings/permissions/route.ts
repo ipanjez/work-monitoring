@@ -20,9 +20,9 @@ export async function GET() {
 
     const parsed = JSON.parse(setting.value);
     const merged = {
-      labels: { ...defaultRolePermissions.labels, ...(parsed.labels || {}) },
-      icons: { ...defaultRolePermissions.icons, ...(parsed.icons || {}) },
-      colors: { ...defaultRolePermissions.colors, ...(parsed.colors || {}) },
+      labels: (parsed.labels && Object.keys(parsed.labels).length > 0) ? parsed.labels : defaultRolePermissions.labels,
+      icons: parsed.icons || defaultRolePermissions.icons,
+      colors: parsed.colors || defaultRolePermissions.colors,
       permissions: {
         ...defaultRolePermissions.permissions,
         ...(parsed.permissions || {})
