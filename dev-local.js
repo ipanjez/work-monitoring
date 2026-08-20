@@ -38,10 +38,13 @@ try {
   process.exit(1);
 }
 
-// Ensure SQLite DB exists
+// Ensure SQLite DB exists and seed default admin/users
 try {
   execSync('npx prisma db push --accept-data-loss --schema=prisma/schema.sqlite.prisma', { stdio: 'inherit', env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
   console.log('✅ SQLite database ready');
+  try {
+    execSync('node prisma/seed.js', { stdio: 'inherit', env: { ...process.env, DATABASE_URL: 'file:./dev.db' } });
+  } catch (seedErr) {}
 } catch (e) {
   console.error('⚠️  Warning: db push had issues, but continuing...');
 }
