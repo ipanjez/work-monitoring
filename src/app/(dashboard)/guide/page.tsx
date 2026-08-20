@@ -681,8 +681,13 @@ export default function GuidePage() {
                   key={s.id}
                   onClick={() => {
                     setOpenAccordions(prev => ({ ...prev, [s.id]: true }));
-                    const el = document.getElementById(`section-${s.id}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                      const el = document.getElementById(`section-${s.id}`);
+                      if (el) {
+                        const y = el.getBoundingClientRect().top + window.scrollY - 80; // offset untuk header
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      }
+                    }, 280); // tunggu animasi expand selesai
                   }}
                   style={{
                     padding: '10px 8px',

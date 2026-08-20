@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare,
-  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban, UserCog, Loader2
+  ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban, UserCog, Loader2,
+  ChevronDown, Check
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './Sidebar.module.css';
 import { useTheme } from '@/context/ThemeContext';
 import { useFilter } from '@/context/FilterContext';
@@ -16,6 +18,125 @@ import IdleTimer from './IdleTimer';
 import { useSession, signOut } from 'next-auth/react';
 import { useNotifications } from '@/context/NotificationContext';
 
+const CustomSidebarSelect = ({ 
+  value, 
+  onChange, 
+  options, 
+  style 
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  options: { label: string, value: string }[]; 
+  style?: React.CSSProperties;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          ...style,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {options.find(o => o.value === value)?.label || value}
+        </span>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} style={{ display: 'flex', flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ opacity: 0.5 }} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: 0,
+              right: 0,
+              minWidth: '100%',
+              background: 'var(--surface-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              zIndex: 9999,
+              maxHeight: '220px',
+              overflowY: 'auto',
+              padding: '4px'
+            }}
+            className="custom-scrollbar"
+          >
+            {options.map((opt, idx) => {
+              const isSelected = value === opt.value;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                    border: 'none',
+                    fontSize: '12px',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                    fontWeight: isSelected ? 600 : 500,
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {opt.label}
+                  {isSelected && <Check size={14} />}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function Sidebar() {
   const { data: session } = useSession();
@@ -287,28 +408,28 @@ export default function Sidebar() {
                 fontSize: '12px'
               }}>
                 <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <select
-                    id="filter-pic"
+                  <CustomSidebarSelect
                     value={globalPicFilter}
-                    onChange={(e) => setGlobalPicFilter(e.target.value)}
-                    style={{ width: '100%', padding: '4px 6px', fontSize: '11px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-                  >
-                    <option value="Semua PIC">Semua PIC</option>
-                    {picList.map((p: any) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                    onChange={setGlobalPicFilter}
+                    options={[
+                      { label: 'Semua PIC', value: 'Semua PIC' },
+                      ...picList.map((p: any) => ({ label: p, value: p }))
+                    ]}
+                    style={{ padding: '4px 6px', fontSize: '11px', borderRadius: '6px', background: 'var(--surface-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                  />
 
-                  <select
-                    id="filter-target"
+                  <CustomSidebarSelect
                     value={globalTargetFilter}
-                    onChange={(e) => setGlobalTargetFilter(e.target.value)}
-                    style={{ width: '100%', padding: '4px 6px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: 'var(--accent-primary)', color: 'white', border: 'none', outline: 'none' }}
-                  >
-                    <option value="Hari Ini">Target Hari Ini</option>
-                    <option value="Minggu Ini">Target Minggu Ini</option>
-                    <option value="Bulan Ini">Target Bulan Ini</option>
-                    <option value="Semua Waktu">Semua Target Waktu</option>
-                    <option value="Custom">Pilih Tanggal...</option>
-                  </select>
+                    onChange={setGlobalTargetFilter}
+                    options={[
+                      { label: 'Target Hari Ini', value: 'Hari Ini' },
+                      { label: 'Target Minggu Ini', value: 'Minggu Ini' },
+                      { label: 'Target Bulan Ini', value: 'Bulan Ini' },
+                      { label: 'Semua Target Waktu', value: 'Semua Waktu' },
+                      { label: 'Pilih Tanggal...', value: 'Custom' }
+                    ]}
+                    style={{ padding: '4px 6px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', background: 'var(--accent-primary)', color: 'white', border: '1px solid var(--accent-primary)' }}
+                  />
                   {globalTargetFilter === 'Custom' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '-4px' }}>
                       <input

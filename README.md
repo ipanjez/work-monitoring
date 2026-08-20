@@ -249,3 +249,15 @@ Mari terhubung, berdiskusi, dan berkolaborasi bersama saya melalui platform di b
 [![Instagram](https://img.shields.io/badge/Instagram-ipanjez-E4405F?style=flat&logo=instagram)](https://instagram.com/ipanjez)
 [![Facebook](https://img.shields.io/badge/Facebook-ipanjez-1877F2?style=flat&logo=facebook)](https://facebook.com/ipanjez)
 [![Gravatar](https://img.shields.io/badge/Gravatar-ipanjez-1E8CBE?style=flat&logo=gravatar)](https://gravatar.com/ipanjez)
+
+---
+
+## 🤝 Kontributor
+
+Terima kasih kepada kontributor yang telah membantu pengembangan dan optimalisasi proyek ini:
+
+| Kontributor | Peran | Kontribusi Utama |
+|-------------|-------|-----------------|
+| **ipanjez** (Farhan) | 👑 Developer Utama | Arsitektur sistem, fitur inti, database, API, deployment |
+| **Syahmi Rianta** | ⚡ Optimalisasi & Fitur Tambahan | Optimalisasi tampilan mobile, fitur Guest Login, migrasi database ke Neon PostgreSQL, touch drag-and-drop, sinkronisasi logo & loading screen, perbaikan UI/UX, tur interaktif |
+

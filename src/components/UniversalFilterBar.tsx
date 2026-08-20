@@ -1,6 +1,7 @@
 'use client';
-import React, { useState } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Filter, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useFilter } from '@/context/FilterContext';
 
 interface UniversalFilterBarProps {
@@ -12,6 +13,130 @@ interface UniversalFilterBarProps {
   totalCount?: number;
   children?: React.ReactNode;
 }
+
+const CustomFilterSelect = ({ 
+  value, 
+  onChange, 
+  options, 
+  isActive 
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  options: { label: string, value: string }[]; 
+  isActive: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div style={{ position: 'relative' }} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          background: 'var(--input-bg)',
+          border: '1px solid',
+          borderColor: isActive ? 'var(--accent-primary)' : (isOpen ? 'var(--accent-primary)' : 'var(--border-color)'),
+          color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)',
+          padding: '4px 10px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          height: '32px',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          boxShadow: isOpen ? '0 0 0 3px rgba(59, 130, 246, 0.15)' : 'none',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        {options.find(o => o.value === value)?.label || value}
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} style={{ display: 'flex', flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ opacity: 0.5 }} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: 0,
+              minWidth: '160px',
+              background: 'var(--surface-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              zIndex: 9999,
+              maxHeight: '220px',
+              overflowY: 'auto',
+              padding: '4px'
+            }}
+            className="custom-scrollbar"
+          >
+            {options.map((opt, idx) => {
+              const isSelected = value === opt.value;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                    border: 'none',
+                    fontSize: '12px',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                    fontWeight: isSelected ? 600 : 500,
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {opt.label}
+                  {isSelected && <Check size={14} />}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function UniversalFilterBar({ 
   categories = [], 
@@ -129,34 +254,54 @@ export default function UniversalFilterBar({
       <div className={`filter-options-area ${isOpen ? 'open' : ''}`} style={{ width: '100%' }}>
         <div className="filter-options-grid" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginTop: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '32px', ...getActiveStyle(globalFilterStatus !== 'All') }} value={globalFilterStatus} onChange={e => setGlobalFilterStatus(e.target.value)}>
-              <option value="All">Semua Status</option>
-              {Array.from(new Set(statuses)).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <CustomFilterSelect
+              value={globalFilterStatus}
+              onChange={setGlobalFilterStatus}
+              options={[
+                { label: 'Semua Status', value: 'All' },
+                ...Array.from(new Set(statuses)).map(s => ({ label: s, value: s }))
+              ]}
+              isActive={globalFilterStatus !== 'All'}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '32px', ...getActiveStyle(globalFilterPriority !== 'All') }} value={globalFilterPriority} onChange={e => setGlobalFilterPriority(e.target.value)}>
-              <option value="All">Semua Prioritas</option>
-              {Array.from(new Set(priorities)).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            <CustomFilterSelect
+              value={globalFilterPriority}
+              onChange={setGlobalFilterPriority}
+              options={[
+                { label: 'Semua Prioritas', value: 'All' },
+                ...Array.from(new Set(priorities)).map(p => ({ label: p, value: p }))
+              ]}
+              isActive={globalFilterPriority !== 'All'}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '32px', ...getActiveStyle(globalFilterCategory !== 'All') }} value={globalFilterCategory} onChange={e => setGlobalFilterCategory(e.target.value)}>
-              <option value="All">Semua Kategori</option>
-              {Array.from(new Set(categories)).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
+            <CustomFilterSelect
+              value={globalFilterCategory}
+              onChange={setGlobalFilterCategory}
+              options={[
+                { label: 'Semua Kategori', value: 'All' },
+                ...Array.from(new Set(categories)).map(cat => ({ label: cat, value: cat }))
+              ]}
+              isActive={globalFilterCategory !== 'All'}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '32px', ...getActiveStyle(globalTargetFilter !== 'Semua Waktu') }} value={globalTargetFilter} onChange={e => setGlobalTargetFilter(e.target.value)}>
-              <option value="Hari Ini">Hari Ini</option>
-              <option value="Minggu Ini">Minggu Ini</option>
-              <option value="Bulan Ini">Bulan Ini</option>
-              <option value="Semua Waktu">Semua Waktu</option>
-              <option value="Custom">Custom...</option>
-            </select>
+            <CustomFilterSelect
+              value={globalTargetFilter}
+              onChange={setGlobalTargetFilter}
+              options={[
+                { label: 'Semua Waktu', value: 'Semua Waktu' },
+                { label: 'Hari Ini', value: 'Hari Ini' },
+                { label: 'Minggu Ini', value: 'Minggu Ini' },
+                { label: 'Bulan Ini', value: 'Bulan Ini' },
+                { label: 'Custom...', value: 'Custom' }
+              ]}
+              isActive={globalTargetFilter !== 'Semua Waktu'}
+            />
             {globalTargetFilter === 'Custom' && (
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 <input
@@ -177,10 +322,15 @@ export default function UniversalFilterBar({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <select className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', height: '32px', ...getActiveStyle(globalPicFilter !== 'Semua PIC') }} value={globalPicFilter} onChange={e => setGlobalPicFilter(e.target.value)}>
-              <option value="Semua PIC">Semua PIC</option>
-              {Array.from(new Set(pics)).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+            <CustomFilterSelect
+              value={globalPicFilter}
+              onChange={setGlobalPicFilter}
+              options={[
+                { label: 'Semua PIC', value: 'Semua PIC' },
+                ...Array.from(new Set(pics)).map(p => ({ label: p, value: p }))
+              ]}
+              isActive={globalPicFilter !== 'Semua PIC'}
+            />
           </div>
 
           {isAnyFilterActive && (

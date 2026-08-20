@@ -528,6 +528,38 @@ export default function HelpSupportButton() {
             description: 'Menampilkan data NPK, nama, role, status aktif, dan tombol aksi (edit profil, reset password, nonaktifkan, atau hapus user).',
             side: 'top'
           }
+        },
+        {
+          element: '#users-requests-container',
+          popover: {
+            title: 'Daftar Permintaan Reset Password',
+            description: 'Tabel yang menampilkan permintaan reset password dari pengguna yang lupa kata sandi. Sebagai Admin, Anda dapat menyetujui (dengan memberikan password baru) atau menolak permintaan tersebut.',
+            side: 'top'
+          }
+        },
+        {
+          element: '#users-logs-container',
+          popover: {
+            title: 'Audit Log & Filter Log',
+            description: 'Mencatat seluruh rekam jejak aktivitas sistem secara kronologis. Anda dapat mencari log tertentu, memfilter berdasarkan tipe log (Info/Success/Warning/Error), atau memfilter berdasarkan nama pengguna.',
+            side: 'top'
+          }
+        },
+        {
+          element: '#users-roles-container',
+          popover: {
+            title: 'Matriks Akses & Hak Izin Peran',
+            description: 'Di sini Anda dapat menyesuaikan hak izin fitur untuk masing-masing peran (Role) secara dinamis. Anda juga dapat menambah peran baru, menghapus peran, atau mengkustomisasi warna & ikon peran.',
+            side: 'top'
+          }
+        },
+        {
+          element: '#users-feedbacks-container',
+          popover: {
+            title: 'Log Umpan Balik Pengguna',
+            description: 'Membaca pesan masukan, saran, dan kendala yang dikirimkan oleh pengguna aplikasi melalui tombol bantuan/dukungan.',
+            side: 'top'
+          }
         }
       ];
     } else if (pathname === '/settings') {

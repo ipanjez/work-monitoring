@@ -5,7 +5,8 @@ import {
   Users, Plus, Pencil, Trash2, KeyRound, CheckCircle, XCircle, Search,
   ShieldCheck, User, ToggleLeft, ToggleRight, Clock, ScrollText, RefreshCw,
   Download, X, Info, MapPin, Layers, Settings, FileText, CheckSquare,
-  Share2, Shield, HelpCircle, ExternalLink, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, ShieldAlert
+  Share2, Shield, HelpCircle, ExternalLink, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, ShieldAlert,
+  ChevronDown, Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -19,6 +20,134 @@ import {
   PERMISSION_CATEGORIES, PERMISSION_FEATURE_DETAILS, PermissionFeatureDetail,
   getRoleIconName, getRoleColor
 } from '@/lib/permissions';
+
+const CustomSelect = ({ 
+  value, 
+  onChange, 
+  options, 
+  style 
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  options: { label: string, value: string }[]; 
+  style?: React.CSSProperties;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div style={{ position: 'relative', ...style }} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          background: 'var(--input-bg)',
+          border: '1px solid',
+          borderColor: isOpen ? 'var(--accent-primary)' : 'var(--border-color)',
+          color: 'var(--text-primary)',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          boxShadow: isOpen ? '0 0 0 3px rgba(59, 130, 246, 0.15)' : 'none',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {options.find(o => o.value === value)?.label || value}
+        </span>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} style={{ display: 'flex', flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ opacity: 0.5 }} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: 0,
+              right: 0,
+              minWidth: '160px',
+              background: 'var(--surface-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              zIndex: 9999,
+              maxHeight: '220px',
+              overflowY: 'auto',
+              padding: '4px'
+            }}
+            className="custom-scrollbar"
+          >
+            {options.map((opt, idx) => {
+              const isSelected = value === opt.value;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                    border: 'none',
+                    fontSize: '13px',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                    fontWeight: isSelected ? 600 : 500,
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {opt.label}
+                  {isSelected && <Check size={14} />}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 import { useNotifications } from '@/context/NotificationContext';
 import Avatar from '@/components/Avatar';
 import RoleBadge, { RoleIconRenderer } from '@/components/RoleBadge';
@@ -860,7 +989,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
 
       {/* Reset Requests Tab */}
       {tab === 'requests' && (
-        <div style={{ overflowX: 'auto' }}>
+        <div id="users-requests-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
@@ -904,7 +1033,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
 
       {/* Logs Tab */}
       {tab === 'logs' && (
-        <>
+        <div id="users-logs-container">
           {/* Filters */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '10px', flex: '1', minWidth: '320px', maxWidth: '640px' }}>
@@ -912,19 +1041,27 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                 <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                 <input className="input" value={logSearch} onChange={e => setLogSearch(e.target.value)} placeholder="Cari log..." style={{ paddingLeft: '32px' }} />
               </div>
-              <select className="input" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ width: '130px' }}>
-                <option value="all">Semua Tipe</option>
-                <option value="info">Info</option>
-                <option value="success">Success</option>
-                <option value="warning">Warning</option>
-                <option value="error">Error</option>
-              </select>
-              <select className="input" value={filterUser} onChange={e => setFilterUser(e.target.value)} style={{ width: '150px' }}>
-                <option value="all">Semua User</option>
-                {Array.from(new Set(users.map(u => u.name).filter(Boolean))).map(uName => (
-                  <option key={uName} value={uName}>{uName}</option>
-                ))}
-              </select>
+              <CustomSelect 
+                value={filterType} 
+                onChange={setFilterType} 
+                options={[
+                  { label: 'Semua Tipe', value: 'all' },
+                  { label: 'Info', value: 'info' },
+                  { label: 'Success', value: 'success' },
+                  { label: 'Warning', value: 'warning' },
+                  { label: 'Error', value: 'error' }
+                ]}
+                style={{ width: '130px' }} 
+              />
+              <CustomSelect 
+                value={filterUser} 
+                onChange={setFilterUser} 
+                options={[
+                  { label: 'Semua User', value: 'all' },
+                  ...Array.from(new Set(users.map(u => u.name).filter(Boolean))).map(uName => ({ label: uName as string, value: uName as string }))
+                ]}
+                style={{ width: '150px' }} 
+              />
             </div>
             <button className="btn" onClick={fetchLogs} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
               <RefreshCw size={14} /> Refresh Logs
@@ -991,12 +1128,12 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Roles Tab */}
       {tab === 'roles' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div id="users-roles-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
               <div>
@@ -1423,7 +1560,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
 
       {/* Feedbacks Tab */}
       {tab === 'feedbacks' && canAdminFeedback && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div id="users-feedbacks-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="glass" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1563,41 +1700,60 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
       {/* Modal Tambah/Edit User */}
       {showModal && editUser && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass" style={{ width: '100%', maxWidth: '460px', padding: '28px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form 
+            onSubmit={e => {
+              e.preventDefault();
+              saveUser();
+            }}
+            autoComplete="off"
+            className="glass" 
+            style={{ width: '100%', maxWidth: '460px', padding: '28px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
             <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>{isNew ? 'Tambah User Baru' : `Edit User: ${editUser.name}`}</h2>
             {[
-              { label: 'NPK', key: 'npk', placeholder: 'PKT-001', type: 'text' },
-              { label: 'Nama', key: 'name', placeholder: 'Nama lengkap', type: 'text' },
-              { label: 'Email (opsional)', key: 'email', placeholder: 'email@pkt.co.id', type: 'email' },
-              { label: isNew ? 'Password' : 'Password Baru (kosongkan jika tidak diubah)', key: 'password', placeholder: '••••••', type: 'password' },
+              { label: 'NPK', key: 'npk', placeholder: 'PKT-001', type: 'text', autoComplete: 'new-npk-code-field' },
+              { label: 'Nama', key: 'name', placeholder: 'Nama lengkap', type: 'text', autoComplete: 'new-name-code-field' },
+              { label: 'Email (opsional)', key: 'email', placeholder: 'email@pkt.co.id', type: 'email', autoComplete: 'new-email-code-field' },
+              { label: isNew ? 'Password' : 'Password Baru (kosongkan jika tidak diubah)', key: 'password', placeholder: '••••••', type: 'password', autoComplete: 'new-password' },
             ].map(f => (
               <div key={f.key}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>{f.label}</label>
-                <input type={f.type} className="input" placeholder={f.placeholder} value={(editUser as any)[f.key] || ''} onChange={e => setEditUser({ ...editUser, [f.key]: e.target.value })} />
+                <input 
+                  type={f.type} 
+                  className="input" 
+                  placeholder={f.placeholder} 
+                  value={(editUser as any)[f.key] || ''} 
+                  onChange={e => setEditUser({ ...editUser, [f.key]: e.target.value })} 
+                  autoComplete={f.autoComplete}
+                />
               </div>
             ))}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Role</label>
-                <select className="input" value={editUser.role || 'MEMBER'} onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
-                  {Object.entries(roleConfig.labels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+                <CustomSelect 
+                  value={editUser.role || 'MEMBER'} 
+                  onChange={val => setEditUser({ ...editUser, role: val })} 
+                  options={Object.entries(roleConfig.labels).map(([key, label]) => ({ label, value: key }))}
+                />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Status</label>
-                <select className="input" value={editUser.status || 'ACTIVE'} onChange={e => setEditUser({ ...editUser, status: e.target.value })}>
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
+                <CustomSelect 
+                  value={editUser.status || 'ACTIVE'} 
+                  onChange={val => setEditUser({ ...editUser, status: val })} 
+                  options={[
+                    { label: 'ACTIVE', value: 'ACTIVE' },
+                    { label: 'INACTIVE', value: 'INACTIVE' }
+                  ]}
+                />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '4px' }}>
-              <button className="btn" onClick={() => setShowModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={saveUser} disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
+              <button type="button" className="btn" onClick={() => setShowModal(false)}>Batal</button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

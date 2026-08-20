@@ -33,7 +33,21 @@ export async function GET() {
     orderBy: { npk: 'asc' },
   });
 
-  return NextResponse.json(users);
+  const usersWithLogs = await Promise.all(
+    users.map(async (u) => {
+      const lastLog = await prisma.activityLog.findFirst({
+        where: { userId: u.id },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      });
+      return {
+        ...u,
+        lastActive: lastLog ? lastLog.createdAt.toISOString() : null
+      };
+    })
+  );
+
+  return NextResponse.json(usersWithLogs);
 }
 
 // POST /api/users — create new user

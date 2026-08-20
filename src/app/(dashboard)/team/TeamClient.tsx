@@ -428,7 +428,19 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
                 position: 'relative',
                 boxShadow: isSelected ? '0 8px 24px rgba(59, 130, 246, 0.15)' : 'none'
               }}
-              onClick={() => setSelectedPic(isSelected ? null : picName)}
+              onClick={() => {
+                const newSelected = isSelected ? null : picName;
+                setSelectedPic(newSelected);
+                if (newSelected) {
+                  setTimeout(() => {
+                    const el = document.getElementById('team-pic-detail-table');
+                    if (el) {
+                      const y = el.getBoundingClientRect().top + window.scrollY - 20;
+                      window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                  }, 150);
+                }
+              }}
             >
               {/* Header Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>

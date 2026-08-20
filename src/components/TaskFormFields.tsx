@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   X, UserPlus, Users, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, 
-  Info, GripVertical, FileText, FileDown, Trash2
+  Info, GripVertical, FileText, FileDown, Trash2, MapPin, ChevronDown, Check
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
@@ -43,6 +44,134 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
   );
 };
 
+const CustomSelect = ({ 
+  value, 
+  onChange, 
+  options, 
+  placeholder, 
+  disabled,
+  style
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  options: string[]; 
+  placeholder: string;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', ...style }} ref={ref}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          background: disabled ? 'var(--bg-color)' : 'var(--input-bg)',
+          border: '1px solid',
+          borderColor: isOpen ? 'var(--accent-primary)' : 'var(--border-color)',
+          color: value ? 'var(--text-primary)' : 'var(--text-secondary)',
+          padding: '8.5px 12px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'all 0.2s',
+          boxShadow: isOpen ? '0 0 0 3px rgba(59, 130, 246, 0.15)' : 'none',
+          opacity: disabled ? 0.6 : 1
+        }}
+      >
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {value || placeholder}
+        </span>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} style={{ display: 'flex', flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ opacity: 0.5 }} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -5, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 4px)',
+              left: 0,
+              right: 0,
+              background: 'var(--surface-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              zIndex: 9999,
+              maxHeight: '220px',
+              overflowY: 'auto',
+              padding: '4px'
+            }}
+            className="custom-scrollbar"
+          >
+            {options.map((opt, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  background: value === opt ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                  border: 'none',
+                  fontSize: '13px',
+                  color: value === opt ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  fontWeight: value === opt ? 600 : 500,
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+                onMouseEnter={(e) => {
+                  if (value !== opt) e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  if (value !== opt) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {opt}
+                {value === opt && <Check size={14} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export interface TaskFormFieldsProps {
   task: EditingTaskType;
   onChange: (updatedTask: EditingTaskType) => void;
@@ -76,6 +205,19 @@ export default function TaskFormFields({
   const [draggedFileIndex, setDraggedFileIndex] = useState<number | null>(null);
   const [dragOverFileIndex, setDragOverFileIndex] = useState<number | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
+        setIsLocationDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const safePicOptions = useMemo(() => {
     const opts = Array.from(new Set([...formPicOptions]));
@@ -279,30 +421,22 @@ export default function TaskFormFields({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div>
             <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>PIC Utama *</span>
-            <select
-              className="input"
+            <CustomSelect
               value={task.pic || ''}
-              onChange={e => onChange({ ...task, pic: e.target.value })}
-            >
-              <option value="">-- Pilih PIC Utama --</option>
-              {safePicOptions.map((p, idx) => (
-                <option key={idx} value={p}>{p}</option>
-              ))}
-            </select>
+              onChange={val => onChange({ ...task, pic: val })}
+              options={safePicOptions}
+              placeholder="-- Pilih PIC Utama --"
+            />
           </div>
 
           {task.additionalPicsList && task.additionalPicsList.map((extraPic: string, idx: number) => (
             <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <select
-                className="input"
+              <CustomSelect
                 value={extraPic}
-                onChange={e => handleUpdateAdditionalPic(idx, e.target.value)}
-              >
-                <option value="">-- Pilih PIC Tambahan --</option>
-                {safePicOptions.map((p, i) => (
-                  <option key={i} value={p}>{p}</option>
-                ))}
-              </select>
+                onChange={val => handleUpdateAdditionalPic(idx, val)}
+                options={safePicOptions}
+                placeholder="-- Pilih PIC Tambahan --"
+              />
               <button
                 type="button"
                 style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '6px' }}
@@ -322,53 +456,42 @@ export default function TaskFormFields({
             Kategori *
             <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
           </label>
-          <select
-            className="input"
+          <CustomSelect
             value={task.kategori || ''}
-            onChange={e => onChange({ ...task, kategori: e.target.value })}
-          >
-            <option value="">-- Kategori --</option>
-            {safeCategoryOptions.map((c, idx) => (
-              <option key={idx} value={c}>{c}</option>
-            ))}
-          </select>
+            onChange={val => onChange({ ...task, kategori: val })}
+            options={safeCategoryOptions}
+            placeholder="-- Kategori --"
+          />
         </div>
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
             Status
             <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
           </label>
-          <select 
-            className="input" 
-            value={task.status || (formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do')} 
-            onChange={e => {
-              const newStatus = e.target.value;
+          <CustomSelect
+            value={task.status || (formStatusOptions.length > 0 ? formStatusOptions[0] : 'To Do')}
+            onChange={val => {
               let newProgress = task.progress;
-              if (masterProgressMap[newStatus] !== undefined) {
-                newProgress = masterProgressMap[newStatus];
+              if (masterProgressMap[val] !== undefined) {
+                newProgress = masterProgressMap[val];
               }
-              onChange({ ...task, status: newStatus, progress: newProgress });
+              onChange({ ...task, status: val, progress: newProgress });
             }}
-          >
-            {(formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']).map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+            options={formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']}
+            placeholder="-- Status --"
+          />
         </div>
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--text-secondary)' }}>
             Prioritas
             <span title="Update pilihannya pada master pengaturan" style={{ display: 'flex' }}><Info size={14} style={{ color: 'var(--accent-primary)' }} /></span>
           </label>
-          <select 
-            className="input" 
-            value={task.prioritas || 'Medium'} 
-            onChange={e => onChange({ ...task, prioritas: e.target.value })}
-          >
-            {(formPriorityOptions.length > 0 ? formPriorityOptions : ['Low', 'Medium', 'High', 'Urgent']).map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+          <CustomSelect
+            value={task.prioritas || 'Medium'}
+            onChange={val => onChange({ ...task, prioritas: val })}
+            options={formPriorityOptions.length > 0 ? formPriorityOptions : ['Low', 'Medium', 'High', 'Urgent']}
+            placeholder="-- Prioritas --"
+          />
         </div>
       </div>
 
@@ -378,30 +501,109 @@ export default function TaskFormFields({
           <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Lokasi Pekerjaan (Opsional)</span>
           
           {masterLocations && masterLocations.length > 0 && (
-            <select
-              className="input"
-              value=""
-              onChange={e => {
-                const val = e.target.value;
-                if (!val) return;
-                const isOnline = /online|zoom|meet|teams|webex|http/i.test(val) && !/offline/i.test(val);
-                onChange({
-                  ...task,
-                  lokasiData: {
-                    tipe: isOnline ? 'online' : 'offline',
-                    linkZoom: isOnline ? val : '',
-                    lokasiFisik: !isOnline ? val : '',
-                    jam: task.lokasiData?.jam || ''
-                  } as any
-                });
-              }}
-              style={{ fontSize: '11.5px', padding: '3px 8px', height: '28px', maxWidth: '240px' }}
-            >
-              <option value="">-- Master Lokasi Cepat --</option>
-              {masterLocations.map((loc, lIdx) => (
-                <option key={lIdx} value={loc}>{loc}</option>
-              ))}
-            </select>
+            <div style={{ position: 'relative' }} ref={locationDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: isLocationDropdownOpen ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+                  borderColor: isLocationDropdownOpen ? 'var(--accent-primary)' : 'var(--border-color)',
+                }}
+              >
+                <MapPin size={13} color="var(--accent-primary)" />
+                Master Lokasi Cepat
+                <motion.div animate={{ rotate: isLocationDropdownOpen ? 180 : 0 }} style={{ display: 'flex' }}>
+                  <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {isLocationDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      right: 0,
+                      width: '280px',
+                      background: 'var(--surface-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+                      zIndex: 9999,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <div style={{ padding: '10px 12px', background: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Pilih Lokasi dari Master Data
+                    </div>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', padding: '4px' }} className="custom-scrollbar">
+                      {masterLocations.map((loc, lIdx) => (
+                        <button
+                          key={lIdx}
+                          type="button"
+                          onClick={() => {
+                            const val = loc;
+                            const isOnline = /online|zoom|meet|teams|webex|http/i.test(val) && !/offline/i.test(val);
+                            onChange({
+                              ...task,
+                              lokasiData: {
+                                tipe: isOnline ? 'online' : 'offline',
+                                linkZoom: isOnline ? val : '',
+                                lokasiFisik: !isOnline ? val : '',
+                                jam: task.lokasiData?.jam || ''
+                              } as any
+                            });
+                            setIsLocationDropdownOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '8px 10px',
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '12.5px',
+                            color: 'var(--text-primary)',
+                            cursor: 'pointer',
+                            borderRadius: '6px',
+                            transition: 'background 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <div style={{ flexShrink: 0, color: 'var(--accent-primary)', opacity: 0.8 }}>
+                            <MapPin size={14} />
+                          </div>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={loc}>
+                            {loc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           )}
         </div>
 
@@ -650,19 +852,12 @@ export default function TaskFormFields({
           <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
             Pengulangan (Recurrence)
           </label>
-          <select
-            className="input"
+          <CustomSelect
             value={task.repetisi || 'Tidak Berulang'}
-            onChange={e => onChange({ ...task, repetisi: e.target.value })}
-          >
-            <option value="Tidak Berulang">Tidak Berulang (Does not repeat)</option>
-            <option value="Harian">Harian (Daily)</option>
-            <option value="Mingguan">Mingguan (Weekly)</option>
-            <option value="Bulanan">Bulanan (Monthly)</option>
-            <option value="Tahunan">Tahunan (Annually)</option>
-            <option value="Hari Kerja (Senin - Jumat)">Setiap Hari Kerja (Senin - Jumat)</option>
-            <option value="Custom">Custom...</option>
-          </select>
+            onChange={val => onChange({ ...task, repetisi: val })}
+            options={['Tidak Berulang', 'Harian', 'Mingguan', 'Bulanan', 'Tahunan', 'Hari Kerja (Senin - Jumat)', 'Custom']}
+            placeholder="Pengulangan"
+          />
         </div>
       </div>
 
@@ -759,18 +954,17 @@ export default function TaskFormFields({
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <select
-                          className="input"
-                          style={{ width: '100%', fontSize: '13px' }}
+                        <CustomSelect
                           value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
-                          onChange={e => {
+                          onChange={val => {
                             const updated = [...(task.subTasksList || [])];
-                            updated[idx].pic = e.target.value;
+                            updated[idx].pic = val;
                             onChange({ ...task, subTasksList: updated });
                           }}
-                        >
-                          {safePicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
-                        </select>
+                          options={safePicOptions}
+                          placeholder="PIC"
+                          style={{ minWidth: '130px' }}
+                        />
                         <button
                           type="button"
                           className="btn btn-secondary"
@@ -807,18 +1001,17 @@ export default function TaskFormFields({
                       </div>
                       {subTask.additionalPics?.map((p, pIdx) => (
                         <div key={pIdx} style={{ display: 'flex', gap: '4px' }}>
-                          <select
-                            className="input"
-                            style={{ width: '100%', fontSize: '13px' }}
+                          <CustomSelect
                             value={p}
-                            onChange={e => {
+                            onChange={val => {
                               const updated = [...(task.subTasksList || [])];
-                              updated[idx].additionalPics![pIdx] = e.target.value;
+                              updated[idx].additionalPics![pIdx] = val;
                               onChange({ ...task, subTasksList: updated });
                             }}
-                          >
-                            {safePicOptions.map(opt => <option key={opt} value={opt} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{opt}</option>)}
-                          </select>
+                            options={safePicOptions}
+                            placeholder="PIC Tambahan"
+                            style={{ minWidth: '130px' }}
+                          />
                           <button
                             type="button"
                             className="btn btn-secondary"
@@ -851,13 +1044,11 @@ export default function TaskFormFields({
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <select
-                    className="input"
-                    style={{ width: '120px', fontSize: '12px', padding: '6px' }}
+                  <CustomSelect
                     value={subTask.status}
-                    onChange={e => {
+                    onChange={val => {
                       const updated = [...(task.subTasksList || [])];
-                      const newSubStatus = e.target.value;
+                      const newSubStatus = val;
                       updated[idx].status = newSubStatus;
 
                       let allDone = true;
@@ -886,11 +1077,10 @@ export default function TaskFormFields({
                         progress: newProgress
                       });
                     }}
-                  >
-                    {(formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']).map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
+                    options={formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']}
+                    placeholder="Status"
+                    style={{ minWidth: '120px' }}
+                  />
 
                   <button
                     type="button"
