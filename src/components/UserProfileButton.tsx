@@ -55,6 +55,12 @@ export default function UserProfileButton() {
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+  const [originalRole, setOriginalRole] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pretend_original_user_role') || '';
+    }
+    return '';
+  });
 
   if (!session?.user) return null;
 
@@ -63,13 +69,22 @@ export default function UserProfileButton() {
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 
-  // Always allow pretend/switch role for users who have role_management permission OR who are switching roles/returning to ADMIN
-  const canPretendRole = true;
+  const effectiveOriginalRole = originalRole || (typeof window !== 'undefined' ? localStorage.getItem('pretend_original_user_role') : '') || sessionRole || currentRole;
+
+  // Pretend Role access is strictly granted to accounts whose role has 'role_management' checked in the matrix
+  const canPretendRole = hasPermission(roleConfig, 'role_management', currentRole) ||
+    hasPermission(roleConfig, 'role_management', effectiveOriginalRole);
 
   const handleSwitchRole = async (newRoleKey: string) => {
     if (!newRoleKey || newRoleKey === currentRole) return;
     setIsSwitchingRole(true);
     try {
+      // If entering pretend mode for the first time, store the original authentic role
+      if (!originalRole && hasPermission(roleConfig, 'role_management', currentRole)) {
+        setOriginalRole(currentRole);
+        localStorage.setItem('pretend_original_user_role', currentRole);
+      }
+
       const res = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -80,6 +95,13 @@ export default function UserProfileButton() {
         throw new Error(data.error || 'Gagal mengubah role');
       }
       setDisplayRole(newRoleKey);
+
+      // If returning to original role, clear pretend state
+      if (newRoleKey === originalRole || newRoleKey === effectiveOriginalRole) {
+        localStorage.removeItem('pretend_original_user_role');
+        setOriginalRole('');
+      }
+
       toast.success(`Berhasil berpindah ke role ${getRoleLabel(roleConfig, newRoleKey)}!`);
       window.dispatchEvent(new Event('profileUpdated'));
       window.dispatchEvent(new Event('masterUpdated'));
@@ -96,6 +118,7 @@ export default function UserProfileButton() {
       sessionStorage.removeItem('dismissed_backup_reminder');
       sessionStorage.removeItem('pic_auto_selected_user');
       localStorage.removeItem('globalPicFilter');
+      localStorage.removeItem('pretend_original_user_role');
     }
     await signOut({ callbackUrl: '/auth/signin' });
   };
@@ -289,11 +312,11 @@ export default function UserProfileButton() {
                     })}
                   </select>
 
-                  {/* Quick Return to Admin Button when in another role */}
-                  {currentRole.toUpperCase() !== 'ADMIN' && (
+                  {/* Quick Return to Original Role Button when in pretend mode */}
+                  {effectiveOriginalRole && currentRole !== effectiveOriginalRole && (
                     <button
                       type="button"
-                      onClick={() => handleSwitchRole('ADMIN')}
+                      onClick={() => handleSwitchRole(effectiveOriginalRole)}
                       disabled={isSwitchingRole}
                       style={{
                         marginTop: '6px',
@@ -302,9 +325,9 @@ export default function UserProfileButton() {
                         fontSize: '11px',
                         fontWeight: 600,
                         borderRadius: '7px',
-                        background: 'rgba(124, 58, 237, 0.1)',
-                        border: '1px solid rgba(124, 58, 237, 0.3)',
-                        color: '#7c3aed',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        color: 'var(--accent-primary)',
                         cursor: isSwitchingRole ? 'wait' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -313,13 +336,13 @@ export default function UserProfileButton() {
                         transition: 'all 0.15s ease'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(124, 58, 237, 0.18)';
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.18)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(124, 58, 237, 0.1)';
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
                       }}
                     >
-                      <RotateCcw size={11} /> Kembalikan ke Role Admin
+                      <RotateCcw size={11} /> Kembalikan ke Role Asli ({getRoleLabel(roleConfig, effectiveOriginalRole) || effectiveOriginalRole})
                     </button>
                   )}
                 </div>
