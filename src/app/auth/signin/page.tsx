@@ -21,7 +21,7 @@ function SignInContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams.get('reason') === 'timeout') {
+    if (searchParams?.get('reason') === 'timeout') {
       toast.error('Sesi Anda telah berakhir karena tidak ada aktivitas (idle). Silakan masuk kembali.', {
         id: 'timeout-toast',
       });

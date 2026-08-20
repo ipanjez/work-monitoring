@@ -15,7 +15,7 @@ function ForgotContent() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    const npkParam = searchParams.get('npk');
+    const npkParam = searchParams?.get('npk');
     if (npkParam) {
       setNpk(npkParam);
     }

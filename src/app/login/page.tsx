@@ -8,7 +8,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const reason = searchParams.get('reason');
+    const reason = searchParams?.get('reason');
     if (reason) {
       router.replace(`/auth/signin?reason=${reason}`);
     } else {
