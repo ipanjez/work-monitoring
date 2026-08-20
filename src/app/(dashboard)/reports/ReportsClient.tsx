@@ -383,18 +383,30 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   // 4. Progress Rata-rata per Kategori
   const catProgress: Record<string, { totalProgress: number, count: number }> = {};
   filteredTasks.forEach(t => {
-    const cat = t.kategori || 'Umum';
+    const cat = (t.kategori || 'Umum').trim();
     if (!catProgress[cat]) catProgress[cat] = { totalProgress: 0, count: 0 };
     catProgress[cat].totalProgress += (t.progress || 0);
     catProgress[cat].count++;
   });
 
+  const catProgressLabels = Object.keys(catProgress).sort((a, b) => {
+    const indexA = (masterCats || []).findIndex(c => c.toLowerCase().trim() === a.toLowerCase().trim());
+    const indexB = (masterCats || []).findIndex(c => c.toLowerCase().trim() === b.toLowerCase().trim());
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
   const catProgressData = {
-    labels: Object.keys(catProgress),
+    labels: catProgressLabels,
     datasets: [{
       label: 'Rata-rata Progress (%)',
-      data: Object.keys(catProgress).map(c => Math.round(catProgress[c].totalProgress / catProgress[c].count)),
-      backgroundColor: Object.keys(catProgress).map(c => masterColors[`kategori_${c}`] || '#3b82f6'),
+      data: catProgressLabels.map(c => Math.round(catProgress[c].totalProgress / catProgress[c].count)),
+      backgroundColor: catProgressLabels.map(c => {
+        const matchCat = (masterCats || []).find(mc => mc.toLowerCase().trim() === c.toLowerCase().trim()) || c;
+        return masterColors['category_' + matchCat] || masterColors[`kategori_${matchCat}`] || masterColors[`cat_${matchCat}`] || '#3b82f6';
+      }),
       borderRadius: 6
     }]
   };
@@ -415,7 +427,14 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
     const cat = (t.kategori || 'Umum').trim();
     catDistribution[cat] = (catDistribution[cat] || 0) + 1;
   });
-  const catDistLabels = Object.keys(catDistribution);
+  const catDistLabels = Object.keys(catDistribution).sort((a, b) => {
+    const indexA = (masterCats || []).findIndex(c => c.toLowerCase().trim() === a.toLowerCase().trim());
+    const indexB = (masterCats || []).findIndex(c => c.toLowerCase().trim() === b.toLowerCase().trim());
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   const categoryData = {
     labels: catDistLabels,
@@ -423,8 +442,8 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
       data: catDistLabels.map(cat => catDistribution[cat]),
       backgroundColor: catDistLabels.map((cat: string, i: number) => {
          const colors = ['#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#eab308'];
-         const matchCat = masterCats.find(mc => mc.trim() === cat) || cat;
-         return masterColors[`cat_${matchCat}`] || colors[i % colors.length];
+         const matchCat = (masterCats || []).find(mc => mc.toLowerCase().trim() === cat.toLowerCase().trim()) || cat;
+         return masterColors['category_' + matchCat] || masterColors[`cat_${matchCat}`] || masterColors[`kategori_${matchCat}`] || colors[i % colors.length];
       }),
       borderWidth: 0,
     }]

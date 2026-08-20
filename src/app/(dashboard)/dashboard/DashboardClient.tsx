@@ -241,7 +241,15 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     }
   });
 
-  const picLabels = Array.from(allChartPics);
+  // Sort picLabels according to masterPics order
+  const picLabels = Array.from(allChartPics).sort((a, b) => {
+    const indexA = (masterPics || []).findIndex(p => p.toLowerCase().trim() === a.toLowerCase().trim());
+    const indexB = (masterPics || []).findIndex(p => p.toLowerCase().trim() === b.toLowerCase().trim());
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   const picData = {
     labels: picLabels,
@@ -283,18 +291,31 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
   // Category Data
   const categoryCounts = filteredTasks.reduce((acc, t) => {
-    const c = t.kategori || 'Umum';
+    const c = (t.kategori || 'Umum').trim();
     acc[c] = (acc[c] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
+  // Sort categoryLabels according to masterCategories order
+  const categoryLabels = Object.keys(categoryCounts).sort((a, b) => {
+    const indexA = (masterCategories || []).findIndex(c => c.toLowerCase().trim() === a.toLowerCase().trim());
+    const indexB = (masterCategories || []).findIndex(c => c.toLowerCase().trim() === b.toLowerCase().trim());
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
   const categoryData = {
-    labels: Object.keys(categoryCounts),
+    labels: categoryLabels,
     datasets: [
       {
         label: 'Jumlah Pekerjaan',
-        data: Object.values(categoryCounts),
-        backgroundColor: Object.keys(categoryCounts).map(c => masterColors['category_' + c] || '#8b5cf6'),
+        data: categoryLabels.map(c => categoryCounts[c] || 0),
+        backgroundColor: categoryLabels.map(c => {
+          const matchCat = (masterCategories || []).find(mc => mc.toLowerCase().trim() === c.toLowerCase().trim()) || c;
+          return masterColors['category_' + matchCat] || masterColors['cat_' + matchCat] || '#8b5cf6';
+        }),
         borderRadius: 6,
       },
     ],
