@@ -910,6 +910,212 @@ export default function TaskFormFields({
             options={['Tidak Berulang', 'Harian', 'Mingguan', 'Bulanan', 'Tahunan', 'Hari Kerja (Senin - Jumat)', 'Custom']}
             placeholder="Pengulangan"
           />
+
+          {task.repetisi === 'Custom' && (
+            <div style={{
+              background: 'var(--input-bg)',
+              padding: '14px',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginTop: '10px'
+            }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Pengaturan Pengulangan Kustom
+              </div>
+
+              {/* Ulangi Setiap X Unit */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Ulangi setiap:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  className="input"
+                  style={{ width: '70px', padding: '6px 8px' }}
+                  value={task.customRecurrenceSettings?.every ?? 1}
+                  onChange={e => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    onChange({
+                      ...task,
+                      customRecurrenceSettings: {
+                        ...(task.customRecurrenceSettings || { unit: 'Minggu', days: [], endType: 'never' }),
+                        every: val
+                      }
+                    });
+                  }}
+                />
+                <select
+                  className="input"
+                  style={{ width: '120px', padding: '6px 8px' }}
+                  value={task.customRecurrenceSettings?.unit || 'Minggu'}
+                  onChange={e => {
+                    const unit = e.target.value;
+                    onChange({
+                      ...task,
+                      customRecurrenceSettings: {
+                        ...(task.customRecurrenceSettings || { every: 1, days: [], endType: 'never' }),
+                        unit
+                      }
+                    });
+                  }}
+                >
+                  <option value="Hari">Hari</option>
+                  <option value="Minggu">Minggu</option>
+                  <option value="Bulan">Bulan</option>
+                  <option value="Tahun">Tahun</option>
+                </select>
+              </div>
+
+              {/* Jika unit === 'Minggu', pilih hari */}
+              {(task.customRecurrenceSettings?.unit === 'Minggu' || !task.customRecurrenceSettings?.unit) && (
+                <div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                    Ulangi pada hari:
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => {
+                      const activeDays = task.customRecurrenceSettings?.days || [];
+                      const isSelected = activeDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            borderRadius: '8px',
+                            minWidth: '38px',
+                            textAlign: 'center'
+                          }}
+                          onClick={() => {
+                            const updatedDays = isSelected
+                              ? activeDays.filter((d: string) => d !== day)
+                              : [...activeDays, day];
+                            onChange({
+                              ...task,
+                              customRecurrenceSettings: {
+                                ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', endType: 'never' }),
+                                days: updatedDays
+                              }
+                            });
+                          }}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Berakhir pada / End Type */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Berakhir:</span>
+                
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'never' || !task.customRecurrenceSettings?.endType}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'never'
+                        }
+                      });
+                    }}
+                  />
+                  Tidak pernah
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', flexWrap: 'wrap' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'on_date'}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'on_date',
+                          endDate: task.customRecurrenceSettings?.endDate || format(new Date(), 'yyyy-MM-dd')
+                        }
+                      });
+                    }}
+                  />
+                  <span>Pada tanggal:</span>
+                  {task.customRecurrenceSettings?.endType === 'on_date' && (
+                    <input
+                      type="date"
+                      className="input"
+                      style={{ width: '150px', padding: '4px 8px', fontSize: '12px' }}
+                      value={task.customRecurrenceSettings?.endDate || format(new Date(), 'yyyy-MM-dd')}
+                      onChange={e => {
+                        onChange({
+                          ...task,
+                          customRecurrenceSettings: {
+                            ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                            endType: 'on_date',
+                            endDate: e.target.value
+                          }
+                        });
+                      }}
+                    />
+                  )}
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', flexWrap: 'wrap' }}>
+                  <input
+                    type="radio"
+                    name={`endType-${task.id || 'new'}`}
+                    checked={task.customRecurrenceSettings?.endType === 'after_occurrences'}
+                    onChange={() => {
+                      onChange({
+                        ...task,
+                        customRecurrenceSettings: {
+                          ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                          endType: 'after_occurrences',
+                          endOccurrences: task.customRecurrenceSettings?.endOccurrences || 10
+                        }
+                      });
+                    }}
+                  />
+                  <span>Setelah:</span>
+                  {task.customRecurrenceSettings?.endType === 'after_occurrences' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        className="input"
+                        style={{ width: '70px', padding: '4px 8px', fontSize: '12px' }}
+                        value={task.customRecurrenceSettings?.endOccurrences ?? 10}
+                        onChange={e => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          onChange({
+                            ...task,
+                            customRecurrenceSettings: {
+                              ...(task.customRecurrenceSettings || { every: 1, unit: 'Minggu', days: [] }),
+                              endType: 'after_occurrences',
+                              endOccurrences: val
+                            }
+                          });
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>kali kejadian</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
