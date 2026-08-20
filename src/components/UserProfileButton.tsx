@@ -58,7 +58,9 @@ export default function UserProfileButton() {
 
   if (!session?.user) return null;
 
-  const currentRole = displayRole || userRoles[displayName || session.user.name || ''] || (session.user as any).role || '';
+  const sessionRole = (session.user as any).role || '';
+  const currentRole = displayRole || userRoles[displayName || session.user.name || ''] || sessionRole || '';
+  const canPretendRole = hasPermission(roleConfig, 'role_management', currentRole) || hasPermission(roleConfig, 'role_management', sessionRole);
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 
@@ -249,41 +251,43 @@ export default function UserProfileButton() {
                 </div>
               </div>
 
-              {/* Role Switcher / Pretend Role Feature */}
-              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                    <Sparkles size={11} style={{ color: 'var(--accent-primary)' }} /> Uji Coba Role (Pretend):
-                  </span>
-                  {isSwitchingRole && <Loader2 size={11} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />}
+              {/* Role Switcher / Pretend Role Feature (Only for users with role_management permission) */}
+              {canPretendRole && (
+                <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      <Sparkles size={11} style={{ color: 'var(--accent-primary)' }} /> Uji Coba Role (Pretend):
+                    </span>
+                    {isSwitchingRole && <Loader2 size={11} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />}
+                  </div>
+                  <select
+                    className="input"
+                    style={{
+                      width: '100%',
+                      padding: '5px 8px',
+                      fontSize: '11.5px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-secondary, var(--bg-color))',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      cursor: isSwitchingRole ? 'wait' : 'pointer',
+                      fontWeight: 600
+                    }}
+                    value={currentRole}
+                    disabled={isSwitchingRole}
+                    onChange={(e) => handleSwitchRole(e.target.value)}
+                  >
+                    {Object.entries(roleConfig.labels).map(([key, label]) => {
+                      const count = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, key)).length;
+                      return (
+                        <option key={key} value={key}>
+                          {label} ({count}/{totalFeatures} Izin)
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
-                <select
-                  className="input"
-                  style={{
-                    width: '100%',
-                    padding: '5px 8px',
-                    fontSize: '11.5px',
-                    borderRadius: '8px',
-                    background: 'var(--bg-secondary, var(--bg-color))',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-primary)',
-                    cursor: isSwitchingRole ? 'wait' : 'pointer',
-                    fontWeight: 600
-                  }}
-                  value={currentRole}
-                  disabled={isSwitchingRole}
-                  onChange={(e) => handleSwitchRole(e.target.value)}
-                >
-                  {Object.entries(roleConfig.labels).map(([key, label]) => {
-                    const count = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, key)).length;
-                    return (
-                      <option key={key} value={key}>
-                        {label} ({count}/{totalFeatures} Izin)
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
+              )}
             </div>
           </div>
 

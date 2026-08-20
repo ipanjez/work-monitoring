@@ -127,7 +127,16 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     shortLabel: 'Manajemen User',
     menuLocation: 'Menu Sistem User (/users) > Tab Pengguna & Reset Password',
     description: 'Melihat akun terdaftar, persetujuan pendaftaran (approval akun baru), aktivasi akun, dan reset kata sandi.',
-    impact: 'Jika tidak dicentang, akses ke menu Sistem User dibatasi/disembunyikan.'
+    impact: 'Jika tidak dicentang, tab Pengguna dan Reset Password disembunyikan.'
+  },
+  {
+    key: 'role_management',
+    category: 'ADMINISTRATION',
+    label: 'Kelola Matriks Akses Role & Uji Coba Role (Pretend)',
+    shortLabel: 'Matriks & Uji Role',
+    menuLocation: 'Menu Sistem User (/users) > Tab Edit Role & Menu Profil',
+    description: 'Mengatur matriks izin seluruh role dan melakukan simulasi / uji coba role (pretend role) pada profil akun.',
+    impact: 'Jika tidak dicentang, tab Edit Role disembunyikan dan opsi Uji Coba Role (Pretend) pada profil dinonaktifkan.'
   },
   {
     key: 'system_logs',
@@ -220,6 +229,7 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     export_data: ['ADMIN', 'MEMBER'],
     master_data: ['ADMIN'],
     user_management: ['ADMIN'],
+    role_management: ['ADMIN'],
     system_logs: ['ADMIN'],
     admin_feedback: ['ADMIN'],
     database_backup: ['ADMIN'],

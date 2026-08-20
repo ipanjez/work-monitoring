@@ -304,7 +304,7 @@ export default function Sidebar() {
     ...(hasPermission(roleConfig, 'master_data', userRole) || hasPermission(roleConfig, 'system_config', userRole) || hasPermission(roleConfig, 'database_backup', userRole) ? [
       { href: '/settings', label: 'Pengaturan', icon: Settings },
     ] : []),
-    ...(hasPermission(roleConfig, 'user_management', userRole) || hasPermission(roleConfig, 'system_logs', userRole) || hasPermission(roleConfig, 'admin_feedback', userRole) ? [
+    ...(hasPermission(roleConfig, 'user_management', userRole) || hasPermission(roleConfig, 'role_management', userRole) || hasPermission(roleConfig, 'system_logs', userRole) || hasPermission(roleConfig, 'admin_feedback', userRole) ? [
       { href: '/users', label: 'Sistem User', icon: UserCog },
     ] : [])
   ];

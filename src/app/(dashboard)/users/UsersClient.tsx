@@ -242,11 +242,13 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
   const userRole = profileRole || (session?.user as any)?.role || initialUserRole;
 
   const canUserMgmt = hasPermission(roleConfig, 'user_management', userRole);
+  const canEditRole = hasPermission(roleConfig, 'role_management', userRole);
   const canSystemLogs = hasPermission(roleConfig, 'system_logs', userRole);
   const canAdminFeedback = hasPermission(roleConfig, 'admin_feedback', userRole);
 
   const availableTabs: Tab[] = [
-    ...(canUserMgmt ? (['users', 'requests', 'roles'] as Tab[]) : []),
+    ...(canUserMgmt ? (['users', 'requests'] as Tab[]) : []),
+    ...(canEditRole ? (['roles'] as Tab[]) : []),
     ...(canSystemLogs ? (['logs'] as Tab[]) : []),
     ...(canAdminFeedback ? (['feedbacks'] as Tab[]) : [])
   ];
@@ -1144,7 +1146,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                   Kelola hak akses setiap role pengguna terhadap fitur aplikasi. Klik ikon <Info size={14} style={{ display: 'inline', verticalAlign: '-2px', color: 'var(--accent-primary)' }} /> untuk melihat lokasi menu dan rincian fungsinya.
                 </p>
               </div>
-              {canUserMgmt && (
+              {canEditRole && (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
                     className="btn btn-secondary"
@@ -1206,7 +1208,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                   </th>
                   {Object.keys(roleConfig.labels).map(rk => (
                     <th key={rk} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '135px' }}>
-                      {canUserMgmt ? (
+                      {canEditRole ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                             <button
@@ -1401,7 +1403,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                             const hasPerm = !!roleConfig.permissions[feature.key]?.includes(rk);
                             return (
                               <td key={rk} style={{ padding: '12px', textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
-                                {canUserMgmt ? (
+                                {canEditRole ? (
                                   <input
                                     type="checkbox"
                                     checked={hasPerm}
