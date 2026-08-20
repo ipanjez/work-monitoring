@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
-
-const prisma = new PrismaClient();
 
 // GET /api/users — list all users
 export async function GET() {

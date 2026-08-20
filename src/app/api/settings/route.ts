@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
-
-// API route for application settings
-const prisma = new PrismaClient();
 
 export async function GET() {
   try {

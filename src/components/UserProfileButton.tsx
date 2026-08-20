@@ -12,7 +12,7 @@ import { RoleIconRenderer } from '@/components/RoleBadge';
 
 export default function UserProfileButton() {
   const { data: session } = useSession();
-  const { masterPicAvatars, masterColors, roleConfig } = useMaster();
+  const { masterPicAvatars, masterColors, roleConfig, userRoles } = useMaster();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -35,7 +35,11 @@ export default function UserProfileButton() {
   useEffect(() => {
     loadUserData();
     window.addEventListener('profileUpdated', loadUserData);
-    return () => window.removeEventListener('profileUpdated', loadUserData);
+    window.addEventListener('masterUpdated', loadUserData);
+    return () => {
+      window.removeEventListener('profileUpdated', loadUserData);
+      window.removeEventListener('masterUpdated', loadUserData);
+    };
   }, []);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function UserProfileButton() {
 
   if (!session?.user) return null;
 
-  const currentRole = displayRole || (session.user as any).role || '';
+  const currentRole = displayRole || userRoles[displayName || session.user.name || ''] || (session.user as any).role || '';
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
 
@@ -75,7 +79,10 @@ export default function UserProfileButton() {
     >
       <button
         className="profile-btn"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) loadUserData();
+          setIsOpen(!isOpen);
+        }}
         style={{
           height: '45px',
           borderRadius: '24px',
