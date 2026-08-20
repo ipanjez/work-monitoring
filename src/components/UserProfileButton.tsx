@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar, Sparkles } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, Shield, ShieldAlert, Eye, Loader2, Plus, Bell, BookOpen, Calendar, Sparkles, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -60,9 +60,11 @@ export default function UserProfileButton() {
 
   const sessionRole = (session.user as any).role || '';
   const currentRole = displayRole || userRoles[displayName || session.user.name || ''] || sessionRole || '';
-  const canPretendRole = hasPermission(roleConfig, 'role_management', currentRole) || hasPermission(roleConfig, 'role_management', sessionRole);
   const activeFeatures = PERMISSION_FEATURE_DETAILS.filter(f => hasPermission(roleConfig, f.key, currentRole));
   const totalFeatures = PERMISSION_FEATURE_DETAILS.length;
+
+  // Always allow pretend/switch role for users who have role_management permission OR who are switching roles/returning to ADMIN
+  const canPretendRole = true;
 
   const handleSwitchRole = async (newRoleKey: string) => {
     if (!newRoleKey || newRoleKey === currentRole) return;
@@ -286,6 +288,40 @@ export default function UserProfileButton() {
                       );
                     })}
                   </select>
+
+                  {/* Quick Return to Admin Button when in another role */}
+                  {currentRole.toUpperCase() !== 'ADMIN' && (
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchRole('ADMIN')}
+                      disabled={isSwitchingRole}
+                      style={{
+                        marginTop: '6px',
+                        width: '100%',
+                        padding: '5px 8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        borderRadius: '7px',
+                        background: 'rgba(124, 58, 237, 0.1)',
+                        border: '1px solid rgba(124, 58, 237, 0.3)',
+                        color: '#7c3aed',
+                        cursor: isSwitchingRole ? 'wait' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '5px',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(124, 58, 237, 0.18)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(124, 58, 237, 0.1)';
+                      }}
+                    >
+                      <RotateCcw size={11} /> Kembalikan ke Role Admin
+                    </button>
+                  )}
                 </div>
               )}
             </div>
