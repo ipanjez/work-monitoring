@@ -107,20 +107,20 @@ export async function GET(req: Request) {
 
     if (filterPic) {
       whereClause.OR = [
-        { pic: { equals: filterPic, mode: 'insensitive' } },
-        { additionalPics: { contains: filterPic, mode: 'insensitive' } },
+        { pic: filterPic },
+        { additionalPics: { contains: filterPic } },
       ];
     }
 
     if (filterKategori) {
-      whereClause.kategori = { equals: filterKategori, mode: 'insensitive' };
+      whereClause.kategori = filterKategori;
     }
 
     if (filterStatus) {
-      whereClause.status = { equals: filterStatus, mode: 'insensitive' };
+      whereClause.status = filterStatus;
     } else if (hideCompleted) {
       whereClause.NOT = [
-        { status: { in: ['Done', 'Selesai', 'Closed', 'Completed'], mode: 'insensitive' } },
+        { status: { in: ['Done', 'Selesai', 'Closed', 'Completed'] } },
       ];
     }
 

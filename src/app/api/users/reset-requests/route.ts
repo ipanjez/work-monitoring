@@ -17,7 +17,8 @@ export async function GET(request: Request) {
       where: {
         OR: [
           { npk: cleanNpk },
-          { npk: { equals: cleanNpk, mode: 'insensitive' } }
+          { npk: cleanNpk.toLowerCase() },
+          { npk: cleanNpk.toUpperCase() }
         ]
       },
     });
@@ -85,7 +86,8 @@ export async function POST(request: Request) {
     where: {
       OR: [
         { npk: cleanNpk },
-        { npk: { equals: cleanNpk, mode: 'insensitive' } }
+        { npk: cleanNpk.toLowerCase() },
+        { npk: cleanNpk.toUpperCase() }
       ]
     }
   });

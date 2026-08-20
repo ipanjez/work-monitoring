@@ -103,26 +103,36 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
 
   events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const groupedEvents: { id: string; date: Date; color: string; isSpecial: boolean; events: TimelineEvent[] }[] = [];
+  const groupedEvents: { id: string; date: Date; color: string; hasSubtasks: boolean; events: TimelineEvent[] }[] = [];
   events.forEach((ev) => {
     const key = format(ev.date, 'yyyy-MM-dd');
     let group = groupedEvents.find(g => format(g.date, 'yyyy-MM-dd') === key);
     if (!group) {
-      const isSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
       group = {
         id: key,
         date: ev.date,
         color: ev.color,
-        isSpecial,
+        hasSubtasks: ev.type === 'subtask',
         events: []
       };
       groupedEvents.push(group);
     }
     group.events.push(ev);
-    if (ev.type === 'today' || ev.type === 'end') {
+    if (ev.type === 'subtask') {
+      group.hasSubtasks = true;
       group.color = ev.color;
-      group.isSpecial = true;
+    } else if (!group.hasSubtasks && (ev.type === 'today' || ev.type === 'end')) {
+      group.color = ev.color;
     }
+  });
+
+  // Sort events in each group so milestones appear first, then subtasks
+  groupedEvents.forEach(g => {
+    g.events.sort((a, b) => {
+      if (a.type !== 'subtask' && b.type === 'subtask') return -1;
+      if (a.type === 'subtask' && b.type !== 'subtask') return 1;
+      return 0;
+    });
   });
 
   const statusCounts = subTasks.reduce((acc, st) => {
@@ -157,7 +167,6 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
 
         {groupedEvents.map((group, index) => {
           const isLeft = index % 2 === 0;
-          const isSpecial = group.isSpecial;
 
           if (isMobile) {
             return (
@@ -168,8 +177,8 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                   left: '16px', 
                   top: '6px', 
                   transform: 'translateX(-50%)', 
-                  width: isSpecial ? '12px' : '16px', 
-                  height: isSpecial ? '12px' : '16px', 
+                  width: group.hasSubtasks ? '16px' : '12px', 
+                  height: group.hasSubtasks ? '16px' : '12px', 
                   borderRadius: '50%', 
                   background: group.color, 
                   border: '2px solid var(--surface-color)', 
@@ -177,56 +186,59 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                   zIndex: 2 
                 }} />
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', textAlign: 'left' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', textAlign: 'left' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                     {format(group.date, 'dd MMM yyyy')}
                   </span>
-                  {group.events.map((ev, evidx) => (
-                    <div 
-                      key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
-                      onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
-                      style={{ 
-                        background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
-                        border: isSpecial ? 'none' : '1px solid var(--border-color)', 
-                        padding: isSpecial ? 0 : '8px 10px', 
-                        borderRadius: '8px',
-                        color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                        fontWeight: isSpecial ? 600 : 500,
-                        fontSize: '12px',
-                        width: '100%',
-                        boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
-                        cursor: isSpecial ? 'default' : 'pointer'
-                      }}>
+                  {group.events.map((ev, evidx) => {
+                    const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
+                    return (
                       <div 
+                        key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
+                        onClick={() => !isEvSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                         style={{ 
-                          wordBreak: 'break-word', 
-                          whiteSpace: 'normal', 
-                          lineHeight: 1.5,
-                          display: isSpecial ? 'block' : '-webkit-box',
-                          WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
-                        }}
-                        dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
-                      >
-                        {isSpecial ? ev.title : null}
-                      </div>
-                      {!isSpecial && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          {ev.status && (
-                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
-                              {ev.status}
-                            </span>
-                          )}
-                          {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
-                            <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                              <User size={10} /> {p}
-                            </span>
-                          ))}
+                          background: isEvSpecial ? 'transparent' : 'var(--modal-bg)', 
+                          border: isEvSpecial ? 'none' : '1px solid var(--border-color)', 
+                          padding: isEvSpecial ? '2px 0' : '10px 12px', 
+                          borderRadius: '8px',
+                          color: ev.type === 'today' ? 'var(--accent-primary)' : ev.type === 'end' ? 'var(--danger)' : 'var(--text-primary)',
+                          fontWeight: isEvSpecial ? 600 : 500,
+                          fontSize: '12px',
+                          width: '100%',
+                          boxShadow: isEvSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                          cursor: isEvSpecial ? 'default' : 'pointer'
+                        }}>
+                        <div 
+                          style={{ 
+                            wordBreak: 'break-word', 
+                            whiteSpace: 'normal', 
+                            lineHeight: 1.5,
+                            display: isEvSpecial ? 'block' : '-webkit-box',
+                            WebkitLineClamp: isEvSpecial || expandedId === ev.id ? undefined : 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: isEvSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                          }}
+                          dangerouslySetInnerHTML={!isEvSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                        >
+                          {isEvSpecial ? ev.title : null}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {!isEvSpecial && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {ev.status && (
+                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                                {ev.status}
+                              </span>
+                            )}
+                            {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                              <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <User size={10} /> {p}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -242,58 +254,72 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    {group.events.map((ev, evidx) => (
-                      <div 
-                        key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
-                        onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
-                        style={{ 
-                          background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
-                          border: isSpecial ? 'none' : '1px solid var(--border-color)', 
-                          padding: isSpecial ? 0 : '10px 12px', 
-                          borderRadius: '8px',
-                          color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                          fontWeight: isSpecial ? 600 : 500,
-                          fontSize: '12px',
-                          width: '100%',
-                          boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
-                          cursor: isSpecial ? 'default' : 'pointer'
-                        }}>
+                    {group.events.map((ev, evidx) => {
+                      const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
+                      return (
                         <div 
+                          key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
+                          onClick={() => !isEvSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                           style={{ 
-                            wordBreak: 'break-word', 
-                            whiteSpace: 'normal', 
-                            lineHeight: 1.5,
-                            display: isSpecial ? 'block' : '-webkit-box',
-                            WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
-                          }}
-                          dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
-                        >
-                          {isSpecial ? ev.title : null}
-                        </div>
-                        {!isSpecial && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                            {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
-                              <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <User size={10} /> {p}
-                              </span>
-                            ))}
-                            {ev.status && (
-                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
-                                {ev.status}
-                              </span>
-                            )}
+                            background: isEvSpecial ? 'transparent' : 'var(--modal-bg)', 
+                            border: isEvSpecial ? 'none' : '1px solid var(--border-color)', 
+                            padding: isEvSpecial ? '2px 0' : '10px 12px', 
+                            borderRadius: '8px',
+                            color: ev.type === 'today' ? 'var(--accent-primary)' : ev.type === 'end' ? 'var(--danger)' : 'var(--text-primary)',
+                            fontWeight: isEvSpecial ? 600 : 500,
+                            fontSize: '12px',
+                            width: '100%',
+                            boxShadow: isEvSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                            cursor: isEvSpecial ? 'default' : 'pointer'
+                          }}>
+                          <div 
+                            style={{ 
+                              wordBreak: 'break-word', 
+                              whiteSpace: 'normal', 
+                              lineHeight: 1.5,
+                              display: isEvSpecial ? 'block' : '-webkit-box',
+                              WebkitLineClamp: isEvSpecial || expandedId === ev.id ? undefined : 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: isEvSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                            }}
+                            dangerouslySetInnerHTML={!isEvSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                          >
+                            {isEvSpecial ? ev.title : null}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          {!isEvSpecial && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                              {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                                <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <User size={10} /> {p}
+                                </span>
+                              ))}
+                              {ev.status && (
+                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                                  {ev.status}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
               {/* Center Dot */}
-              <div style={{ position: 'absolute', left: '50%', transform: 'translate(-50%, 4px)', width: isSpecial ? '12px' : '16px', height: isSpecial ? '12px' : '16px', borderRadius: '50%', background: group.color, border: '2px solid var(--surface-color)', boxShadow: '0 0 0 2px var(--border-color), 0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }} />
+              <div style={{ 
+                position: 'absolute', 
+                left: '50%', 
+                transform: 'translate(-50%, 4px)', 
+                width: group.hasSubtasks ? '16px' : '12px', 
+                height: group.hasSubtasks ? '16px' : '12px', 
+                borderRadius: '50%', 
+                background: group.color, 
+                border: '2px solid var(--surface-color)', 
+                boxShadow: '0 0 0 2px var(--border-color), 0 2px 4px rgba(0,0,0,0.2)', 
+                zIndex: 2 
+              }} />
 
               {/* Right Side */}
               <div style={{ width: '45%', textAlign: 'left', paddingLeft: '16px', paddingTop: '2px' }}>
@@ -302,52 +328,55 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
                       {format(group.date, 'dd MMM yyyy')}
                     </span>
-                    {group.events.map((ev, evidx) => (
-                      <div 
-                        key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
-                        onClick={() => !isSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
-                        style={{ 
-                          background: isSpecial ? 'transparent' : 'var(--modal-bg)', 
-                          border: isSpecial ? 'none' : '1px solid var(--border-color)', 
-                          padding: isSpecial ? 0 : '10px 12px', 
-                          borderRadius: '8px',
-                          color: ev.type === 'today' ? 'var(--accent-primary)' : 'var(--text-primary)',
-                          fontWeight: isSpecial ? 600 : 500,
-                          fontSize: '12px',
-                          width: '100%',
-                          boxShadow: isSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
-                          cursor: isSpecial ? 'default' : 'pointer'
-                        }}>
+                    {group.events.map((ev, evidx) => {
+                      const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
+                      return (
                         <div 
+                          key={ev.id ? `${ev.id}-${evidx}` : `ev-${evidx}`}
+                          onClick={() => !isEvSpecial && setExpandedId(expandedId === ev.id ? null : ev.id)}
                           style={{ 
-                            wordBreak: 'break-word', 
-                            whiteSpace: 'normal', 
-                            lineHeight: 1.5,
-                            display: isSpecial ? 'block' : '-webkit-box',
-                            WebkitLineClamp: isSpecial || expandedId === ev.id ? undefined : 1,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: isSpecial || expandedId === ev.id ? 'visible' : 'hidden'
-                          }}
-                          dangerouslySetInnerHTML={!isSpecial ? { __html: formatDescription(ev.title) } : undefined}
-                        >
-                          {isSpecial ? ev.title : null}
-                        </div>
-                        {!isSpecial && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                            {ev.status && (
-                              <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
-                                {ev.status}
-                              </span>
-                            )}
-                            {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
-                              <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <User size={10} /> {p}
-                              </span>
-                            ))}
+                            background: isEvSpecial ? 'transparent' : 'var(--modal-bg)', 
+                            border: isEvSpecial ? 'none' : '1px solid var(--border-color)', 
+                            padding: isEvSpecial ? '2px 0' : '10px 12px', 
+                            borderRadius: '8px',
+                            color: ev.type === 'today' ? 'var(--accent-primary)' : ev.type === 'end' ? 'var(--danger)' : 'var(--text-primary)',
+                            fontWeight: isEvSpecial ? 600 : 500,
+                            fontSize: '12px',
+                            width: '100%',
+                            boxShadow: isEvSpecial ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+                            cursor: isEvSpecial ? 'default' : 'pointer'
+                          }}>
+                          <div 
+                            style={{ 
+                              wordBreak: 'break-word', 
+                              whiteSpace: 'normal', 
+                              lineHeight: 1.5,
+                              display: isEvSpecial ? 'block' : '-webkit-box',
+                              WebkitLineClamp: isEvSpecial || expandedId === ev.id ? undefined : 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: isEvSpecial || expandedId === ev.id ? 'visible' : 'hidden'
+                            }}
+                            dangerouslySetInnerHTML={!isEvSpecial ? { __html: formatDescription(ev.title) } : undefined}
+                          >
+                            {isEvSpecial ? ev.title : null}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          {!isEvSpecial && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                              {ev.status && (
+                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: ev.color }}>
+                                  {ev.status}
+                                </span>
+                              )}
+                              {[ev.pic, ...(ev.additionalPics || [])].filter(Boolean).map((p, pidx) => (
+                                <span key={pidx} style={{ fontSize: '10px', color: 'var(--text-primary)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <User size={10} /> {p}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

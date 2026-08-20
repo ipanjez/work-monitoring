@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
           where: {
             OR: [
               { npk: cleanNpk },
-              { npk: { equals: cleanNpk, mode: 'insensitive' } }
+              { npk: cleanNpk.toLowerCase() },
+              { npk: cleanNpk.toUpperCase() }
             ]
           },
         });
