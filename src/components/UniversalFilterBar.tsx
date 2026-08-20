@@ -18,12 +18,14 @@ const CustomFilterSelect = ({
   value, 
   onChange, 
   options, 
-  isActive 
+  isActive,
+  align = 'left'
 }: { 
   value: string; 
   onChange: (val: string) => void; 
   options: { label: string, value: string }[]; 
   isActive: boolean;
+  align?: 'left' | 'right';
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -41,11 +43,12 @@ const CustomFilterSelect = ({
   }, [isOpen]);
 
   return (
-    <div style={{ position: 'relative' }} ref={ref}>
+    <div style={{ position: 'relative', width: '100%' }} ref={ref}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         style={{
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -80,7 +83,7 @@ const CustomFilterSelect = ({
             style={{
               position: 'absolute',
               top: 'calc(100% + 4px)',
-              left: 0,
+              ...(align === 'right' ? { right: 0 } : { left: 0 }),
               minWidth: '160px',
               background: 'var(--surface-color)',
               border: '1px solid var(--border-color)',
@@ -274,6 +277,7 @@ export default function UniversalFilterBar({
                 ...Array.from(new Set(priorities)).map(p => ({ label: p, value: p }))
               ]}
               isActive={globalFilterPriority !== 'All'}
+              align="right"
             />
           </div>
 
@@ -301,6 +305,7 @@ export default function UniversalFilterBar({
                 { label: 'Custom...', value: 'Custom' }
               ]}
               isActive={globalTargetFilter !== 'Semua Waktu'}
+              align="right"
             />
             {globalTargetFilter === 'Custom' && (
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>

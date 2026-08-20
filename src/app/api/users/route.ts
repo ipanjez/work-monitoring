@@ -64,11 +64,13 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { npk, name, role, password, email } = body;
+  let { npk, name, role, password, email } = body;
 
   if (!npk || !name || !role || !password) {
     return NextResponse.json({ error: 'NPK, Nama, Role, dan Password wajib diisi.' }, { status: 400 });
   }
+
+  npk = npk.trim();
 
   const existing = await prisma.user.findUnique({ where: { npk } });
   if (existing) {

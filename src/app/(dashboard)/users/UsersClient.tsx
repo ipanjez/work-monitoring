@@ -25,17 +25,19 @@ const CustomSelect = ({
   value, 
   onChange, 
   options, 
-  style 
+  style,
+  align = 'left'
 }: { 
   value: string; 
   onChange: (val: string) => void; 
   options: { label: string, value: string }[]; 
   style?: React.CSSProperties;
+  align?: 'left' | 'right';
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -48,7 +50,7 @@ const CustomSelect = ({
   }, [isOpen]);
 
   return (
-    <div style={{ position: 'relative', ...style }} ref={ref}>
+    <div style={{ position: 'relative', width: '100%', ...style }} ref={ref}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -59,21 +61,19 @@ const CustomSelect = ({
           justifyContent: 'space-between',
           gap: '8px',
           background: 'var(--input-bg)',
-          border: '1px solid',
-          borderColor: isOpen ? 'var(--accent-primary)' : 'var(--border-color)',
-          color: 'var(--text-primary)',
-          padding: '8px 12px',
+          border: '1px solid var(--border-color)',
+          padding: '6px 12px',
           borderRadius: '8px',
           fontSize: '13px',
           cursor: 'pointer',
-          transition: 'all 0.2s',
+          color: 'var(--text-primary)',
           boxShadow: isOpen ? '0 0 0 3px rgba(59, 130, 246, 0.15)' : 'none',
+          borderColor: isOpen ? 'var(--accent-primary)' : 'var(--border-color)',
+          transition: 'all 0.2s',
           whiteSpace: 'nowrap'
         }}
       >
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {options.find(o => o.value === value)?.label || value}
-        </span>
+        {options.find(o => o.value === value)?.label || value}
         <motion.div animate={{ rotate: isOpen ? 180 : 0 }} style={{ display: 'flex', flexShrink: 0 }}>
           <ChevronDown size={14} style={{ opacity: 0.5 }} />
         </motion.div>
@@ -89,8 +89,7 @@ const CustomSelect = ({
             style={{
               position: 'absolute',
               top: 'calc(100% + 4px)',
-              left: 0,
-              right: 0,
+              ...(align === 'right' ? { right: 0 } : { left: 0 }),
               minWidth: '160px',
               background: 'var(--surface-color)',
               border: '1px solid var(--border-color)',
@@ -1061,6 +1060,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                   ...Array.from(new Set(users.map(u => u.name).filter(Boolean))).map(uName => ({ label: uName as string, value: uName as string }))
                 ]}
                 style={{ width: '150px' }} 
+                align="right"
               />
             </div>
             <button className="btn" onClick={fetchLogs} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer' }}>
@@ -1746,6 +1746,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                     { label: 'ACTIVE', value: 'ACTIVE' },
                     { label: 'INACTIVE', value: 'INACTIVE' }
                   ]}
+                  align="right"
                 />
               </div>
             </div>

@@ -26,7 +26,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
-  if (npk !== undefined) updateData.npk = npk;
+  if (npk !== undefined) updateData.npk = typeof npk === 'string' ? npk.trim() : npk;
   if (role !== undefined) updateData.role = role;
   if (status !== undefined) updateData.status = status;
   if (email !== undefined) updateData.email = email || null;

@@ -1113,6 +1113,7 @@ th[style*="cursor: pointer"]:hover,
     margin-top: 12px;
     border-top: 1px dashed var(--border-color);
     padding-top: 12px;
+    overflow: visible;
   }
 
   .filter-options-grid {
