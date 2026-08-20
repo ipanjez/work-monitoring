@@ -1565,12 +1565,25 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                               </a>
                               <button
                                 className="btn btn-secondary"
-                                style={{ padding: '5px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{
+                                  padding: '5px',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--border-color)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  opacity: hasPermission(roleConfig, 'export_data', userRole) ? 1 : 0.45,
+                                  cursor: hasPermission(roleConfig, 'export_data', userRole) ? 'pointer' : 'not-allowed'
+                                }}
                                 onClick={() => {
+                                  if (!hasPermission(roleConfig, 'export_data', userRole)) {
+                                    toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
+                                    return;
+                                  }
                                   handleExportICS(task);
                                   setActiveDropdownId(null);
                                 }}
-                                title="Unduh .ics"
+                                title={hasPermission(roleConfig, 'export_data', userRole) ? 'Unduh .ics' : 'Akses Ekspor Dibatasi'}
                               >
                                 <CalendarDays size={13} />
                               </button>
@@ -1848,8 +1861,24 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                   </a>
                   <button
                     className="btn btn-secondary"
-                    style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onClick={() => handleExportICS(task)}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      opacity: hasPermission(roleConfig, 'export_data', userRole) ? 1 : 0.45,
+                      cursor: hasPermission(roleConfig, 'export_data', userRole) ? 'pointer' : 'not-allowed'
+                    }}
+                    onClick={() => {
+                      if (!hasPermission(roleConfig, 'export_data', userRole)) {
+                        toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengekspor data.');
+                        return;
+                      }
+                      handleExportICS(task);
+                    }}
+                    title={hasPermission(roleConfig, 'export_data', userRole) ? 'Unduh .ics' : 'Akses Ekspor Dibatasi'}
                   >
                     <CalendarDays size={12} /> .ics
                   </button>
