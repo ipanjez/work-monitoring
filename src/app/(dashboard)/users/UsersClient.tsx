@@ -1247,8 +1247,9 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                             />
                             {rk !== 'ADMIN' && (
                               <button
+                                type="button"
                                 onClick={() => {
-                                  if (confirm(`Hapus role ${roleConfig.labels[rk]}?`)) {
+                                  if (confirm(`Apakah Anda yakin ingin menghapus role "${roleConfig.labels[rk] || rk}"?`)) {
                                     const newLabels = { ...roleConfig.labels };
                                     delete newLabels[rk];
                                     const newIcons = { ...(roleConfig.icons || {}) };
@@ -1268,10 +1269,24 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                                     });
                                   }
                                 }}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}
-                                title="Hapus Role"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  color: '#ef4444',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                  flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.18)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)')}
+                                title={`Hapus Role ${roleConfig.labels[rk] || rk}`}
                               >
-                                <X size={14} />
+                                <Trash2 size={13} />
                               </button>
                             )}
                           </div>
