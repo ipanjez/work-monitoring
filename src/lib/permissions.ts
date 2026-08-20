@@ -18,8 +18,8 @@ export interface PermissionFeatureDetail {
 export const PERMISSION_CATEGORIES = [
   {
     id: 'OPERATIONAL',
-    name: 'Operasional Pekerjaan & Monitoring',
-    description: 'Hak akses pemantauan grafik, manajemen tugas harian, kolaborasi lampiran/komentar, dan ekspor laporan.'
+    name: 'Operasional Pekerjaan & Kolaborasi',
+    description: 'Hak akses pembuatan & pengubahan tugas, hapus & aksi massal, unggah eviden/komentar, dan ekspor laporan.'
   },
   {
     id: 'SETTINGS',
@@ -34,24 +34,15 @@ export const PERMISSION_CATEGORIES = [
 ];
 
 export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
-  // --- Kategori 1: Operasional Pekerjaan & Monitoring ---
-  {
-    key: 'view_tasks',
-    category: 'OPERATIONAL',
-    label: 'Melihat Monitoring, Kalender, Laporan & Detail Pekerjaan',
-    shortLabel: 'Monitoring & Rincian Tugas',
-    menuLocation: 'Monitoring Board, Dashboard, Daftar Pekerjaan, Kalender, Analisis Laporan, Tim & Rincian Modal',
-    description: 'Mengakses seluruh halaman monitoring dan visualisasi data, membuka modal detail pekerjaan, melihat riwayat aktivitas, dan mempratinjau file lampiran.',
-    impact: 'Jika tidak dicentang, menu monitoring disembunyikan dan pengguna tidak dapat melihat rincian detail tugas.'
-  },
+  // --- Kategori 1: Operasional Pekerjaan & Kolaborasi ---
   {
     key: 'manage_task',
     category: 'OPERATIONAL',
-    label: 'Kelola & Kolaborasi Pekerjaan (Tambah, Edit, Duplikasi, Upload & Komentar)',
-    shortLabel: 'Kelola & Kolaborasi Tugas',
-    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Duplikasi, Drag & Drop Board, Form Komentar & Upload Berkas',
-    description: 'Membuat pekerjaan baru, mengedit data tugas, menduplikasi, mengubah status (drag-and-drop), mengunggah file lampiran dokumen/gambar, dan mengirim pesan diskusi/komentar.',
-    impact: 'Jika tidak dicentang, tombol Tambah, Edit, Duplikasi, form komentar, dan upload berkas dinonaktifkan (pekerjaan bersifat read-only).'
+    label: 'Menambah, Mengubah & Menduplikasi Pekerjaan',
+    shortLabel: 'Tambah & Edit Tugas',
+    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Tombol Duplikasi & Drag & Drop Board',
+    description: 'Membuat pekerjaan baru, mengedit data tugas, menduplikasi, memindahkan kartu status (drag-and-drop), dan memperbarui bobot progress.',
+    impact: 'Jika tidak dicentang, tombol Tambah, Edit, dan Duplikasi dinonaktifkan (tugas bersifat hanya-baca / read-only).'
   },
   {
     key: 'delete_task',
@@ -60,19 +51,28 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     shortLabel: 'Hapus & Aksi Massal',
     menuLocation: 'Menu Daftar Pekerjaan (/tasks) & Modal Detail Tugas',
     description: 'Menghapus tugas tunggal secara permanen serta menggunakan fitur checklist aksi massal (bulk status & bulk delete) di menu Daftar Pekerjaan.',
-    impact: 'Jika tidak dicentang, tombol Hapus Pekerjaan dan checkbox aksi massal disembunyikan dari antarmuka pengguna.'
+    impact: 'Jika tidak dicentang, tombol Hapus Pekerjaan dan checkbox aksi massal disembunyikan.'
+  },
+  {
+    key: 'upload_comment',
+    category: 'OPERATIONAL',
+    label: 'Unggah Berkas Lampiran/Eviden & Kirim Komentar',
+    shortLabel: 'Upload Eviden & Komentar',
+    menuLocation: 'Modal Detail Tugas & Modal Komentar Cepat',
+    description: 'Mengunggah file lampiran dokumen/gambar eviden ke dalam pekerjaan dan mengirimkan catatan diskusi/komentar progres.',
+    impact: 'Jika tidak dicentang, form kirim komentar dan area upload berkas eviden dinonaktifkan.'
   },
   {
     key: 'export_data',
     category: 'OPERATIONAL',
-    label: 'Ekspor Laporan & Kalender (Excel, PDF, Salin Gambar & Unduh .ics)',
-    shortLabel: 'Ekspor Laporan & Kalender',
+    label: 'Ekspor Laporan & Unduh Kalender (Excel, PDF, Grafik & .ics)',
+    shortLabel: 'Ekspor Data & Kalender',
     menuLocation: 'Universal Action Bar (Board, Dashboard, Tasks, Calendar, Reports, Team) & Menu Titik Tiga',
     description: 'Mengekspor data pekerjaan ke Excel (.xlsx), mencetak dokumen PDF resmi, menyalin grafik visual (.png), serta mengunduh file kalender (.ics) dan sinkronisasi Google Calendar.',
     impact: 'Jika tidak dicentang, seluruh tombol ekspor laporan dan unduh kalender dinonaktifkan.'
   },
 
-  // --- Kategori 2: Pengaturan Sistem & Basis Data ---
+  // --- Kategori 2: Pengaturan Sistem & Master Data ---
   {
     key: 'system_settings',
     category: 'SETTINGS',
@@ -80,10 +80,10 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     shortLabel: 'Master Data & Pengaturan',
     menuLocation: 'Menu Pengaturan (/settings) > Master Data, Identitas Aplikasi, Kapasitas File & Backup/Restore',
     description: 'Mengelola opsi dropdown & warna kustom (PIC, Kategori, Status, Prioritas, Lokasi), identitas aplikasi (nama/logo/sesi), kapasitas penyimpanan berkas, serta melakukan backup/restore database.',
-    impact: 'Jika tidak dicentang, menu Pengaturan disembunyikan dan pengguna tidak dapat mengakses master data atau konfigurasi sistem.'
+    impact: 'Jika tidak dicentang, menu Pengaturan disembunyikan dari navigasi pengguna.'
   },
 
-  // --- Kategori 3: Administrasi Akun & Audit Log ---
+  // --- Kategori 3: Administrasi Akun & Keamanan ---
   {
     key: 'user_administration',
     category: 'ADMINISTRATION',
@@ -149,9 +149,9 @@ export const defaultRolePermissions: RolePermissionsConfig = {
     ...DEFAULT_ROLE_COLORS
   },
   permissions: {
-    view_tasks: ['ADMIN'],
     manage_task: ['ADMIN'],
     delete_task: ['ADMIN'],
+    upload_comment: ['ADMIN'],
     export_data: ['ADMIN'],
     system_settings: ['ADMIN'],
     user_administration: ['ADMIN']

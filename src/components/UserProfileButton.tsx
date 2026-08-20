@@ -71,16 +71,16 @@ export default function UserProfileButton() {
 
   const effectiveOriginalRole = originalRole || (typeof window !== 'undefined' ? localStorage.getItem('pretend_original_user_role') : '') || sessionRole || currentRole;
 
-  // Pretend Role access is strictly granted to accounts whose role has 'role_management' checked in the matrix
-  const canPretendRole = hasPermission(roleConfig, 'role_management', currentRole) ||
-    hasPermission(roleConfig, 'role_management', effectiveOriginalRole);
+  // Pretend Role access is strictly granted to accounts whose role has 'user_administration' checked in the matrix
+  const canPretendRole = hasPermission(roleConfig, 'user_administration', currentRole) ||
+    hasPermission(roleConfig, 'user_administration', effectiveOriginalRole);
 
   const handleSwitchRole = async (newRoleKey: string) => {
     if (!newRoleKey || newRoleKey === currentRole) return;
     setIsSwitchingRole(true);
     try {
       // If entering pretend mode for the first time, store the original authentic role
-      if (!originalRole && hasPermission(roleConfig, 'role_management', currentRole)) {
+      if (!originalRole && hasPermission(roleConfig, 'user_administration', currentRole)) {
         setOriginalRole(currentRole);
         localStorage.setItem('pretend_original_user_role', currentRole);
       }
@@ -105,9 +105,13 @@ export default function UserProfileButton() {
       toast.success(`Berhasil berpindah ke role ${getRoleLabel(roleConfig, newRoleKey)}!`);
       window.dispatchEvent(new Event('profileUpdated'));
       window.dispatchEvent(new Event('masterUpdated'));
+
+      // Automatically reload page to refresh all server & client components with new role state
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } catch (err: any) {
       toast.error(err.message || 'Gagal mengubah role');
-    } finally {
       setIsSwitchingRole(false);
     }
   };
