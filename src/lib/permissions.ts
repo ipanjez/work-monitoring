@@ -56,11 +56,11 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
   {
     key: 'manage_task',
     category: 'OPERATIONAL',
-    label: 'Menambah & Mengubah Data Pekerjaan',
-    shortLabel: 'Tambah & Edit Tugas',
-    menuLocation: 'Tombol "+ Tambah Pekerjaan", Board (Drag & Drop), Tasks, Calendar',
-    description: 'Membuat tugas baru, mengubah status (drag-and-drop), memperbarui tanggal, PIC, prioritas, dan subtask.',
-    impact: 'Jika tidak dicentang, tombol Tambah Pekerjaan dinonaktifkan dan tugas tidak dapat diedit/dipindahkan.'
+    label: 'Menambah, Mengubah & Menduplikasi Pekerjaan',
+    shortLabel: 'Tambah, Edit & Duplikasi',
+    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Tombol Duplikasi, Board (Drag & Drop), Tasks, Calendar',
+    description: 'Membuat pekerjaan baru, mengedit data, menduplikasi tugas, mengubah status (drag-and-drop), memperbarui tanggal, PIC, prioritas, dan subtask.',
+    impact: 'Jika tidak dicentang, tombol Tambah, Edit, dan Duplikasi Pekerjaan dinonaktifkan serta tugas tidak dapat dipindahkan.'
   },
   {
     key: 'delete_task',
