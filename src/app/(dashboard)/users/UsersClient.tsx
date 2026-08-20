@@ -1203,11 +1203,11 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-                  <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)', width: '380px', minWidth: '320px' }}>
+                  <th style={{ padding: '14px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)', borderRight: '1px solid var(--border-color)', width: '280px', minWidth: '220px' }}>
                     Fitur & Lokasi Menu
                   </th>
                   {Object.keys(roleConfig.labels).map(rk => (
-                    <th key={rk} style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '135px' }}>
+                    <th key={rk} style={{ padding: '12px 6px', textAlign: 'center', fontWeight: 700, borderRight: '1px solid var(--border-color)', minWidth: '110px' }}>
                       {canEditRole ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
@@ -1236,7 +1236,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                             </button>
                             <input
                               className="input"
-                              style={{ padding: '4px 6px', fontSize: '12px', textAlign: 'center', width: '82px', fontWeight: 600 }}
+                              style={{ padding: '4px 6px', fontSize: '11px', textAlign: 'center', width: '60px', fontWeight: 600 }}
                               value={roleConfig.labels[rk] || ''}
                               onChange={(e) => {
                                 setRoleConfig({
