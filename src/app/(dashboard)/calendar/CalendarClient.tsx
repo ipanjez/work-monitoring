@@ -59,6 +59,7 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
     globalCustomStartDate, setGlobalCustomStartDate,
     globalCustomEndDate, setGlobalCustomEndDate,
     globalSearchQuery: searchQuery,
+    setGlobalSearchQuery,
     globalFilterStatus: filterStatus,
     globalFilterPriority: filterPriority,
     globalFilterCategory: filterCategory,
@@ -155,12 +156,30 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   }, [initialTasks]);
 
   useEffect(() => {
-    // Search query from URL is now handled globally, or can be synced if needed
-  }, [searchParams]);
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setGlobalSearchQuery(searchFromUrl);
 
-  useEffect(() => {
-    // Search query from URL is now handled globally, or can be synced if needed
-  }, [searchParams]);
+      // Find matching task to jump to that task's date in the calendar
+      const matchedTask = tasks.find(t =>
+        t.nama.toLowerCase().includes(searchFromUrl.toLowerCase()) ||
+        searchFromUrl.toLowerCase().includes(t.nama.toLowerCase())
+      );
+      if (matchedTask) {
+        const targetDate = matchedTask.startDate ? new Date(matchedTask.startDate) : new Date(matchedTask.endDate);
+        if (!isNaN(targetDate.getTime())) {
+          setDate(targetDate);
+        }
+        // Ensure PIC or target date filters don't hide the searched task
+        if (globalPicFilter !== 'Semua PIC' && matchedTask.pic !== globalPicFilter && !getAdditionalPics(matchedTask).includes(globalPicFilter)) {
+          setGlobalPicFilter('Semua PIC');
+        }
+        if (globalTargetFilter !== 'Semua Waktu') {
+          setGlobalTargetFilter('Semua Waktu');
+        }
+      }
+    }
+  }, [searchParams, tasks, setGlobalSearchQuery, setGlobalPicFilter, setGlobalTargetFilter, globalPicFilter, globalTargetFilter]);
 
   const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
 

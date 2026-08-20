@@ -507,7 +507,8 @@ export default function TaskAddEditModal({
                       style={{ background: 'var(--primary-color)', color: 'var(--surface-color)', opacity: 0.85 }}
                       onClick={() => {
                         onClose();
-                        router.push(`/calendar?search=${encodeURIComponent(editingTask?.nama || '')}`);
+                        const targetName = editingTask?.nama || '';
+                        router.push(`/calendar?search=${encodeURIComponent(targetName)}`);
                       }}
                     >
                       <Eye size={15} style={{ marginRight: '6px' }} /> Pergi ke Kalender
