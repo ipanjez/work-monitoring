@@ -112,7 +112,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   }, [task]);
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!hasPermission(currentRoleConfig, 'upload_comment', userRole)) {
+    if (!hasPermission(currentRoleConfig, 'comment_task', userRole)) {
       toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengelola komentar.');
       return;
     }
@@ -192,7 +192,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
   const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
-    if (!hasPermission(currentRoleConfig, 'upload_comment', userRole)) {
+    if (!hasPermission(currentRoleConfig, 'comment_task', userRole)) {
       toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengelola komentar.');
       return;
     }
@@ -883,7 +883,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
-                          {hasPermission(currentRoleConfig, 'upload_comment', userRole) && (
+                          {hasPermission(currentRoleConfig, 'comment_task', userRole) && (
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(comment.id)}
@@ -901,7 +901,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 )}
               </div>
 
-              {hasPermission(currentRoleConfig, 'upload_comment', userRole) && (
+              {hasPermission(currentRoleConfig, 'comment_task', userRole) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <input
                     type="text"

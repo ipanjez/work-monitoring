@@ -38,11 +38,11 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
   {
     key: 'manage_task',
     category: 'OPERATIONAL',
-    label: 'Menambah, Mengubah & Menduplikasi Pekerjaan',
-    shortLabel: 'Tambah & Edit Tugas',
-    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Tombol Duplikasi & Drag & Drop Board',
-    description: 'Membuat pekerjaan baru, mengedit data tugas, menduplikasi, memindahkan kartu status (drag-and-drop), dan memperbarui bobot progress.',
-    impact: 'Jika tidak dicentang, tombol Tambah, Edit, dan Duplikasi dinonaktifkan (tugas bersifat hanya-baca / read-only).'
+    label: 'Menambah, Mengubah Tugas & Mengunggah Berkas Lampiran',
+    shortLabel: 'Tambah, Edit & Unggah Berkas',
+    menuLocation: 'Tombol "+ Tambah Pekerjaan", Modal Edit, Duplikasi, Drag & Drop Board, Form Upload Lampiran',
+    description: 'Membuat pekerjaan baru, mengedit data tugas, menduplikasi, memindahkan kartu status (drag-and-drop), mengunggah berkas eviden/lampiran pekerjaan, dan memperbarui bobot progres.',
+    impact: 'Jika tidak dicentang, tombol Tambah, Edit, Duplikasi, dan form upload berkas dinonaktifkan (tugas bersifat hanya-baca / read-only).'
   },
   {
     key: 'delete_task',
@@ -54,13 +54,13 @@ export const PERMISSION_FEATURE_DETAILS: PermissionFeatureDetail[] = [
     impact: 'Jika tidak dicentang, tombol Hapus Pekerjaan dan checkbox aksi massal disembunyikan.'
   },
   {
-    key: 'upload_comment',
+    key: 'comment_task',
     category: 'OPERATIONAL',
-    label: 'Unggah Berkas Lampiran/Eviden & Kirim Komentar',
-    shortLabel: 'Upload Eviden & Komentar',
+    label: 'Kirim Komentar Diskusi & Catatan Progres',
+    shortLabel: 'Kirim Komentar Diskusi',
     menuLocation: 'Modal Detail Tugas & Modal Komentar Cepat',
-    description: 'Mengunggah file lampiran dokumen/gambar eviden ke dalam pekerjaan dan mengirimkan catatan diskusi/komentar progres.',
-    impact: 'Jika tidak dicentang, form kirim komentar dan area upload berkas eviden dinonaktifkan.'
+    description: 'Menulis dan mengirimkan catatan diskusi, pesan kolaborasi tanggapan, dan masukan progres pada rincian pekerjaan.',
+    impact: 'Jika tidak dicentang, form kirim komentar dan diskusi dinonaktifkan.'
   },
   {
     key: 'export_data',
@@ -151,7 +151,7 @@ export const defaultRolePermissions: RolePermissionsConfig = {
   permissions: {
     manage_task: ['ADMIN'],
     delete_task: ['ADMIN'],
-    upload_comment: ['ADMIN'],
+    comment_task: ['ADMIN'],
     export_data: ['ADMIN'],
     system_settings: ['ADMIN'],
     user_administration: ['ADMIN']
@@ -168,10 +168,8 @@ export const hasPermission = (
 
   // 1. Mapping legacy or specific keys to the 6 streamlined keys
   let canonicalFeatureKey = feature;
-  if (feature === 'view_dashboard' || feature === 'view_detail') {
-    canonicalFeatureKey = 'view_tasks';
-  } else if (feature === 'upload_comment') {
-    canonicalFeatureKey = 'manage_task';
+  if (feature === 'upload_comment') {
+    canonicalFeatureKey = 'comment_task';
   } else if (feature === 'master_data' || feature === 'system_config' || feature === 'database_backup') {
     canonicalFeatureKey = 'system_settings';
   } else if (feature === 'user_management' || feature === 'role_management' || feature === 'system_logs' || feature === 'admin_feedback') {

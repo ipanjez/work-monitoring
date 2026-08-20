@@ -96,7 +96,7 @@ export default function TaskAddEditModal({
         .catch(() => { });
     }
   }, [isOpen]);
-  const canUploadAttachment = hasPermission(roleConfig, 'upload_comment', userRole);
+  const canUploadAttachment = hasPermission(roleConfig, 'manage_task', userRole);
 
   const [activeTab, setActiveTab] = useState<'info' | 'subtasks' | 'attachments'>('info');
   const [masterLocations, setMasterLocations] = useState<string[]>([]);

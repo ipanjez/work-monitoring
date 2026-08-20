@@ -22,7 +22,7 @@ export async function GET() {
     const labels = (parsed.labels && Object.keys(parsed.labels).length > 0) ? parsed.labels : defaultRolePermissions.labels;
     const validRoleKeys = new Set(Object.keys(labels));
     const permissions: Record<string, string[]> = {};
-    const featKeys = ['manage_task', 'delete_task', 'upload_comment', 'export_data', 'system_settings', 'user_administration'];
+    const featKeys = ['manage_task', 'delete_task', 'comment_task', 'export_data', 'system_settings', 'user_administration'];
     featKeys.forEach(k => {
       let rawList: string[] = [];
       if (parsed.permissions && Array.isArray(parsed.permissions[k])) {
@@ -32,8 +32,8 @@ export async function GET() {
           rawList = parsed.permissions?.manage_task || ['ADMIN'];
         } else if (k === 'delete_task') {
           rawList = parsed.permissions?.delete_task || ['ADMIN'];
-        } else if (k === 'upload_comment') {
-          rawList = parsed.permissions?.upload_comment || ['ADMIN'];
+        } else if (k === 'comment_task') {
+          rawList = parsed.permissions?.comment_task || parsed.permissions?.upload_comment || ['ADMIN'];
         } else if (k === 'export_data') {
           rawList = parsed.permissions?.export_data || ['ADMIN'];
         } else if (k === 'system_settings') {

@@ -27,7 +27,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
   const { data: session } = useSession();
   const { roleConfig } = useMaster();
   const userRole = (session?.user as any)?.role || 'GUEST';
-  const canUploadComment = hasPermission(roleConfig, 'upload_comment', userRole);
+  const canComment = hasPermission(roleConfig, 'comment_task', userRole);
 
   useEffect(() => {
     if (task) {
@@ -38,7 +38,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
   }, [task]);
 
   const handleAddComment = async () => {
-    if (!canUploadComment) {
+    if (!canComment) {
       toast.error('Akses ditolak: Anda tidak memiliki izin untuk mengirim komentar.');
       return;
     }
@@ -120,7 +120,7 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
             )}
           </div>
 
-          {canUploadComment ? (
+          {canComment ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               <input
                 type="text"
