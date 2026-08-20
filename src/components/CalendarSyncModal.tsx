@@ -16,6 +16,58 @@ interface CalendarSyncModalProps {
   tasks?: Task[];
 }
 
+const TIMEZONE_OPTIONS = [
+  { group: 'Indonesia (WITA / WIB / WIT)', items: [
+    { label: 'WITA (UTC+08:00) — Makassar / Bali / Balikpapan / Bontang (Default)', value: 'Asia/Makassar' },
+    { label: 'WIB (UTC+07:00) — Jakarta / Surabaya / Medan / Pontianak', value: 'Asia/Jakarta' },
+    { label: 'WIT (UTC+09:00) — Jayapura / Ambon / Maluku / Papua', value: 'Asia/Jayapura' },
+  ]},
+  { group: 'Zona Waktu Universal (UTC / GMT Negatif: Benua Amerika & Pasifik)', items: [
+    { label: 'UTC-12:00 — Baker Island, Howland Island', value: 'Etc/GMT+12' },
+    { label: 'UTC-11:00 — Pago Pago, Niue, American Samoa', value: 'Pacific/Pago_Pago' },
+    { label: 'UTC-10:00 — Honolulu, Hawaii, Papeete (HST)', value: 'Pacific/Honolulu' },
+    { label: 'UTC-09:30 — Marquesas Islands', value: 'Pacific/Marquesas' },
+    { label: 'UTC-09:00 — Anchorage, Alaska (AKST)', value: 'America/Anchorage' },
+    { label: 'UTC-08:00 — Los Angeles, San Francisco, Vancouver (PST)', value: 'America/Los_Angeles' },
+    { label: 'UTC-07:00 — Denver, Phoenix, Calgary, Salt Lake City (MST)', value: 'America/Denver' },
+    { label: 'UTC-06:00 — Chicago, Dallas, Mexico City (CST)', value: 'America/Chicago' },
+    { label: 'UTC-05:00 — New York, Washington DC, Toronto, Bogota (EST)', value: 'America/New_York' },
+    { label: 'UTC-04:00 — Santiago, Caracas, Halifax, La Paz (AST)', value: 'America/Santiago' },
+    { label: 'UTC-03:30 — St. John’s, Newfoundland (NST)', value: 'America/St_Johns' },
+    { label: 'UTC-03:00 — Sao Paulo, Buenos Aires, Montevideo, Rio de Janeiro', value: 'America/Sao_Paulo' },
+    { label: 'UTC-02:00 — South Georgia, Fernando de Noronha', value: 'America/Noronha' },
+    { label: 'UTC-01:00 — Azores, Cape Verde', value: 'Atlantic/Azores' },
+  ]},
+  { group: 'Zona Waktu Universal (UTC / GMT Nol & Positif: Eropa, Afrika, Timur Tengah)', items: [
+    { label: 'UTC+00:00 (GMT) — London, Dublin, Lisbon, Casablanca, UTC Standard', value: 'UTC' },
+    { label: 'UTC+01:00 — Paris, Berlin, Rome, Amsterdam, Madrid, Zurich (CET)', value: 'Europe/Paris' },
+    { label: 'UTC+02:00 — Cairo, Athens, Helsinki, Jerusalem, Kyiv (EET)', value: 'Europe/Athens' },
+    { label: 'UTC+03:00 — Riyadh, Moscow, Istanbul, Nairobi, Doha, Kuwait', value: 'Asia/Riyadh' },
+    { label: 'UTC+03:30 — Tehran, Iran', value: 'Asia/Tehran' },
+    { label: 'UTC+04:00 — Dubai, Abu Dhabi, Baku, Muscat, Tbilisi', value: 'Asia/Dubai' },
+    { label: 'UTC+04:30 — Kabul, Afghanistan', value: 'Asia/Kabul' },
+    { label: 'UTC+05:00 — Karachi, Islamabad, Tashkent, Yekaterinburg', value: 'Asia/Karachi' },
+    { label: 'UTC+05:30 — New Delhi, Mumbai, Bengaluru, Colombo (IST)', value: 'Asia/Kolkata' },
+    { label: 'UTC+05:45 — Kathmandu, Nepal', value: 'Asia/Kathmandu' },
+  ]},
+  { group: 'Zona Waktu Universal (UTC / GMT Positif: Asia, Australia, Pasifik)', items: [
+    { label: 'UTC+06:00 — Dhaka, Almaty, Omsk, Thimphu', value: 'Asia/Dhaka' },
+    { label: 'UTC+06:30 — Yangon, Naypyidaw, Cocos Islands', value: 'Asia/Yangon' },
+    { label: 'UTC+07:00 — Bangkok, Hanoi, Ho Chi Minh, Phnom Penh, Vientiane', value: 'Asia/Bangkok' },
+    { label: 'UTC+08:00 — Singapore, Kuala Lumpur, Beijing, Hong Kong, Perth, Taipei', value: 'Asia/Singapore' },
+    { label: 'UTC+08:45 — Eucla, Australia Barat', value: 'Australia/Eucla' },
+    { label: 'UTC+09:00 — Tokyo, Seoul, Pyongyang, Osaka', value: 'Asia/Tokyo' },
+    { label: 'UTC+09:30 — Adelaide, Darwin (ACST)', value: 'Australia/Adelaide' },
+    { label: 'UTC+10:00 — Sydney, Melbourne, Brisbane, Canberra, Guam (AEST)', value: 'Australia/Sydney' },
+    { label: 'UTC+10:30 — Lord Howe Island', value: 'Australia/Lord_Howe' },
+    { label: 'UTC+11:00 — Solomon Islands, Noumea, Vladivostok', value: 'Pacific/Guadalcanal' },
+    { label: 'UTC+12:00 — Auckland, Wellington, Suva, Fiji (NZST)', value: 'Pacific/Auckland' },
+    { label: 'UTC+12:45 — Chatham Islands', value: 'Pacific/Chatham' },
+    { label: 'UTC+13:00 — Nuku\'alofa, Samoa, Apia, Tokelau', value: 'Pacific/Tongatapu' },
+    { label: 'UTC+14:00 — Kiritimati, Line Islands', value: 'Pacific/Kiritimati' },
+  ]}
+];
+
 export default function CalendarSyncModal({
   isOpen,
   onClose,
@@ -25,6 +77,7 @@ export default function CalendarSyncModal({
   const [calendarToken, setCalendarToken] = useState('');
   const [feedFilterPic, setFeedFilterPic] = useState('');
   const [feedFilterCategory, setFeedFilterCategory] = useState('');
+  const [feedTimezone, setFeedTimezone] = useState('Asia/Makassar');
   const [feedHideCompleted, setFeedHideCompleted] = useState(false);
   const [copiedFeedUrl, setCopiedFeedUrl] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);
@@ -54,6 +107,7 @@ export default function CalendarSyncModal({
     if (feedFilterPic) params.set('pic', feedFilterPic);
     if (feedFilterCategory) params.set('kategori', feedFilterCategory);
     if (feedHideCompleted) params.set('hideCompleted', 'true');
+    if (feedTimezone) params.set('tz', feedTimezone);
     return `${window.location.origin}/calendar.ics?${params.toString()}`;
   })();
 
@@ -198,7 +252,7 @@ export default function CalendarSyncModal({
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                     Filter Personil PIC:
@@ -232,6 +286,29 @@ export default function CalendarSyncModal({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Timezone Selection */}
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <Globe size={13} color="var(--accent-primary)" /> Zona Waktu Kalender (Timezone GMT/UTC):
+                </label>
+                <select
+                  className="input"
+                  style={{ width: '100%', fontSize: '12.5px', background: 'var(--surface-color)' }}
+                  value={feedTimezone}
+                  onChange={e => setFeedTimezone(e.target.value)}
+                >
+                  {TIMEZONE_OPTIONS.map((grp, gidx) => (
+                    <optgroup key={gidx} label={grp.group}>
+                      {grp.items.map(tz => (
+                        <option key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
 
               <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)' }}>

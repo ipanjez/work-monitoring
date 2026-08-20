@@ -35,18 +35,35 @@ function parseTaskLocation(lokasi: string | null): string {
 
 function getVTimezone(tz: string): string[] {
   let offset = '+0800';
-  let tzName = 'WITA';
+  let tzName = tz;
 
-  if (tz === 'Asia/Jakarta') {
-    offset = '+0700';
-    tzName = 'WIB';
-  } else if (tz === 'Asia/Jayapura') {
-    offset = '+0900';
-    tzName = 'WIT';
-  } else if (tz === 'UTC') {
-    offset = '+0000';
-    tzName = 'UTC';
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset'
+    });
+    const parts = formatter.formatToParts(new Date());
+    const tzPart = parts.find(p => p.type === 'timeZoneName')?.value;
+    if (tzPart) {
+      const match = tzPart.match(/GMT([+-])(\d+)(?::(\d+))?/);
+      if (match) {
+        const sign = match[1];
+        const h = match[2].padStart(2, '0');
+        const m = (match[3] || '00').padStart(2, '0');
+        offset = `${sign}${h}${m}`;
+      } else if (tzPart === 'GMT' || tzPart === 'UTC') {
+        offset = '+0000';
+      }
+    }
+  } catch (e) {
+    if (tz === 'Asia/Jakarta') offset = '+0700';
+    else if (tz === 'Asia/Jayapura') offset = '+0900';
+    else if (tz === 'UTC') offset = '+0000';
   }
+
+  if (tz === 'Asia/Makassar') tzName = 'WITA';
+  else if (tz === 'Asia/Jakarta') tzName = 'WIB';
+  else if (tz === 'Asia/Jayapura') tzName = 'WIT';
 
   return [
     'BEGIN:VTIMEZONE',
