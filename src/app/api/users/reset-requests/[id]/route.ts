@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
-
-const prisma = new PrismaClient();
 
 // PUT /api/users/reset-requests/[id] — approve or reject
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
