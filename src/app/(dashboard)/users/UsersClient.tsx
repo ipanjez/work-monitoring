@@ -1174,6 +1174,7 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                         });
                         if (res.ok) {
                           toast.success('Matriks Role berhasil disimpan');
+                          localStorage.setItem('role_config', JSON.stringify(roleConfig));
                           window.dispatchEvent(new Event('masterUpdated'));
                           fetchRoles();
                         } else {
@@ -1369,11 +1370,14 @@ export default function UsersClient({ userRole: initialUserRole = '' }: { userRo
                                       const checked = e.target.checked;
                                       setRoleConfig(prev => {
                                         const list = prev.permissions[feature.key] || [];
+                                        const updatedList = checked
+                                          ? (list.includes(rk) ? list : [...list, rk])
+                                          : list.filter(r => r !== rk);
                                         return {
                                           ...prev,
                                           permissions: {
                                             ...prev.permissions,
-                                            [feature.key]: checked ? [...list, rk] : list.filter(r => r !== rk)
+                                            [feature.key]: updatedList
                                           }
                                         };
                                       });
