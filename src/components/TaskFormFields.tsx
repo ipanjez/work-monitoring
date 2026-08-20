@@ -1214,8 +1214,8 @@ export default function TaskFormFields({
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ padding: '0 8px' }}
-                          title="Pilih Seluruh PIC"
+                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', flexShrink: 0 }}
+                          title="Pilih Seluruh PIC untuk Sub Pekerjaan ini"
                           onClick={() => {
                             const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
                             if (validPics.length === 0) return toast.error('Belum ada data PIC');
@@ -1228,13 +1228,14 @@ export default function TaskFormFields({
                             toast.success('Berhasil memilih seluruh PIC untuk sub pekerjaan ini!');
                           }}
                         >
-                          <Users size={14} color="var(--accent-primary)" />
+                          <Users size={13} color="var(--accent-primary)" />
+                          <span className="hidden sm:inline">Semua</span>
                         </button>
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ padding: '0 8px' }}
-                          title="Tambah PIC"
+                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', flexShrink: 0 }}
+                          title="Tambah PIC Tambahan untuk Sub Pekerjaan ini"
                           onClick={() => {
                             const updated = [...(task.subTasksList || [])];
                             if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
@@ -1242,7 +1243,8 @@ export default function TaskFormFields({
                             onChange({ ...task, subTasksList: updated });
                           }}
                         >
-                          <UserPlus size={14} />
+                          <UserPlus size={13} />
+                          <span className="hidden sm:inline">+ PIC</span>
                         </button>
                       </div>
                       {subTask.additionalPics?.map((p, pIdx) => (
