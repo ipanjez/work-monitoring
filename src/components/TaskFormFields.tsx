@@ -3,7 +3,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   X, UserPlus, Users, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, 
-  Info, GripVertical, FileText, FileDown, Trash2, MapPin, ChevronDown, Check
+  Info, GripVertical, FileText, FileDown, Trash2, MapPin, ChevronDown, Check,
+  User, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -15,32 +16,45 @@ import { useTheme } from '@/context/ThemeContext';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
-const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?: string }) => {
+const SubTaskLogViewer = ({ logs, title = "Riwayat Status Sub:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
   if (!logs || logs.length === 0) return null;
   const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
 
   return (
-    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
-      {visibleLogs.map((log: any, lidx: number) => (
-        <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-          <span
-            style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
-            dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
-          />
-        </div>
-      ))}
-      {logs.length > 1 && (
-        <button
-          type="button"
-          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Sembunyikan' : `Tampilkan ${logs.length - 1} log lainnya...`}
-        </button>
-      )}
+    <div style={{
+      fontSize: '11px',
+      color: 'var(--text-secondary)',
+      background: 'var(--surface-color)',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      border: '1px dashed var(--border-color)'
+    }}>
+      <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>{title}</span>
+        {logs.length > 1 && (
+          <button
+            type="button"
+            style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? 'Sembunyikan' : `Lihat ${logs.length - 1} log lainnya`}
+          </button>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {visibleLogs.map((log: any, lidx: number) => (
+          <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '100px', flexShrink: 0 }}>
+              {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}
+            </span>
+            <span
+              style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '11px', lineHeight: '1.4' }}
+              dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1180,166 +1194,83 @@ export default function TaskFormFields({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {task.subTasksList?.map((subTask, idx) => (
-            <div key={subTask.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div
-                    className="input"
-                    contentEditable
-                    suppressContentEditableWarning
-                    style={{ flex: 1, minHeight: '60px', overflowY: 'auto', whiteSpace: 'pre-wrap', cursor: 'text', padding: '10px' }}
-                    onBlur={e => {
-                      const updated = [...(task.subTasksList || [])];
-                      updated[idx].text = e.currentTarget.innerHTML;
-                      onChange({ ...task, subTasksList: updated });
-                    }}
-                    dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
-                  />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', alignItems: 'start' }}>
-                    {/* PIC Controls Column */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <div style={{ flex: 1, minWidth: '110px' }}>
-                          <CustomSelect
-                            value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
-                            onChange={val => {
-                              const updated = [...(task.subTasksList || [])];
-                              updated[idx].pic = val;
-                              onChange({ ...task, subTasksList: updated });
-                            }}
-                            options={safePicOptions}
-                            placeholder="Pilih PIC"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
-                          title="Pilih Seluruh PIC untuk Sub Pekerjaan ini"
-                          onClick={() => {
-                            const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
-                            if (validPics.length === 0) return toast.error('Belum ada data PIC');
-                            const updated = [...(task.subTasksList || [])];
-                            const currentPrimary = updated[idx].pic && validPics.includes(updated[idx].pic) ? updated[idx].pic : validPics[0];
-                            const others = validPics.filter(p => p !== currentPrimary);
-                            updated[idx].pic = currentPrimary;
-                            updated[idx].additionalPics = others;
-                            onChange({ ...task, subTasksList: updated });
-                            toast.success('Berhasil memilih seluruh PIC untuk sub pekerjaan ini!');
-                          }}
-                        >
-                          <Users size={13} color="var(--accent-primary)" />
-                          <span>Semua</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
-                          title="Tambah PIC Tambahan untuk Sub Pekerjaan ini"
-                          onClick={() => {
-                            const updated = [...(task.subTasksList || [])];
-                            if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
-                            updated[idx].additionalPics!.push(safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''));
-                            onChange({ ...task, subTasksList: updated });
-                          }}
-                        >
-                          <UserPlus size={13} />
-                          <span>+ PIC</span>
-                        </button>
-                      </div>
-
-                      {subTask.additionalPics?.map((p, pIdx) => (
-                        <div key={pIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          <div style={{ flex: 1, minWidth: '110px' }}>
-                            <CustomSelect
-                              value={p}
-                              onChange={val => {
-                                const updated = [...(task.subTasksList || [])];
-                                updated[idx].additionalPics![pIdx] = val;
-                                onChange({ ...task, subTasksList: updated });
-                              }}
-                              options={safePicOptions}
-                              placeholder="PIC Tambahan"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ padding: '0 8px', height: '36px', color: 'var(--danger)', flexShrink: 0 }}
-                            onClick={() => {
-                              const updated = [...(task.subTasksList || [])];
-                              updated[idx].additionalPics!.splice(pIdx, 1);
-                              onChange({ ...task, subTasksList: updated });
-                            }}
-                            title="Hapus PIC tambahan ini"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Tenggat Waktu Column */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <input
-                        type="date"
-                        className="input"
-                        style={{ width: '100%', height: '36px', fontSize: '13px' }}
-                        value={subTask.tenggatWaktu || ''}
-                        onChange={e => {
-                          const updated = [...(task.subTasksList || [])];
-                          updated[idx].tenggatWaktu = e.target.value;
-                          onChange({ ...task, subTasksList: updated });
-                        }}
-                      />
-                    </div>
-                  </div>
+            <div
+              key={subTask.id || idx}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: '14px',
+                background: 'var(--bg-color)',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+              }}
+            >
+              {/* Card Header: Index Badge & Action Controls */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    color: 'var(--accent-primary)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)'
+                  }}>
+                    Sub #{idx + 1}
+                  </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CustomSelect
-                    value={subTask.status}
-                    onChange={val => {
-                      const updated = [...(task.subTasksList || [])];
-                      const newSubStatus = val;
-                      updated[idx].status = newSubStatus;
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {/* Status Dropdown */}
+                  <div style={{ width: '130px' }}>
+                    <CustomSelect
+                      value={subTask.status}
+                      onChange={val => {
+                        const updated = [...(task.subTasksList || [])];
+                        const newSubStatus = val;
+                        updated[idx].status = newSubStatus;
 
-                      let allDone = true;
-                      let anyInProgress = false;
-                      for (const st of updated) {
-                        if (st.status !== 'Done') allDone = false;
-                        if (st.status === 'In Progress' || st.status === 'Done') anyInProgress = true;
-                      }
-
-                      let newStatus = task.status;
-                      let newProgress = task.progress;
-                      if (allDone && updated.length > 0) {
-                        newStatus = 'Done';
-                        newProgress = masterProgressMap['Done'] !== undefined ? masterProgressMap['Done'] : 100;
-                      } else if (anyInProgress) {
-                        if (newStatus !== 'In Progress') {
-                          newStatus = 'In Progress';
-                          newProgress = masterProgressMap['In Progress'] !== undefined ? masterProgressMap['In Progress'] : 50;
+                        let allDone = true;
+                        let anyInProgress = false;
+                        for (const st of updated) {
+                          if (st.status !== 'Done') allDone = false;
+                          if (st.status === 'In Progress' || st.status === 'Done') anyInProgress = true;
                         }
-                      }
 
-                      onChange({
-                        ...task,
-                        subTasksList: updated,
-                        status: newStatus,
-                        progress: newProgress
-                      });
-                    }}
-                    options={formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']}
-                    placeholder="Status"
-                    style={{ minWidth: '120px' }}
-                  />
+                        let newStatus = task.status;
+                        let newProgress = task.progress;
+                        if (allDone && updated.length > 0) {
+                          newStatus = 'Done';
+                          newProgress = masterProgressMap['Done'] !== undefined ? masterProgressMap['Done'] : 100;
+                        } else if (anyInProgress) {
+                          if (newStatus !== 'In Progress') {
+                            newStatus = 'In Progress';
+                            newProgress = masterProgressMap['In Progress'] !== undefined ? masterProgressMap['In Progress'] : 50;
+                          }
+                        }
 
+                        onChange({
+                          ...task,
+                          subTasksList: updated,
+                          status: newStatus,
+                          progress: newProgress
+                        });
+                      }}
+                      options={formStatusOptions.length > 0 ? formStatusOptions : ['To Do', 'In Progress', 'Review', 'Done']}
+                      placeholder="Status"
+                    />
+                  </div>
+
+                  {/* Reorder Up */}
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === 0 ? 0.3 : 1 }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0 8px', height: '34px', opacity: idx === 0 ? 0.3 : 1 }}
                     disabled={idx === 0}
                     onClick={() => {
                       if (idx === 0) return;
@@ -1354,9 +1285,11 @@ export default function TaskFormFields({
                     <ArrowUp size={14} />
                   </button>
 
+                  {/* Reorder Down */}
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: idx === (task.subTasksList?.length || 0) - 1 ? 0.3 : 1 }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0 8px', height: '34px', opacity: idx === (task.subTasksList?.length || 0) - 1 ? 0.3 : 1 }}
                     disabled={idx === (task.subTasksList?.length || 0) - 1}
                     onClick={() => {
                       if (idx === (task.subTasksList?.length || 0) - 1) return;
@@ -1371,22 +1304,154 @@ export default function TaskFormFields({
                     <ArrowDown size={14} />
                   </button>
 
+                  {/* Delete SubTask */}
                   <button
                     type="button"
-                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0 8px', height: '34px', color: 'var(--danger)' }}
                     onClick={() => {
                       const updated = task.subTasksList!.filter((_, i) => i !== idx);
                       onChange({ ...task, subTasksList: updated });
                     }}
-                    title="Hapus Sub"
+                    title="Hapus Sub Pekerjaan"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
 
+              {/* Sub-Pekerjaan Text Description Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Rincian Sub Pekerjaan:
+                </label>
+                <div
+                  className="input"
+                  contentEditable
+                  suppressContentEditableWarning
+                  style={{ minHeight: '65px', maxHeight: '180px', overflowY: 'auto', whiteSpace: 'pre-wrap', cursor: 'text', padding: '10px 12px', lineHeight: '1.5', fontSize: '13px' }}
+                  onBlur={e => {
+                    const updated = [...(task.subTasksList || [])];
+                    updated[idx].text = e.currentTarget.innerHTML;
+                    onChange({ ...task, subTasksList: updated });
+                  }}
+                  dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
+                />
+              </div>
+
+              {/* PIC and Date Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', alignItems: 'start' }}>
+                {/* PIC Column */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <User size={12} color="var(--accent-primary)" /> Penanggung Jawab (PIC):
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                      <CustomSelect
+                        value={subTask.pic || (safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''))}
+                        onChange={val => {
+                          const updated = [...(task.subTasksList || [])];
+                          updated[idx].pic = val;
+                          onChange({ ...task, subTasksList: updated });
+                        }}
+                        options={safePicOptions}
+                        placeholder="Pilih PIC"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
+                      title="Pilih Seluruh PIC untuk Sub Pekerjaan ini"
+                      onClick={() => {
+                        const validPics = safePicOptions.filter(p => p && p.trim() !== '' && p !== 'Unassigned');
+                        if (validPics.length === 0) return toast.error('Belum ada data PIC');
+                        const updated = [...(task.subTasksList || [])];
+                        const currentPrimary = updated[idx].pic && validPics.includes(updated[idx].pic) ? updated[idx].pic : validPics[0];
+                        const others = validPics.filter(p => p !== currentPrimary);
+                        updated[idx].pic = currentPrimary;
+                        updated[idx].additionalPics = others;
+                        onChange({ ...task, subTasksList: updated });
+                        toast.success('Berhasil memilih seluruh PIC untuk sub pekerjaan ini!');
+                      }}
+                    >
+                      <Users size={13} color="var(--accent-primary)" />
+                      <span>Semua</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '0 8px', height: '36px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', flexShrink: 0 }}
+                      title="Tambah PIC Tambahan untuk Sub Pekerjaan ini"
+                      onClick={() => {
+                        const updated = [...(task.subTasksList || [])];
+                        if (!updated[idx].additionalPics) updated[idx].additionalPics = [];
+                        updated[idx].additionalPics!.push(safePicOptions.includes('Unassigned') ? 'Unassigned' : (safePicOptions.length > 0 ? safePicOptions[0] : ''));
+                        onChange({ ...task, subTasksList: updated });
+                      }}
+                    >
+                      <UserPlus size={13} />
+                      <span>+ PIC</span>
+                    </button>
+                  </div>
+
+                  {/* Additional PICs */}
+                  {subTask.additionalPics?.map((p, pIdx) => (
+                    <div key={pIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
+                      <div style={{ flex: 1, minWidth: '120px' }}>
+                        <CustomSelect
+                          value={p}
+                          onChange={val => {
+                            const updated = [...(task.subTasksList || [])];
+                            updated[idx].additionalPics![pIdx] = val;
+                            onChange({ ...task, subTasksList: updated });
+                          }}
+                          options={safePicOptions}
+                          placeholder="PIC Tambahan"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '0 8px', height: '36px', color: 'var(--danger)', flexShrink: 0 }}
+                        onClick={() => {
+                          const updated = [...(task.subTasksList || [])];
+                          updated[idx].additionalPics!.splice(pIdx, 1);
+                          onChange({ ...task, subTasksList: updated });
+                        }}
+                        title="Hapus PIC tambahan ini"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tenggat Waktu Column */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Calendar size={12} color="var(--accent-primary)" /> Tenggat Waktu (Opsional):
+                  </label>
+                  <input
+                    type="date"
+                    className="input"
+                    style={{ width: '100%', height: '36px', fontSize: '13px' }}
+                    value={subTask.tenggatWaktu || ''}
+                    onChange={e => {
+                      const updated = [...(task.subTasksList || [])];
+                      updated[idx].tenggatWaktu = e.target.value;
+                      onChange({ ...task, subTasksList: updated });
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* SubTask Audit Logs */}
               {subTask.logs && subTask.logs.length > 0 && (
-                <SubTaskLogViewer logs={subTask.logs} title="Riwayat Status Sub:" />
+                <div style={{ marginTop: '4px' }}>
+                  <SubTaskLogViewer logs={subTask.logs} title="Riwayat Status Sub:" />
+                </div>
               )}
             </div>
           ))}
