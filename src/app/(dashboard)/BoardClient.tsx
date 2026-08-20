@@ -54,6 +54,8 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const [touchPos, setTouchPos] = useState({ x: 0, y: 0 });
   const [touchCardLabel, setTouchCardLabel] = useState('');
   const touchOffset = useRef({ x: 0, y: 0 });
+  const touchTimer = useRef<NodeJS.Timeout | null>(null);
+  const initialTouchPos = useRef({ x: 0, y: 0 });
 
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [colSorts, setColSorts] = useState<Record<string, string>>({});
@@ -106,14 +108,33 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       x: touch.clientX - rect.left,
       y: touch.clientY - rect.top
     };
+    initialTouchPos.current = { x: touch.clientX, y: touch.clientY };
     
-    setDraggedTaskId(task.id);
-    setTouchCardLabel(task.nama);
-    setTouchPos({ x: touch.clientX, y: touch.clientY });
-    setTouchActive(true);
+    // Delay 3 detik sebelum mengaktifkan drag untuk mencegah tergeser tak sengaja saat scroll
+    touchTimer.current = setTimeout(() => {
+      setDraggedTaskId(task.id);
+      setTouchCardLabel(task.nama);
+      setTouchPos({ x: initialTouchPos.current.x, y: initialTouchPos.current.y });
+      setTouchActive(true);
+      touchTimer.current = null;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50); // Haptic feedback ringan
+      }
+    }, 3000);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchTimer.current) {
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - initialTouchPos.current.x);
+      const dy = Math.abs(touch.clientY - initialTouchPos.current.y);
+      // Jika pengguna scroll lebih dari 10px sebelum 3 detik, batalkan drag
+      if (dx > 10 || dy > 10) {
+        clearTimeout(touchTimer.current);
+        touchTimer.current = null;
+      }
+    }
+
     if (!touchActive) return;
     const touch = e.touches[0];
     setTouchPos({ x: touch.clientX, y: touch.clientY });
@@ -148,6 +169,11 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
   const handleTouchEnd = async (e: React.TouchEvent) => {
+    if (touchTimer.current) {
+      clearTimeout(touchTimer.current);
+      touchTimer.current = null;
+    }
+
     if (!touchActive || !draggedTaskId) return;
 
     setTouchActive(false);
