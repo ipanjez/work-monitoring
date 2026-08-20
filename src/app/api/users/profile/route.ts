@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET /api/users/profile — get logged-in user profile
 export async function GET() {
   const session = await getServerSession(authOptions);

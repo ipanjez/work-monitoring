@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { defaultRolePermissions } from '@/lib/permissions';
 import { checkServerPermission } from '@/lib/serverPermissions';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const setting = await prisma.appSetting.findUnique({
