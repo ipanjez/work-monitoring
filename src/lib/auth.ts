@@ -3,7 +3,38 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
 
+const isSecure = process.env.NEXTAUTH_URL?.startsWith('https://') || false;
+
 export const authOptions: NextAuthOptions = {
+  useSecureCookies: isSecure,
+  cookies: {
+    sessionToken: {
+      name: isSecure ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isSecure,
+      },
+    },
+    callbackUrl: {
+      name: isSecure ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: isSecure,
+      },
+    },
+    csrfToken: {
+      name: isSecure ? '__Host-next-auth.csrf-token' : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isSecure,
+      },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: 'Credentials',

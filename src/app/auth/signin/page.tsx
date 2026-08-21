@@ -64,29 +64,34 @@ function SignInContent() {
     }
     setLoading(true);
 
-    const res = await signIn('credentials', {
-      npk: npk.trim(),
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn('credentials', {
+        npk: npk.trim(),
+        password,
+        redirect: false,
+      });
 
-    if (res?.ok) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('dismissed_backup_reminder');
-        sessionStorage.removeItem('pic_auto_selected_user');
-        localStorage.removeItem('globalPicFilter');
+      if (res?.ok) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('dismissed_backup_reminder');
+          sessionStorage.removeItem('pic_auto_selected_user');
+          localStorage.removeItem('globalPicFilter');
+        }
+        toast.success('Berhasil masuk!');
+        window.location.href = '/';
+      } else if (res?.error === 'PENDING') {
+        toast.error('Akun Anda sedang menunggu persetujuan Administrator.');
+        setLoading(false);
+      } else if (res?.error === 'INACTIVE') {
+        toast.error('Akun Anda tidak aktif. Hubungi Administrator.');
+        setLoading(false);
+      } else {
+        toast.error('NPK atau Password salah!');
+        setLoading(false);
       }
-      toast.success('Berhasil masuk!');
-      router.push('/');
-      router.refresh();
-    } else if (res?.error === 'PENDING') {
-      toast.error('Akun Anda sedang menunggu persetujuan Administrator.');
-      setLoading(false);
-    } else if (res?.error === 'INACTIVE') {
-      toast.error('Akun Anda tidak aktif. Hubungi Administrator.');
-      setLoading(false);
-    } else {
-      toast.error('NPK atau Password salah!');
+    } catch (err) {
+      console.error('Sign-in error:', err);
+      toast.error('Gagal terhubung ke server.');
       setLoading(false);
     }
   };

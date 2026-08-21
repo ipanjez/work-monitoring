@@ -25,9 +25,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Get NextAuth session token
+  const isHttps = request.nextUrl.protocol === 'https:';
   const session = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET || 'dept-monitor-secret-key-12345',
+    secureCookie: isHttps,
   });
 
   // If not logged in
