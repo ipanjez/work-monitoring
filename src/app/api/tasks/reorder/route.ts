@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
+import { bumpTaskSyncVersion } from '@/lib/syncState';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
     );
 
     await prisma.$transaction(updatePromises);
+    bumpTaskSyncVersion();
 
     return NextResponse.json({ success: true, message: 'Tasks reordered' });
   } catch (error: any) {

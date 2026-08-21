@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
+import { bumpTaskSyncVersion } from '@/lib/syncState';
 
 export async function PUT(req: Request) {
   try {
@@ -57,6 +58,7 @@ export async function PUT(req: Request) {
       console.error('Failed to create activity logs for bulk update', e);
     }
 
+    bumpTaskSyncVersion();
     return NextResponse.json({ success: true, count: updatedTasks.count });
   } catch (error: any) {
     console.error('Error updating bulk status:', error);

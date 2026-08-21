@@ -6,6 +6,7 @@ import { FilterProvider } from "@/context/FilterContext";
 import { MasterProvider } from "@/context/MasterContext";
 import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { RealtimeSyncProvider } from '@/context/RealtimeSyncContext';
 import NotificationBell from '@/components/NotificationBell';
 import IdleTimer from '@/components/IdleTimer';
 import FocusModeToggle from '@/components/FocusModeToggle';
@@ -36,7 +37,9 @@ export default function RootLayout({
             <MasterProvider>
               <FilterProvider>
                 <NotificationProvider>
-                  {children}
+                  <RealtimeSyncProvider>
+                    {children}
+                  </RealtimeSyncProvider>
                   <Toaster 
                     position="top-right" 
                     containerStyle={{

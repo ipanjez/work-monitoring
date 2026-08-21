@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { bumpTaskSyncVersion } from '@/lib/syncState';
 
 export async function GET() {
   try {
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
       const created = await prisma.$transaction(
         tasksToCreate.map(data => prisma.task.create({ data }))
       );
+      bumpTaskSyncVersion();
       return NextResponse.json(created);
     }
 
@@ -142,6 +144,7 @@ export async function POST(req: Request) {
         },
       });
 
+      bumpTaskSyncVersion();
       return NextResponse.json(task);
     } catch (createErr: any) {
       console.error('Primary task creation failed, trying fallback 1:', createErr);
@@ -159,14 +162,20 @@ export async function POST(req: Request) {
             catatan: catatan || null,
             fileUrl: fileUrl || null,
             fileName: fileName || null,
+            filesJson: filesJson || null,
+            isAllDay: isAllDay !== undefined ? Boolean(isAllDay) : true,
+            startTime: startTime || '08:00',
+            endTime: endTime || '17:00',
+            repetisi: repetisi || 'Tidak Berulang',
             startDate: parseDate(startDate),
             endDate: parseDate(endDate),
           },
         });
 
+        bumpTaskSyncVersion();
         return NextResponse.json(task);
       } catch (fallbackErr: any) {
-        console.error('Fallback 1 failed, trying minimal fallback:', fallbackErr);
+        console.error('Fallback 1 creation failed, trying minimal creation fallback:', fallbackErr);
 
         const task = await prisma.task.create({
           data: {
@@ -183,6 +192,7 @@ export async function POST(req: Request) {
           },
         });
 
+        bumpTaskSyncVersion();
         return NextResponse.json(task);
       }
     }
@@ -202,6 +212,7 @@ export async function DELETE(req: Request) {
         await prisma.task.deleteMany({
           where: { id: { in: ids } }
         });
+        bumpTaskSyncVersion();
         return NextResponse.json({ success: true, count: ids.length });
       }
     }

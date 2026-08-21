@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkServerPermission } from '@/lib/serverPermissions';
+import { bumpTaskSyncVersion } from '@/lib/syncState';
 
 
 const calculateProgress = async (status: string, subTasksJson: string | null | undefined): Promise<number> => {
@@ -243,7 +244,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           });
         } catch(e) { console.error('Failed to log activity', e); }
       }
-
+      bumpTaskSyncVersion();
       return NextResponse.json(task);
     } catch (updateErr: any) {
       console.error('Primary task update failed, trying fallback 1:', updateErr);
@@ -262,10 +263,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             ...(catatan !== undefined && { catatan }),
             ...(startDate && { startDate: parseDate(startDate) }),
             ...(endDate && { endDate: parseDate(endDate) }),
+            ...(isAllDay !== undefined && { isAllDay: Boolean(isAllDay) }),
+            ...(startTime !== undefined && { startTime }),
+            ...(endTime !== undefined && { endTime }),
+            ...(fileUrl !== undefined && { fileUrl }),
+            ...(fileName !== undefined && { fileName }),
+            ...(filesJson !== undefined && { filesJson }),
+            ...(subTasksJson !== undefined && { subTasksJson }),
+            ...(commentsJson !== undefined && { commentsJson }),
+            ...(additionalPics !== undefined && { additionalPics }),
+            ...(repetisi !== undefined && { repetisi }),
+            ...(lokasi !== undefined && { lokasi }),
+            ...(historyLogsJson !== undefined ? { historyLogsJson } : { historyLogsJson: JSON.stringify(currentLogs) }),
+            editCount: newCount,
+            lastEditedAt: now
           },
         });
 
-        if (existingTask && status !== undefined && status !== existingTask.status) {
+        if (existingTask && existingTask.status !== status && status !== undefined) {
           try {
             await prisma.activityLog.create({
               data: {
@@ -289,6 +304,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           } catch(e) {}
         }
 
+        bumpTaskSyncVersion();
         return NextResponse.json(task);
       } catch (fallbackErr: any) {
         console.error('Fallback 1 update failed, trying minimal update fallback:', fallbackErr);
@@ -309,6 +325,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           },
         });
 
+        bumpTaskSyncVersion();
         return NextResponse.json(task);
       }
     }
@@ -330,6 +347,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await prisma.task.delete({
       where: { id: Number(id) },
     });
+    bumpTaskSyncVersion();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Failed to delete task:', error);

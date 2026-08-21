@@ -1,6 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useEffect, useTransition, useRef } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo, useDeferredValue } from 'react';
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTaskModal } from '@/context/TaskModalContext';
@@ -68,6 +68,22 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
+
+  // Real-Time Background Synchronization Listener
+  useEffect(() => {
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        startTransition(() => {
+          setTasks(e.detail);
+        });
+      }
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    };
+  }, []);
 
   useEffect(() => {
     if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
@@ -388,59 +404,73 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   };
 
 
-  const filteredTasks = tasks.filter((t: any) => {
-    let matchSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t: any) => {
+      let matchSearch = checkSearchMatch(t, deferredSearchQuery, globalSearchExactMatch);
 
-    const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
-      t.additionalPics ? (() => {
-        try {
-          const arr = JSON.parse(t.additionalPics);
-          return Array.isArray(arr) && arr.includes(globalPicFilter);
-        } catch (e) { return false; }
-      })() : false
-    );
+      const matchCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
 
-    const taskEnd = new Date(t.endDate).getTime();
-    const taskStart = new Date(t.startDate).getTime();
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const matchPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || (
+        t.additionalPics ? (() => {
+          try {
+            const arr = JSON.parse(t.additionalPics);
+            return Array.isArray(arr) && arr.includes(globalPicFilter);
+          } catch (e) { return false; }
+        })() : false
+      );
 
-    let startBoundary = today.getTime();
-    let endBoundary = today.getTime() + 86400000 - 1;
+      const taskEnd = new Date(t.endDate).getTime();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (globalTargetFilter === 'Minggu Ini') {
-      const day = today.getDay();
-      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(new Date(today).setDate(diff));
-      startBoundary = monday.getTime();
-      endBoundary = startBoundary + (7 * 86400000) - 1;
-    } else if (globalTargetFilter === 'Bulan Ini') {
-      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
-      startBoundary = new Date(globalCustomStartDate).getTime();
-      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-    }
+      let startBoundary = today.getTime();
+      let endBoundary = today.getTime() + 86400000 - 1;
 
-    let matchDate = false;
-    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-      matchDate = true;
-    } else {
-      if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
-        matchDate = true;
+      if (globalTargetFilter === 'Minggu Ini') {
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(new Date(today).setDate(diff));
+        startBoundary = monday.getTime();
+        endBoundary = startBoundary + (7 * 86400000) - 1;
+      } else if (globalTargetFilter === 'Bulan Ini') {
+        startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+        startBoundary = new Date(globalCustomStartDate).getTime();
+        endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
       }
-    }
 
-    const matchStatus = globalFilterStatus === 'All' || t.status === globalFilterStatus;
-    const matchPriority = globalFilterPriority === 'All' || (t.prioritas || 'Medium') === globalFilterPriority;
+      let matchDate = false;
+      if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+        matchDate = true;
+      } else {
+        if (taskEnd >= startBoundary && taskEnd <= endBoundary) {
+          matchDate = true;
+        }
+      }
 
-    return matchSearch && matchCategory && matchPic && matchDate && matchStatus && matchPriority;
-  }).sort((a, b) => {
-    if (a.orderIndex === b.orderIndex) return b.id - a.id;
-    return (a.orderIndex || 0) - (b.orderIndex || 0);
-  });
+      const matchStatus = globalFilterStatus === 'All' || t.status === globalFilterStatus;
+      const matchPriority = globalFilterPriority === 'All' || (t.prioritas || 'Medium') === globalFilterPriority;
+
+      return matchSearch && matchCategory && matchPic && matchDate && matchStatus && matchPriority;
+    }).sort((a, b) => {
+      if (a.orderIndex === b.orderIndex) return b.id - a.id;
+      return (a.orderIndex || 0) - (b.orderIndex || 0);
+    });
+  }, [
+    tasks,
+    deferredSearchQuery,
+    globalSearchExactMatch,
+    filterCategory,
+    globalPicFilter,
+    globalTargetFilter,
+    globalCustomStartDate,
+    globalCustomEndDate,
+    globalFilterStatus,
+    globalFilterPriority
+  ]);
 
   const handleExportExcel = async () => {
     toast.loading('Mengekspor Board Pekerjaan...', { id: 'export-excel-board' });

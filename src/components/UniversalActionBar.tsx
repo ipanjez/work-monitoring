@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import CalendarSyncModal from './CalendarSyncModal';
 import { Task } from '@/utils/taskUtils';
+import SyncStatusBadge from './SyncStatusBadge';
 
 interface UniversalActionBarProps {
   onExportExcel?: () => void;
@@ -16,6 +17,7 @@ interface UniversalActionBarProps {
   onExportImage?: () => void;
   isExportingImage?: boolean;
   showSyncCalendar?: boolean;
+  showSyncBadge?: boolean;
   tasks?: Task[];
   canExport?: boolean;
   children?: React.ReactNode;
@@ -29,6 +31,7 @@ export default function UniversalActionBar({
   onExportImage,
   isExportingImage,
   showSyncCalendar = true,
+  showSyncBadge = true,
   tasks = [],
   canExport = true,
   children 
@@ -63,6 +66,8 @@ export default function UniversalActionBar({
           flexWrap: 'nowrap'
         }}
       >
+        {/* Real-Time Live Sync Status Indicator */}
+        {showSyncBadge && <SyncStatusBadge />}
         {!canExport && (
           <span 
             title={disabledTitle} 

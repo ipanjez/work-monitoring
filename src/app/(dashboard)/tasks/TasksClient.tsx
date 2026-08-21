@@ -1,6 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, useMemo, useDeferredValue } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, CheckCheck, Settings2, Calendar, FileDown, FileSpreadsheet, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -33,8 +33,6 @@ import { useTaskModal } from '@/context/TaskModalContext';
 
 type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi';
 
-
-
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
   const userRole: string = (session?.user as any)?.role || 'PIC';
@@ -43,6 +41,22 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Real-Time Background Synchronization Listener
+  useEffect(() => {
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        startTransition(() => {
+          setTasks(e.detail);
+        });
+      }
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    };
+  }, []);
 
   // Search & Filter State
   const router = useRouter();
@@ -192,25 +206,31 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     }
   };
 
-  const allCategoryOptions = Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
-  const categoriesFilter = [...allCategoryOptions];
+  const allCategoryOptions = useMemo(() => {
+    return Array.from(new Set([...masterCats, ...tasks.map(t => t.kategori).filter((c): c is string => Boolean(c))]));
+  }, [masterCats, tasks]);
+
+  const categoriesFilter = allCategoryOptions;
 
   // Extract all unique PICs (for filter dropdown)
-  const allPicsSet = new Set<string>(masterPics);
-  tasks.forEach(t => {
-    if (t.pic) allPicsSet.add(t.pic);
-    if (t.additionalPics) {
-      try {
-        const arr = JSON.parse(t.additionalPics);
-        if (Array.isArray(arr)) arr.forEach((p: string) => p && allPicsSet.add(p));
-      } catch (e) { }
+  const existingPics = useMemo(() => {
+    const allPicsSet = new Set<string>(masterPics);
+    tasks.forEach(t => {
+      if (t.pic) allPicsSet.add(t.pic);
+      if (t.additionalPics) {
+        try {
+          const arr = JSON.parse(t.additionalPics);
+          if (Array.isArray(arr)) arr.forEach((p: string) => p && allPicsSet.add(p));
+        } catch (e) { }
+      }
+    });
+    if (session?.user?.name) {
+      allPicsSet.add(session.user.name);
     }
-  });
-  if (session?.user?.name) {
-    allPicsSet.add(session.user.name);
-  }
-  const existingPics = Array.from(allPicsSet);
-  const pics = [...existingPics];
+    return Array.from(allPicsSet);
+  }, [masterPics, tasks, session]);
+
+  const pics = existingPics;
 
   // Strictly for Add/Edit Form Dropdowns (Sync with Settings)
   let formCategoryOptions = masterCats.length > 0 ? [...masterCats] : [];
@@ -239,90 +259,105 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const priorityWeight: Record<string, number> = { 'Urgent': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
   const statusWeight: Record<string, number> = { 'Done': 3, 'In Progress': 2, 'To Do': 1 };
 
-  // Filter & Sort Tasks
-  const processedTasks = tasks.filter(t => {
-    const extraPics = getAdditionalPics(t).join(' ');
-    const matchesSearch = checkSearchMatch(t, searchQuery, globalSearchExactMatch);
-    const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
-    const matchesPriority = filterPriority === 'All' || (t.prioritas || 'Medium') === filterPriority;
-    const matchesCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
-    const matchesPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || getAdditionalPics(t).includes(globalPicFilter);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    // Target Waktu Filter
-    const start = new Date(t.startDate).getTime();
-    const end = new Date(t.endDate).getTime();
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Filter & Sort Tasks with memoization
+  const processedTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const matchesSearch = checkSearchMatch(t, deferredSearchQuery, globalSearchExactMatch);
+      const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
+      const matchesPriority = filterPriority === 'All' || (t.prioritas || 'Medium') === filterPriority;
+      const matchesCategory = filterCategory === 'All' || (t.kategori || 'Umum') === filterCategory;
+      const matchesPic = globalPicFilter === 'Semua PIC' || t.pic === globalPicFilter || getAdditionalPics(t).includes(globalPicFilter);
 
-    let startBoundary = today.getTime();
-    let endBoundary = today.getTime() + 86400000 - 1;
+      // Target Waktu Filter
+      const end = new Date(t.endDate).getTime();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (globalTargetFilter === 'Minggu Ini') {
-      const day = today.getDay();
-      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(new Date(today).setDate(diff));
-      startBoundary = monday.getTime();
-      endBoundary = startBoundary + (7 * 86400000) - 1;
-    } else if (globalTargetFilter === 'Bulan Ini') {
-      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-    } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
-      startBoundary = new Date(globalCustomStartDate).getTime();
-      endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-    }
+      let startBoundary = today.getTime();
+      let endBoundary = today.getTime() + 86400000 - 1;
 
-    let matchesTarget = false;
-    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-      matchesTarget = true;
-    } else {
-      if (end >= startBoundary && end <= endBoundary) {
-        matchesTarget = true;
+      if (globalTargetFilter === 'Minggu Ini') {
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(new Date(today).setDate(diff));
+        startBoundary = monday.getTime();
+        endBoundary = startBoundary + (7 * 86400000) - 1;
+      } else if (globalTargetFilter === 'Bulan Ini') {
+        startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
+        startBoundary = new Date(globalCustomStartDate).getTime();
+        endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
       }
-    }
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesPic && matchesTarget;
-  }).sort((a, b) => {
-    if (!sortField) return 0;
-
-    let valA: any = (a as any)[sortField];
-    let valB: any = (b as any)[sortField];
-
-    if (sortField === 'prioritas') {
-      valA = priorityWeight[a.prioritas || 'Medium'] || 0;
-      valB = priorityWeight[b.prioritas || 'Medium'] || 0;
-    } else if (sortField === 'status') {
-      valA = statusWeight[a.status] || 0;
-      valB = statusWeight[b.status] || 0;
-    } else if (sortField === 'progress') {
-      valA = a.progress || 0;
-      valB = b.progress || 0;
-    } else if (sortField === 'endDate') {
-      valA = new Date(a.endDate).getTime();
-      valB = new Date(b.endDate).getTime();
-    } else if (sortField === 'lampiran') {
-      valA = getTaskFiles(a).length;
-      valB = getTaskFiles(b).length;
-    } else if (sortField === 'lokasi') {
-      const getLocStr = (t: Task) => {
-        if (!t.lokasi) return '';
-        try {
-          const loc = JSON.parse(t.lokasi);
-          return (loc.tipe === 'online' ? `Online ${loc.linkZoom || ''}` : `Offline ${loc.lokasiFisik || ''}`).toLowerCase();
-        } catch (e) {
-          return String(t.lokasi).toLowerCase();
+      let matchesTarget = false;
+      if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+        matchesTarget = true;
+      } else {
+        if (end >= startBoundary && end <= endBoundary) {
+          matchesTarget = true;
         }
-      };
-      valA = getLocStr(a);
-      valB = getLocStr(b);
-    } else if (typeof valA === 'string') {
-      valA = valA.toLowerCase();
-      valB = (valB || '').toLowerCase();
-    }
+      }
 
-    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
+      return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesPic && matchesTarget;
+    }).sort((a, b) => {
+      if (!sortField) return 0;
+
+      let valA: any = (a as any)[sortField];
+      let valB: any = (b as any)[sortField];
+
+      if (sortField === 'prioritas') {
+        valA = priorityWeight[a.prioritas || 'Medium'] || 0;
+        valB = priorityWeight[b.prioritas || 'Medium'] || 0;
+      } else if (sortField === 'status') {
+        valA = statusWeight[a.status] || 0;
+        valB = statusWeight[b.status] || 0;
+      } else if (sortField === 'progress') {
+        valA = a.progress || 0;
+        valB = b.progress || 0;
+      } else if (sortField === 'endDate') {
+        valA = new Date(a.endDate).getTime();
+        valB = new Date(b.endDate).getTime();
+      } else if (sortField === 'lampiran') {
+        valA = getTaskFiles(a).length;
+        valB = getTaskFiles(b).length;
+      } else if (sortField === 'lokasi') {
+        const getLocStr = (t: Task) => {
+          if (!t.lokasi) return '';
+          try {
+            const loc = JSON.parse(t.lokasi);
+            return (loc.tipe === 'online' ? `Online ${loc.linkZoom || ''}` : `Offline ${loc.lokasiFisik || ''}`).toLowerCase();
+          } catch (e) {
+            return String(t.lokasi).toLowerCase();
+          }
+        };
+        valA = getLocStr(a);
+        valB = getLocStr(b);
+      } else if (typeof valA === 'string') {
+        valA = valA.toLowerCase();
+        valB = (valB || '').toLowerCase();
+      }
+
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [
+    tasks,
+    deferredSearchQuery,
+    globalSearchExactMatch,
+    filterStatus,
+    filterPriority,
+    filterCategory,
+    globalPicFilter,
+    globalTargetFilter,
+    globalCustomStartDate,
+    globalCustomEndDate,
+    sortField,
+    sortDirection
+  ]);
 
   const handleOpenAddModal = () => {
     const today = new Date().toISOString().split('T')[0];
