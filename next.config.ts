@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     proxyClientMaxBodySize: '100mb',
   },
   serverExternalPackages: ['adm-zip', 'archiver'],
-  allowedDevOrigins: ['10.127.30.190'],
+  allowedDevOrigins: ['10.127.30.63', '10.127.30.190'],
   async rewrites() {
     return [
       {
