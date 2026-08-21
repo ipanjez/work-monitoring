@@ -2,7 +2,7 @@
 import { useMaster } from '@/context/MasterContext';
 import { useState, useRef, useEffect, useTransition, useMemo, useDeferredValue } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, CheckCheck, Settings2, Calendar, FileDown, FileSpreadsheet, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2 } from 'lucide-react';
+import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, CheckCheck, Settings2, Calendar, FileDown, FileSpreadsheet, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListOrdered, CheckCircle2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import * as XLSX from 'xlsx';
@@ -371,6 +371,101 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
     sortField,
     sortDirection
   ]);
+
+  // Pagination State
+  const [pageSize, setPageSize] = useState<number | 'all'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tasks_page_size');
+      if (saved === 'all') return 'all';
+      if (saved && !isNaN(Number(saved))) return Number(saved);
+    }
+    return 25;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [jumpPageInput, setJumpPageInput] = useState('');
+
+  // Reset to page 1 when search, filter, sort, or pageSize changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    deferredSearchQuery,
+    globalSearchExactMatch,
+    filterStatus,
+    filterPriority,
+    filterCategory,
+    globalPicFilter,
+    globalTargetFilter,
+    globalCustomStartDate,
+    globalCustomEndDate,
+    pageSize,
+    sortField,
+    sortDirection
+  ]);
+
+  const handlePageSizeChange = (newSize: number | 'all') => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tasks_page_size', String(newSize));
+    }
+  };
+
+  const totalTasksCount = processedTasks.length;
+  const numPageSize = pageSize === 'all' ? Math.max(1, totalTasksCount) : (typeof pageSize === 'number' ? pageSize : 25);
+  const totalPages = Math.max(1, Math.ceil(totalTasksCount / numPageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedTasks = useMemo(() => {
+    if (pageSize === 'all') return processedTasks;
+    const start = (safeCurrentPage - 1) * numPageSize;
+    return processedTasks.slice(start, start + numPageSize);
+  }, [processedTasks, safeCurrentPage, numPageSize, pageSize]);
+
+  const startRecord = totalTasksCount === 0 ? 0 : (safeCurrentPage - 1) * numPageSize + 1;
+  const endRecord = pageSize === 'all' ? totalTasksCount : Math.min(safeCurrentPage * numPageSize, totalTasksCount);
+
+  const isAllOnPageSelected = paginatedTasks.length > 0 && paginatedTasks.every(t => selectedTasks.has(t.id));
+  const isSomeOnPageSelected = paginatedTasks.some(t => selectedTasks.has(t.id)) && !isAllOnPageSelected;
+
+  const handleToggleSelectAllPage = () => {
+    if (isAllOnPageSelected) {
+      const next = new Set(selectedTasks);
+      paginatedTasks.forEach(t => next.delete(t.id));
+      setSelectedTasks(next);
+    } else {
+      const next = new Set(selectedTasks);
+      paginatedTasks.forEach(t => next.add(t.id));
+      setSelectedTasks(next);
+    }
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedTasks(new Set(processedTasks.map(t => t.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedTasks(new Set());
+    setLastSelectedId(null);
+  };
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    pages.push(1);
+    if (safeCurrentPage > 3) pages.push('...');
+    
+    const start = Math.max(2, safeCurrentPage - 1);
+    const end = Math.min(totalPages - 1, safeCurrentPage + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    if (safeCurrentPage < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  };
 
   const handleOpenAddModal = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -1126,18 +1221,19 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </AnimatePresence>
 
       <div id="task-table-container" className="glass" style={{ padding: '16px', overflow: 'hidden' }}>
-        {/* Quick Sort Toolbar */}
+        {/* Quick Sort & Pagination Toolbar */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '8px',
+          gap: '10px',
           paddingBottom: '12px',
           marginBottom: '10px',
           borderBottom: '1px solid var(--border-color)',
           fontSize: '12px'
         }}>
+          {/* Left Sort Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ArrowUpDown size={13} /> Urutkan:
@@ -1255,31 +1351,173 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             )}
           </div>
 
-          <div style={{ color: 'var(--text-secondary)', fontSize: '11.5px' }}>
-            Menampilkan <strong>{processedTasks.length}</strong> dari <strong>{tasks.length}</strong> pekerjaan
+          {/* Right Pagination Quick Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '11.5px' }}>Baris:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                style={{
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--input-bg)',
+                  color: 'var(--text-primary)',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value="all">Semua</option>
+              </select>
+            </div>
+
+            <div style={{ color: 'var(--text-secondary)', fontSize: '11.5px', whiteSpace: 'nowrap' }}>
+              <strong>{startRecord}</strong> - <strong>{endRecord}</strong> dari <strong>{totalTasksCount}</strong>
+            </div>
+
+            {totalPages > 1 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  type="button"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  style={{
+                    padding: '3px 6px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage <= 1 ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage <= 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage <= 1 ? 0.4 : 1,
+                    cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span style={{ fontSize: '11.5px', fontWeight: 600, padding: '0 4px', color: 'var(--text-primary)' }}>
+                  {safeCurrentPage}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  style={{
+                    padding: '3px 6px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage >= totalPages ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage >= totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage >= totalPages ? 0.4 : 1,
+                    cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                  title="Halaman Berikutnya"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Selection Banner if tasks are selected on page */}
+        {selectedTasks.size > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(59, 130, 246, 0.08)',
+            border: '1px solid rgba(59, 130, 246, 0.25)',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            marginBottom: '12px',
+            fontSize: '12px',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
+              <CheckCircle2 size={15} color="var(--accent-primary)" />
+              <span>
+                <strong>{selectedTasks.size}</strong> pekerjaan terpilih saat ini.
+              </span>
+              {selectedTasks.size < totalTasksCount && (
+                <button
+                  type="button"
+                  onClick={handleSelectAllFiltered}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: '0 4px',
+                    fontSize: '12px'
+                  }}
+                >
+                  Pilih seluruh {totalTasksCount} pekerjaan hasil filter
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: 'var(--danger)',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Batalkan Pilihan
+            </button>
+          </div>
+        )}
+
         {/* Desktop View Table */}
-        <div className="desktop-table-view" style={{ overflowX: 'auto' }}>
+        <div className="desktop-table-view" style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '11.5px' }}>
+              <tr style={{
+                borderBottom: '2px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                fontSize: '11.5px',
+                position: 'sticky',
+                top: 0,
+                zIndex: 5,
+                background: 'var(--surface-color)'
+              }}>
                 {hasPermission(roleConfig, 'delete_task', userRole) && (
-                  <th style={{ padding: '8px 4px', width: '36px', textAlign: 'center' }}>
+                  <th style={{ padding: '10px 4px', width: '36px', textAlign: 'center', background: 'var(--surface-color)' }}>
                     <input
                       type="checkbox"
                       ref={(el) => {
-                        if (el) el.indeterminate = selectedTasks.size > 0 && selectedTasks.size < processedTasks.length;
+                        if (el) el.indeterminate = isSomeOnPageSelected;
                       }}
-                      checked={processedTasks.length > 0 && selectedTasks.size === processedTasks.length}
-                      onChange={handleToggleSelectAll}
+                      checked={isAllOnPageSelected}
+                      onChange={handleToggleSelectAllPage}
                       style={{ cursor: 'pointer', width: '15px', height: '15px' }}
-                      title={selectedTasks.size === processedTasks.length ? 'Batalkan pilihan semua' : 'Pilih semua pekerjaan'}
+                      title={isAllOnPageSelected ? 'Batalkan pilihan halaman ini' : 'Pilih semua pekerjaan pada halaman ini'}
                     />
                   </th>
                 )}
-                <th style={{ padding: '8px 6px', userSelect: 'none' }}>
+                <th style={{ padding: '10px 4px', width: '38px', textAlign: 'center', background: 'var(--surface-color)', color: 'var(--text-secondary)' }}>
+                  #
+                </th>
+                <th style={{ padding: '10px 8px', userSelect: 'none', background: 'var(--surface-color)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                     <div 
                       onClick={() => handleSort('nama')}
@@ -1334,52 +1572,53 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </div>
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '8px 6px' }}>
+                <th className="hide-tablet" style={{ padding: '10px 8px', background: 'var(--surface-color)' }}>
                   Deskripsi
                 </th>
-                <th className="hide-tablet" style={{ padding: '8px 6px' }}>
+                <th className="hide-tablet" style={{ padding: '10px 8px', background: 'var(--surface-color)' }}>
                   Sub Pekerjaan
                 </th>
-                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('pic')}>
+                <th style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     PIC {renderSortIcon('pic')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('kategori')}>
+                <th className="hide-mobile" style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('kategori')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Kategori {renderSortIcon('kategori')}
                   </div>
                 </th>
-                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('prioritas')}>
+                <th style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('prioritas')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Prioritas {renderSortIcon('prioritas')}
                   </div>
                 </th>
-                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')}>
+                <th style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('status')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Status & Progress {renderSortIcon('status')}
                   </div>
                 </th>
-                <th className="hide-mobile" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none', width: '180px', minWidth: '150px' }} onClick={() => handleSort('lampiran')}>
+                <th className="hide-mobile" style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', width: '180px', minWidth: '150px', background: 'var(--surface-color)' }} onClick={() => handleSort('lampiran')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Lampiran {renderSortIcon('lampiran')}
                   </div>
                 </th>
-                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('endDate')}>
+                <th style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('endDate')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Tenggat Waktu {renderSortIcon('endDate')}
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('lokasi')}>
+                <th className="hide-tablet" style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('lokasi')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     Lokasi {renderSortIcon('lokasi')}
                   </div>
                 </th>
-                <th style={{ padding: '8px 4px', textAlign: 'center', width: '40px' }}>Aksi</th>
+                <th style={{ padding: '10px 4px', textAlign: 'center', width: '40px', background: 'var(--surface-color)' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {processedTasks.map(task => {
+              {paginatedTasks.map((task, idx) => {
+                const rowIndex = (safeCurrentPage - 1) * numPageSize + idx + 1;
                 const prog = task.progress || (masterStatusProgress[task.status] ?? (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0));
                 const taskFiles = getTaskFiles(task);
                 const extraPics = getAdditionalPics(task);
@@ -1391,7 +1630,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     style={{
                       borderBottom: '1px solid var(--border-color)',
                       transition: 'background 0.15s ease',
-                      backgroundColor: selectedTasks.has(task.id) ? 'rgba(59, 130, 246, 0.08)' : undefined
+                      backgroundColor: selectedTasks.has(task.id) ? 'rgba(59, 130, 246, 0.08)' : (idx % 2 === 1 ? 'rgba(0, 0, 0, 0.015)' : undefined)
                     }}
                   >
                     {hasPermission(roleConfig, 'delete_task', userRole) && (
@@ -1405,6 +1644,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                         />
                       </td>
                     )}
+                    <td style={{ padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 600 }}>
+                      {rowIndex}
+                    </td>
                     <td style={{ padding: '8px 6px' }}>
                       <div
                         style={{
@@ -1849,7 +2091,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
         {/* Mobile View Cards */}
         <div className="mobile-card-view">
-          {processedTasks.map(task => {
+          {paginatedTasks.map(task => {
             const prog = task.progress || (masterStatusProgress[task.status] ?? (task.status === 'Done' ? 100 : task.status === 'In Progress' ? 50 : 0));
             const taskFiles = getTaskFiles(task);
             const extraPics = getAdditionalPics(task);
@@ -2119,12 +2361,256 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
             );
           })}
 
-           {processedTasks.length === 0 && (
+          {totalTasksCount === 0 && (
             <div className="glass" style={{ padding: '24px', borderRadius: '14px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <EmptyState />
             </div>
           )}
         </div>
+
+        {/* Full-featured Modern Pagination Toolbar */}
+        {totalTasksCount > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '16px',
+            paddingTop: '14px',
+            borderTop: '1px solid var(--border-color)',
+            fontSize: '12px'
+          }}>
+            {/* Left: Rows Per Page Selector & Info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Tampilkan:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value={10}>10 baris</option>
+                  <option value={25}>25 baris</option>
+                  <option value={50}>50 baris</option>
+                  <option value={100}>100 baris</option>
+                  <option value="all">Semua baris ({totalTasksCount})</option>
+                </select>
+              </div>
+
+              <span style={{ color: 'var(--text-secondary)' }}>
+                Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{startRecord}</strong> - <strong style={{ color: 'var(--text-primary)' }}>{endRecord}</strong> dari <strong style={{ color: 'var(--text-primary)' }}>{totalTasksCount}</strong> pekerjaan
+                {pageSize !== 'all' && totalPages > 1 && (
+                  <span> (Halaman <strong>{safeCurrentPage}</strong> dari <strong>{totalPages}</strong>)</span>
+                )}
+              </span>
+            </div>
+
+            {/* Right: Page Navigation Pills & Jumper */}
+            {pageSize !== 'all' && totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                {/* First Page */}
+                <button
+                  type="button"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage(1)}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage <= 1 ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage <= 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage <= 1 ? 0.35 : 1,
+                    cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontSize: '11.5px',
+                    fontWeight: 500
+                  }}
+                  title="Halaman Pertama"
+                >
+                  <ChevronsLeft size={14} />
+                  <span className="hide-mobile">Awal</span>
+                </button>
+
+                {/* Prev Page */}
+                <button
+                  type="button"
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage <= 1 ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage <= 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage <= 1 ? 0.35 : 1,
+                    cursor: safeCurrentPage <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontSize: '11.5px',
+                    fontWeight: 500
+                  }}
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft size={14} />
+                  <span className="hide-mobile">Sebelumnya</span>
+                </button>
+
+                {/* Page Number Buttons */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {getPageNumbers().map((p, pIdx) => {
+                    if (p === '...') {
+                      return (
+                        <span key={`ellipsis-${pIdx}`} style={{ padding: '0 4px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          ...
+                        </span>
+                      );
+                    }
+                    const isCurrent = p === safeCurrentPage;
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        onClick={() => setCurrentPage(Number(p))}
+                        style={{
+                          minWidth: '28px',
+                          height: '28px',
+                          borderRadius: '8px',
+                          border: isCurrent ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: isCurrent ? 'var(--accent-primary)' : 'var(--input-bg)',
+                          color: isCurrent ? '#ffffff' : 'var(--text-primary)',
+                          fontWeight: isCurrent ? 700 : 500,
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Page */}
+                <button
+                  type="button"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage >= totalPages ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage >= totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage >= totalPages ? 0.35 : 1,
+                    cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontSize: '11.5px',
+                    fontWeight: 500
+                  }}
+                  title="Halaman Berikutnya"
+                >
+                  <span className="hide-mobile">Berikutnya</span>
+                  <ChevronRight size={14} />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  type="button"
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    background: safeCurrentPage >= totalPages ? 'transparent' : 'var(--input-bg)',
+                    color: safeCurrentPage >= totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
+                    opacity: safeCurrentPage >= totalPages ? 0.35 : 1,
+                    cursor: safeCurrentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    fontSize: '11.5px',
+                    fontWeight: 500
+                  }}
+                  title="Halaman Terakhir"
+                >
+                  <span className="hide-mobile">Akhir</span>
+                  <ChevronsRight size={14} />
+                </button>
+
+                {/* Jump to page */}
+                {totalPages > 3 && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const num = Number(jumpPageInput);
+                      if (num >= 1 && num <= totalPages) {
+                        setCurrentPage(num);
+                        setJumpPageInput('');
+                      } else {
+                        toast.error(`Masukkan nomor halaman antara 1 s/d ${totalPages}`);
+                      }
+                    }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}
+                  >
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11.5px' }}>Ke:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={jumpPageInput}
+                      onChange={(e) => setJumpPageInput(e.target.value)}
+                      placeholder={`${safeCurrentPage}`}
+                      style={{
+                        width: '42px',
+                        padding: '3px 4px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--input-bg)',
+                        color: 'var(--text-primary)',
+                        fontSize: '11.5px',
+                        textAlign: 'center'
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--input-bg)',
+                        color: 'var(--text-primary)',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Go
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <BulkEditModal
