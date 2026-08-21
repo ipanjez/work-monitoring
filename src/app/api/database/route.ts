@@ -65,50 +65,94 @@ export async function GET() {
     const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
 
-    if (hasBlobToken && !isLocal) {
-      // Cloud MODE: Fetch all blobs from Vercel Blob
-      (async () => {
-        try {
-          let cursor: string | undefined;
-          do {
-            const listResult: any = await list({ cursor });
-            
-            // Fetch in parallel
-            const fetchPromises = listResult.blobs.map(async (blob: any) => {
+    // Multi-source Universal Archiving: Combines local disk + Vercel Blob + task attachment URLs
+    (async () => {
+      try {
+        const addedFiles = new Set<string>();
+
+        // 1. Append from local disk public/uploads
+        if (fs.existsSync(uploadsDir)) {
+          const diskFiles = fs.readdirSync(uploadsDir);
+          for (const f of diskFiles) {
+            const fPath = path.join(uploadsDir, f);
+            if (fs.statSync(fPath).isFile()) {
+              archive.file(fPath, { name: `uploads/${f}` });
+              addedFiles.add(f);
+            }
+          }
+        }
+
+        // 2. Append from Vercel Blob cloud
+        if (hasBlobToken) {
+          try {
+            let cursor: string | undefined;
+            do {
+              const listResult: any = await list({ cursor });
+              const fetchPromises = listResult.blobs.map(async (blob: any) => {
+                const fname = blob.pathname.replace(/^uploads\//, '');
+                if (addedFiles.has(fname)) return null;
+                try {
+                  const res = await fetch(blob.url);
+                  if (res.ok) {
+                    const arrayBuffer = await res.arrayBuffer();
+                    return { data: Buffer.from(arrayBuffer), name: `uploads/${fname}`, fname };
+                  }
+                } catch (e) {
+                  console.error('Failed to fetch blob:', blob.url, e);
+                }
+                return null;
+              });
+
+              const results = await Promise.all(fetchPromises);
+              for (const item of results) {
+                if (item && !addedFiles.has(item.fname)) {
+                  archive.append(item.data, { name: item.name });
+                  addedFiles.add(item.fname);
+                }
+              }
+              cursor = listResult.cursor;
+            } while (cursor);
+          } catch (cloudErr) {
+            console.error('Error fetching blobs for backup:', cloudErr);
+          }
+        }
+
+        // 3. Scan tasks for any remaining attachment URLs not yet captured
+        for (const task of tasks as any[]) {
+          const urlsToFetch: string[] = [];
+          if (task.fileUrl && task.fileUrl.startsWith('http')) urlsToFetch.push(task.fileUrl);
+          if (task.filesJson) {
+            try {
+              const files = JSON.parse(task.filesJson);
+              if (Array.isArray(files)) {
+                files.forEach((f: any) => {
+                  if (f.url && f.url.startsWith('http')) urlsToFetch.push(f.url);
+                });
+              }
+            } catch (e) {}
+          }
+
+          for (const u of urlsToFetch) {
+            const uMatch = u.match(/\/([^/?#]+)$/);
+            const fName = uMatch ? decodeURIComponent(uMatch[1]) : '';
+            if (fName && !addedFiles.has(fName)) {
               try {
-                const res = await fetch(blob.url);
+                const res = await fetch(u);
                 if (res.ok) {
                   const arrayBuffer = await res.arrayBuffer();
-                  return { data: Buffer.from(arrayBuffer), name: `uploads/${blob.pathname}` };
+                  archive.append(Buffer.from(arrayBuffer), { name: `uploads/${fName}` });
+                  addedFiles.add(fName);
                 }
-              } catch (e) {
-                console.error('Failed to fetch blob:', blob.url, e);
-              }
-              return null;
-            });
-            
-            const results = await Promise.all(fetchPromises);
-            for (const item of results) {
-              if (item) {
-                archive.append(item.data, { name: item.name });
-              }
+              } catch (e) {}
             }
-            
-            cursor = listResult.cursor;
-          } while (cursor);
-        } catch (cloudErr) {
-          console.error('Error fetching blobs for backup:', cloudErr);
-        } finally {
-          archive.finalize();
+          }
         }
-      })();
-    } else {
-      // Append uploads directory if it exists on disk
-      if (fs.existsSync(uploadsDir)) {
-        archive.directory(uploadsDir, 'uploads');
+      } catch (err) {
+        console.error('Error during universal backup file assembly:', err);
+      } finally {
+        archive.finalize();
       }
-      archive.finalize();
-    }
+    })();
 
     // Convert Node PassThrough stream to Web ReadableStream
     const webStream = new ReadableStream({

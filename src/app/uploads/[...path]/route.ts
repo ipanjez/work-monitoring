@@ -69,23 +69,45 @@ export async function GET(
           matchedBlob = listResult.blobs[0];
         }
 
-        // If not found with prefix, search full blob list (up to 1000)
-        if (!matchedBlob) {
-          const allBlobs = await list({ limit: 1000 });
-          matchedBlob = allBlobs.blobs.find(b => 
-            b.pathname === decodedFilename || 
-            b.pathname.endsWith(decodedFilename) ||
-            b.url.includes(encodeURIComponent(decodedFilename)) ||
-            b.url.includes(decodedFilename)
-          );
-        }
-
         if (matchedBlob) {
           return NextResponse.redirect(matchedBlob.downloadUrl || matchedBlob.url, 307);
         }
       } catch (blobErr) {
         console.error('Error fetching from Vercel Blob in /uploads handler:', blobErr);
       }
+    }
+
+    // 3. Check database task records for remote URLs matching this filename
+    try {
+      const { prisma } = await import('@/lib/prisma');
+      const taskWithFile = await prisma.task.findFirst({
+        where: {
+          OR: [
+            { fileUrl: { contains: decodedFilename } },
+            { filesJson: { contains: decodedFilename } },
+            { commentsJson: { contains: decodedFilename } },
+          ],
+        },
+      });
+
+      if (taskWithFile) {
+        let targetUrl = '';
+        if (taskWithFile.fileUrl && taskWithFile.fileUrl.includes(decodedFilename)) {
+          targetUrl = taskWithFile.fileUrl;
+        } else if (taskWithFile.filesJson) {
+          try {
+            const files = JSON.parse(taskWithFile.filesJson);
+            const found = files.find((f: any) => f.name === decodedFilename || f.url?.includes(decodedFilename));
+            if (found && found.url) targetUrl = found.url;
+          } catch (e) {}
+        }
+
+        if (targetUrl && targetUrl.startsWith('http') && !targetUrl.includes('/uploads/')) {
+          return NextResponse.redirect(targetUrl, 307);
+        }
+      }
+    } catch (dbErr) {
+      console.warn('DB lookup fallback in /uploads handler:', dbErr);
     }
 
     return new NextResponse('File tidak ditemukan (404)', { 
