@@ -1023,24 +1023,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
   return (
     <div style={{ position: 'relative' }}>
-      {isPending && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.1)', zIndex: 50, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', borderRadius: '12px'
-        }}>
-          <div style={{
-            padding: '12px 24px', backgroundColor: 'var(--surface-color)',
-            borderRadius: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            border: '1px solid var(--border-color)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600
-          }}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent-primary)' }} />
-            Menyinkronkan data...
-          </div>
-        </div>
-      )}
       {/* Global Datalist for PIC Auto-suggest */}
       <datalist id="existing-pics-list">
         {existingPics.map((p, idx) => (
