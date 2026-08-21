@@ -35,9 +35,6 @@ export default function BackupReminderModal({
   tasks
 }: BackupReminderModalProps) {
   const [isDownloading, setIsDownloading] = useState(false);
-
-  if (!isOpen) return null;
-
   const [fileStats, setFileStats] = useState<any>(null);
 
   React.useEffect(() => {
@@ -50,6 +47,8 @@ export default function BackupReminderModal({
         .catch(() => {});
     }
   }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const totalTasks = fileStats?.totalTasks ?? tasks.length;
   const todoCount = fileStats?.todoCount ?? tasks.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
