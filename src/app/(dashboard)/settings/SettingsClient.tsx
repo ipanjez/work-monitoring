@@ -6,7 +6,8 @@ import {
   Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, 
   Users, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
   Pencil, Camera, Clock, RotateCcw, 
-  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw, AlertTriangle
+  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw, AlertTriangle,
+  FileArchive, ShieldCheck, Calendar
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -52,6 +53,77 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const { isBackupDue, lastBackupDate } = useMaster();
 
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
+  const [taskList, setTaskList] = useState<Task[]>(tasks || []);
+
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
+      setTaskList(tasks);
+    } else {
+      fetch('/api/tasks')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setTaskList(data);
+        })
+        .catch(() => {});
+    }
+  }, [tasks]);
+
+  const totalTasks = taskList.length;
+  const todoCount = taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
+  const inProgressCount = taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'inprogress').length;
+  const reviewCount = taskList.filter(t => (t.status || '').toLowerCase() === 'review').length;
+  const doneCount = taskList.filter(t => (t.status || '').toLowerCase() === 'done').length;
+
+  const getNextBackupInfo = (days: number | string, lastDateStr: string | null | undefined) => {
+    const d = Number(days);
+    if (d === 0 || isNaN(d)) {
+      return {
+        label: 'Nonaktif',
+        text: 'Pengingat cadangan otomatis saat ini dinonaktifkan.',
+        formatted: 'Nonaktif',
+        isDue: false
+      };
+    }
+    if (d === -1) {
+      return {
+        label: 'Setiap Kali Login',
+        text: 'Pengingat cadangan otomatis akan aktif setiap kali Anda masuk ke sistem.',
+        formatted: 'Setiap Kali Login',
+        isDue: isBackupDue
+      };
+    }
+    
+    // Days > 0
+    const baseDate = lastDateStr ? new Date(lastDateStr).getTime() : Date.now();
+    const nextTimestamp = baseDate + d * 24 * 60 * 60 * 1000;
+    const nextDate = new Date(nextTimestamp);
+    const isOverdue = Date.now() >= nextTimestamp;
+    
+    const formattedNext = nextDate.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (isOverdue || !lastDateStr) {
+      return {
+        label: `${d} Hari Sekali`,
+        text: `Jadwal Pengingat Berikutnya: Sekarang (${formattedNext} WIB - Belum Dicadangkan)`,
+        formatted: `${formattedNext} WIB`,
+        isDue: true
+      };
+    }
+
+    return {
+      label: `${d} Hari Sekali`,
+      text: `Jadwal Pengingat Berikutnya: ${formattedNext} WIB`,
+      formatted: `${formattedNext} WIB`,
+      isDue: false
+    };
+  };
 
   // General & Branding State
   const [deptName, setDeptName] = useState('MRK');
@@ -1619,12 +1691,24 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   onChange={e => {
                     const val = e.target.value;
                     setBackupReminderMode(val);
+                    let days = Number(val);
                     if (val === 'custom') {
                       if (['0', '-1', ''].includes(String(backupReminderDays))) {
+                        days = 5;
                         setBackupReminderDays(5);
+                      } else {
+                        days = Number(backupReminderDays) || 5;
                       }
                     } else {
-                      setBackupReminderDays(Number(val));
+                      setBackupReminderDays(days);
+                    }
+                    const info = getNextBackupInfo(days, lastBackupDate);
+                    if (days === 0) {
+                      toast('Pengingat cadangan otomatis dinonaktifkan', { icon: 'ℹ️' });
+                    } else if (days === -1) {
+                      toast.success('Pengingat berikutnya: Setiap kali login');
+                    } else {
+                      toast.success(`Jadwal pengingat berikutnya: ${info.formatted}`);
                     }
                   }}
                 >
@@ -1644,7 +1728,14 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                       type="number"
                       className="input"
                       value={backupReminderDays}
-                      onChange={e => setBackupReminderDays(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setBackupReminderDays(val);
+                        if (val && Number(val) > 0) {
+                          const info = getNextBackupInfo(val, lastBackupDate);
+                          toast.success(`Jadwal pengingat berikutnya: ${info.formatted}`);
+                        }
+                      }}
                       min="1"
                       style={{ width: '90px' }}
                       placeholder="Hari"
@@ -1657,12 +1748,106 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 <button 
                   type="button" 
                   className="btn btn-primary" 
-                  onClick={(e) => handleSaveSettings(e as any)} 
+                  onClick={(e) => {
+                    handleSaveSettings(e as any);
+                    const info = getNextBackupInfo(backupReminderDays, lastBackupDate);
+                    if (Number(backupReminderDays) === 0) {
+                      toast('Pengingat otomatis dinonaktifkan', { icon: 'ℹ️' });
+                    } else if (Number(backupReminderDays) === -1) {
+                      toast.success('Jadwal pengingat: Setiap kali login');
+                    } else {
+                      toast.success(`Jadwal pengingat berikutnya: ${info.formatted}`);
+                    }
+                  }} 
                   disabled={isSavingSettings}
                   style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Save size={14} /> Simpan Jadwal
                 </button>
+              </div>
+
+              {/* Next Schedule Live Preview */}
+              {(() => {
+                const info = getNextBackupInfo(backupReminderDays, lastBackupDate);
+                return (
+                  <div style={{
+                    marginTop: '10px',
+                    padding: '10px 14px',
+                    background: 'var(--input-bg)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '12.5px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <Clock size={16} style={{ color: info.isDue ? '#ef4444' : '#10b981', flexShrink: 0 }} />
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>Status Jadwal: </strong>
+                      {info.text}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Detail Data yang Akan Diunduh */}
+            <div style={{ background: 'var(--surface-color)', padding: '18px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Rincian Data yang Akan Diunduh
+                </span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
+                  Total {totalTasks} Pekerjaan
+                </span>
+              </div>
+
+              {/* Status Grid Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                gap: '10px',
+                marginBottom: '14px'
+              }}>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11.5px', color: '#3b82f6', fontWeight: 700 }}>To Do</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{todoCount}</div>
+                </div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11.5px', color: '#f59e0b', fontWeight: 700 }}>In Progress</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{inProgressCount}</div>
+                </div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11.5px', color: '#ec4899', fontWeight: 700 }}>Review</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{reviewCount}</div>
+                </div>
+                <div style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 700 }}>Done</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '2px', color: 'var(--text-primary)' }}>{doneCount}</div>
+                </div>
+              </div>
+
+              {/* Package Content List */}
+              <div style={{
+                background: 'var(--input-bg)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                border: '1px solid var(--border-color)',
+                fontSize: '12.5px',
+                color: 'var(--text-primary)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span><strong>Database Lengkap (.json):</strong> Pekerjaan, Subtask, Pengaturan, User & Log Aktivitas</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileArchive size={16} style={{ color: '#0284c7', flexShrink: 0 }} />
+                  <span><strong>File & Dokumen Lampiran:</strong> Seluruh berkas PDF, Excel, gambar & bukti pekerjaan</span>
+                </div>
               </div>
             </div>
 
