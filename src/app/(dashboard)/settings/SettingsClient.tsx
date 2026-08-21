@@ -583,14 +583,50 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     setDraggedIdx(null);
   };
 
-  // Avatar Handler
-  const handleAvatarSave = (base64: string) => {
+  // Avatar Handlers
+  const handleAvatarSave = async (base64: string) => {
     if (!activePicForAvatar) return;
-    const updated = { ...masterPicAvatars, [activePicForAvatar]: base64 };
+    const picName = activePicForAvatar;
+    const updated = { ...masterPicAvatars, [picName]: base64 };
     setMasterPicAvatars(updated);
     localStorage.setItem('master_pic_avatars', JSON.stringify(updated));
     setActivePicForAvatar(null);
-    toast.success(`Foto profil ${activePicForAvatar} diperbarui`);
+    toast.success(`Foto profil ${picName} diperbarui`);
+
+    // Auto-persist immediately to database so backups and all sessions get the avatar
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ master_pic_avatars: updated })
+      });
+      broadcastSettingsChange('master_pic_avatars', updated);
+      window.dispatchEvent(new Event('masterUpdated'));
+    } catch (e) {
+      console.error('Failed to auto-save avatar to database', e);
+    }
+  };
+
+  const handleAvatarDelete = async (picName: string) => {
+    const updated = { ...masterPicAvatars };
+    delete updated[picName];
+    setMasterPicAvatars(updated);
+    localStorage.setItem('master_pic_avatars', JSON.stringify(updated));
+    setActivePicForAvatar(null);
+    toast.success(`Foto profil ${picName} telah dihapus`);
+
+    // Auto-persist deletion immediately to database
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ master_pic_avatars: updated })
+      });
+      broadcastSettingsChange('master_pic_avatars', updated);
+      window.dispatchEvent(new Event('masterUpdated'));
+    } catch (e) {
+      console.error('Failed to auto-delete avatar from database', e);
+    }
   };
 
   // Database Handlers
@@ -1519,15 +1555,44 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         isOpen={!!activePicForAvatar}
         onClose={() => setActivePicForAvatar(null)}
         onSave={handleAvatarSave}
+        onDelete={() => activePicForAvatar && handleAvatarDelete(activePicForAvatar)}
+        currentImage={activePicForAvatar ? masterPicAvatars[activePicForAvatar] : null}
+        title={activePicForAvatar ? `Foto Profil: ${activePicForAvatar}` : "Sesuaikan Foto Profil"}
       />
 
       <AvatarCropperModal
         isOpen={isAppLogoCropperOpen}
         onClose={() => setIsAppLogoCropperOpen(false)}
-        onSave={(base64) => {
+        onSave={async (base64) => {
           setAppLogo(base64);
           setIsAppLogoCropperOpen(false);
+          localStorage.setItem('app_logo', base64);
+          try {
+            await fetch('/api/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ app_logo: base64 })
+            });
+            broadcastSettingsChange('app_logo', base64);
+            window.dispatchEvent(new Event('masterUpdated'));
+          } catch (e) {}
         }}
+        onDelete={async () => {
+          setAppLogo('');
+          setIsAppLogoCropperOpen(false);
+          localStorage.removeItem('app_logo');
+          try {
+            await fetch('/api/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ app_logo: '' })
+            });
+            broadcastSettingsChange('app_logo', '');
+            window.dispatchEvent(new Event('masterUpdated'));
+            toast.success('Logo aplikasi dihapus');
+          } catch (e) {}
+        }}
+        currentImage={appLogo || null}
         title="Ubah Logo Aplikasi"
       />
     </div>

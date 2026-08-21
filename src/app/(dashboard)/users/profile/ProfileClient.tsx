@@ -115,6 +115,12 @@ export default function ProfileClient() {
     setIsAvatarModalOpen(false);
   };
 
+  const handleAvatarDelete = () => {
+    setProfileImage('');
+    setIsAvatarModalOpen(false);
+    toast.success('Foto profil dihapus (Klik Simpan Perubahan untuk menyimpan)');
+  };
+
   if (!session) return null;
 
   return (
@@ -322,6 +328,8 @@ export default function ProfileClient() {
         isOpen={isAvatarModalOpen}
         onClose={() => setIsAvatarModalOpen(false)}
         onSave={handleAvatarSave}
+        onDelete={handleAvatarDelete}
+        currentImage={profileImage || null}
         title="Ubah Foto Profil Saya"
       />
     </div>

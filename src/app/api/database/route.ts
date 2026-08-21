@@ -289,6 +289,7 @@ export async function POST(req: Request) {
     // Helper: rewrite URLs based on environment
     const rewriteUrl = (url: string | null | undefined) => {
       if (!url) return url;
+      if (url.startsWith('data:')) return url; // Base64 avatar / logo preserved
       const match = url.match(/\/([^/]+)$/);
       if (match) {
         const fName = match[1];
@@ -366,6 +367,8 @@ export async function POST(req: Request) {
           }
           value = JSON.stringify(avatars);
         } catch (e) {}
+      } else if (rest.key === 'app_logo' && value) {
+        value = rewriteUrl(value);
       }
 
       return {
