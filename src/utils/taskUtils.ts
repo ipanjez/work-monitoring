@@ -1,6 +1,5 @@
 import { createEvent, EventAttributes } from 'ics';
 import { format } from 'date-fns';
-import DOMPurify from 'isomorphic-dompurify';
 
 export type FileItem = {
   url: string;
@@ -439,7 +438,11 @@ export const formatDescription = (htmlOrText: string): string => {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/~~(.+?)~~/g, '<del>$1</del>')
-    .replace(/__(.+?)__/g, '<u>$1</u>');
+  // Strip dangerous script and event handler tags
+  content = content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/on\w+='[^']*'/gi, '');
 
   // Safe HTML parsing to replace URLs in text nodes only
   if (typeof window !== 'undefined' && window.DOMParser) {
@@ -463,14 +466,14 @@ export const formatDescription = (htmlOrText: string): string => {
           n.parentNode?.replaceChild(span, n);
         }
       }
-      return DOMPurify.sanitize(doc.body.innerHTML);
+      return doc.body.innerHTML;
     } catch (e) {
       console.error('Safe HTML parsing failed', e);
-      return DOMPurify.sanitize(content);
+      return content;
     }
   }
   
-  return DOMPurify.sanitize(content);
+  return content;
 };
 
 export const handleMarkdownShortcut = (
