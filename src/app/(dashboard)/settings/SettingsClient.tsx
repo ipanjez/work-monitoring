@@ -54,6 +54,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
   const [taskList, setTaskList] = useState<Task[]>(tasks || []);
+  const [fileStats, setFileStats] = useState<any>(null);
 
   useEffect(() => {
     if (tasks && tasks.length > 0) {
@@ -66,13 +67,20 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         })
         .catch(() => {});
     }
+
+    fetch('/api/database/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) setFileStats(data);
+      })
+      .catch(() => {});
   }, [tasks]);
 
-  const totalTasks = taskList.length;
-  const todoCount = taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
-  const inProgressCount = taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'inprogress').length;
-  const reviewCount = taskList.filter(t => (t.status || '').toLowerCase() === 'review').length;
-  const doneCount = taskList.filter(t => (t.status || '').toLowerCase() === 'done').length;
+  const totalTasks = fileStats?.totalTasks ?? taskList.length;
+  const todoCount = fileStats?.todoCount ?? taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
+  const inProgressCount = fileStats?.inProgressCount ?? taskList.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'inprogress').length;
+  const reviewCount = fileStats?.reviewCount ?? taskList.filter(t => (t.status || '').toLowerCase() === 'review').length;
+  const doneCount = fileStats?.doneCount ?? taskList.filter(t => (t.status || '').toLowerCase() === 'done').length;
 
   const getNextBackupInfo = (days: number | string, lastDateStr: string | null | undefined) => {
     const d = Number(days);
@@ -1798,9 +1806,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Rincian Data yang Akan Diunduh
                 </span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
-                  Total {totalTasks} Pekerjaan
-                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
+                    Total {totalTasks} Pekerjaan
+                  </span>
+                  {fileStats?.totalDistinctAvailableFiles > 0 && (
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0284c7', background: 'rgba(2, 132, 199, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
+                      📁 {fileStats.totalDistinctAvailableFiles} File ({((fileStats.estimatedTotalBytes || 0) / (1024 * 1024)).toFixed(1)} MB)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Status Grid Cards */}
@@ -1846,8 +1861,28 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FileArchive size={16} style={{ color: '#0284c7', flexShrink: 0 }} />
-                  <span><strong>File & Dokumen Lampiran:</strong> Seluruh berkas PDF, Excel, gambar & bukti pekerjaan</span>
+                  <span><strong>File & Dokumen Lampiran:</strong> {fileStats?.totalDistinctAvailableFiles ? `${fileStats.totalDistinctAvailableFiles} berkas fisik terdeteksi (estimasi ~${((fileStats.estimatedTotalBytes || 0) / (1024 * 1024)).toFixed(1)} MB)` : 'Seluruh berkas PDF, Excel, gambar & bukti pekerjaan'}</span>
                 </div>
+
+                {/* Missing Files Indicator */}
+                {fileStats && fileStats.missingFilesCount > 0 ? (
+                  <div style={{
+                    marginTop: '4px',
+                    padding: '8px 12px',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    lineHeight: 1.4
+                  }}>
+                    <strong>⚠️ Perhatian:</strong> Terdapat <strong>{fileStats.missingFilesCount} berkas lampiran</strong> yang tercatat di database namun belum tersimpan di server lokal / Vercel Blob ({fileStats.missingFiles.slice(0, 3).join(', ')}{fileStats.missingFilesCount > 3 ? ` dan ${fileStats.missingFilesCount - 3} lainnya` : ''}). Berkas yang tersedia tetap akan diunduh penuh.
+                  </div>
+                ) : fileStats && fileStats.totalDistinctAvailableFiles > 0 ? (
+                  <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                    <ShieldCheck size={14} /> 100% Berkas Lampiran Lengkap & Siap Diunduh
+                  </div>
+                ) : null}
               </div>
             </div>
 

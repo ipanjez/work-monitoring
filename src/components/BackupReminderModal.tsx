@@ -38,11 +38,28 @@ export default function BackupReminderModal({
 
   if (!isOpen) return null;
 
-  const totalTasks = tasks.length;
-  const todoCount = tasks.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
-  const inProgressCount = tasks.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'inprogress').length;
-  const reviewCount = tasks.filter(t => (t.status || '').toLowerCase() === 'review').length;
-  const doneCount = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
+  const [fileStats, setFileStats] = useState<any>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/database/stats')
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) setFileStats(data);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  const totalTasks = fileStats?.totalTasks ?? tasks.length;
+  const todoCount = fileStats?.todoCount ?? tasks.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'todo').length;
+  const inProgressCount = fileStats?.inProgressCount ?? tasks.filter(t => (t.status || '').toLowerCase().replace(/\s+/g, '') === 'inprogress').length;
+  const reviewCount = fileStats?.reviewCount ?? tasks.filter(t => (t.status || '').toLowerCase() === 'review').length;
+  const doneCount = fileStats?.doneCount ?? tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
+
+  const totalFiles = fileStats?.totalDistinctAvailableFiles ?? fileStats?.totalReferencedFiles ?? 0;
+  const totalMb = fileStats?.estimatedTotalBytes ? (fileStats.estimatedTotalBytes / (1024 * 1024)).toFixed(1) : null;
+  const missingCount = fileStats?.missingFilesCount ?? 0;
 
   let daysAgoText = '';
   let formattedLastDate = '';
@@ -96,9 +113,10 @@ export default function BackupReminderModal({
             color: 'var(--text-primary, #f8fafc)',
             borderRadius: '20px',
             width: '100%',
-            maxWidth: '560px',
+            maxWidth: '580px',
+            maxHeight: '92vh',
+            overflowY: 'auto',
             boxShadow: 'var(--card-shadow, 0 25px 50px -12px rgba(0, 0, 0, 0.5))',
-            overflow: 'hidden',
             position: 'relative',
             border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))'
           }}
@@ -206,13 +224,20 @@ export default function BackupReminderModal({
 
             {/* Detail Data yang Dicadangkan */}
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Rincian Data yang Akan Diunduh
                 </span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
-                  Total {totalTasks} Pekerjaan
-                </span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
+                    Total {totalTasks} Pekerjaan
+                  </span>
+                  {totalFiles > 0 && (
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#0284c7', background: 'rgba(2, 132, 199, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
+                      📁 {totalFiles} File {totalMb ? `(${totalMb} MB)` : ''}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Status Grid Cards */}
@@ -258,8 +283,28 @@ export default function BackupReminderModal({
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FileArchive size={16} style={{ color: '#0284c7', flexShrink: 0 }} />
-                  <span><strong>File & Dokumen Lampiran:</strong> Seluruh berkas PDF, Excel, gambar & bukti pekerjaan</span>
+                  <span><strong>File & Dokumen Lampiran:</strong> {totalFiles > 0 ? `${totalFiles} berkas fisik terdeteksi ${totalMb ? `(estimasi ~${totalMb} MB)` : ''}` : 'Seluruh berkas PDF, Excel, gambar & bukti pekerjaan'}</span>
                 </div>
+
+                {/* Missing Files Indicator */}
+                {missingCount > 0 ? (
+                  <div style={{
+                    marginTop: '4px',
+                    padding: '8px 10px',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    lineHeight: 1.4
+                  }}>
+                    <strong>⚠️ Perhatian:</strong> Terdapat <strong>{missingCount} berkas lampiran</strong> yang tercatat di database namun belum ditemukan di server lokal / Vercel Blob ({fileStats.missingFiles.slice(0, 2).join(', ')}{missingCount > 2 ? ` dan ${missingCount - 2} lainnya` : ''}). Berkas yang tersedia tetap akan diunduh penuh.
+                  </div>
+                ) : totalFiles > 0 ? (
+                  <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                    <ShieldCheck size={14} /> 100% Berkas Lampiran Lengkap & Siap Diunduh
+                  </div>
+                ) : null}
               </div>
             </div>
 
