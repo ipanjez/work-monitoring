@@ -189,7 +189,7 @@ export default function UniversalFilterBar({
           <input
             className="input"
             style={{ paddingLeft: '30px', width: '100%', paddingRight: '45px', fontSize: '12px', height: '36px', ...getActiveStyle(globalSearchQuery !== '') }}
-            placeholder="Cari pekerjaan..."
+            placeholder="Cari pekerjaan, PIC, file lampiran..."
             value={globalSearchQuery}
             onChange={e => setGlobalSearchQuery(e.target.value)}
           />

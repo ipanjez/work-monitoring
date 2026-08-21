@@ -4,23 +4,84 @@ export function checkSearchMatch(task: any, query: string, exactMatch: boolean =
   const q = query.toLowerCase().trim();
   if (!q) return true;
 
+  // Kumpulkan nama file lampiran dan sub-item
+  const fileNames: string[] = [];
+  
+  if (task.fileName) fileNames.push(task.fileName);
+  if (task.fileUrl) {
+    try {
+      const decoded = decodeURIComponent(task.fileUrl);
+      const cleanName = decoded.replace(/^.*[\\\/]/, '').replace(/^\d+_\d+_/, '');
+      fileNames.push(decoded, cleanName);
+    } catch {}
+  }
+
+  if (task.filesJson) {
+    try {
+      const files = JSON.parse(task.filesJson);
+      if (Array.isArray(files)) {
+        files.forEach((f: any) => {
+          if (f.name) fileNames.push(f.name);
+          if (f.url) {
+            try {
+              const decoded = decodeURIComponent(f.url);
+              const cleanName = decoded.replace(/^.*[\\\/]/, '').replace(/^\d+_\d+_/, '');
+              fileNames.push(decoded, cleanName);
+            } catch {}
+          }
+        });
+      }
+    } catch {}
+  }
+
+  if (task.commentsJson) {
+    try {
+      const comments = JSON.parse(task.commentsJson);
+      if (Array.isArray(comments)) {
+        comments.forEach((c: any) => {
+          if (c.text) fileNames.push(c.text);
+          if (c.fileName) fileNames.push(c.fileName);
+          if (c.fileUrl) {
+            try {
+              const decoded = decodeURIComponent(c.fileUrl);
+              fileNames.push(decoded);
+            } catch {}
+          }
+        });
+      }
+    } catch {}
+  }
+
+  if (task.subTasksJson) {
+    try {
+      const subtasks = JSON.parse(task.subTasksJson);
+      if (Array.isArray(subtasks)) {
+        subtasks.forEach((st: any) => {
+          if (st.title) fileNames.push(st.title);
+          if (st.pic) fileNames.push(st.pic);
+        });
+      }
+    } catch {}
+  }
+
   // Gabungkan semua field yang relevan untuk dicari
   const searchSpace = [
     task.nama,
     task.pic,
     task.additionalPics,
     task.kategori,
+    task.lokasi,
+    task.prioritas,
+    task.status,
     task.deskripsi,
-    task.catatan
+    task.catatan,
+    ...fileNames
   ].filter(Boolean).join(' ');
 
   if (exactMatch) {
     // Pencarian kata persis (Exact word match)
-    // Escaping regex
     const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Menggunakan regex boundaries untuk memastikan kata utuh
-    // Karena kata bahasa Indonesia bisa mengandung karakter khusus, kita gunakan boundary word standar
-    const regex = new RegExp(`\\b${escapedQuery}\\b`, 'i');
+    const regex = new RegExp(`(^|[^a-zA-Z0-9_])${escapedQuery}([^a-zA-Z0-9_]|$)`, 'i');
     return regex.test(searchSpace);
   } else {
     // Pencarian substring biasa (default)
