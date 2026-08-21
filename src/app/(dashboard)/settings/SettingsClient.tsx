@@ -686,18 +686,29 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         } else {
           const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
           if (!isLocalhost && file.size > 4 * 1024 * 1024) {
-            const { upload } = await import('@vercel/blob/client');
-            toast.loading('Mengunggah file backup (tahap 1/2)...', { id: toastId });
-            const blob = await upload(file.name, file, {
-              access: 'public',
-              handleUploadUrl: '/api/upload/token',
-            });
-            toast.loading('Memulihkan database (tahap 2/2)...', { id: toastId });
-            res = await fetch('/api/database', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ blobUrl: blob.url })
-            });
+            try {
+              const { upload } = await import('@vercel/blob/client');
+              toast.loading('Mengunggah file backup (tahap 1/2)...', { id: toastId });
+              const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+              });
+              toast.loading('Memulihkan database (tahap 2/2)...', { id: toastId });
+              res = await fetch('/api/database', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blobUrl: blob.url })
+              });
+            } catch (blobErr) {
+              console.warn('Vercel Blob upload unavailable, falling back to direct upload...', blobErr);
+              toast.loading('Memulihkan database dari file...', { id: toastId });
+              const arrayBuffer = await file.arrayBuffer();
+              res = await fetch('/api/database', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/zip' },
+                body: arrayBuffer
+              });
+            }
           } else {
             const arrayBuffer = await file.arrayBuffer();
             res = await fetch('/api/database', {
