@@ -15,6 +15,11 @@ import NextTopLoader from 'nextjs-toploader';
 export const metadata: Metadata = {
   title: "Dashboard Monitoring Pekerjaan",
   description: "Dashboard Monitoring & Manajemen Pekerjaan Departemen",
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  }
 };
 
 export default function RootLayout({

@@ -329,27 +329,36 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Update Dynamic Favicon & Title based on appLogo and appName
+  // Update Dynamic Favicon & Document Title based on appLogo, appName, and appSubtitle
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (appLogo) {
-      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = appLogo;
 
-      let appleLink: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
-      if (!appleLink) {
-        appleLink = document.createElement('link');
-        appleLink.rel = 'apple-touch-icon';
-        document.head.appendChild(appleLink);
-      }
-      appleLink.href = appLogo;
+    // 1. Update Document Title
+    if (appName) {
+      document.title = appSubtitle && appSubtitle !== 'MRK' ? `${appName} - ${appSubtitle}` : appName;
     }
-  }, [appLogo]);
+
+    // 2. Update Favicon (Force browser refresh by replacing link elements)
+    const targetIcon = appLogo || '/icon.svg';
+    const existingIcons = document.querySelectorAll("link[rel*='icon']");
+    existingIcons.forEach(el => el.parentNode?.removeChild(el));
+
+    const linkIcon = document.createElement('link');
+    linkIcon.rel = 'icon';
+    linkIcon.type = targetIcon.startsWith('data:image/svg') || targetIcon.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+    linkIcon.href = targetIcon;
+    document.head.appendChild(linkIcon);
+
+    const linkShortcut = document.createElement('link');
+    linkShortcut.rel = 'shortcut icon';
+    linkShortcut.href = targetIcon;
+    document.head.appendChild(linkShortcut);
+
+    const linkApple = document.createElement('link');
+    linkApple.rel = 'apple-touch-icon';
+    linkApple.href = targetIcon;
+    document.head.appendChild(linkApple);
+  }, [appLogo, appName, appSubtitle]);
 
   return (
     <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
