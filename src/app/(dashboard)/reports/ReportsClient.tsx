@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useTransition } from 'react';
 import toast from 'react-hot-toast';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, 
@@ -54,7 +54,7 @@ type Task = {
 type SortField = 'pic' | 'total' | 'done' | 'inProgress' | 'overdue' | 'avgProgress' | 'score';
 type SortOrder = 'asc' | 'desc';
 
-export default function ReportsClient({ tasks }: { tasks: Task[] }) {
+export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || '';
   const { addActivityLog } = useNotifications();
@@ -62,6 +62,28 @@ export default function ReportsClient({ tasks }: { tasks: Task[] }) {
   const { masterColors, masterPicAvatars, roleConfig, userRoles } = useMaster();
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  // Real-Time Background Synchronization Listener
+  useEffect(() => {
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        startTransition(() => {
+          setTasks(e.detail);
+        });
+      }
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    };
+  }, []);
 
   const getPicRole = (name: string): string => {
     if (!name) return '';

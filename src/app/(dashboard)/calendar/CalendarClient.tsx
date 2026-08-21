@@ -72,6 +72,26 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  // Real-Time Background Synchronization Listener
+  useEffect(() => {
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        startTransition(() => {
+          setTasks(e.detail);
+        });
+      }
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    };
+  }, []);
+
 
   // Calendar View & Date Controlled State (Fix for Month/Week/Day/Agenda buttons)
   const [view, setView] = useState<View>('month');
