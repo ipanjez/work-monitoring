@@ -32,14 +32,12 @@ interface MasterContextType {
 export const computeIsBackupDue = (days: number, lastDateStr: string | null | undefined): boolean => {
   if (days === 0 || isNaN(days) || !days) return false;
   if (days === -1) {
-    if (!lastDateStr) return true;
-    const lastDate = new Date(lastDateStr);
-    if (isNaN(lastDate.getTime())) return true;
-    const today = new Date();
-    const isSameDay = lastDate.getFullYear() === today.getFullYear() &&
-                      lastDate.getMonth() === today.getMonth() &&
-                      lastDate.getDate() === today.getDate();
-    return !isSameDay;
+    // Mode "Setiap Kali Login": Aktif terus sepanjang sesi login kecuali pengguna telah mengunduh backup di sesi ini
+    if (typeof window !== 'undefined') {
+      const downloadedThisSession = sessionStorage.getItem('backup_downloaded_this_session') === 'true';
+      if (downloadedThisSession) return false;
+    }
+    return true;
   }
   if (!lastDateStr) return true;
   const lastDate = new Date(lastDateStr);

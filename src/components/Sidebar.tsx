@@ -309,7 +309,7 @@ export default function Sidebar() {
 
   const { notifications } = useNotifications();
   const canSeeUserAlerts = hasPermission(roleConfig, 'user_administration', userRole);
-  const canBackup = hasPermission(roleConfig, 'database_backup', userRole);
+  const canBackup = userRole === 'ADMIN' || hasPermission(roleConfig, 'database_backup', userRole);
   const hasSettingsBackupAlert = canBackup && isBackupDue;
 
   const systemUserUnreads = canSeeUserAlerts ? notifications.filter(n =>

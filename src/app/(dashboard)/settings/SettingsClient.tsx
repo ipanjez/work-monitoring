@@ -656,6 +656,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       toast.success('Backup berhasil diunduh!');
 
       const newDate = new Date().toISOString();
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('backup_downloaded_this_session', 'true');
+      }
       localStorage.setItem('last_backup_date', newDate);
       broadcastSettingsChange('last_backup_date', newDate);
       window.dispatchEvent(new Event('backupReminderChanged'));

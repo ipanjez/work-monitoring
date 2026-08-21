@@ -109,7 +109,15 @@ export default function GlobalBackupReminder() {
       toast.dismiss(toastId);
       toast.success('Backup berhasil diunduh!');
       setIsOpen(false);
-      setLastBackupDate(new Date().toISOString());
+      const newDate = new Date().toISOString();
+      setLastBackupDate(newDate);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('backup_downloaded_this_session', 'true');
+        sessionStorage.setItem('dismissed_backup_reminder', 'true');
+      }
+      localStorage.setItem('last_backup_date', newDate);
+      window.dispatchEvent(new Event('backupReminderChanged'));
+      window.dispatchEvent(new Event('masterUpdated'));
     } catch (err: any) {
       toast.dismiss(toastId);
       toast.error(err.message || 'Gagal mengunduh backup');
