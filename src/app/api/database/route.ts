@@ -226,44 +226,57 @@ export async function POST(req: Request) {
       const jsonString = zip.readAsText(dbEntry);
       dbData = JSON.parse(jsonString);
 
-      // If local, create uploads directory
-      let uploadsDir = '';
-      if (isLocal) {
-        uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        // Delete old uploads
-        if (fs.existsSync(uploadsDir)) {
-           fs.rmSync(uploadsDir, { recursive: true, force: true });
-        }
+      // Ensure uploads directory always exists on disk
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
       // Extract all files in the "uploads/" folder of the zip
       const uploadPromises = [];
+      const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+
       for (const entry of zipEntries as any[]) {
         if (entry.entryName.startsWith('uploads/') && !entry.isDirectory) {
           const fileName = entry.entryName.replace('uploads/', '');
           if (fileName) {
             const entryData = zip.readFile(entry);
-            const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
             if (entryData) {
-              if (hasBlobToken && !isLocal) {
-                // Parallelize Vercel Blob uploads to avoid hitting 10s Serverless timeout
-                uploadPromises.push(
-                  put(fileName, entryData, {
-                    access: 'public',
-                    addRandomSuffix: false,
-                    allowOverwrite: true
-                  }).then(blob => {
-                    vercelBlobMap[fileName] = blob.url;
-                  }).catch(err => {
-                    console.warn(`Failed to put blob for ${fileName}, falling back to local file:`, err);
-                    const filePath = path.join(uploadsDir, fileName);
-                    fs.writeFileSync(filePath, entryData);
-                  })
-                );
-              } else {
+              // Always write to local disk
+              try {
                 const filePath = path.join(uploadsDir, fileName);
                 fs.writeFileSync(filePath, entryData);
+              } catch (fsErr) {
+                console.warn(`Failed to write local file ${fileName}:`, fsErr);
+              }
+
+              // Upload to Vercel Blob cloud if token is available
+              if (hasBlobToken && !isLocal) {
+                uploadPromises.push(
+                  (async () => {
+                    try {
+                      const blob = await put(fileName, entryData, {
+                        access: 'public',
+                        addRandomSuffix: false,
+                      });
+                      vercelBlobMap[fileName] = blob.url;
+                    } catch (putErr: any) {
+                      // If blob already exists or errored, search for existing blob
+                      try {
+                        const listRes = await list({ prefix: fileName });
+                        const existing = listRes.blobs.find(b => b.pathname === fileName || b.pathname.endsWith(fileName));
+                        if (existing) {
+                          vercelBlobMap[fileName] = existing.url;
+                        } else {
+                          const retryBlob = await put(fileName, entryData, { access: 'public' });
+                          vercelBlobMap[fileName] = retryBlob.url;
+                        }
+                      } catch (listErr) {
+                        console.warn(`Vercel Blob upload failed for ${fileName}:`, listErr);
+                      }
+                    }
+                  })()
+                );
               }
             }
           }
