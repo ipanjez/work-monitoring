@@ -22,11 +22,13 @@ Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neo
 - 📱 **Desain Responsif & Modern:** Tampilan antarmuka kelas atas dengan mode terang/gelap (Dark Mode), UI konsisten di seluruh halaman, dibangun menggunakan keandalan **React**, **Next.js**, dan Vanilla CSS (*Glassmorphism* & animasi mulus).
 - 📈 **Pelaporan & Ekspor Pintar:** Statistik langsung tentang pekerjaan harian, ekspor data ke PDF dan Excel (mendukung *bulk import* dengan format Excel/CSV yang otomatis mendeteksi Multi-PIC dan Sub-Pekerjaan), serta visualisasi grafik Chart.js dinamis.
 - 🔒 **Keamanan & Otorisasi Tingkat Tinggi (Enterprise-Grade Security & Granular RBAC):** 
-  - Matriks Hak Akses Peran (*Role Permissions Matrix*) fleksibel (Admin, Member, Viewer, Supervisor, Guest) untuk melindungi fitur operasional, pengaturan sistem, dan administrasi akun.
+  - **Matriks 6 Izin Aksi Fleksibel:** Pengaturan hak akses granular untuk peran dinamis (*manage_task, delete_task, comment_task, export_data, system_settings, user_administration*).
+  - **Role Dinamis:** Mendukung pembuatan dan kustomisasi role baru sesuai struktur organisasi dengan default fallback `ADMIN`.
+  - **Akun Bawaan (Default Superadmin):** NPK `0001` / Password `admin123`.
   - *Global Middleware / Proxy Route Protection* untuk mengunci API rahasia.
   - Sanitasi HTML (Anti-XSS) dengan DOMPurify.
   - *Whitelist* ekstensi file pada fitur unggah (Anti-Malware).
-  - Enjeksi *HTTP Security Headers* (Anti-Clickjacking & MIME-sniffing).
+  - Injeksi *HTTP Security Headers* (Anti-Clickjacking & MIME-sniffing).
   - *Auto-Logout Inaktivitas Fisik* setelah 10 menit demi keamanan layar saat perangkat ditinggalkan.
 - 🔑 **Kustomisasi Global Password & Pengaturan:** Anda dapat mengubah kata sandi masuk (Global Password) dan mengelola akun PIC/User (termasuk Role & Email) secara langsung melalui menu Pengaturan tanpa mengubah kode sumber.
 - ⚙️ **Personalisasi Dinamis:** Nama departemen pada dasbor dapat dikustomisasi dan tersimpan otomatis tanpa perlu memuat ulang halaman (*real-time update*).
@@ -110,9 +112,16 @@ Script ini secara otomatis mengatur schema ke SQLite, menjalankan server, dan me
 npm run dev
 ```
 
-### 6. Akses Aplikasi
+### 6. Akses Aplikasi & Akun Default
 - **Dari komputer sendiri:** Buka `http://localhost:3000`
 - **Dari perangkat lain di jaringan LAN:** Buka `http://<IP-komputer-Anda>:3000` (contoh: `http://192.168.1.10:3000`)
+
+#### 🔑 Akun Administrator Bawaan (Default):
+| Field | Nilai Default |
+|---|---|
+| **NPK** | `0001` |
+| **Password** | `admin123` |
+| **Role** | `ADMIN` (Akses Penuh) |
 
 > 💡 **Tips:** Untuk mengetahui IP komputer Anda, jalankan `ipconfig` di terminal (Windows) atau `ifconfig` (Mac/Linux).
 
@@ -226,11 +235,14 @@ Anda tidak perlu lagi menggunakan alat pihak ketiga (seperti DBeaver) untuk memi
 
 Berbagai peningkatan dan perbaikan bug terus dilakukan. Berikut adalah *update* utama yang telah diproses ke repositori:
 
+- 🛡️ **Matriks 6 Hak Akses Granular Dinamis (Simplified Action-Oriented RBAC):** Restrukturisasi matriks izin menjadi 6 aksi terdefinisi (*manage_task, delete_task, comment_task, export_data, system_settings, user_administration*) dengan dukungan nama peran yang sepenuhnya dinamis (default fallback `ADMIN`).
+- 🔄 **Persistensi Penghapusan Notifikasi (Two-Way Persistence):** Fitur pembersihan seluruh notifikasi dan hapus satuan dengan sinkronisasi instan database & `localStorage` browser sehingga notifikasi yang dihapus tidak muncul kembali saat halaman di-*refresh*.
+- 📊 **Pengurutan Grafik Sesuai Master Data:** Grafik Beban Kerja per PIC dan Sebaran Kategori pada menu Dashboard & Laporan diurutkan 100% konsisten mengikuti konfigurasi Master Data.
+- ⏱️ **Alur Timeline Sub-Pekerjaan Terformat:** Format tampilan HTML/Markdown, baris baru (`<br>`), status badge dinamis, dan lencana PIC pada Alur Timeline Modal Detail Pekerjaan.
 - 🗓️ **Universal Action Bar & Sinkronisasi Kalender:** Penyeragaman tombol aksi (Excel, PDF, Salin Gambar, Sinkron Kalender) di semua menu dan modal langganan kalender otomatis dengan filter personalisasi PIC/Kategori dan timezone IANA.
 - ⏰ **Global Backup Reminder:** Notifikasi modal pengingat pencadangan database berkala otomatis di level layout dengan dukungan penuh Dark Mode dan perhitungan rincian data pekerjaan yang akan diunduh.
 - 🎨 **Master PIC Outline Ring:** Implementasi warna Master PIC dinamis sebagai garis lingkar luar profil di seluruh kartu manajemen tim, avatar pengguna, dan grafik Chart.js.
 - ✉️ **Pratinjau Kartu Email HTML Estetik:** Format tampilan email modern dengan *isolated iframe* dan fitur 1-klik salin kartu visual ke Gmail / Outlook.
-- 🔒 **Granular Role Permissions (RBAC):** Matriks pengaturan izin peran lengkap untuk mengunci atau membuka akses operasional, master data, dan administrasi user.
 - 🐛 **Fix Filter Dropdown**: Menghapus duplikasi opsi "All" pada filter PIC dan Kategori di Dashboard serta menyelaraskan urutan dropdown agar 100% konsisten dengan pengaturan Master Data.
 - ✨ **Sort Lampiran**: Menambahkan fitur interaktif untuk mengurutkan daftar pekerjaan berdasarkan jumlah lampiran terbanyak/tersedikit secara langsung dari *header* tabel.
 - ⚡ **Optimasi Cloud Restore**: Mencegah *timeout* saat restore database besar dengan memparalelkan proses upload Blob, menambahkan mekanisme *retry* otomatis jika gagal (*blob fetch retry*), dan meningkatkan *maxDuration* fungsi API.
