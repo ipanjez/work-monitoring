@@ -24,6 +24,7 @@ export async function GET() {
       app_name: 'DeptMonitor',
       app_subtitle: 'MRK',
       app_logo: '',
+      app_favicon: '',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100,
       session_timeout_hours: 24,
@@ -174,6 +175,14 @@ export async function POST(request: Request) {
         where: { key: 'app_logo' },
         update: { value: body.app_logo },
         create: { key: 'app_logo', value: body.app_logo }
+      });
+    }
+
+    if (body.app_favicon !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'app_favicon' },
+        update: { value: body.app_favicon },
+        create: { key: 'app_favicon', value: body.app_favicon }
       });
     }
 

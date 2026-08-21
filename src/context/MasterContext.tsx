@@ -11,6 +11,7 @@ interface MasterContextType {
   appName: string;
   appSubtitle: string;
   appLogo: string;
+  appFavicon: string;
   masterCats: string[];
   masterStatuses: string[];
   masterPriorities: string[];
@@ -32,6 +33,7 @@ const MasterContext = createContext<MasterContextType>({
   appName: 'DeptMonitor',
   appSubtitle: 'MRK',
   appLogo: '',
+  appFavicon: '',
   masterCats: [],
   masterStatuses: ['To Do', 'In Progress', 'Done'],
   masterPriorities: ['Low', 'Medium', 'High', 'Critical'],
@@ -53,6 +55,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [appName, setAppName] = useState('DeptMonitor');
   const [appSubtitle, setAppSubtitle] = useState('MRK');
   const [appLogo, setAppLogo] = useState('');
+  const [appFavicon, setAppFavicon] = useState('');
   const [masterCats, setMasterCats] = useState<string[]>([]);
   const [masterStatuses, setMasterStatuses] = useState<string[]>(['To Do', 'In Progress', 'Done']);
   const [masterPriorities, setMasterPriorities] = useState<string[]>(['Low', 'Medium', 'High', 'Critical']);
@@ -79,6 +82,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
       setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
       setAppLogo(localStorage.getItem('app_logo') || '');
+      setAppFavicon(localStorage.getItem('app_favicon') || '');
       setMasterCats(JSON.parse(localStorage.getItem('master_cats') || '[]'));
       setMasterStatuses((JSON.parse(localStorage.getItem('master_statuses') || '["To Do", "In Progress", "Done"]') as string[]).filter((s: string) => s && s.trim() !== ''));
       setMasterPriorities(JSON.parse(localStorage.getItem('master_priorities') || '["Low", "Medium", "High", "Critical"]'));
@@ -128,6 +132,11 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (data.app_logo !== undefined) {
           setAppLogo(data.app_logo);
           localStorage.setItem('app_logo', data.app_logo);
+          changed = true;
+        }
+        if (data.app_favicon !== undefined) {
+          setAppFavicon(data.app_favicon);
+          localStorage.setItem('app_favicon', data.app_favicon);
           changed = true;
         }
         if (data.master_categories) {
@@ -219,6 +228,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'app_name' && e.newValue) setAppName(e.newValue);
         if (e.key === 'app_subtitle' && e.newValue) setAppSubtitle(e.newValue);
         if (e.key === 'app_logo' && e.newValue) setAppLogo(e.newValue);
+        if (e.key === 'app_favicon' && e.newValue) setAppFavicon(e.newValue);
         if (e.key === 'master_cats' && e.newValue) setMasterCats(JSON.parse(e.newValue));
         if (e.key === 'master_statuses' && e.newValue) setMasterStatuses(JSON.parse(e.newValue));
         if (e.key === 'master_priorities' && e.newValue) setMasterPriorities(JSON.parse(e.newValue));
@@ -239,6 +249,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         setAppName(localStorage.getItem('app_name') || 'DeptMonitor');
         setAppSubtitle(localStorage.getItem('app_subtitle') || 'MRK');
         setAppLogo(localStorage.getItem('app_logo') || '');
+        setAppFavicon(localStorage.getItem('app_favicon') || '');
         setSessionTimeout(Number(localStorage.getItem('session_timeout') || 10));
         setMaxFileSizeMb(Number(localStorage.getItem('max_file_size_mb') || 25));
         setMaxTaskFilesSizeMb(Number(localStorage.getItem('max_task_files_size_mb') || 100));
@@ -296,6 +307,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         setAppSubtitle(String(value));
       } else if (key === 'app_logo') {
         setAppLogo(String(value));
+      } else if (key === 'app_favicon') {
+        setAppFavicon(String(value));
       } else if (key === 'session_timeout') {
         setSessionTimeout(Number(value) || 10);
       } else if (key === 'master_statuses') {
@@ -329,7 +342,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Update Dynamic Favicon & Document Title based on appLogo, appName, and appSubtitle
+  // Update Dynamic Favicon & Document Title based on appFavicon, appLogo, appName, and appSubtitle
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -338,8 +351,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       document.title = appSubtitle && appSubtitle !== 'MRK' ? `${appName} - ${appSubtitle}` : appName;
     }
 
-    // 2. Update Favicon (Force browser refresh by replacing link elements)
-    const targetIcon = appLogo || '/icon.svg';
+    // 2. Update Favicon (Favicon setting takes precedence, then falls back to appLogo, then default /icon.svg)
+    const targetIcon = appFavicon || appLogo || '/icon.svg';
     const existingIcons = document.querySelectorAll("link[rel*='icon']");
     existingIcons.forEach(el => el.parentNode?.removeChild(el));
 
@@ -358,10 +371,10 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     linkApple.rel = 'apple-touch-icon';
     linkApple.href = targetIcon;
     document.head.appendChild(linkApple);
-  }, [appLogo, appName, appSubtitle]);
+  }, [appFavicon, appLogo, appName, appSubtitle]);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, appFavicon, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
       {children}
     </MasterContext.Provider>
   );

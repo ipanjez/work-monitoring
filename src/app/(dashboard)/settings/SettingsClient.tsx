@@ -56,6 +56,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const [deptName, setDeptName] = useState('MRK');
   const [appName, setAppName] = useState('DeptMonitor');
   const [appLogo, setAppLogo] = useState('');
+  const [appFavicon, setAppFavicon] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -102,6 +103,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   // Avatar Cropper State
   const [activePicForAvatar, setActivePicForAvatar] = useState<string | null>(null);
   const [isAppLogoCropperOpen, setIsAppLogoCropperOpen] = useState(false);
+  const [isAppFaviconCropperOpen, setIsAppFaviconCropperOpen] = useState(false);
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
 
   const PRESET_COLORS = [
@@ -248,6 +250,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         if (data.app_name !== undefined) setAppName(data.app_name);
         if (data.dept_name !== undefined) setDeptName(data.dept_name);
         if (data.app_logo !== undefined) setAppLogo(data.app_logo);
+        if (data.app_favicon !== undefined) setAppFavicon(data.app_favicon);
         if (data.max_file_size_mb !== undefined) setMaxFileSizeMb(data.max_file_size_mb);
         if (data.max_task_files_size_mb !== undefined) setMaxTaskFilesSizeMb(data.max_task_files_size_mb);
         if (data.max_total_storage_mb !== undefined) setMaxTotalStorageMb(data.max_total_storage_mb);
@@ -306,6 +309,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     localStorage.setItem('app_subtitle', deptName);
     localStorage.setItem('dept_name', deptName);
     localStorage.setItem('app_logo', appLogo);
+    localStorage.setItem('app_favicon', appFavicon);
     localStorage.setItem('max_file_size_mb', String(maxFileSizeMb));
     localStorage.setItem('max_task_files_size_mb', String(maxTaskFilesSizeMb));
     localStorage.setItem('max_total_storage_mb', String(maxTotalStorageMb));
@@ -326,6 +330,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           app_name: appName,
           app_subtitle: deptName,
           app_logo: appLogo,
+          app_favicon: appFavicon,
           master_categories: categories,
           master_pics: pics,
           master_statuses: statuses,
@@ -351,6 +356,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       broadcastSettingsChange('app_name', appName);
       broadcastSettingsChange('app_subtitle', deptName);
       broadcastSettingsChange('app_logo', appLogo);
+      broadcastSettingsChange('app_favicon', appFavicon);
       broadcastSettingsChange('master_categories', categories);
       broadcastSettingsChange('master_pics', pics);
       broadcastSettingsChange('master_statuses', statuses);
@@ -1162,24 +1168,86 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
               </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>Logo Aplikasi</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                  {appLogo ? <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Layout size={24} color="var(--text-secondary)" />}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              {/* Logo Aplikasi */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Logo Utama Aplikasi (Header & Login)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '4px' }}>
+                    {appLogo ? <img src={appLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Layout size={24} color="var(--text-secondary)" />}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => setIsAppLogoCropperOpen(true)} style={{ padding: '6px 12px', fontSize: '12.5px' }}>
+                        <Camera size={14} /> {appLogo ? 'Ganti Logo' : 'Unggah Logo'}
+                      </button>
+                      {appLogo && (
+                        <button type="button" className="btn btn-danger" onClick={() => {
+                          setAppLogo('');
+                          localStorage.removeItem('app_logo');
+                          fetch('/api/settings', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ app_logo: '' })
+                          }).catch(() => {});
+                          broadcastSettingsChange('app_logo', '');
+                          window.dispatchEvent(new Event('masterUpdated'));
+                          toast.success('Logo aplikasi dihapus');
+                        }} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '6px 10px', fontSize: '12px' }}>
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                      Tampil di Sidebar, Navbar, dan Halaman Login.
+                    </span>
+                  </div>
                 </div>
-                <button className="btn btn-secondary" onClick={() => setIsAppLogoCropperOpen(true)}>
-                  <Camera size={16} /> Ubah Logo
-                </button>
-                {appLogo && (
-                  <button className="btn btn-danger" onClick={() => setAppLogo('')} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
-                    Hapus Logo
-                  </button>
-                )}
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                Format gambar persegi (1:1) berukuran minimal 128x128 pixel untuk hasil tampilan tajam di kop laporan.
-              </p>
+
+              {/* Favicon Browser */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Favicon Tab Browser (Ikon Tab & Bookmark)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '6px' }}>
+                    {appFavicon || appLogo ? (
+                      <img src={appFavicon || appLogo} alt="Favicon" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                    ) : (
+                      <img src="/icon.svg" alt="Default Icon" style={{ width: '36px', height: '36px' }} />
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" className="btn btn-secondary" onClick={() => setIsAppFaviconCropperOpen(true)} style={{ padding: '6px 12px', fontSize: '12.5px' }}>
+                        <Camera size={14} /> {appFavicon ? 'Ganti Favicon' : 'Unggah Favicon'}
+                      </button>
+                      {appFavicon && (
+                        <button type="button" className="btn btn-danger" onClick={() => {
+                          setAppFavicon('');
+                          localStorage.removeItem('app_favicon');
+                          fetch('/api/settings', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ app_favicon: '' })
+                          }).catch(() => {});
+                          broadcastSettingsChange('app_favicon', '');
+                          window.dispatchEvent(new Event('masterUpdated'));
+                          toast.success('Favicon khusus dihapus (kembali ke logo utama/default)');
+                        }} style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '6px 10px', fontSize: '12px' }}>
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                      {appFavicon ? 'Favicon kustom aktif.' : (appLogo ? 'Menggunakan Logo Utama secara otomatis.' : 'Menggunakan ikon default.')}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
@@ -1575,6 +1643,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             });
             broadcastSettingsChange('app_logo', base64);
             window.dispatchEvent(new Event('masterUpdated'));
+            toast.success('Logo aplikasi diperbarui');
           } catch (e) {}
         }}
         onDelete={async () => {
@@ -1593,7 +1662,44 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           } catch (e) {}
         }}
         currentImage={appLogo || null}
-        title="Ubah Logo Aplikasi"
+        title="Ubah Logo Utama Aplikasi"
+      />
+
+      <AvatarCropperModal
+        isOpen={isAppFaviconCropperOpen}
+        onClose={() => setIsAppFaviconCropperOpen(false)}
+        onSave={async (base64) => {
+          setAppFavicon(base64);
+          setIsAppFaviconCropperOpen(false);
+          localStorage.setItem('app_favicon', base64);
+          try {
+            await fetch('/api/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ app_favicon: base64 })
+            });
+            broadcastSettingsChange('app_favicon', base64);
+            window.dispatchEvent(new Event('masterUpdated'));
+            toast.success('Favicon tab browser diperbarui');
+          } catch (e) {}
+        }}
+        onDelete={async () => {
+          setAppFavicon('');
+          setIsAppFaviconCropperOpen(false);
+          localStorage.removeItem('app_favicon');
+          try {
+            await fetch('/api/settings', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ app_favicon: '' })
+            });
+            broadcastSettingsChange('app_favicon', '');
+            window.dispatchEvent(new Event('masterUpdated'));
+            toast.success('Favicon khusus dihapus');
+          } catch (e) {}
+        }}
+        currentImage={appFavicon || null}
+        title="Ubah Favicon Tab Browser"
       />
     </div>
   );
