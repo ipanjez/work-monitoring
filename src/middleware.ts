@@ -26,13 +26,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get NextAuth session token
-  const isHttps = request.nextUrl.protocol === 'https:';
-  const session = await getToken({
+  // Get NextAuth session token with universal fallback for reverse proxies & cloud hosting
+  let session = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET || 'dept-monitor-secret-key-12345',
-    secureCookie: isHttps,
   });
+
+  if (!session) {
+    session = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET || 'dept-monitor-secret-key-12345',
+      secureCookie: false,
+    });
+  }
+
+  if (!session) {
+    session = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET || 'dept-monitor-secret-key-12345',
+      secureCookie: true,
+    });
+  }
 
   // If not logged in
   if (!session && pathname !== '/auth/signin' && pathname !== '/auth/forgot' && pathname !== '/auth/signup') {
