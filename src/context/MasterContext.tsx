@@ -329,6 +329,28 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Update Dynamic Favicon & Title based on appLogo and appName
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (appLogo) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = appLogo;
+
+      let appleLink: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
+      if (!appleLink) {
+        appleLink = document.createElement('link');
+        appleLink.rel = 'apple-touch-icon';
+        document.head.appendChild(appleLink);
+      }
+      appleLink.href = appLogo;
+    }
+  }, [appLogo]);
+
   return (
     <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
       {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}

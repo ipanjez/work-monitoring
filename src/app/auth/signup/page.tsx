@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { User, Lock, Mail, IdCard, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { useMaster } from '@/context/MasterContext';
 
 export default function SignUpPage() {
+  const { appName, appSubtitle, appLogo } = useMaster();
   const [npk, setNpk] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,16 +25,10 @@ export default function SignUpPage() {
       .then(data => {
         if (data && data.labels) {
           const roles = Object.keys(data.labels)
-            .filter(key => key !== 'ADMIN')
-            .map(key => ({
-              key,
-              label: data.labels[key]
-            }));
-          const finalRoles = roles.length > 0 ? roles : Object.keys(data.labels).map(k => ({ key: k, label: data.labels[k] }));
-          setAvailableRoles(finalRoles);
-          if (finalRoles.length > 0) {
-            setRole(finalRoles[0].key);
-          }
+            .filter(r => r.toUpperCase() !== 'ADMIN')
+            .map(r => ({ key: r, label: data.labels[r] || r }));
+          setAvailableRoles(roles);
+          if (roles.length > 0) setRole(roles[0].key);
         }
       })
       .catch(() => {});
@@ -42,17 +38,17 @@ export default function SignUpPage() {
     e.preventDefault();
 
     if (!npk.trim() || !name.trim() || !password) {
-      toast.error('NPK, Nama Lengkap, dan Password wajib diisi!');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Password minimal harus 6 karakter!');
+      toast.error('Harap isi semua field yang wajib (*)');
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Password dan Konfirmasi Password tidak cocok!');
+      toast.error('Konfirmasi kata sandi tidak cocok!');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Kata sandi minimal 6 karakter!');
       return;
     }
 
@@ -67,20 +63,20 @@ export default function SignUpPage() {
           name: name.trim(),
           email: email.trim() || undefined,
           password,
-          role,
+          role: role || 'MEMBER',
         }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        toast.success('Registrasi berhasil! Silakan masuk.');
-        router.push('/auth/signin');
-      } else {
-        toast.error(data.error || 'Registrasi gagal. Silakan coba lagi.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mendaftar');
       }
-    } catch {
-      toast.error('Terjadi kesalahan koneksi. Silakan periksa jaringan Anda.');
+
+      toast.success('Pendaftaran berhasil! Menunggu persetujuan Administrator.');
+      router.push('/auth/signin');
+    } catch (err: any) {
+      toast.error(err.message || 'Terjadi kesalahan saat mendaftar');
     } finally {
       setLoading(false);
     }
@@ -107,25 +103,44 @@ export default function SignUpPage() {
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '14px',
-            background: 'var(--accent-primary)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
-          }}>
-            <UserPlus size={26} />
-          </div>
+          {appLogo ? (
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              border: '2px solid var(--border-color)',
+              background: 'var(--surface-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px'
+            }}>
+              <img src={appLogo} alt={appName || 'Logo'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          ) : (
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '14px',
+              background: 'var(--accent-primary)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+            }}>
+              <UserPlus size={26} />
+            </div>
+          )}
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
             Daftar Akun Baru
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Buat akun untuk memulai pemantauan pekerjaan
+            Buat akun untuk memulai pemantauan di {appName || 'Work Monitoring'}
           </p>
         </div>
 

@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, LogIn, Eye, EyeOff, IdCard, User } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { useMaster } from '@/context/MasterContext';
 
 function SignInContent() {
+  const { appName, appSubtitle, appLogo } = useMaster();
   const [npk, setNpk] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -110,25 +112,44 @@ function SignInContent() {
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '14px',
-            background: 'var(--accent-primary)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
-          }}>
-            <Lock size={26} />
-          </div>
+          {appLogo ? (
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              border: '2px solid var(--border-color)',
+              background: 'var(--surface-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px'
+            }}>
+              <img src={appLogo} alt={appName || 'Logo'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          ) : (
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '14px',
+              background: 'var(--accent-primary)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+            }}>
+              <Lock size={26} />
+            </div>
+          )}
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-            Work Monitoring
+            {appName || 'Work Monitoring'}
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Masuk menggunakan NPK dan Password Anda
+            {appSubtitle && appSubtitle !== 'MRK' ? appSubtitle : 'Masuk menggunakan NPK dan Password Anda'}
           </p>
         </div>
 

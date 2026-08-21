@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { KeyRound, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { useMaster } from '@/context/MasterContext';
 
 function ForgotContent() {
+  const { appName, appLogo } = useMaster();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [npk, setNpk] = useState('');
@@ -27,27 +29,31 @@ function ForgotContent() {
       toast.error('Masukkan NPK Anda!');
       return;
     }
-    if (newPassword.trim().length < 6) {
-      toast.error('Password baru minimal harus 6 karakter!');
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password baru minimal 6 karakter!');
       return;
     }
-    setLoading(true);
 
+    setLoading(true);
     try {
       const res = await fetch('/api/users/reset-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npk: npk.trim(), newPassword: newPassword }),
+        body: JSON.stringify({
+          npk: npk.trim(),
+          newPassword,
+        }),
       });
 
       const data = await res.json();
-      if (res.ok) {
-        setSubmitted(true);
-      } else {
-        toast.error(data.error || 'Terjadi kesalahan. Coba lagi.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mengirim permintaan');
       }
-    } catch {
-      toast.error('Gagal mengirim permintaan. Periksa koneksi Anda.');
+
+      setSubmitted(true);
+      toast.success('Permintaan reset password berhasil diajukan!');
+    } catch (err: any) {
+      toast.error(err.message || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }
@@ -70,30 +76,49 @@ function ForgotContent() {
         border: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '24px',
+        gap: '20px',
       }}>
         {!submitted ? (
           <>
             <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '14px',
-                background: 'var(--accent-primary)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
-              }}>
-                <KeyRound size={26} />
-              </div>
+              {appLogo ? (
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  margin: '0 auto 16px',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+                  border: '2px solid var(--border-color)',
+                  background: 'var(--surface-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px'
+                }}>
+                  <img src={appLogo} alt={appName || 'Logo'} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+              ) : (
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '14px',
+                  background: 'var(--accent-primary)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                }}>
+                  <KeyRound size={26} />
+                </div>
+              )}
               <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
                 Lupa Password
               </h1>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                Masukkan NPK dan password baru pilihan Anda. Admin akan meninjau dan menyetujui permintaan Anda.
+                Masukkan NPK dan password baru Anda untuk {appName || 'Work Monitoring'}. Admin akan meninjau dan menyetujui permintaan Anda.
               </p>
             </div>
 
