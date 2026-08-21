@@ -31,7 +31,7 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useTaskModal } from '@/context/TaskModalContext';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi' | 'updatedAt' | 'createdAt';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
@@ -252,7 +252,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      // Default to descending for dates, createdAt, updatedAt, priority; ascending for name/category
+      if (field === 'updatedAt' || field === 'createdAt' || field === 'prioritas') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection('asc');
+      }
     }
   };
 
@@ -308,7 +313,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       let valA: any = (a as any)[sortField];
       let valB: any = (b as any)[sortField];
 
-      if (sortField === 'prioritas') {
+      if (sortField === 'updatedAt') {
+        const dateA = a.lastEditedAt ? new Date(a.lastEditedAt).getTime() : (a.updatedAt ? new Date(a.updatedAt).getTime() : 0);
+        const dateB = b.lastEditedAt ? new Date(b.lastEditedAt).getTime() : (b.updatedAt ? new Date(b.updatedAt).getTime() : 0);
+        valA = dateA;
+        valB = dateB;
+      } else if (sortField === 'createdAt') {
+        valA = a.createdAt ? new Date(a.createdAt).getTime() : a.id;
+        valB = b.createdAt ? new Date(b.createdAt).getTime() : b.id;
+      } else if (sortField === 'prioritas') {
         valA = priorityWeight[a.prioritas || 'Medium'] || 0;
         valB = priorityWeight[b.prioritas || 'Medium'] || 0;
       } else if (sortField === 'status') {
@@ -1131,6 +1144,140 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       </AnimatePresence>
 
       <div id="task-table-container" className="glass" style={{ padding: '16px', overflow: 'hidden' }}>
+        {/* Quick Sort Toolbar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
+          paddingBottom: '12px',
+          marginBottom: '10px',
+          borderBottom: '1px solid var(--border-color)',
+          fontSize: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <ArrowUpDown size={13} /> Urutkan:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSort('updatedAt')}
+              style={{
+                background: sortField === 'updatedAt' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                color: sortField === 'updatedAt' ? '#ffffff' : 'var(--text-primary)',
+                border: '1px solid',
+                borderColor: sortField === 'updatedAt' ? 'var(--accent-primary)' : 'var(--border-color)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '11.5px',
+                fontWeight: sortField === 'updatedAt' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s'
+              }}
+              title="Urutkan berdasarkan tanggal terakhir pekerjaan diperbarui"
+            >
+              <Clock size={13} /> Terakhir Diperbarui {sortField === 'updatedAt' && (sortDirection === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSort('createdAt')}
+              style={{
+                background: sortField === 'createdAt' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                color: sortField === 'createdAt' ? '#ffffff' : 'var(--text-primary)',
+                border: '1px solid',
+                borderColor: sortField === 'createdAt' ? 'var(--accent-primary)' : 'var(--border-color)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '11.5px',
+                fontWeight: sortField === 'createdAt' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s'
+              }}
+              title="Urutkan berdasarkan tanggal pekerjaan dibuat"
+            >
+              <Calendar size={13} /> Terakhir Dibuat {sortField === 'createdAt' && (sortDirection === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSort('endDate')}
+              style={{
+                background: sortField === 'endDate' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                color: sortField === 'endDate' ? '#ffffff' : 'var(--text-primary)',
+                border: '1px solid',
+                borderColor: sortField === 'endDate' ? 'var(--accent-primary)' : 'var(--border-color)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '11.5px',
+                fontWeight: sortField === 'endDate' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s'
+              }}
+            >
+              ⏳ Tenggat Waktu {sortField === 'endDate' && (sortDirection === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSort('prioritas')}
+              style={{
+                background: sortField === 'prioritas' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                color: sortField === 'prioritas' ? '#ffffff' : 'var(--text-primary)',
+                border: '1px solid',
+                borderColor: sortField === 'prioritas' ? 'var(--accent-primary)' : 'var(--border-color)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                fontSize: '11.5px',
+                fontWeight: sortField === 'prioritas' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s'
+              }}
+            >
+              🎯 Prioritas {sortField === 'prioritas' && (sortDirection === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            </button>
+
+            {sortField && (
+              <button
+                type="button"
+                onClick={() => setSortField(null)}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--danger)',
+                  border: '1px dashed rgba(239, 68, 68, 0.4)',
+                  padding: '4px 8px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Kembalikan ke urutan default"
+              >
+                <X size={12} /> Reset Urutan
+              </button>
+            )}
+          </div>
+
+          <div style={{ color: 'var(--text-secondary)', fontSize: '11.5px' }}>
+            Menampilkan <strong>{processedTasks.length}</strong> dari <strong>{tasks.length}</strong> pekerjaan
+          </div>
+        </div>
+
         {/* Desktop View Table */}
         <div className="desktop-table-view" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '11.5px' }}>
@@ -1150,9 +1297,59 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     />
                   </th>
                 )}
-                <th style={{ padding: '8px 6px', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('nama')}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    Pekerjaan {renderSortIcon('nama')}
+                <th style={{ padding: '8px 6px', userSelect: 'none' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div 
+                      onClick={() => handleSort('nama')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: sortField === 'nama' ? 700 : 'inherit', color: sortField === 'nama' ? 'var(--accent-primary)' : 'inherit' }}
+                      title="Klik untuk mengurutkan berdasarkan nama pekerjaan"
+                    >
+                      Pekerjaan {renderSortIcon('nama')}
+                    </div>
+                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleSort('updatedAt'); }}
+                        title="Urutkan berdasarkan tanggal terakhir diperbarui"
+                        style={{
+                          fontSize: '9px',
+                          padding: '1px 5px',
+                          borderRadius: '4px',
+                          border: '1px solid',
+                          borderColor: sortField === 'updatedAt' ? 'var(--accent-primary)' : 'var(--border-color)',
+                          background: sortField === 'updatedAt' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                          color: sortField === 'updatedAt' ? '#ffffff' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px',
+                          lineHeight: '13px'
+                        }}
+                      >
+                        <Clock size={9} /> Diperbarui {sortField === 'updatedAt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleSort('createdAt'); }}
+                        title="Urutkan berdasarkan tanggal dibuat"
+                        style={{
+                          fontSize: '9px',
+                          padding: '1px 5px',
+                          borderRadius: '4px',
+                          border: '1px solid',
+                          borderColor: sortField === 'createdAt' ? 'var(--accent-primary)' : 'var(--border-color)',
+                          background: sortField === 'createdAt' ? 'var(--accent-primary)' : 'var(--input-bg)',
+                          color: sortField === 'createdAt' ? '#ffffff' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px',
+                          lineHeight: '13px'
+                        }}
+                      >
+                        <Calendar size={9} /> Dibuat {sortField === 'createdAt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      </button>
+                    </div>
                   </div>
                 </th>
                 <th className="hide-tablet" style={{ padding: '8px 6px' }}>
