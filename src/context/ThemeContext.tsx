@@ -72,6 +72,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     setMounted(true);
+
+    // Fetch defaults from database so new devices on LAN get the configured department theme
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (!savedTheme && data.theme) {
+          setTheme(data.theme);
+          document.documentElement.setAttribute('data-theme', data.theme);
+        }
+        if (!savedAccent && data.accent_color) {
+          setAccentColorState(data.accent_color);
+          document.documentElement.setAttribute('data-accent', data.accent_color);
+        }
+        if (!savedDensity && data.density) {
+          setDensityState(data.density);
+          document.documentElement.setAttribute('data-density', data.density);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const toggleTheme = () => {
@@ -79,6 +98,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(nextTheme);
     localStorage.setItem('theme', nextTheme);
     document.documentElement.setAttribute('data-theme', nextTheme);
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: nextTheme })
+    }).catch(() => {});
   };
 
   const toggleSidebar = () => {
@@ -114,12 +138,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setAccentColorState(color);
     localStorage.setItem('accent_color', color);
     document.documentElement.setAttribute('data-accent', color);
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accent_color: color })
+    }).catch(() => {});
   };
   
   const setDensity = (d: Density) => {
     setDensityState(d);
     localStorage.setItem('density', d);
     document.documentElement.setAttribute('data-density', d);
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ density: d })
+    }).catch(() => {});
   };
 
   return (

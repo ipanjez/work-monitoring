@@ -133,6 +133,16 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs resolved against baseUrl
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      try {
+        const u = new URL(url);
+        if (u.origin === baseUrl) return url;
+      } catch {}
+      return baseUrl;
+    },
   },
   pages: {
     signIn: '/auth/signin',

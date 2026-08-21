@@ -49,12 +49,16 @@ try {
   console.error('⚠️  Warning: db push had issues, but continuing...');
 }
 
+// Clean NEXTAUTH_URL so NextAuth dynamically detects host from request headers
+const devEnv = { ...process.env, DATABASE_URL: 'file:./dev.db' };
+delete devEnv.NEXTAUTH_URL;
+
 // Start Next.js dev server
 console.log('\n🚀 Starting local dev server (SQLite)...\n');
 const child = spawn('npx', ['next', 'dev', '-H', '0.0.0.0'], {
   stdio: 'inherit',
   shell: true,
-  env: { ...process.env, DATABASE_URL: 'file:./dev.db' },
+  env: devEnv,
 });
 
 child.on('close', (code) => {

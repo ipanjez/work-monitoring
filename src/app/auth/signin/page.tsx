@@ -58,6 +58,7 @@ function SignInContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!npk.trim()) {
       toast.error('Masukkan NPK Anda!');
       return;
@@ -65,10 +66,12 @@ function SignInContent() {
     setLoading(true);
 
     try {
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : undefined;
       const res = await signIn('credentials', {
         npk: npk.trim(),
         password,
         redirect: false,
+        callbackUrl: currentOrigin ? `${currentOrigin}/` : undefined,
       });
 
       if (res?.ok) {

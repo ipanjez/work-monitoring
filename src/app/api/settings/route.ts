@@ -25,6 +25,9 @@ export async function GET() {
       app_subtitle: 'MRK',
       app_logo: '',
       app_favicon: '',
+      theme: 'light',
+      accent_color: 'purple',
+      density: 'comfortable',
       max_file_size_mb: 25,
       max_task_files_size_mb: 100,
       session_timeout_hours: 24,
@@ -183,6 +186,30 @@ export async function POST(request: Request) {
         where: { key: 'app_favicon' },
         update: { value: body.app_favicon },
         create: { key: 'app_favicon', value: body.app_favicon }
+      });
+    }
+
+    if (body.theme !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'theme' },
+        update: { value: body.theme },
+        create: { key: 'theme', value: body.theme }
+      });
+    }
+
+    if (body.accent_color !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'accent_color' },
+        update: { value: body.accent_color },
+        create: { key: 'accent_color', value: body.accent_color }
+      });
+    }
+
+    if (body.density !== undefined) {
+      await prisma.appSetting.upsert({
+        where: { key: 'density' },
+        update: { value: body.density },
+        create: { key: 'density', value: body.density }
       });
     }
 
