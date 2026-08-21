@@ -62,14 +62,10 @@ export async function GET() {
     // Append database JSON
     archive.append(JSON.stringify(dbData, null, 2), { name: 'database.json' });
 
-    if (isLocal) {
-      // Append uploads directory if it exists locally
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      if (fs.existsSync(uploadsDir)) {
-        archive.directory(uploadsDir, 'uploads');
-      }
-      archive.finalize();
-    } else {
+    const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+
+    if (hasBlobToken && !isLocal) {
       // Cloud MODE: Fetch all blobs from Vercel Blob
       (async () => {
         try {
@@ -106,6 +102,12 @@ export async function GET() {
           archive.finalize();
         }
       })();
+    } else {
+      // Append uploads directory if it exists on disk
+      if (fs.existsSync(uploadsDir)) {
+        archive.directory(uploadsDir, 'uploads');
+      }
+      archive.finalize();
     }
 
     // Convert Node PassThrough stream to Web ReadableStream
@@ -242,11 +244,9 @@ export async function POST(req: Request) {
           const fileName = entry.entryName.replace('uploads/', '');
           if (fileName) {
             const entryData = zip.readFile(entry);
+            const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
             if (entryData) {
-              if (isLocal) {
-                const filePath = path.join(uploadsDir, fileName);
-                fs.writeFileSync(filePath, entryData);
-              } else {
+              if (hasBlobToken && !isLocal) {
                 // Parallelize Vercel Blob uploads to avoid hitting 10s Serverless timeout
                 uploadPromises.push(
                   put(fileName, entryData, {
@@ -255,8 +255,15 @@ export async function POST(req: Request) {
                     allowOverwrite: true
                   }).then(blob => {
                     vercelBlobMap[fileName] = blob.url;
+                  }).catch(err => {
+                    console.warn(`Failed to put blob for ${fileName}, falling back to local file:`, err);
+                    const filePath = path.join(uploadsDir, fileName);
+                    fs.writeFileSync(filePath, entryData);
                   })
                 );
+              } else {
+                const filePath = path.join(uploadsDir, fileName);
+                fs.writeFileSync(filePath, entryData);
               }
             }
           }
@@ -293,10 +300,10 @@ export async function POST(req: Request) {
       const match = url.match(/\/([^/]+)$/);
       if (match) {
         const fName = match[1];
-        if (isLocal) {
-          return `/uploads/${fName}`;
-        } else if (vercelBlobMap[fName]) {
+        if (vercelBlobMap[fName]) {
           return vercelBlobMap[fName];
+        } else {
+          return `/uploads/${fName}`;
         }
       }
       return url;

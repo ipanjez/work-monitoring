@@ -16,8 +16,10 @@ export async function POST(req: Request) {
 
     const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.docx', '.xlsx', '.zip', '.txt', '.csv'];
 
-    // --- LOCAL MODE: Save to disk ---
-    if (isLocal) {
+    const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+
+    // --- LOCAL / DISK MODE: Save to public/uploads disk ---
+    if (isLocal || !hasBlobToken) {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
