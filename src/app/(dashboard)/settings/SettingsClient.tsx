@@ -816,10 +816,19 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
           window.alert(`✅ BERHASIL!\n\n${result.message || 'Database berhasil dipulihkan!'}`);
           window.location.reload();
         } else {
-          let err: any = {};
-          try { err = await res.json(); } catch(e) { err.message = await res.text(); }
-          let errMsg = err.error || err.message || 'Gagal memulihkan database';
-          if (typeof errMsg === 'object') errMsg = errMsg.message || JSON.stringify(errMsg);
+          let errMsg = 'Gagal memulihkan database';
+          try {
+            const rawText = await res.text();
+            try {
+              const parsed = JSON.parse(rawText);
+              errMsg = parsed.error || parsed.message || rawText;
+            } catch {
+              errMsg = rawText || `HTTP ${res.status}`;
+            }
+          } catch (e: any) {
+            errMsg = e.message || 'Terjadi kesalahan pada server';
+          }
+          if (typeof errMsg === 'object') errMsg = (errMsg as any).message || JSON.stringify(errMsg);
           toast.error(errMsg);
         }
       } catch (err: any) {

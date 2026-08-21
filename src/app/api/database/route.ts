@@ -214,19 +214,12 @@ export async function POST(req: Request) {
       }
       const arrayBuffer = await file.arrayBuffer();
       zipBuffer = Buffer.from(arrayBuffer);
-    } else if (contentType.includes('application/zip') || contentType.includes('application/x-zip-compressed')) {
-      const chunks = [];
-      const reader = req.body?.getReader();
-      if (reader) {
-        let result;
-        while (!(result = await reader.read()).done) {
-          chunks.push(result.value);
-        }
-      }
-      zipBuffer = Buffer.concat(chunks);
+    } else if (contentType.includes('application/zip') || contentType.includes('application/x-zip-compressed') || contentType.includes('application/octet-stream')) {
+      const arrayBuffer = await req.arrayBuffer();
+      zipBuffer = Buffer.from(arrayBuffer);
       
       if (!zipBuffer || zipBuffer.length === 0) {
-        return NextResponse.json({ error: 'Empty backup file provided' }, { status: 400 });
+        return NextResponse.json({ error: 'File backup kosong' }, { status: 400 });
       }
     } else if (contentType.includes('application/json')) {
       // Legacy JSON backup support OR blobUrl pointer to a zip!
