@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, X, Check, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFilter } from '@/context/FilterContext';
 
@@ -164,6 +164,20 @@ export default function UniversalFilterBar({
   } = useFilter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [showSearchInfo, setShowSearchInfo] = useState(false);
+  const searchInfoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchInfoRef.current && !searchInfoRef.current.contains(e.target as Node)) {
+        setShowSearchInfo(false);
+      }
+    };
+    if (showSearchInfo) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSearchInfo]);
 
   const getActiveStyle = (isActive: boolean) => isActive ? {
     borderColor: 'var(--accent-primary)',
@@ -188,36 +202,106 @@ export default function UniversalFilterBar({
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
           <input
             className="input"
-            style={{ paddingLeft: '30px', width: '100%', paddingRight: '45px', fontSize: '12px', height: '36px', ...getActiveStyle(globalSearchQuery !== '') }}
+            style={{ paddingLeft: '30px', width: '100%', paddingRight: '72px', fontSize: '12px', height: '36px', ...getActiveStyle(globalSearchQuery !== '') }}
             placeholder="Cari pekerjaan, PIC, file lampiran..."
             value={globalSearchQuery}
             onChange={e => setGlobalSearchQuery(e.target.value)}
           />
-          <button 
-            title={globalSearchExactMatch ? "Pencarian Kata Persis (Aktif)" : "Pencarian Kata Persis (Nonaktif)"}
-            onClick={() => setGlobalSearchExactMatch(!globalSearchExactMatch)}
-            style={{
-              position: 'absolute',
-              right: '2px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: globalSearchExactMatch ? 'var(--accent-primary)' : 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '2px 4px',
-              borderRadius: '6px',
-              fontSize: '9px',
-              fontWeight: 700,
-              color: globalSearchExactMatch ? 'white' : 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: '0.2s',
-              zIndex: 10
-            }}
-          >
-            Exact
-          </button>
+          <div style={{ position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '3px', zIndex: 10 }}>
+            <button 
+              type="button"
+              title={globalSearchExactMatch ? "Pencarian Kata Persis (Aktif)" : "Pencarian Kata Persis (Nonaktif)"}
+              onClick={() => setGlobalSearchExactMatch(!globalSearchExactMatch)}
+              style={{
+                background: globalSearchExactMatch ? 'var(--accent-primary)' : 'rgba(148, 163, 184, 0.15)',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '2px 5px',
+                borderRadius: '5px',
+                fontSize: '9px',
+                fontWeight: 700,
+                color: globalSearchExactMatch ? 'white' : 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: '0.2s'
+              }}
+            >
+              Exact
+            </button>
+
+            <div ref={searchInfoRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowSearchInfo(!showSearchInfo)}
+                title="Informasi Cakupan Pencarian"
+                style={{
+                  background: showSearchInfo ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '50%',
+                  color: showSearchInfo ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: '0.2s'
+                }}
+              >
+                <Info size={14} />
+              </button>
+
+              <AnimatePresence>
+                {showSearchInfo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 5, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: '280px',
+                      background: 'var(--modal-bg, #1e293b)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      boxShadow: 'var(--card-shadow, 0 15px 30px rgba(0,0,0,0.3))',
+                      zIndex: 99999,
+                      fontSize: '12px',
+                      lineHeight: 1.5
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Info size={14} /> Cakupan Pencarian
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => setShowSearchInfo(false)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div>📌 <strong>Pekerjaan:</strong> Judul, deskripsi & catatan</div>
+                      <div>👤 <strong>Personel:</strong> PIC utama & tim PIC tambahan</div>
+                      <div>📎 <strong>File Lampiran:</strong> Nama berkas PDF, Excel, Word, format berkas (.pdf, .xlsx, dll)</div>
+                      <div>💬 <strong>Komentar:</strong> Teks diskusi & lampiran komentar</div>
+                      <div>📋 <strong>Subtask & Lokasi:</strong> Judul subtask & lokasi tugas</div>
+                      <div style={{ marginTop: '4px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        💡 <em>Tekan tombol <strong>Exact</strong> untuk mencari kata persis/utuh.</em>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
 
         <button
