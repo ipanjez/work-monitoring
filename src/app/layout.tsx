@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   title: "Dashboard Monitoring Pekerjaan",
   description: "Dashboard Monitoring & Manajemen Pekerjaan Departemen",
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/api/favicon',
+    shortcut: '/api/favicon',
+    apple: '/api/favicon',
   }
 };
 

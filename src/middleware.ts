@@ -13,6 +13,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
+    pathname === '/icon.svg' ||
+    pathname === '/api/favicon' ||
     pathname === '/sw.js' ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/calendar') ||

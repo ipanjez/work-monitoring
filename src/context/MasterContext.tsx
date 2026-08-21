@@ -351,25 +351,24 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       document.title = appSubtitle && appSubtitle !== 'MRK' ? `${appName} - ${appSubtitle}` : appName;
     }
 
-    // 2. Update Favicon (Favicon setting takes precedence, then falls back to appLogo, then default /icon.svg)
-    const targetIcon = appFavicon || appLogo || '/icon.svg';
+    // 2. Update Favicon (Use dynamic endpoint /api/favicon and direct base64 fallback)
+    const faviconUrl = `/api/favicon?t=${Date.now()}`;
     const existingIcons = document.querySelectorAll("link[rel*='icon']");
     existingIcons.forEach(el => el.parentNode?.removeChild(el));
 
     const linkIcon = document.createElement('link');
     linkIcon.rel = 'icon';
-    linkIcon.type = targetIcon.startsWith('data:image/svg') || targetIcon.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-    linkIcon.href = targetIcon;
+    linkIcon.href = faviconUrl;
     document.head.appendChild(linkIcon);
 
     const linkShortcut = document.createElement('link');
     linkShortcut.rel = 'shortcut icon';
-    linkShortcut.href = targetIcon;
+    linkShortcut.href = faviconUrl;
     document.head.appendChild(linkShortcut);
 
     const linkApple = document.createElement('link');
     linkApple.rel = 'apple-touch-icon';
-    linkApple.href = targetIcon;
+    linkApple.href = faviconUrl;
     document.head.appendChild(linkApple);
   }, [appFavicon, appLogo, appName, appSubtitle]);
 
