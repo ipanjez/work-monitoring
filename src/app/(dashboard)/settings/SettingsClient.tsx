@@ -1810,9 +1810,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
                     Total {totalTasks} Pekerjaan
                   </span>
-                  {fileStats?.totalDistinctAvailableFiles > 0 && (
+                  {fileStats?.totalReferencedFiles > 0 && (
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#0284c7', background: 'rgba(2, 132, 199, 0.15)', padding: '3px 10px', borderRadius: '6px' }}>
-                      📁 {fileStats.totalDistinctAvailableFiles} File ({((fileStats.estimatedTotalBytes || 0) / (1024 * 1024)).toFixed(1)} MB)
+                      📁 {fileStats.availableReferencedCount}/{fileStats.totalReferencedFiles} File ({((fileStats.estimatedTotalBytes || 0) / (1024 * 1024)).toFixed(1)} MB)
                     </span>
                   )}
                 </div>

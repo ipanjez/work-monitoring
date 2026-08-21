@@ -15,52 +15,7 @@ export async function GET() {
     const reviewCount = tasks.filter(t => (t.status || '').toLowerCase() === 'review').length;
     const doneCount = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
 
-    // Collect all referenced file paths/names in tasks and comments
-    const referencedFiles = new Map<string, { name: string; url: string; size?: number }>();
-
-    for (const t of tasks as any[]) {
-      if (t.fileUrl) {
-        const u = t.fileUrl;
-        const match = u.match(/\/([^/?#]+)$/);
-        const name = match ? decodeURIComponent(match[1]) : u;
-        if (name && !name.startsWith('data:')) {
-          referencedFiles.set(name, { name, url: u, size: t.fileSize || 0 });
-        }
-      }
-      if (t.filesJson) {
-        try {
-          const files = JSON.parse(t.filesJson);
-          if (Array.isArray(files)) {
-            for (const f of files) {
-              const u = f.url || '';
-              const match = u.match(/\/([^/?#]+)$/);
-              const name = f.name || (match ? decodeURIComponent(match[1]) : u);
-              if (name && !name.startsWith('data:')) {
-                referencedFiles.set(name, { name, url: u, size: f.size || 0 });
-              }
-            }
-          }
-        } catch (e) {}
-      }
-      if (t.commentsJson) {
-        try {
-          const comments = JSON.parse(t.commentsJson);
-          if (Array.isArray(comments)) {
-            for (const c of comments) {
-              if (c.fileUrl) {
-                const u = c.fileUrl;
-                const match = u.match(/\/([^/?#]+)$/);
-                const name = c.fileName || (match ? decodeURIComponent(match[1]) : u);
-                if (name && !name.startsWith('data:')) {
-                  referencedFiles.set(name, { name, url: u, size: c.fileSize || 0 });
-                }
-              }
-            }
-          }
-        } catch (e) {}
-      }
-    }
-
+    // Scan physical files in public/uploads
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     const localFiles = new Set<string>();
     let totalLocalBytes = 0;
@@ -76,6 +31,7 @@ export async function GET() {
       }
     }
 
+    // Scan physical files in Vercel Blob cloud
     const blobFiles = new Set<string>();
     let totalBlobBytes = 0;
     const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
@@ -98,20 +54,88 @@ export async function GET() {
       }
     }
 
-    // Check all referenced files against local disk and blob
     const allAvailableFiles = new Set([...localFiles, ...blobFiles]);
-    const missingFiles: string[] = [];
-    let availableReferencedCount = 0;
+    const availableCleanNames = new Map<string, string>();
+    for (const f of allAvailableFiles) {
+      // Map stripped name (e.g. tanpa prefix 1786351023282_499_)
+      const clean = f.replace(/^\d+_\d+_/, '').toLowerCase().replace(/\s+/g, '_');
+      availableCleanNames.set(clean, f);
+      availableCleanNames.set(f.toLowerCase(), f);
+    }
 
-    for (const [fname, fObj] of referencedFiles.entries()) {
-      if (allAvailableFiles.has(fname) || fObj.url.startsWith('http')) {
-        availableReferencedCount++;
-      } else {
-        missingFiles.push(fname);
+    // Collect all referenced files across tasks, filesJson, and commentsJson
+    const referencedFiles = new Map<string, { displayName: string; rawFileName: string; url: string }>();
+
+    for (const t of tasks as any[]) {
+      if (t.fileUrl) {
+        const u = t.fileUrl;
+        const urlFile = decodeURIComponent(u.replace(/^.*[\\\/]/, ''));
+        const dispName = t.fileName || urlFile;
+        if (urlFile && !u.startsWith('data:') && !referencedFiles.has(urlFile)) {
+          referencedFiles.set(urlFile, { displayName: dispName, rawFileName: urlFile, url: u });
+        }
+      }
+      if (t.filesJson) {
+        try {
+          const files = JSON.parse(t.filesJson);
+          if (Array.isArray(files)) {
+            for (const f of files) {
+              const u = f.url || '';
+              const urlFile = u ? decodeURIComponent(u.replace(/^.*[\\\/]/, '')) : '';
+              const dispName = f.name || urlFile;
+              const key = urlFile || dispName;
+              if (key && !u.startsWith('data:') && !referencedFiles.has(key)) {
+                referencedFiles.set(key, { displayName: dispName, rawFileName: urlFile || dispName, url: u });
+              }
+            }
+          }
+        } catch (e) {}
+      }
+      if (t.commentsJson) {
+        try {
+          const comments = JSON.parse(t.commentsJson);
+          if (Array.isArray(comments)) {
+            for (const c of comments) {
+              if (c.fileUrl) {
+                const u = c.fileUrl;
+                const urlFile = decodeURIComponent(u.replace(/^.*[\\\/]/, ''));
+                const dispName = c.fileName || urlFile;
+                if (urlFile && !u.startsWith('data:') && !referencedFiles.has(urlFile)) {
+                  referencedFiles.set(urlFile, { displayName: dispName, rawFileName: urlFile, url: u });
+                }
+              }
+            }
+          }
+        } catch (e) {}
       }
     }
 
-    const totalDistinctAvailableFiles = allAvailableFiles.size;
+    // Check presence of referenced files
+    const missingFiles: string[] = [];
+    let availableReferencedCount = 0;
+
+    for (const [key, fObj] of referencedFiles.entries()) {
+      const rawName = fObj.rawFileName;
+      const cleanRaw = rawName.replace(/^\d+_\d+_/, '').toLowerCase().replace(/\s+/g, '_');
+      const cleanDisp = (fObj.displayName || '').replace(/^\d+_\d+_/, '').toLowerCase().replace(/\s+/g, '_');
+
+      const exists = 
+        allAvailableFiles.has(rawName) ||
+        allAvailableFiles.has(fObj.displayName) ||
+        availableCleanNames.has(cleanRaw) ||
+        availableCleanNames.has(cleanDisp) ||
+        (fObj.url && fObj.url.startsWith('http'));
+
+      if (exists) {
+        availableReferencedCount++;
+      } else {
+        missingFiles.push(fObj.displayName || rawName);
+      }
+    }
+
+    // Total files to report: max of total referenced files or total physical files on disk/cloud
+    const totalCount = Math.max(referencedFiles.size, allAvailableFiles.size);
+    const availableCount = totalCount - missingFiles.length;
 
     return NextResponse.json({
       totalTasks: taskCount,
@@ -119,9 +143,9 @@ export async function GET() {
       inProgressCount,
       reviewCount,
       doneCount,
-      totalReferencedFiles: referencedFiles.size,
-      availableReferencedCount,
-      totalDistinctAvailableFiles,
+      totalReferencedFiles: totalCount,
+      availableReferencedCount: availableCount,
+      totalDistinctAvailableFiles: allAvailableFiles.size,
       missingFilesCount: missingFiles.length,
       missingFiles,
       totalLocalBytes,

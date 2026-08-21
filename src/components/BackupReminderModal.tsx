@@ -231,9 +231,9 @@ export default function BackupReminderModal({
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
                     Total {totalTasks} Pekerjaan
                   </span>
-                  {totalFiles > 0 && (
+                  {(fileStats?.totalReferencedFiles ?? totalFiles) > 0 && (
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#0284c7', background: 'rgba(2, 132, 199, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
-                      📁 {totalFiles} File {totalMb ? `(${totalMb} MB)` : ''}
+                      📁 {fileStats?.availableReferencedCount ?? totalFiles}/{fileStats?.totalReferencedFiles ?? totalFiles} File {totalMb ? `(${totalMb} MB)` : ''}
                     </span>
                   )}
                 </div>
