@@ -25,7 +25,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as Theme) || 'light';
+    }
+    return 'light';
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [accentColor, setAccentColorState] = useState<AccentColor>('blue');
@@ -35,15 +40,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
+    const initialTheme = savedTheme || 'light';
+    setTheme(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
+
     const savedSidebar = localStorage.getItem('sidebar_collapsed');
-
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-
     if (savedSidebar === 'true') {
       setIsSidebarCollapsed(true);
       document.documentElement.setAttribute('data-sidebar', 'collapsed');
@@ -73,24 +74,50 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     setMounted(true);
 
-    // Fetch defaults from database so new devices on LAN get the configured department theme
+    // Fetch defaults from database only if user has no local preference
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
-        if (!savedTheme && data.theme) {
+        if (!localStorage.getItem('theme') && data.theme) {
           setTheme(data.theme);
           document.documentElement.setAttribute('data-theme', data.theme);
         }
-        if (!savedAccent && data.accent_color) {
+        if (!localStorage.getItem('accent_color') && data.accent_color) {
           setAccentColorState(data.accent_color);
           document.documentElement.setAttribute('data-accent', data.accent_color);
         }
-        if (!savedDensity && data.density) {
+        if (!localStorage.getItem('density') && data.density) {
           setDensityState(data.density);
           document.documentElement.setAttribute('data-density', data.density);
         }
       })
       .catch(() => {});
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'theme' && e.newValue) {
+        setTheme(e.newValue as Theme);
+        document.documentElement.setAttribute('data-theme', e.newValue);
+      }
+      if (e.key === 'sidebar_collapsed') {
+        setIsSidebarCollapsed(e.newValue === 'true');
+        if (e.newValue === 'true') {
+          document.documentElement.setAttribute('data-sidebar', 'collapsed');
+        } else {
+          document.documentElement.removeAttribute('data-sidebar');
+        }
+      }
+      if (e.key === 'accent_color' && e.newValue) {
+        setAccentColorState(e.newValue as AccentColor);
+        document.documentElement.setAttribute('data-accent', e.newValue);
+      }
+      if (e.key === 'density' && e.newValue) {
+        setDensityState(e.newValue as Density);
+        document.documentElement.setAttribute('data-density', e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   const toggleTheme = () => {

@@ -40,8 +40,11 @@
 }
 
 /* Smooth Dark/Light Mode transitions */
-body, .glass, .sidebar, .main-content, input, select, button, .kanban-card, .kanban-col, table, th, td, a, h1, h2, h3, h4, h5, p, span, div {
-  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.sidebar, .glass, .main-content {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* Display Density */

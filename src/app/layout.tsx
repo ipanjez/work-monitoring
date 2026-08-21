@@ -30,6 +30,38 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme') || 'light';
+                  if (theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                  }
+                  var accent = localStorage.getItem('accent_color');
+                  if (accent) {
+                    document.documentElement.setAttribute('data-accent', accent);
+                  }
+                  var density = localStorage.getItem('density');
+                  if (density) {
+                    document.documentElement.setAttribute('data-density', density);
+                  }
+                  var sidebar = localStorage.getItem('sidebar_collapsed');
+                  if (sidebar === 'true') {
+                    document.documentElement.setAttribute('data-sidebar', 'collapsed');
+                  }
+                  var focus = localStorage.getItem('focus_mode');
+                  if (focus === 'true') {
+                    document.documentElement.setAttribute('data-focus', 'true');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <NextTopLoader color="var(--accent-primary)" showSpinner={false} height={3} />
         <SessionProviderWrapper>
