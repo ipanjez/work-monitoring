@@ -6,7 +6,7 @@ import {
   Settings, Shield, Download, Sun, Moon, Database, Check, Plus, X, Tag, 
   Users, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
   Pencil, Camera, Clock, RotateCcw, 
-  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw
+  Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -49,6 +49,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
   const canDatabaseBackup = hasPermission(roleConfig, 'database_backup', userRole);
 
   const { theme, toggleTheme, accentColor, setAccentColor, density, setDensity } = useTheme();
+  const { isBackupDue, lastBackupDate } = useMaster();
 
   const [activeMasterSubTab, setActiveMasterSubTab] = useState<ListType>('cat');
 
@@ -653,6 +654,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       a.click();
       toast.dismiss(toastId);
       toast.success('Backup berhasil diunduh!');
+
+      const newDate = new Date().toISOString();
+      localStorage.setItem('last_backup_date', newDate);
+      broadcastSettingsChange('last_backup_date', newDate);
+      window.dispatchEvent(new Event('backupReminderChanged'));
+      window.dispatchEvent(new Event('masterUpdated'));
     } catch (err: any) {
       toast.dismiss(toastId);
       toast.error(err.message || 'Gagal mengunduh backup');
@@ -1548,13 +1555,52 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
         {canDatabaseBackup && (
           <section id="section-backup" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
             <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={18} color="var(--success)" /> Cadangan & Pemeliharaan Database
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={18} color="var(--success)" /> Cadangan & Pemeliharaan Database
+                </h3>
+                {isBackupDue && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '3px 10px',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '9999px',
+                    fontSize: '11.5px',
+                    fontWeight: 600
+                  }}>
+                    <AlertTriangle size={13} /> Belum Dicadangkan
+                  </span>
+                )}
+              </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
                 Unduh cadangan data pekerjaan secara berkala atau pulihkan data dari file arsip cadangan sebelumnya.
               </p>
             </div>
+
+            {/* Backup Alert Banner when Due */}
+            {isBackupDue && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                padding: '12px 16px',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '8px',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                lineHeight: '1.5'
+              }}>
+                <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong style={{ color: '#ef4444' }}>Perhatian:</strong> Cadangan database belum diunduh sesuai jadwal pengingat (<strong>{backupReminderMode === '-1' ? 'Setiap Kali Login' : (backupReminderMode === '0' ? 'Nonaktif' : `Setiap ${backupReminderDays} Hari`)}</strong>). {lastBackupDate ? `Cadangan terakhir diunduh pada ${new Date(lastBackupDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.` : 'Belum pernah diunduh.'} Silakan klik tombol <strong>Unduh Backup Database</strong> di bawah.
+                </div>
+              </div>
+            )}
 
             {/* Backup Reminder Settings */}
             <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>

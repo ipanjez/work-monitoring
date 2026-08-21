@@ -24,7 +24,31 @@ interface MasterContextType {
   maxFileSizeMb: number;
   maxTaskFilesSizeMb: number;
   maxTotalStorageMb: number;
+  backupReminderDays: number;
+  lastBackupDate: string;
+  isBackupDue: boolean;
 }
+
+export const computeIsBackupDue = (days: number, lastDateStr: string | null | undefined): boolean => {
+  if (days === 0 || isNaN(days) || !days) return false;
+  if (days === -1) {
+    if (!lastDateStr) return true;
+    const lastDate = new Date(lastDateStr);
+    if (isNaN(lastDate.getTime())) return true;
+    const today = new Date();
+    const isSameDay = lastDate.getFullYear() === today.getFullYear() &&
+                      lastDate.getMonth() === today.getMonth() &&
+                      lastDate.getDate() === today.getDate();
+    return !isSameDay;
+  }
+  if (!lastDateStr) return true;
+  const lastDate = new Date(lastDateStr);
+  if (isNaN(lastDate.getTime())) return true;
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays >= days;
+};
 
 const MasterContext = createContext<MasterContextType>({ 
   masterColors: {}, 
@@ -45,7 +69,10 @@ const MasterContext = createContext<MasterContextType>({
   userRoles: {},
   maxFileSizeMb: 25,
   maxTaskFilesSizeMb: 100,
-  maxTotalStorageMb: 5000
+  maxTotalStorageMb: 5000,
+  backupReminderDays: 0,
+  lastBackupDate: '',
+  isBackupDue: false
 });
 
 export function MasterProvider({ children }: { children: React.ReactNode }) {
@@ -68,7 +95,11 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   const [maxFileSizeMb, setMaxFileSizeMb] = useState<number>(25);
   const [maxTaskFilesSizeMb, setMaxTaskFilesSizeMb] = useState<number>(100);
   const [maxTotalStorageMb, setMaxTotalStorageMb] = useState<number>(5000);
+  const [backupReminderDays, setBackupReminderDays] = useState<number>(0);
+  const [lastBackupDate, setLastBackupDate] = useState<string>('');
   const [mounted, setMounted] = useState(false);
+
+  const isBackupDue = computeIsBackupDue(backupReminderDays, lastBackupDate);
 
   useEffect(() => {
     // Initial load from localStorage
@@ -95,6 +126,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       setMaxFileSizeMb(Number(localStorage.getItem('max_file_size_mb') || 25));
       setMaxTaskFilesSizeMb(Number(localStorage.getItem('max_task_files_size_mb') || 100));
       setMaxTotalStorageMb(Number(localStorage.getItem('max_total_storage_mb') || 5000));
+      setBackupReminderDays(Number(localStorage.getItem('backup_reminder_days') || 0));
+      setLastBackupDate(localStorage.getItem('last_backup_date') || '');
     } catch {}
 
     setMounted(true);
@@ -192,6 +225,17 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('max_total_storage_mb', String(val));
           changed = true;
         }
+        if (data.backup_reminder_days !== undefined) {
+          const val = Number(data.backup_reminder_days) || 0;
+          setBackupReminderDays(val);
+          localStorage.setItem('backup_reminder_days', String(val));
+          changed = true;
+        }
+        if (data.last_backup_date !== undefined) {
+          setLastBackupDate(data.last_backup_date || '');
+          localStorage.setItem('last_backup_date', data.last_backup_date || '');
+          changed = true;
+        }
         if (changed) {
           window.dispatchEvent(new Event('masterUpdated'));
         }
@@ -201,7 +245,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
     fetch('/api/settings/permissions')
       .then(res => res.json())
       .then(data => {
-        if (data && typeof data === 'object') {
+        if (data && typeof data === 'object' && data.labels) {
           setRoleConfig(data);
           localStorage.setItem('role_config', JSON.stringify(data));
           window.dispatchEvent(new Event('masterUpdated'));
@@ -241,6 +285,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         if (e.key === 'max_file_size_mb' && e.newValue) setMaxFileSizeMb(Number(e.newValue));
         if (e.key === 'max_task_files_size_mb' && e.newValue) setMaxTaskFilesSizeMb(Number(e.newValue));
         if (e.key === 'max_total_storage_mb' && e.newValue) setMaxTotalStorageMb(Number(e.newValue));
+        if (e.key === 'backup_reminder_days' && e.newValue) setBackupReminderDays(Number(e.newValue));
+        if (e.key === 'last_backup_date' && e.newValue) setLastBackupDate(e.newValue);
       } catch (err) {}
     };
     
@@ -254,6 +300,8 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         setMaxFileSizeMb(Number(localStorage.getItem('max_file_size_mb') || 25));
         setMaxTaskFilesSizeMb(Number(localStorage.getItem('max_task_files_size_mb') || 100));
         setMaxTotalStorageMb(Number(localStorage.getItem('max_total_storage_mb') || 5000));
+        setBackupReminderDays(Number(localStorage.getItem('backup_reminder_days') || 0));
+        setLastBackupDate(localStorage.getItem('last_backup_date') || '');
         try {
             setMasterColors(JSON.parse(localStorage.getItem('master_colors') || '{}'));
             setMasterIcons(JSON.parse(localStorage.getItem('master_icons') || '{}'));
@@ -329,16 +377,22 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
         setMasterStatusProgress(typeof value === 'object' ? value : {});
       } else if (key === 'master_pic_avatars') {
         setMasterPicAvatars(typeof value === 'object' ? value : {});
+      } else if (key === 'backup_reminder_days') {
+        setBackupReminderDays(Number(value) || 0);
+      } else if (key === 'last_backup_date') {
+        setLastBackupDate(String(value));
       }
     });
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('masterUpdated', handleMasterUpdated);
+    window.addEventListener('backupReminderChanged', handleMasterUpdated);
 
     return () => {
       unsubscribeBroadcast();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('masterUpdated', handleMasterUpdated);
+      window.removeEventListener('backupReminderChanged', handleMasterUpdated);
     };
   }, []);
 
@@ -373,7 +427,7 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
   }, [appFavicon, appLogo, appName, appSubtitle]);
 
   return (
-    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, appFavicon, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb }}>
+    <MasterContext.Provider value={{ masterColors, masterIcons, masterPicAvatars, appName, appSubtitle, appLogo, appFavicon, masterCats, masterStatuses, masterPriorities, masterLocations, masterStatusProgress, masterPics, roleConfig, sessionTimeout, userRoles, maxFileSizeMb, maxTaskFilesSizeMb, maxTotalStorageMb, backupReminderDays, lastBackupDate, isBackupDue }}>
       {children}
     </MasterContext.Provider>
   );

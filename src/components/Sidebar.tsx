@@ -146,7 +146,7 @@ export default function Sidebar() {
   useEffect(() => {
     fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
   }, []);
-  const { masterColors, appName, appSubtitle, appLogo } = useMaster();
+  const { masterColors, appName, appSubtitle, appLogo, isBackupDue } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
@@ -180,39 +180,30 @@ export default function Sidebar() {
   const [stats, setStats] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const loadData = () => {
-      fetch('/api/tasks')
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) setAllTasks(data);
-        })
-        .catch(e => console.error(e));
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch('/api/tasks');
+        if (res.ok) {
+          const data = await res.json();
+          setAllTasks(data);
+        }
+      } catch (err) { }
     };
+    fetchTasks();
 
-    const loadSettings = () => {
-      fetch('/api/settings')
-        .then(res => res.json())
-        .then(data => {
-          if (data.master_pics) {
-            setMasterPics(data.master_pics);
-          }
-          if (data.master_statuses) {
-            setMasterStatuses(data.master_statuses);
-          }
-          if (data.master_colors) {
-            localStorage.setItem('master_colors', JSON.stringify(data.master_colors));
-          }
-        })
-        .catch(e => console.error(e));
-    };
+    const handleUpdate = () => fetchTasks();
+    window.addEventListener('tasksUpdated', handleUpdate);
+    return () => window.removeEventListener('tasksUpdated', handleUpdate);
+  }, []);
 
-    loadData();
-    loadSettings();
-    window.addEventListener('tasksUpdated', loadData);
-    return () => {
-      window.removeEventListener('tasksUpdated', loadData);
-    };
-  }, [pathname]);
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('master_pics') || '[]');
+      setMasterPics(p);
+      const s = JSON.parse(localStorage.getItem('master_statuses') || '["To Do", "In Progress", "Done"]');
+      setMasterStatuses(s);
+    } catch (e) { }
+  }, []);
 
   const extraPics = Array.from(new Set([
     ...allTasks.map((t: any) => t.pic).filter(Boolean),
@@ -221,9 +212,14 @@ export default function Sidebar() {
 
   const picList = [...masterPics, ...extraPics];
 
+  // Compute Task Count statistics for the selected PIC & Target Range
   useEffect(() => {
-    let tempStats: Record<string, number> = {};
+    if (!allTasks.length) {
+      setStats({});
+      return;
+    }
 
+    const tempStats: Record<string, number> = {};
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -231,22 +227,35 @@ export default function Sidebar() {
     let endBoundary = today.getTime() + 86400000 - 1;
 
     if (globalTargetFilter === 'Minggu Ini') {
-      const day = today.getDay();
-      const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Monday as start of week
-      const monday = new Date(new Date(today).setDate(diff));
+      const currentDay = today.getDay();
+      const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + distanceToMonday);
       startBoundary = monday.getTime();
-      endBoundary = startBoundary + (7 * 86400000) - 1;
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      endBoundary = sunday.getTime() + 86400000 - 1;
     } else if (globalTargetFilter === 'Bulan Ini') {
-      startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      startBoundary = firstDay.getTime();
+      endBoundary = lastDay.getTime() + 86400000 - 1;
+    } else if (globalTargetFilter === 'Kustom') {
+      if (globalCustomStartDate) startBoundary = new Date(globalCustomStartDate).getTime();
+      if (globalCustomEndDate) endBoundary = new Date(globalCustomEndDate).getTime() + 86400000 - 1;
     }
 
-    allTasks.forEach((t: any) => {
+    allTasks.forEach((t) => {
       if (globalPicFilter !== 'Semua PIC' && t.pic !== globalPicFilter) {
         let isAdditional = false;
         try {
-          const extra = JSON.parse(t.additionalPics || '[]');
-          if (Array.isArray(extra) && extra.includes(globalPicFilter)) isAdditional = true;
+          if (t.additionalPics) {
+            const arr = JSON.parse(t.additionalPics);
+            if (Array.isArray(arr) && arr.includes(globalPicFilter)) {
+              isAdditional = true;
+            }
+          }
         } catch (e) { }
         if (!isAdditional) return;
       }
@@ -270,16 +279,7 @@ export default function Sidebar() {
     });
 
     setStats(tempStats);
-  }, [allTasks, globalTargetFilter, globalPicFilter]);
-
-  const getInitials = (name?: string | null) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return parts[0].substring(0, 2).toUpperCase();
-  };
+  }, [allTasks, globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate]);
 
   if (pathname.startsWith('/auth/')) return null;
 
@@ -309,6 +309,9 @@ export default function Sidebar() {
 
   const { notifications } = useNotifications();
   const canSeeUserAlerts = hasPermission(roleConfig, 'user_administration', userRole);
+  const canBackup = hasPermission(roleConfig, 'database_backup', userRole);
+  const hasSettingsBackupAlert = canBackup && isBackupDue;
+
   const systemUserUnreads = canSeeUserAlerts ? notifications.filter(n =>
     !n.isRead && (
       n.title === 'Registrasi User Baru' ||
@@ -351,7 +354,10 @@ export default function Sidebar() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              const hasBadge = item.href === '/users' && systemUserUnreads > 0;
+              const isUsers = item.href === '/users';
+              const isSettings = item.href === '/settings';
+              const hasBadge = (isUsers && systemUserUnreads > 0) || (isSettings && hasSettingsBackupAlert);
+
               return (
                 <Link
                   id={`menu-${item.href === '/' ? 'monitoring' : item.href.split('/').pop()}`}
@@ -367,12 +373,45 @@ export default function Sidebar() {
                     {showExpanded && <span className={styles.navText}>{item.label}</span>}
                   </div>
                   {hasBadge && showExpanded && (
-                    <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
-                      {systemUserUnreads}
-                    </span>
+                    isSettings && hasSettingsBackupAlert ? (
+                      <span
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          borderRadius: '9999px',
+                          width: '18px',
+                          height: '18px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+                        }}
+                        title="Cadangan database belum diunduh"
+                      >
+                        !
+                      </span>
+                    ) : (
+                      <span style={{ background: '#ef4444', color: 'white', borderRadius: '9999px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                        {systemUserUnreads}
+                      </span>
+                    )
                   )}
                   {hasBadge && !showExpanded && (
-                    <div style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '8px',
+                        height: '8px',
+                        background: '#ef4444',
+                        borderRadius: '50%',
+                        boxShadow: '0 0 6px rgba(239, 68, 68, 0.8)'
+                      }}
+                      title={isSettings ? "Cadangan database belum diunduh" : undefined}
+                    />
                   )}
                 </Link>
               );
