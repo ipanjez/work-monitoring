@@ -31,7 +31,7 @@ import UniversalFilterBar from '@/components/UniversalFilterBar';
 import UniversalActionBar from '@/components/UniversalActionBar';
 import { useTaskModal } from '@/context/TaskModalContext';
 
-type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi' | 'updatedAt' | 'createdAt';
+type SortField = 'nama' | 'pic' | 'kategori' | 'prioritas' | 'status' | 'progress' | 'endDate' | 'lampiran' | 'lokasi' | 'updatedAt' | 'createdAt' | 'deskripsi' | 'subtask';
 
 export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) {
   const { data: session } = useSession();
@@ -336,6 +336,24 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       } else if (sortField === 'lampiran') {
         valA = getTaskFiles(a).length;
         valB = getTaskFiles(b).length;
+      } else if (sortField === 'deskripsi') {
+        valA = (a.deskripsi || '').replace(/<[^>]+>/g, '').trim().toLowerCase();
+        valB = (b.deskripsi || '').replace(/<[^>]+>/g, '').trim().toLowerCase();
+      } else if (sortField === 'subtask') {
+        const getStMetrics = (t: Task) => {
+          if (!t.subTasksJson) return { total: 0, done: 0 };
+          try {
+            const arr = JSON.parse(t.subTasksJson);
+            if (!Array.isArray(arr)) return { total: 0, done: 0 };
+            return { total: arr.length, done: arr.filter((s: any) => s.status === 'Done').length };
+          } catch {
+            return { total: 0, done: 0 };
+          }
+        };
+        const stA = getStMetrics(a);
+        const stB = getStMetrics(b);
+        valA = stA.total * 1000 + stA.done;
+        valB = stB.total * 1000 + stB.done;
       } else if (sortField === 'lokasi') {
         const getLocStr = (t: Task) => {
           if (!t.lokasi) return '';
@@ -1572,11 +1590,15 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
                     </div>
                   </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '10px 8px', background: 'var(--surface-color)' }}>
-                  Deskripsi
+                <th className="hide-tablet" style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('deskripsi')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Deskripsi {renderSortIcon('deskripsi')}
+                  </div>
                 </th>
-                <th className="hide-tablet" style={{ padding: '10px 8px', background: 'var(--surface-color)' }}>
-                  Sub Pekerjaan
+                <th className="hide-tablet" style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('subtask')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    Sub Pekerjaan {renderSortIcon('subtask')}
+                  </div>
                 </th>
                 <th style={{ padding: '10px 8px', cursor: 'pointer', userSelect: 'none', background: 'var(--surface-color)' }} onClick={() => handleSort('pic')}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
