@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 import { File, Download, AlertCircle, Loader } from 'lucide-react';
@@ -8,6 +8,30 @@ import { File, Download, AlertCircle, Loader } from 'lucide-react';
 interface FileViewerProps {
   url: string;
   name: string;
+}
+
+/**
+ * Convert a data:...;base64,xxx URL to an ArrayBuffer.
+ */
+function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
+  const base64 = dataUrl.split(',')[1] || '';
+  const binaryStr = atob(base64);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/**
+ * Convert a data URL to a Blob URL for download / iframe rendering.
+ */
+function dataUrlToBlobUrl(dataUrl: string): string {
+  const mimeMatch = dataUrl.match(/^data:([^;]+);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+  const buffer = dataUrlToArrayBuffer(dataUrl);
+  const blob = new Blob([buffer], { type: mime });
+  return URL.createObjectURL(blob);
 }
 
 export default function FileViewer({ url, name }: FileViewerProps) {
@@ -18,6 +42,14 @@ export default function FileViewer({ url, name }: FileViewerProps) {
   const extMatch = name.match(/\.([0-9a-z]+)(?:[\?#]|$)/i);
   const extension = extMatch ? extMatch[1].toLowerCase() : '';
 
+  const isDataUrl = url.startsWith('data:');
+
+  // For data URLs, create a stable blob URL for download links
+  const downloadUrl = useMemo(() => {
+    if (isDataUrl) return dataUrlToBlobUrl(url);
+    return url;
+  }, [url, isDataUrl]);
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -26,6 +58,7 @@ export default function FileViewer({ url, name }: FileViewerProps) {
     const loadContent = async () => {
       try {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+          // Images: data URLs work directly in <img> src
           setContent(
             <img 
               src={url} 
@@ -33,18 +66,41 @@ export default function FileViewer({ url, name }: FileViewerProps) {
               style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: '8px' }} 
             />
           );
-        } else if (['pdf', 'html', 'htm', 'txt', 'xml', 'json'].includes(extension)) {
+        } else if (extension === 'pdf') {
+          // PDF: use <object> which works with both regular URLs and blob URLs
+          const pdfSrc = isDataUrl ? dataUrlToBlobUrl(url) : url;
+          setContent(
+            <object
+              data={pdfSrc}
+              type="application/pdf"
+              style={{ width: '100%', height: '65vh', borderRadius: '8px', backgroundColor: 'white' }}
+            >
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+                <p>Browser tidak mendukung pratinjau PDF inline.</p>
+                <a href={pdfSrc} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginTop: '16px' }}>
+                  <Download size={16} /> Buka PDF
+                </a>
+              </div>
+            </object>
+          );
+        } else if (['html', 'htm', 'txt', 'xml', 'json'].includes(extension)) {
+          const iframeSrc = isDataUrl ? dataUrlToBlobUrl(url) : url;
           setContent(
             <iframe 
-              src={url} 
+              src={iframeSrc} 
               style={{ width: '100%', height: '65vh', border: 'none', borderRadius: '8px', backgroundColor: 'white' }} 
               title={name}
             />
           );
         } else if (['xlsx', 'xls', 'csv'].includes(extension)) {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('Gagal mengambil file');
-          const buffer = await res.arrayBuffer();
+          let buffer: ArrayBuffer;
+          if (isDataUrl) {
+            buffer = dataUrlToArrayBuffer(url);
+          } else {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Gagal mengambil file');
+            buffer = await res.arrayBuffer();
+          }
           const wb = XLSX.read(buffer, { type: 'array' });
           const wsname = wb.SheetNames[0];
           const ws = wb.Sheets[wsname];
@@ -60,9 +116,14 @@ export default function FileViewer({ url, name }: FileViewerProps) {
             );
           }
         } else if (extension === 'docx') {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('Gagal mengambil file');
-          const buffer = await res.arrayBuffer();
+          let buffer: ArrayBuffer;
+          if (isDataUrl) {
+            buffer = dataUrlToArrayBuffer(url);
+          } else {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Gagal mengambil file');
+            buffer = await res.arrayBuffer();
+          }
           const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
           
           if (isMounted) {
@@ -75,15 +136,20 @@ export default function FileViewer({ url, name }: FileViewerProps) {
             );
           }
         } else if (['ppt', 'pptx', 'doc'].includes(extension)) {
-          setContent(
-            <iframe 
-              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
-              style={{ width: '100%', height: '65vh', border: 'none', borderRadius: '8px', backgroundColor: 'white' }} 
-              title={name}
-            />
-          );
+          if (isDataUrl) {
+            // Can't use Office Online viewer with data URLs
+            setContent(null);
+          } else {
+            setContent(
+              <iframe 
+                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`}
+                style={{ width: '100%', height: '65vh', border: 'none', borderRadius: '8px', backgroundColor: 'white' }} 
+                title={name}
+              />
+            );
+          }
         } else {
-          // Unsupported local preview (like .doc binary)
+          // Unsupported local preview
           setContent(null);
         }
       } catch (err: any) {
@@ -99,7 +165,7 @@ export default function FileViewer({ url, name }: FileViewerProps) {
     return () => {
       isMounted = false;
     };
-  }, [url, name, extension]);
+  }, [url, name, extension, isDataUrl]);
 
   if (loading) {
     return (
@@ -116,7 +182,7 @@ export default function FileViewer({ url, name }: FileViewerProps) {
         <AlertCircle size={48} style={{ marginBottom: '16px' }} />
         <p style={{ fontWeight: 600 }}>Gagal Memuat Pratinjau</p>
         <p style={{ fontSize: '13px', marginTop: '8px' }}>{error}</p>
-        <a href={url} download={name} className="btn btn-primary" style={{ marginTop: '20px' }}>
+        <a href={downloadUrl} download={name} className="btn btn-primary" style={{ marginTop: '20px' }}>
           <Download size={16} /> Unduh File Saja
         </a>
       </div>
@@ -134,9 +200,10 @@ export default function FileViewer({ url, name }: FileViewerProps) {
       <p style={{ fontSize: '13px', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
         Browser tidak mendukung pratinjau langsung untuk format file ini (<code>.{extension}</code>). Silakan unduh file untuk melihat isinya.
       </p>
-      <a href={url} download={name} className="btn btn-primary" style={{ display: 'inline-flex' }}>
+      <a href={downloadUrl} download={name} className="btn btn-primary" style={{ display: 'inline-flex' }}>
         <Download size={16} /> Unduh File
       </a>
     </div>
   );
 }
+

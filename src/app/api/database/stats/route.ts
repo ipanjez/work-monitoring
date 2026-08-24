@@ -69,10 +69,15 @@ export async function GET() {
     for (const t of tasks as any[]) {
       if (t.fileUrl) {
         const u = t.fileUrl;
-        const urlFile = decodeURIComponent(u.replace(/^.*[\\\/]/, ''));
-        const dispName = t.fileName || urlFile;
-        if (urlFile && !u.startsWith('data:') && !referencedFiles.has(urlFile)) {
-          referencedFiles.set(urlFile, { displayName: dispName, rawFileName: urlFile, url: u });
+        // Skip data URLs — they are embedded in the DB and always available
+        if (u.startsWith('data:')) {
+          // Count them as available but don't add to referencedFiles for disk/cloud checks
+        } else {
+          const urlFile = decodeURIComponent(u.replace(/^.*[\\\/]/, ''));
+          const dispName = t.fileName || urlFile;
+          if (urlFile && !referencedFiles.has(urlFile)) {
+            referencedFiles.set(urlFile, { displayName: dispName, rawFileName: urlFile, url: u });
+          }
         }
       }
       if (t.filesJson) {
@@ -81,10 +86,12 @@ export async function GET() {
           if (Array.isArray(files)) {
             for (const f of files) {
               const u = f.url || '';
+              // Skip data URLs — embedded in DB
+              if (u.startsWith('data:')) continue;
               const urlFile = u ? decodeURIComponent(u.replace(/^.*[\\\/]/, '')) : '';
               const dispName = f.name || urlFile;
               const key = urlFile || dispName;
-              if (key && !u.startsWith('data:') && !referencedFiles.has(key)) {
+              if (key && !referencedFiles.has(key)) {
                 referencedFiles.set(key, { displayName: dispName, rawFileName: urlFile || dispName, url: u });
               }
             }
@@ -98,9 +105,11 @@ export async function GET() {
             for (const c of comments) {
               if (c.fileUrl) {
                 const u = c.fileUrl;
+                // Skip data URLs — embedded in DB
+                if (u.startsWith('data:')) continue;
                 const urlFile = decodeURIComponent(u.replace(/^.*[\\\/]/, ''));
                 const dispName = c.fileName || urlFile;
-                if (urlFile && !u.startsWith('data:') && !referencedFiles.has(urlFile)) {
+                if (urlFile && !referencedFiles.has(urlFile)) {
                   referencedFiles.set(urlFile, { displayName: dispName, rawFileName: urlFile, url: u });
                 }
               }

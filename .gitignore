@@ -48,17 +48,30 @@ next-env.d.ts
 .env
 .env.local
 .env.*
+*.pem
+*.key
+*.cert
 
-.vercel
-
-# Temporary Data and Import Scripts
+# Temporary Data, Attachments and Import/Export files (No confidential files in git)
 *.csv
 *.xlsx
+*.xls
+*.pdf
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.zip
+*.tar
+*.gz
 import_*.js
 generate_excel.js
 
-# Local uploaded files
+# Local uploaded files & attachments
 public/uploads/
+public/uploads/*
+uploads/
+uploads/*
 prisma/schema.sqlite.prisma
 
 # Local testing and export scripts
@@ -67,4 +80,3 @@ export-db.js
 db-export-*.json
 Backup_Database_*.zip
 backup_database_*.zip
-*.zip

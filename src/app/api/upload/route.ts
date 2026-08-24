@@ -5,6 +5,18 @@ import path from 'path';
 
 const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 
+const MIME_MAP: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.zip': 'application/zip',
+  '.txt': 'text/plain',
+  '.csv': 'text/csv',
+};
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -14,12 +26,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.docx', '.xlsx', '.zip', '.txt', '.csv'];
+    const allowedExtensions = Object.keys(MIME_MAP);
 
     const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
-    // --- LOCAL / DISK MODE: Save to public/uploads disk ---
-    if (isLocal || !hasBlobToken) {
+    // --- LOCAL DISK MODE (SQLite dev) ---
+    if (isLocal) {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
@@ -63,6 +75,46 @@ export async function POST(req: Request) {
 
         uploadedResults.push({
           url: `/uploads/${uniqueFileName}`,
+          name: file.name,
+          size: file.size,
+        });
+      }
+
+      return NextResponse.json({
+        files: uploadedResults,
+        fileUrl: uploadedResults[0]?.url || '',
+        fileName: uploadedResults[0]?.name || '',
+        fileSize: uploadedResults[0]?.size || 0,
+      });
+    }
+
+    // --- DATABASE-EMBEDDED MODE (Render / PostgreSQL without Blob token) ---
+    // Store files as base64 data URLs since Render FS is ephemeral
+    if (!hasBlobToken) {
+      const MAX_FILE_SIZE_MB = 10; // Cap per file at 10 MB for base64 storage
+      const uploadedResults = [];
+
+      for (const file of files) {
+        if (typeof file === 'string') continue;
+
+        const fileName = file.name.toLowerCase();
+        const isValidExt = allowedExtensions.some(ext => fileName.endsWith(ext));
+        if (!isValidExt) {
+          return NextResponse.json({ error: `Tipe file tidak didukung: ${file.name}` }, { status: 400 });
+        }
+
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          return NextResponse.json({ error: `File ${file.name} melebihi batas ${MAX_FILE_SIZE_MB}MB untuk mode penyimpanan database.` }, { status: 400 });
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const ext = '.' + fileName.split('.').pop();
+        const mimeType = MIME_MAP[ext] || 'application/octet-stream';
+        const base64 = buffer.toString('base64');
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+
+        uploadedResults.push({
+          url: dataUrl,
           name: file.name,
           size: file.size,
         });

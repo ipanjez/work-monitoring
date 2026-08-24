@@ -2,6 +2,10 @@
 
 Selamat datang di **Dashboard Monitoring Pekerjaan**! Sebuah aplikasi web modern dan responsif yang dirancang untuk memonitor, mengelola, dan melacak daftar pekerjaan harian, proyek, serta aktivitas tim secara efisien. 🚀
 
+> [!NOTE]
+> **🛡️ Pernyataan Bebas Data Rahasia (Non-Confidential Notice):**
+> Seluruh kode sumber pada repositori ini **murni merupakan kerangka kerja aplikasi (software application architecture & logic)** dan **TIDAK memuat data rahasia perusahaan, berkas lampiran pekerjaan internal, kredensial produksi, maupun informasi konfidensial apa pun**. Seluruh berkas lampiran nyata (`.pdf`, `.docx`, `.xlsx`, `.csv`, `.zip`), folder unggahan (`public/uploads`), file database lokal (`.db`), dan file environment (`.env`) telah diproteksi secara otomatis melalui `.gitignore` agar tidak pernah terdorong (*pushed*) ke repositori Git.
+
 Proyek ini mendukung **dua mode operasi**: deployment cloud melalui Vercel + Neon PostgreSQL, maupun server lokal berbasis SQLite untuk jaringan LAN kantor. Dilengkapi dengan antarmuka yang sangat estetik, manajemen data terpusat melalui API, serta fitur penjadwalan dan pelaporan *real-time* untuk membantu tim Anda tetap produktif. 🏆
 
 ---

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, X, ExternalLink, Download } from 'lucide-react';
 import FileViewer from './FileViewer';
@@ -11,7 +11,26 @@ interface FilePreviewModalProps {
   theme?: string;
 }
 
+function dataUrlToBlobUrl(dataUrl: string): string {
+  const mimeMatch = dataUrl.match(/^data:([^;]+);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+  const base64 = dataUrl.split(',')[1] || '';
+  const binaryStr = atob(base64);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  const blob = new Blob([bytes.buffer], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
 export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 'light' }: FilePreviewModalProps) {
+  const actionUrl = useMemo(() => {
+    if (!previewFile) return '';
+    if (previewFile.url.startsWith('data:')) return dataUrlToBlobUrl(previewFile.url);
+    return previewFile.url;
+  }, [previewFile]);
+
   return (
     <AnimatePresence>
       {previewFile && (
@@ -41,7 +60,7 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px', background: 'var(--surface-color)', borderTop: '1px solid var(--border-color)' }}>
               <a 
-                href={previewFile.url} 
+                href={actionUrl} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="btn btn-secondary"
@@ -49,7 +68,7 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
                 <ExternalLink size={16} /> Buka di Tab Baru
               </a>
               <a 
-                href={previewFile.url} 
+                href={actionUrl} 
                 download={previewFile.name} 
                 className="btn btn-primary"
               >
@@ -62,3 +81,4 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
     </AnimatePresence>
   );
 }
+
