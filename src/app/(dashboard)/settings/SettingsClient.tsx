@@ -1914,7 +1914,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: 'var(--text-primary)' }}>
                   <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: '#10b981' }}>Data Cadangan 100% Real-Time:</strong> Snapshot database diekspor langsung dari PostgreSQL pada saat tombol unduh ditekan, menjamin seluruh pembaruan pekerjaan terbaru otomatis tersimpan lengkap.
+                    <strong style={{ color: '#10b981' }}>Data Cadangan 100% Real-Time:</strong> Snapshot database diekspor langsung dari database sistem pada saat tombol unduh ditekan, menjamin seluruh pembaruan pekerjaan terbaru otomatis tersimpan lengkap.
                   </div>
                 </div>
 
