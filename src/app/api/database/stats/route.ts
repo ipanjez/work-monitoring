@@ -172,9 +172,10 @@ export async function GET() {
       totalDistinctAvailableFiles: allAvailableFiles.size,
       missingFilesCount: missingFiles.length,
       missingFiles,
+      totalDbBytes,
       totalLocalBytes,
       totalBlobBytes,
-      estimatedTotalBytes: totalLocalBytes + totalBlobBytes,
+      estimatedTotalBytes: totalLocalBytes + totalDbBytes + totalBlobBytes,
       hasBlobStorage: hasBlobToken,
     });
   } catch (error: any) {

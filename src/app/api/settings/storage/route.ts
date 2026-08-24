@@ -48,6 +48,13 @@ export async function GET() {
       }
     }
 
+    // Database AppFile storage mode (Render / PostgreSQL)
+    try {
+      const appFiles = await prisma.appFile.findMany({ select: { size: true } });
+      const dbFileBytes = appFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+      usedBytes += dbFileBytes;
+    } catch (e) {}
+
     // Fallback: Calculate from task records metadata if usedBytes is still 0
     if (usedBytes === 0) {
       try {
