@@ -31,6 +31,19 @@ export async function GET() {
       }
     }
 
+    // Scan database AppFile storage (Primary cloud storage)
+    const dbFiles = new Set<string>();
+    let totalDbBytes = 0;
+    try {
+      const appFiles = await prisma.appFile.findMany({
+        select: { filename: true, size: true }
+      });
+      for (const af of appFiles) {
+        dbFiles.add(af.filename);
+        totalDbBytes += af.size;
+      }
+    } catch (e) {}
+
     // Scan physical files in Vercel Blob cloud
     const blobFiles = new Set<string>();
     let totalBlobBytes = 0;
@@ -56,7 +69,7 @@ export async function GET() {
       }
     }
 
-    const allAvailableFiles = new Set([...localFiles, ...blobFiles]);
+    const allAvailableFiles = new Set([...localFiles, ...dbFiles, ...blobFiles]);
     const availableCleanNames = new Map<string, string>();
     for (const f of allAvailableFiles) {
       // Map stripped name (e.g. tanpa prefix 1786351023282_499_)

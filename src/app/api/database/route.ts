@@ -82,6 +82,20 @@ export async function GET() {
           }
         }
 
+        // 1.5. Append from database AppFile table (Primary cloud storage)
+        try {
+          const appFiles = await prisma.appFile.findMany();
+          for (const af of appFiles) {
+            if (!addedFiles.has(af.filename) && af.data) {
+              const buffer = Buffer.from(af.data, 'base64');
+              archive.append(buffer, { name: `uploads/${af.filename}` });
+              addedFiles.add(af.filename);
+            }
+          }
+        } catch (dbFileErr) {
+          console.warn('Error archiving AppFiles for backup:', dbFileErr);
+        }
+
         // 2. Append from Vercel Blob cloud
         if (hasBlobToken) {
           try {
@@ -285,6 +299,18 @@ export async function POST(req: Request) {
                 fs.writeFileSync(filePath, entryData);
               } catch (fsErr) {
                 console.warn(`Failed to write local file ${fileName}:`, fsErr);
+              }
+
+              // Save to AppFile table in database for persistent cloud access
+              try {
+                const base64 = entryData.toString('base64');
+                await prisma.appFile.upsert({
+                  where: { filename: fileName },
+                  update: { data: base64, size: entryData.length },
+                  create: { filename: fileName, mimeType: 'application/octet-stream', data: base64, size: entryData.length }
+                });
+              } catch (appFileErr) {
+                console.warn(`Failed to save AppFile ${fileName}:`, appFileErr);
               }
 
               // Upload to Vercel Blob cloud if token is available
