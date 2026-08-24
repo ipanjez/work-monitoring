@@ -28,10 +28,11 @@ import { checkSearchMatch } from '@/utils/searchUtils';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
 import { useSession } from 'next-auth/react';
-import { getDynamicColor, getTaskExportRow, getDynamicBadgeStyle } from '@/utils/taskUtils';
+import { getDynamicColor, getTaskExportRow, getDynamicBadgeStyle, Task as RealTask } from '@/utils/taskUtils';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
 import Avatar from '@/components/Avatar';
 import RoleBadge from '@/components/RoleBadge';
+import ChartDrillDownModal from '@/components/ChartDrillDownModal';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
@@ -106,6 +107,21 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
   // Sorting state for Staff Performance Table
   const [sortField, setSortField] = useState<SortField>('score');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  const [drillDownState, setDrillDownState] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle?: string;
+    badgeText?: string;
+    badgeColor?: string;
+    tasks: any[];
+    filterType?: 'status' | 'pic' | 'priority' | 'category' | 'overdue' | 'all' | 'custom';
+    filterValue?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    tasks: []
+  });
 
   useEffect(() => {
     fetch('/api/settings')
@@ -471,6 +487,197 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
     }]
   };
 
+  // Interactive Chart Click & Hover Options for Reports Drilldown
+  const statusChartOptions = {
+    ...chartOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const statusName = masterStatuses[index];
+        const matching = filteredTasks.filter((t: Task) => t.status === statusName);
+        setDrillDownState({
+          isOpen: true,
+          title: `Distribusi Status: ${statusName}`,
+          subtitle: `Menampilkan seluruh pekerjaan dengan status ${statusName}.`,
+          badgeText: statusName,
+          badgeColor: masterColors[`status_${statusName}`] || getDynamicColor('status', statusName),
+          tasks: matching,
+          filterType: 'status',
+          filterValue: statusName
+        });
+      }
+    }
+  };
+
+  const priorityChartOptions = {
+    ...chartOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const priorityName = masterPriorities[index];
+        const matching = filteredTasks.filter((t: Task) => (t.prioritas || 'Medium') === priorityName);
+        setDrillDownState({
+          isOpen: true,
+          title: `Prioritas Pekerjaan: ${priorityName}`,
+          subtitle: `Menampilkan seluruh pekerjaan dengan prioritas ${priorityName}.`,
+          badgeText: priorityName,
+          badgeColor: masterColors[`prioritas_${priorityName}`] || getDynamicColor('priority', priorityName),
+          tasks: matching,
+          filterType: 'priority',
+          filterValue: priorityName
+        });
+      }
+    }
+  };
+
+  const picWorkloadChartOptions = {
+    ...picBarOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const picName = sortedPics[index];
+        const matching = filteredTasks.filter((t: Task) => 
+          t.pic === picName || 
+          (t.additionalPics && (() => {
+            try {
+              const arr = JSON.parse(t.additionalPics);
+              return Array.isArray(arr) && arr.includes(picName);
+            } catch(e) { return false; }
+          })())
+        );
+        setDrillDownState({
+          isOpen: true,
+          title: `Beban Kerja PIC: ${picName}`,
+          subtitle: `Menampilkan seluruh pekerjaan yang ditugaskan kepada ${picName}.`,
+          badgeText: picName,
+          badgeColor: masterColors[picName] || 'var(--accent-primary)',
+          tasks: matching,
+          filterType: 'pic',
+          filterValue: picName
+        });
+      }
+    }
+  };
+
+  const catProgressChartOptions = {
+    ...barOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const catName = catProgressLabels[index];
+        const matching = filteredTasks.filter((t: Task) => (t.kategori || 'Umum') === catName);
+        setDrillDownState({
+          isOpen: true,
+          title: `Rata-rata Progress: Kategori ${catName}`,
+          subtitle: `Menampilkan seluruh pekerjaan dalam kategori ${catName}.`,
+          badgeText: catName,
+          badgeColor: masterColors['category_' + catName] || '#3b82f6',
+          tasks: matching,
+          filterType: 'category',
+          filterValue: catName
+        });
+      }
+    }
+  };
+
+  const deadlineChartOptions = {
+    ...chartOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const labels = ['Terlewat (Overdue)', 'Hari Ini', 'Akan Datang', 'Selesai'];
+        const label = labels[index];
+        let matching: Task[] = [];
+        let fType: any = 'custom';
+        let fVal = '';
+
+        if (index === 0) {
+          matching = filteredTasks.filter((t: Task) => {
+            const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+            return !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+          });
+          fType = 'overdue';
+        } else if (index === 1) {
+          matching = filteredTasks.filter((t: Task) => {
+            const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+            return !isDone && startOfDay(new Date(t.endDate)).getTime() === todayStart;
+          });
+        } else if (index === 2) {
+          matching = filteredTasks.filter((t: Task) => {
+            const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+            return !isDone && startOfDay(new Date(t.endDate)).getTime() > todayStart;
+          });
+        } else {
+          matching = filteredTasks.filter((t: Task) => t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai');
+          fType = 'status';
+          fVal = 'Done';
+        }
+
+        setDrillDownState({
+          isOpen: true,
+          title: `Kepatuhan Tenggat: ${label}`,
+          subtitle: `Menampilkan pekerjaan dengan kategori tenggat ${label}.`,
+          badgeText: label,
+          badgeColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'][index],
+          tasks: matching,
+          filterType: fType,
+          filterValue: fVal
+        });
+      }
+    }
+  };
+
+  const categoryDistChartOptions = {
+    ...chartOptions,
+    onHover: (event: any, elements: any[]) => {
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
+    onClick: (event: any, elements: any[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const catName = catDistLabels[index];
+        const matching = filteredTasks.filter((t: Task) => (t.kategori || 'Umum') === catName);
+        setDrillDownState({
+          isOpen: true,
+          title: `Distribusi Kategori: ${catName}`,
+          subtitle: `Menampilkan seluruh pekerjaan dalam kategori ${catName}.`,
+          badgeText: catName,
+          badgeColor: masterColors['category_' + catName] || '#8b5cf6',
+          tasks: matching,
+          filterType: 'category',
+          filterValue: catName
+        });
+      }
+    }
+  };
+
   const handleExportFullReport = async () => {
     toast.loading('Mengekspor Laporan Kinerja...', { id: 'export-excel-report' });
     try {
@@ -575,7 +782,21 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         {/* KPI 1: Completion Rate */}
-        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+        <div 
+          className="glass card-hover-effect" 
+          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Klik untuk melihat rincian seluruh pekerjaan yang selesai"
+          onClick={() => setDrillDownState({
+            isOpen: true,
+            title: 'Pekerjaan Selesai',
+            subtitle: 'Seluruh pekerjaan yang telah berstatus selesai.',
+            badgeText: `${completedTasks} Selesai`,
+            badgeColor: '#10b981',
+            tasks: filteredTasks.filter((t: Task) => t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai'),
+            filterType: 'status',
+            filterValue: 'Done'
+          })}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tingkat Penyelesaian</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
@@ -589,7 +810,20 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         </div>
 
         {/* KPI 2: Average Progress */}
-        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+        <div 
+          className="glass card-hover-effect" 
+          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Klik untuk melihat rincian progres pekerjaan"
+          onClick={() => setDrillDownState({
+            isOpen: true,
+            title: 'Progres Seluruh Pekerjaan',
+            subtitle: `Rata-rata progres penyelesaian pekerjaan: ${avgProgress}%.`,
+            badgeText: `${avgProgress}% Progress`,
+            badgeColor: '#3b82f6',
+            tasks: [...filteredTasks].sort((a: Task, b: Task) => (b.progress || 0) - (a.progress || 0)),
+            filterType: 'all'
+          })}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Rata-rata Progress</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
@@ -603,7 +837,21 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         </div>
 
         {/* KPI 3: In Progress Workload */}
-        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+        <div 
+          className="glass card-hover-effect" 
+          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Klik untuk melihat rincian pekerjaan yang sedang dikerjakan"
+          onClick={() => setDrillDownState({
+            isOpen: true,
+            title: 'Pekerjaan Sedang Dikerjakan',
+            subtitle: 'Seluruh pekerjaan aktif dalam penanganan tim.',
+            badgeText: `${inProgressTasks} In Progress`,
+            badgeColor: '#f59e0b',
+            tasks: filteredTasks.filter((t: Task) => t.status === 'In Progress' || t.status === 'Sedang Dikerjakan'),
+            filterType: 'status',
+            filterValue: 'In Progress'
+          })}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Sedang Dikerjakan</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
@@ -617,7 +865,23 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         </div>
 
         {/* KPI 4: Overdue Alert */}
-        <div className="glass" style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+        <div 
+          className="glass card-hover-effect" 
+          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Klik untuk melihat rincian pekerjaan yang melewati tenggat"
+          onClick={() => setDrillDownState({
+            isOpen: true,
+            title: 'Pekerjaan Terlewat (Overdue)',
+            subtitle: 'Daftar pekerjaan yang telah melewati batas tenggat waktu target.',
+            badgeText: `${overdueCount} Terlewat`,
+            badgeColor: '#ef4444',
+            tasks: filteredTasks.filter((t: Task) => {
+              const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+              return !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+            }),
+            filterType: 'overdue'
+          })}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Terlewat (Overdue)</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: overdueCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: overdueCount > 0 ? '#ef4444' : '#10b981' }}>
@@ -643,7 +907,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Distribusi Status Pekerjaan
           </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={statusData} options={chartOptions} />
+            <Doughnut data={statusData} options={statusChartOptions} />
           </div>
         </div>
 
@@ -654,7 +918,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Beban Kerja per PIC (Top 10)
           </h3>
           <div style={{ height: '290px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={picWorkloadData} options={picBarOptions} plugins={[picAvatarXAxisPlugin]} />
+            <Bar data={picWorkloadData} options={picWorkloadChartOptions} plugins={[picAvatarXAxisPlugin]} />
           </div>
         </div>
 
@@ -665,7 +929,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Sebaran Prioritas Pekerjaan
           </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={priorityData} options={chartOptions} />
+            <Doughnut data={priorityData} options={priorityChartOptions} />
           </div>
         </div>
 
@@ -676,7 +940,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Rata-rata Progress per Kategori
           </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={catProgressData} options={barOptions} />
+            <Bar data={catProgressData} options={catProgressChartOptions} />
           </div>
         </div>
 
@@ -687,7 +951,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Kepatuhan Tenggat Waktu
           </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={deadlineData} options={chartOptions} />
+            <Doughnut data={deadlineData} options={deadlineChartOptions} />
           </div>
         </div>
 
@@ -698,7 +962,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
             Distribusi per Kategori
           </h3>
           <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={categoryData} options={chartOptions} />
+            <Doughnut data={categoryData} options={categoryDistChartOptions} />
           </div>
         </div>
       </div>
@@ -773,10 +1037,33 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
                   return (
                     <tr 
                       key={item.pic} 
+                      onClick={() => {
+                        const matching = filteredTasks.filter((t: Task) => 
+                          t.pic === item.pic || 
+                          (t.additionalPics && (() => {
+                            try {
+                              const arr = JSON.parse(t.additionalPics);
+                              return Array.isArray(arr) && arr.includes(item.pic);
+                            } catch(e) { return false; }
+                          })())
+                        );
+                        setDrillDownState({
+                          isOpen: true,
+                          title: `Rekapitulasi Tugas: ${item.pic}`,
+                          subtitle: `Daftar seluruh pekerjaan yang ditugaskan kepada ${item.pic}.`,
+                          badgeText: item.pic,
+                          badgeColor: masterColors[item.pic] || 'var(--accent-primary)',
+                          tasks: matching,
+                          filterType: 'pic',
+                          filterValue: item.pic
+                        });
+                      }}
                       style={{ 
                         borderBottom: '1px solid var(--border-color)',
-                        transition: 'background 0.15s ease'
+                        transition: 'background 0.15s ease',
+                        cursor: 'pointer'
                       }}
+                      title={`Klik untuk melihat rincian ${item.total} pekerjaan yang ditugaskan kepada ${item.pic}`}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
@@ -855,6 +1142,19 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
           </table>
         </div>
       </div>
+
+      {/* Chart & Scorecard Drill-down Modal Popup */}
+      <ChartDrillDownModal 
+        isOpen={drillDownState.isOpen}
+        onClose={() => setDrillDownState(prev => ({ ...prev, isOpen: false }))}
+        title={drillDownState.title}
+        subtitle={drillDownState.subtitle}
+        badgeText={drillDownState.badgeText}
+        badgeColor={drillDownState.badgeColor}
+        tasks={drillDownState.tasks}
+        filterType={drillDownState.filterType}
+        filterValue={drillDownState.filterValue}
+      />
     </motion.div>
   );
 }

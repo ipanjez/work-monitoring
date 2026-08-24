@@ -38,6 +38,7 @@ import SkeletonLoader from '@/components/SkeletonLoader';
 import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useTaskModal } from '@/context/TaskModalContext';
+import ChartDrillDownModal from '@/components/ChartDrillDownModal';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -97,6 +98,21 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
   
   const { openDetail } = useTaskModal();
+
+  const [drillDownState, setDrillDownState] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle?: string;
+    badgeText?: string;
+    badgeColor?: string;
+    tasks: Task[];
+    filterType?: 'status' | 'pic' | 'priority' | 'category' | 'overdue' | 'all' | 'custom';
+    filterValue?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    tasks: []
+  });
 
   const [masterPics, setMasterPics] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
@@ -493,11 +509,22 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       if (elements.length > 0) {
         const index = elements[0].index;
         const range = timelineDateRanges[index];
+        const label = timelineLabels[index];
         if (range) {
-          setGlobalTargetFilter('Custom');
-          setGlobalCustomStartDate(format(range.start, 'yyyy-MM-dd'));
-          setGlobalCustomEndDate(format(range.end, 'yyyy-MM-dd'));
-          router.push('/tasks');
+          const matching = filteredTasks.filter(t => {
+            const d = new Date(t.endDate);
+            return d >= range.start && d <= range.end;
+          });
+          setDrillDownState({
+            isOpen: true,
+            title: `Target Selesai: ${label}`,
+            subtitle: `Daftar pekerjaan dengan batas waktu pada periode ${label}.`,
+            badgeText: label,
+            badgeColor: 'var(--accent-primary)',
+            tasks: matching,
+            filterType: 'custom',
+            filterValue: label
+          });
         }
       }
     }
@@ -517,9 +544,19 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
-        const statusMap = ['Done', 'In Progress', 'To Do'];
-        setGlobalFilterStatus(statusMap[index]);
-        router.push(`/tasks`);
+        const labels = masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts);
+        const statusName = labels[index];
+        const matching = filteredTasks.filter(t => t.status === statusName);
+        setDrillDownState({
+          isOpen: true,
+          title: `Distribusi Status: ${statusName}`,
+          subtitle: `Menampilkan seluruh pekerjaan dengan status ${statusName}.`,
+          badgeText: statusName,
+          badgeColor: masterColors['status_' + statusName] || defaultColors[index % defaultColors.length],
+          tasks: matching,
+          filterType: 'status',
+          filterValue: statusName
+        });
       }
     }
   };
@@ -625,8 +662,25 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedPIC = picData.labels[index];
-        setGlobalPicFilter(selectedPIC);
-        router.push(`/tasks`);
+        const matching = filteredTasks.filter(t => 
+          t.pic === selectedPIC || 
+          (t.additionalPics && (() => {
+            try {
+              const arr = JSON.parse(t.additionalPics);
+              return Array.isArray(arr) && arr.includes(selectedPIC);
+            } catch(e) { return false; }
+          })())
+        );
+        setDrillDownState({
+          isOpen: true,
+          title: `Beban Kerja: ${selectedPIC}`,
+          subtitle: `Menampilkan pekerjaan yang ditugaskan kepada ${selectedPIC} (PIC Utama & Tambahan).`,
+          badgeText: selectedPIC,
+          badgeColor: masterColors[selectedPIC] || 'var(--accent-primary)',
+          tasks: matching,
+          filterType: 'pic',
+          filterValue: selectedPIC
+        });
       }
     }
   };
@@ -644,9 +698,23 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     onClick: (event: any, elements: any[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
-        const selectedPriority = priorityData.labels[index];
-        setGlobalFilterPriority(selectedPriority);
-        router.push(`/tasks`);
+        const labels = masterPriorities.length > 0 ? masterPriorities : Object.keys(priorityCounts);
+        const selectedPriority = labels[index];
+        const matching = filteredTasks.filter(t => (t.prioritas || 'Medium') === selectedPriority);
+        setDrillDownState({
+          isOpen: true,
+          title: `Prioritas Pekerjaan: ${selectedPriority}`,
+          subtitle: `Menampilkan seluruh pekerjaan dengan tingkat prioritas ${selectedPriority}.`,
+          badgeText: selectedPriority,
+          badgeColor: masterColors['priority_' + selectedPriority] || (
+            selectedPriority === 'Urgent' ? '#ef4444' :
+            selectedPriority === 'High' ? '#f97316' :
+            selectedPriority === 'Medium' ? '#f59e0b' : '#10b981'
+          ),
+          tasks: matching,
+          filterType: 'priority',
+          filterValue: selectedPriority
+        });
       }
     }
   };
@@ -669,8 +737,17 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedCat = categoryData.labels[index];
-        setGlobalFilterCategory(selectedCat);
-        router.push(`/tasks`);
+        const matching = filteredTasks.filter(t => (t.kategori || 'Umum') === selectedCat);
+        setDrillDownState({
+          isOpen: true,
+          title: `Kategori Pekerjaan: ${selectedCat}`,
+          subtitle: `Menampilkan seluruh pekerjaan dalam kategori ${selectedCat}.`,
+          badgeText: selectedCat,
+          badgeColor: masterColors['category_' + selectedCat] || '#8b5cf6',
+          tasks: matching,
+          filterType: 'category',
+          filterValue: selectedCat
+        });
       }
     }
   };
@@ -838,7 +915,20 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       <div id="dashboard-report-container" ref={dashboardRef}>
         {/* KPI Cards */}
         <div id="dashboard-kpi-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat seluruh rincian pekerjaan"
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: 'Seluruh Pekerjaan',
+              subtitle: 'Daftar semua pekerjaan yang sesuai dengan filter aktif.',
+              badgeText: 'Total Pekerjaan',
+              badgeColor: 'var(--accent-primary)',
+              tasks: filteredTasks,
+              filterType: 'all',
+            })}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Total Pekerjaan</span>
               <ListTodo size={20} color="var(--accent-primary)" />
@@ -846,17 +936,52 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
             <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{total}</p>
           </div>
 
-          {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((statusName, idx) => (
-            <div key={statusName} className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
-                <CheckCircle size={20} color={masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length]} />
+          {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((statusName, idx) => {
+            const sColor = masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length];
+            const matching = filteredTasks.filter(t => t.status === statusName);
+            return (
+              <div 
+                key={statusName} 
+                className="glass card-hover-effect" 
+                style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                title={`Klik untuk melihat rincian pekerjaan dengan status ${statusName}`}
+                onClick={() => setDrillDownState({
+                  isOpen: true,
+                  title: `Pekerjaan Status: ${statusName}`,
+                  subtitle: `Daftar pekerjaan dengan status ${statusName}.`,
+                  badgeText: statusName,
+                  badgeColor: sColor,
+                  tasks: matching,
+                  filterType: 'status',
+                  filterValue: statusName
+                })}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
+                  <CheckCircle size={20} color={sColor} />
+                </div>
+                <p style={{ fontSize: '32px', fontWeight: 'bold', color: sColor }}>{statusCounts[statusName] || 0}</p>
               </div>
-              <p style={{ fontSize: '32px', fontWeight: 'bold', color: masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length] }}>{statusCounts[statusName] || 0}</p>
-            </div>
-          ))}
+            );
+          })}
 
-          <div className="glass" style={{ padding: '20px', borderRadius: '16px' }}>
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat rincian progres seluruh pekerjaan"
+            onClick={() => {
+              const sorted = [...filteredTasks].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+              setDrillDownState({
+                isOpen: true,
+                title: 'Progres Pekerjaan',
+                subtitle: `Rata-rata progres penyelesaian: ${avgProgress}%.`,
+                badgeText: `${avgProgress}% Progress`,
+                badgeColor: 'var(--accent-primary)',
+                tasks: sorted,
+                filterType: 'all',
+              });
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Rata-rata Progress</span>
               <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{avgProgress}%</span>
@@ -869,7 +994,21 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
         {/* Selected PIC Detail Widget if PIC selected */}
         {globalPicFilter !== 'Semua PIC' && (
-          <div className="glass" style={{ padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title={`Klik untuk melihat rincian seluruh tugas PIC ${globalPicFilter}`}
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: `Pekerjaan PIC: ${globalPicFilter}`,
+              subtitle: `Daftar seluruh pekerjaan yang ditugaskan kepada ${globalPicFilter}.`,
+              badgeText: globalPicFilter,
+              badgeColor: masterColors[globalPicFilter] || 'var(--accent-primary)',
+              tasks: picTasks,
+              filterType: 'pic',
+              filterValue: globalPicFilter
+            })}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <User size={18} color="var(--accent-primary)" />
               <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Analisis PIC: {globalPicFilter}</span>
@@ -1180,6 +1319,19 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           </div>
         </div>
       </div>
+
+      {/* Chart & Scorecard Drill-down Modal Popup */}
+      <ChartDrillDownModal 
+        isOpen={drillDownState.isOpen}
+        onClose={() => setDrillDownState(prev => ({ ...prev, isOpen: false }))}
+        title={drillDownState.title}
+        subtitle={drillDownState.subtitle}
+        badgeText={drillDownState.badgeText}
+        badgeColor={drillDownState.badgeColor}
+        tasks={drillDownState.tasks}
+        filterType={drillDownState.filterType}
+        filterValue={drillDownState.filterValue}
+      />
     </motion.div>
   );
 }
