@@ -10,7 +10,56 @@ export async function GET() {
         { id: 'desc' }
       ],
     });
-    return NextResponse.json(tasks);
+
+    // Lightweight response transformer: replace huge base64 strings with on-demand streamable /uploads/ endpoints
+    // This prevents memory spikes on Render (512MB RAM limit) and speeds up initial page load dramatically.
+    const lightweightTasks = tasks.map(t => {
+      let fileUrl = t.fileUrl;
+      if (fileUrl && fileUrl.startsWith('data:')) {
+        fileUrl = `/uploads/${encodeURIComponent(t.fileName || 'file')}`;
+      }
+
+      let filesJson = t.filesJson;
+      if (filesJson && filesJson.includes('data:')) {
+        try {
+          const files = JSON.parse(filesJson);
+          if (Array.isArray(files)) {
+            const transformed = files.map(f => {
+              if (f.url && f.url.startsWith('data:')) {
+                return { ...f, url: `/uploads/${encodeURIComponent(f.name || 'attachment')}` };
+              }
+              return f;
+            });
+            filesJson = JSON.stringify(transformed);
+          }
+        } catch (e) {}
+      }
+
+      let commentsJson = t.commentsJson;
+      if (commentsJson && commentsJson.includes('data:')) {
+        try {
+          const comments = JSON.parse(commentsJson);
+          if (Array.isArray(comments)) {
+            const transformed = comments.map(c => {
+              if (c.fileUrl && c.fileUrl.startsWith('data:')) {
+                return { ...c, fileUrl: `/uploads/${encodeURIComponent(c.fileName || 'comment-file')}` };
+              }
+              return c;
+            });
+            commentsJson = JSON.stringify(transformed);
+          }
+        } catch (e) {}
+      }
+
+      return {
+        ...t,
+        fileUrl,
+        filesJson,
+        commentsJson,
+      };
+    });
+
+    return NextResponse.json(lightweightTasks);
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch tasks' }, { status: 500 });

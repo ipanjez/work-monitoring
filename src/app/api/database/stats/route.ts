@@ -49,8 +49,10 @@ export async function GET() {
           }
           cursor = listRes.cursor;
         } while (cursor);
-      } catch (err) {
-        console.warn('Error querying blobs for backup stats:', err);
+      } catch (err: any) {
+        if (!err.message?.includes('store does not exist')) {
+          console.warn('Error querying blobs for backup stats:', err.message);
+        }
       }
     }
 
