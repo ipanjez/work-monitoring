@@ -97,7 +97,7 @@ export default function BackupReminderModal({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 99999,
+          zIndex: 10800,
           padding: '16px'
         }}
         onClick={onClose}
