@@ -96,7 +96,9 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       const isDue = computeIsBackupDue(-1, lastDateStr);
       return {
         label: 'Setiap Kali Login',
-        text: 'Pengingat cadangan otomatis akan aktif setiap kali Anda masuk ke sistem.',
+        text: isDue 
+          ? 'Belum dicadangkan pada sesi login ini (Pengingat aktif setiap login).'
+          : 'Cadangan data telah diunduh pada sesi ini.',
         formatted: 'Setiap Kali Login',
         isDue
       };
@@ -120,16 +122,16 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
     if (isOverdue || !lastDateStr) {
       return {
         label: `${d} Hari Sekali`,
-        text: `Jadwal Pengingat Berikutnya: Sekarang (${formattedNext} WIB - Belum Dicadangkan)`,
-        formatted: `${formattedNext} WIB`,
+        text: `Jadwal Pengingat: Sekarang (${formattedNext} WITA - Belum Dicadangkan)`,
+        formatted: `${formattedNext} WITA`,
         isDue: true
       };
     }
 
     return {
       label: `${d} Hari Sekali`,
-      text: `Jadwal Pengingat Berikutnya: ${formattedNext} WIB`,
-      formatted: `${formattedNext} WIB`,
+      text: `Jadwal Pengingat Berikutnya: ${formattedNext} WITA`,
+      formatted: `${formattedNext} WITA`,
       isDue: false
     };
   };
@@ -353,6 +355,25 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
 
     // 3. Fetch storage usage
     fetchStorageUsage();
+
+    const onBackupChanged = () => {
+      const storedReminder = localStorage.getItem('backup_reminder_days');
+      if (storedReminder) {
+        setBackupReminderDays(storedReminder);
+        if (['-1', '0', '1', '3', '7', '14', '30'].includes(storedReminder)) {
+          setBackupReminderMode(storedReminder);
+        } else {
+          setBackupReminderMode('custom');
+        }
+      }
+    };
+
+    window.addEventListener('backupReminderChanged', onBackupChanged);
+    window.addEventListener('masterUpdated', onBackupChanged);
+    return () => {
+      window.removeEventListener('backupReminderChanged', onBackupChanged);
+      window.removeEventListener('masterUpdated', onBackupChanged);
+    };
   }, []);
 
   const fetchStorageUsage = async () => {
@@ -1657,6 +1678,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
             ? (Number(backupReminderDays) || 7) 
             : Number(backupReminderMode);
           const isDue = computeIsBackupDue(effectiveReminderDays, lastBackupDate);
+          const isDismissedThisSession = typeof window !== 'undefined' && sessionStorage.getItem('dismissed_backup_reminder') === 'true';
 
           return (
             <section id="section-backup" className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', scrollMarginTop: '90px' }}>
@@ -1678,7 +1700,7 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                       fontSize: '11.5px',
                       fontWeight: 600
                     }}>
-                      <AlertTriangle size={13} /> Belum Dicadangkan
+                      <AlertTriangle size={13} /> {effectiveReminderDays === -1 ? 'Belum Dicadangkan (Sesi Ini)' : 'Belum Dicadangkan'}
                     </span>
                   )}
                 </div>
@@ -1703,7 +1725,15 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                 }}>
                   <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: '#ef4444' }}>Perhatian:</strong> Cadangan database belum diunduh sesuai jadwal pengingat (<strong>{backupReminderMode === '-1' ? 'Setiap Kali Login' : (backupReminderMode === '0' ? 'Nonaktif' : `Setiap ${backupReminderDays} Hari`)}</strong>). {lastBackupDate ? `Cadangan terakhir diunduh pada ${new Date(lastBackupDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.` : 'Belum pernah diunduh.'} Silakan klik tombol <strong>Unduh Backup Database</strong> di bawah.
+                    {effectiveReminderDays === -1 ? (
+                      <>
+                        <strong style={{ color: '#ef4444' }}>Perhatian:</strong> Pengingat cadangan diatur ke <strong>Setiap Kali Login</strong>. {isDismissedThisSession ? 'Anda memilih "Nanti Saja" saat masuk' : 'Anda belum mengunduh cadangan'} pada sesi login ini. {lastBackupDate ? `Cadangan terakhir diunduh pada ${new Date(lastBackupDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WITA.` : 'Belum pernah diunduh.'} Silakan klik tombol <strong>Unduh Backup Database (.zip)</strong> di bawah untuk mengamankan data pekerjaan Anda.
+                      </>
+                    ) : (
+                      <>
+                        <strong style={{ color: '#ef4444' }}>Perhatian:</strong> Cadangan database belum diunduh sesuai jadwal pengingat (<strong>{backupReminderMode === '0' ? 'Nonaktif' : `Setiap ${backupReminderDays} Hari`}</strong>). {lastBackupDate ? `Cadangan terakhir diunduh pada ${new Date(lastBackupDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WITA.` : 'Belum pernah diunduh.'} Silakan klik tombol <strong>Unduh Backup Database (.zip)</strong> di bawah.
+                      </>
+                    )}
                   </div>
                 </div>
               )}

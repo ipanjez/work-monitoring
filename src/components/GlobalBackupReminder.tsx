@@ -87,6 +87,8 @@ export default function GlobalBackupReminder() {
   const handleDismiss = () => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('dismissed_backup_reminder', 'true');
+      window.dispatchEvent(new Event('backupReminderChanged'));
+      window.dispatchEvent(new Event('masterUpdated'));
     }
     setIsOpen(false);
   };

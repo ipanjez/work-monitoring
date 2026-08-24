@@ -76,6 +76,7 @@ function SignInContent() {
       if (res?.ok) {
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem('dismissed_backup_reminder');
+          sessionStorage.removeItem('backup_downloaded_this_session');
           sessionStorage.removeItem('pic_auto_selected_user');
           localStorage.removeItem('globalPicFilter');
         }
