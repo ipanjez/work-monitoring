@@ -111,12 +111,6 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
-      router.replace('/tasks');
-    }
-  }, [session, roleConfig, userRole, router]);
-
   const [tableSearch, setTableSearch] = useState('');
   const [sortField, setSortField] = useState<'endDate' | 'nama' | 'pic' | 'kategori' | 'status'>('endDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');

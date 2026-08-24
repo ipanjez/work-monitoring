@@ -155,6 +155,13 @@ export default function Sidebar() {
     setOptimisticPath(null);
   }, [pathname]);
 
+  useEffect(() => {
+    if (optimisticPath) {
+      const timer = setTimeout(() => setOptimisticPath(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [optimisticPath]);
+
   const currentActivePath = optimisticPath || pathname;
 
   useEffect(() => {
