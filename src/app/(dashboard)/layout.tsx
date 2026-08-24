@@ -7,17 +7,13 @@ import RealTimeClock from '@/components/RealTimeClock';
 import UserProfileButton from '@/components/UserProfileButton';
 
 import FocusModeToggle from '@/components/FocusModeToggle';
-import { Menu, Plus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useMaster } from '@/context/MasterContext';
 import SessionMonitor from '@/components/SessionMonitor';
 import HelpSupportButton from '@/components/HelpSupportButton';
 import GlobalBackupReminder from '@/components/GlobalBackupReminder';
 import { TaskModalProvider } from '@/context/TaskModalContext';
-
-import { useState } from 'react';
 
 export default function DashboardLayout({
   children,
@@ -26,12 +22,6 @@ export default function DashboardLayout({
 }) {
   const { toggleMobileMenu } = useTheme();
   const { appName, appLogo } = useMaster();
-  const router = useRouter();
-  useEffect(() => {
-    const handleRefresh = () => router.refresh();
-    window.addEventListener('tasksUpdated', handleRefresh);
-    return () => window.removeEventListener('tasksUpdated', handleRefresh);
-  }, [router]);
 
   return (
     <TaskModalProvider>
