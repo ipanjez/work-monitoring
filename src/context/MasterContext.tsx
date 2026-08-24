@@ -29,9 +29,10 @@ interface MasterContextType {
   isBackupDue: boolean;
 }
 
-export const computeIsBackupDue = (days: number, lastDateStr: string | null | undefined): boolean => {
-  if (days === 0 || isNaN(days) || !days) return false;
-  if (days === -1) {
+export const computeIsBackupDue = (days: number | string | null | undefined, lastDateStr: string | null | undefined): boolean => {
+  const d = Number(days);
+  if (isNaN(d) || d === 0) return false;
+  if (d === -1) {
     // Mode "Setiap Kali Login": Aktif terus sepanjang sesi login kecuali pengguna telah mengunduh backup di sesi ini
     if (typeof window !== 'undefined') {
       const downloadedThisSession = sessionStorage.getItem('backup_downloaded_this_session') === 'true';
@@ -45,7 +46,7 @@ export const computeIsBackupDue = (days: number, lastDateStr: string | null | un
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - lastDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays >= days;
+  return diffDays >= d;
 };
 
 const MasterContext = createContext<MasterContextType>({ 
