@@ -66,6 +66,31 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     setTasks(initialTasks);
   }, [initialTasks]);
 
+  // Real-time synchronization listeners for instant charts and scorecard updates
+  useEffect(() => {
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setTasks(e.detail);
+      }
+    };
+    const handleTasksUpdated = () => {
+      fetch('/api/tasks')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setTasks(data);
+        })
+        .catch(console.error);
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
+
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
+    };
+  }, []);
+
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || '';
   const { roleConfig } = useMaster();

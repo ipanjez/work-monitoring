@@ -80,9 +80,25 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
       }
     };
 
+    const handleTasksUpdated = () => {
+      fetch('/api/tasks')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            startTransition(() => {
+              setTasks(data);
+            });
+          }
+        })
+        .catch(console.error);
+    };
+
     window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
+
     return () => {
       window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
     };
   }, []);
 

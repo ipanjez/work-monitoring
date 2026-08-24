@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Search, ArrowRight, CheckCircle2, Clock, AlertCircle, 
@@ -63,25 +63,96 @@ export default function ChartDrillDownModal({
   } = useFilter();
   const { masterColors, masterPicAvatars } = useMaster();
 
+  // Maintain dynamic tasks in state for real-time auto-updating
+  const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('ALL');
 
+  // Keep currentTasks in sync with initial tasks prop when modal opens or tasks prop changes
+  useEffect(() => {
+    setCurrentTasks(tasks);
+  }, [tasks, isOpen]);
+
+  // Real-time Auto-Update Listener: automatically updates tasks inside modal whenever any task is edited/added/deleted
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const refreshTasks = (freshAllTasks?: Task[]) => {
+      const applyFilter = (allList: Task[]) => {
+        if (!Array.isArray(allList)) return;
+        const todayStart = startOfDay(new Date()).getTime();
+
+        let matching = allList;
+        if (filterType === 'status' && filterValue) {
+          matching = allList.filter(t => t.status === filterValue);
+        } else if (filterType === 'pic' && filterValue) {
+          matching = allList.filter(t => t.pic === filterValue || getAdditionalPics(t).includes(filterValue));
+        } else if (filterType === 'priority' && filterValue) {
+          matching = allList.filter(t => (t.prioritas || 'Medium') === filterValue);
+        } else if (filterType === 'category' && filterValue) {
+          matching = allList.filter(t => (t.kategori || 'Umum') === filterValue);
+        } else if (filterType === 'overdue') {
+          matching = allList.filter(t => {
+            const isDone = (t.status || '').toLowerCase() === 'done' || (t.status || '').toLowerCase() === 'selesai';
+            return !isDone && t.endDate && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+          });
+        } else if (filterType === 'custom') {
+          const idMap = new Map(allList.map(t => [t.id, t]));
+          matching = currentTasks.map(t => idMap.get(t.id) || t).filter(t => idMap.has(t.id));
+        }
+
+        setCurrentTasks(matching);
+      };
+
+      if (freshAllTasks && Array.isArray(freshAllTasks)) {
+        applyFilter(freshAllTasks);
+      } else {
+        fetch('/api/tasks')
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) applyFilter(data);
+          })
+          .catch(console.error);
+      }
+    };
+
+    const handleRealtime = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        refreshTasks(e.detail);
+      } else {
+        refreshTasks();
+      }
+    };
+
+    const handleTasksUpdated = () => {
+      refreshTasks();
+    };
+
+    window.addEventListener('realtimeTasksUpdated', handleRealtime);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
+
+    return () => {
+      window.removeEventListener('realtimeTasksUpdated', handleRealtime);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
+    };
+  }, [isOpen, filterType, filterValue]);
+
   // Stats calculation
   const stats = useMemo(() => {
-    const total = tasks.length;
-    const done = tasks.filter(t => (t.status || '').toLowerCase() === 'done' || (t.status || '').toLowerCase() === 'selesai').length;
-    const inProgress = tasks.filter(t => (t.status || '').toLowerCase().includes('progress') || (t.status || '').toLowerCase().includes('dikerjakan')).length;
+    const total = currentTasks.length;
+    const done = currentTasks.filter(t => (t.status || '').toLowerCase() === 'done' || (t.status || '').toLowerCase() === 'selesai').length;
+    const inProgress = currentTasks.filter(t => (t.status || '').toLowerCase().includes('progress') || (t.status || '').toLowerCase().includes('dikerjakan')).length;
     const todayStart = startOfDay(new Date()).getTime();
-    const overdue = tasks.filter(t => {
+    const overdue = currentTasks.filter(t => {
       const isDone = (t.status || '').toLowerCase() === 'done' || (t.status || '').toLowerCase() === 'selesai';
       return !isDone && t.endDate && startOfDay(new Date(t.endDate)).getTime() < todayStart;
     }).length;
     return { total, done, inProgress, overdue };
-  }, [tasks]);
+  }, [currentTasks]);
 
   // Filter tasks based on internal modal search and status tab
   const filteredTasks = useMemo(() => {
-    let result = tasks;
+    let result = currentTasks;
 
     // Filter by status tab if selected
     if (selectedStatusTab !== 'ALL') {
@@ -106,7 +177,7 @@ export default function ChartDrillDownModal({
       (t.prioritas && t.prioritas.toLowerCase().includes(q)) ||
       (t.deskripsi && t.deskripsi.toLowerCase().includes(q))
     );
-  }, [tasks, searchQuery, selectedStatusTab]);
+  }, [currentTasks, searchQuery, selectedStatusTab]);
 
   const handleNavigateToTasks = () => {
     if (filterType === 'status' && filterValue) {
@@ -306,7 +377,7 @@ export default function ChartDrillDownModal({
             </div>
           </div>
 
-          {/* Quick Metrics & Search Bar Bar */}
+          {/* Quick Metrics & Search Bar */}
           <div 
             style={{ 
               padding: '12px 26px', 
@@ -714,7 +785,7 @@ export default function ChartDrillDownModal({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                Menampilkan {filteredTasks.length} dari {tasks.length} pekerjaan
+                Menampilkan {filteredTasks.length} dari {currentTasks.length} pekerjaan
               </span>
               <span>•</span>
               <span>Klik pada baris mana pun untuk melihat rincian lengkap tugas.</span>
