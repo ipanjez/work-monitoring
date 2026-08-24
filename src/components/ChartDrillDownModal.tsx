@@ -7,7 +7,7 @@ import {
   User, Calendar, ListTodo, Eye, Paperclip, CheckSquare, 
   Filter, Sparkles, ChevronRight, Layers, ArrowUpRight
 } from 'lucide-react';
-import { Task, getDynamicBadgeStyle, getTaskFiles, getAdditionalPics } from '@/utils/taskUtils';
+import { Task, getDynamicColor, getTaskFiles, getAdditionalPics } from '@/utils/taskUtils';
 import { useTaskModal } from '@/context/TaskModalContext';
 import { useFilter } from '@/context/FilterContext';
 import { useRouter } from 'next/navigation';
@@ -28,12 +28,48 @@ export interface ChartDrillDownModalProps {
   filterValue?: string;
 }
 
+// Helper to resolve Master Colors accurately
+function resolveCategoryColor(cat: string, masterColors: Record<string, string>): string {
+  if (!cat) return '#64748b';
+  return (
+    masterColors[`category_${cat}`] || 
+    masterColors[`cat_${cat}`] || 
+    masterColors[`kategori_${cat}`] || 
+    masterColors[`category_${cat.toLowerCase()}`] ||
+    masterColors[`cat_${cat.toLowerCase()}`] ||
+    getDynamicColor('cat', cat) ||
+    '#64748b'
+  );
+}
+
+function resolvePriorityColor(p: string, masterColors: Record<string, string>): string {
+  if (!p) return '#3b82f6';
+  return (
+    masterColors[`prioritas_${p}`] || 
+    masterColors[`priority_${p}`] || 
+    masterColors[`prioritas_${p.toLowerCase()}`] ||
+    masterColors[`priority_${p.toLowerCase()}`] ||
+    getDynamicColor('priority', p) ||
+    (p === 'Urgent' ? '#ef4444' : p === 'High' ? '#f97316' : p === 'Low' ? '#10b981' : '#3b82f6')
+  );
+}
+
+function resolveStatusColor(s: string, masterColors: Record<string, string>): string {
+  if (!s) return '#3b82f6';
+  return (
+    masterColors[`status_${s}`] || 
+    masterColors[`status_${s.toLowerCase()}`] || 
+    getDynamicColor('status', s) ||
+    (s.toLowerCase() === 'done' || s.toLowerCase() === 'selesai' ? '#10b981' : 
+     s.toLowerCase().includes('progress') ? '#f59e0b' : 
+     s.toLowerCase() === 'review' ? '#3b82f6' : '#94a3b8')
+  );
+}
+
 // Clean HTML tags and strip unwanted system strings for clean snippet
 function cleanDescriptionSnippet(rawDesc?: string | null): string {
   if (!rawDesc) return '';
-  // Strip HTML
   let clean = rawDesc.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-  // Filter out system emojis or empty blobs
   if (clean.startsWith('📋 :') || clean.startsWith('🐱 :') || clean.startsWith(':') || clean.startsWith('🕒 :')) {
     return '';
   }
@@ -537,12 +573,9 @@ export default function ChartDrillDownModal({
                     const isDueToday = deadlineDate && isToday(deadlineDate) && !isDone;
                     
                     const picAvatar = masterPicAvatars?.[t.pic];
-                    const statusColor = masterColors['status_' + t.status] || (isDone ? '#10b981' : '#3b82f6');
-                    const priorityColor = masterColors['prioritas_' + t.prioritas] || (
-                      t.prioritas === 'Urgent' ? '#ef4444' :
-                      t.prioritas === 'High' ? '#f97316' :
-                      t.prioritas === 'Medium' ? '#f59e0b' : '#10b981'
-                    );
+                    const categoryColor = resolveCategoryColor(t.kategori || 'Umum', masterColors);
+                    const priorityColor = resolvePriorityColor(t.prioritas || 'Medium', masterColors);
+                    const statusColor = resolveStatusColor(t.status, masterColors);
 
                     // Subtasks count
                     let subTasksCount = 0;
@@ -668,17 +701,17 @@ export default function ChartDrillDownModal({
                           </div>
                         </td>
 
-                        {/* 3. Kategori */}
+                        {/* 3. Kategori (Synced with Master Colors) */}
                         <td style={{ padding: '14px' }}>
                           <span 
                             style={{ 
                               fontSize: '11.5px', 
                               fontWeight: 600,
                               padding: '4px 10px', 
-                              borderRadius: '8px', 
-                              background: 'var(--input-bg)', 
-                              color: 'var(--text-secondary)', 
-                              border: '1px solid var(--border-color)', 
+                              borderRadius: '6px', 
+                              backgroundColor: `color-mix(in srgb, ${categoryColor} 14%, transparent)`, 
+                              color: categoryColor, 
+                              border: `1px solid ${categoryColor}40`, 
                               whiteSpace: 'nowrap',
                               display: 'inline-block'
                             }}
@@ -687,7 +720,7 @@ export default function ChartDrillDownModal({
                           </span>
                         </td>
 
-                        {/* 4. Prioritas */}
+                        {/* 4. Prioritas (Synced with Master Colors) */}
                         <td style={{ padding: '14px' }}>
                           <span 
                             style={{ 
@@ -700,7 +733,8 @@ export default function ChartDrillDownModal({
                               gap: '5px',
                               padding: '3px 8px',
                               borderRadius: '6px',
-                              background: `${priorityColor}15`
+                              backgroundColor: `color-mix(in srgb, ${priorityColor} 14%, transparent)`,
+                              border: `1px solid ${priorityColor}40`
                             }}
                           >
                             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: priorityColor }} />
@@ -708,19 +742,20 @@ export default function ChartDrillDownModal({
                           </span>
                         </td>
 
-                        {/* 5. Status & Progres */}
+                        {/* 5. Status & Progres (Synced with Master Colors) */}
                         <td style={{ padding: '14px' }}>
                           <div>
                             <span 
                               style={{ 
                                 fontSize: '11.5px', 
                                 fontWeight: 700, 
-                                padding: '2px 8px', 
+                                padding: '3px 9px', 
                                 borderRadius: '6px', 
-                                backgroundColor: `${statusColor}18`, 
-                                color: statusColor,
-                                border: `1px solid ${statusColor}35`,
-                                whiteSpace: 'nowrap'
+                                backgroundColor: `color-mix(in srgb, ${statusColor} 15%, transparent)`, 
+                                color: statusColor, 
+                                border: `1px solid ${statusColor}40`,
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block'
                               }}
                             >
                               {t.status}
