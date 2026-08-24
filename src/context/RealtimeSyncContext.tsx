@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useTransition } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/utils/taskUtils';
 
@@ -27,13 +27,13 @@ export function RealtimeSyncProvider({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLive, setIsLive] = useState(true);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   const lastTaskVersionRef = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
   const consecutiveFailuresRef = useRef<number>(0);
 
-  // Sync tasks from server smoothly with React transition
+  // Sync tasks from server - use direct setState (NOT startTransition) to avoid
+  // cancelling in-flight Next.js App Router navigations
   const fetchTasksData = useCallback(async () => {
     try {
       setIsSyncing(true);
@@ -43,17 +43,14 @@ export function RealtimeSyncProvider({
       if (res.ok) {
         const freshTasks: Task[] = await res.json();
         if (Array.isArray(freshTasks)) {
-          startTransition(() => {
-            setTasks(freshTasks);
-            setLastSyncedAt(new Date());
-            setIsLive(true);
-            consecutiveFailuresRef.current = 0;
-          });
+          setTasks(freshTasks);
+          setLastSyncedAt(new Date());
+          setIsLive(true);
+          consecutiveFailuresRef.current = 0;
 
           // Dispatch event so any existing components listening to 'tasksUpdated' refresh smoothly
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('realtimeTasksUpdated', { detail: freshTasks }));
-            window.dispatchEvent(new Event('tasksUpdated'));
           }
         }
       }

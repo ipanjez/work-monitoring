@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/lib/permissions';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Calendar, ListTodo, LogOut, Sun, Moon, CheckSquare,
   ChevronLeft, ChevronRight, BarChart3, Users, Settings, BookOpen, Kanban, UserCog, Loader2,
@@ -146,7 +146,6 @@ export default function Sidebar() {
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useTheme();
 
   useEffect(() => {
@@ -316,14 +315,6 @@ export default function Sidebar() {
     )
   ).length : 0;
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-    if (pathname !== href) {
-      router.push(href);
-    }
-  };
-
   return (
     <>
       <div
@@ -370,7 +361,7 @@ export default function Sidebar() {
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={!showExpanded ? item.label : undefined}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
-                  onClick={(e) => handleNavClick(e, item.href)}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Icon size={20} style={{ flexShrink: 0 }} />
@@ -428,7 +419,7 @@ export default function Sidebar() {
                 href="/guide"
                 className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
                 title={!showExpanded ? "Panduan" : undefined}
-                onClick={(e) => handleNavClick(e, '/guide')}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <BookOpen size={20} style={{ flexShrink: 0 }} />
                 {showExpanded && <span className={styles.navText}>Panduan</span>}
