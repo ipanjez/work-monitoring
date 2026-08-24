@@ -278,7 +278,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
 
   return (
     <AnimatePresence>
-      <div key={task.id ? `modal-${task.id}` : 'modal-detail'} className="modal-overlay">
+      <div key={task.id ? `modal-${task.id}` : 'modal-detail'} className="modal-overlay" style={{ zIndex: 10500 }}>
         <motion.div
           className="modal-content"
           style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}

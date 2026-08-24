@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Search, ArrowRight, CheckCircle2, Clock, AlertCircle, 
-  User, Calendar, ListTodo, Edit3, Paperclip, ExternalLink, Filter 
+  User, Calendar, ListTodo, Eye, Paperclip, ExternalLink, Filter 
 } from 'lucide-react';
 import { Task, getDynamicBadgeStyle, getTaskFiles, getAdditionalPics } from '@/utils/taskUtils';
 import { useTaskModal } from '@/context/TaskModalContext';
@@ -39,7 +39,7 @@ export default function ChartDrillDownModal({
   filterValue = '',
 }: ChartDrillDownModalProps) {
   const router = useRouter();
-  const { openEdit } = useTaskModal();
+  const { openDetail } = useTaskModal();
   const { 
     setGlobalFilterStatus, 
     setGlobalPicFilter, 
@@ -82,7 +82,7 @@ export default function ChartDrillDownModal({
   };
 
   const handleRowClick = (task: Task) => {
-    openEdit(task);
+    openDetail(task);
   };
 
   if (!isOpen) return null;
@@ -307,9 +307,9 @@ export default function ChartDrillDownModal({
                                 e.stopPropagation();
                                 handleRowClick(t);
                               }}
-                              title="Edit Pekerjaan"
+                              title="Lihat Detail Pekerjaan"
                             >
-                              <Edit3 size={14} />
+                              <Eye size={15} />
                             </button>
                           </div>
                         </td>
@@ -392,7 +392,7 @@ export default function ChartDrillDownModal({
 
           {/* Footer Info */}
           <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border-color)', background: 'var(--surface-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <span>💡 <em>Klik pada baris pekerjaan apa pun untuk membuka jendela edit data secara langsung.</em></span>
+            <span>💡 <em>Klik pada baris pekerjaan untuk melihat detail lengkap, sub-pekerjaan, lampiran, dan riwayat aktivitas.</em></span>
             <button className="btn btn-secondary" onClick={onClose} style={{ fontSize: '12px', padding: '6px 14px' }}>
               Tutup
             </button>

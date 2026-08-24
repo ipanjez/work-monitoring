@@ -34,7 +34,7 @@ export default function FilePreviewModal({ previewFile, setPreviewFile, theme = 
   return (
     <AnimatePresence>
       {previewFile && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 10500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={() => setPreviewFile(null)} />
           <motion.div 
             className="modal-content" 
