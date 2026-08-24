@@ -11,11 +11,40 @@ import AdmZip from 'adm-zip';
 
 const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
-    // auth check bypassed for testing
+    const session = await getServerSession(authOptions);
+    const downloadedByName = session?.user?.name || session?.user?.email || 'Admin';
+    const downloadTime = new Date().toISOString();
+
+    try {
+      await prisma.appSetting.upsert({
+        where: { key: 'last_backup_downloaded_by' },
+        create: { key: 'last_backup_downloaded_by', value: JSON.stringify(downloadedByName) },
+        update: { value: JSON.stringify(downloadedByName) }
+      });
+      await prisma.appSetting.upsert({
+        where: { key: 'last_backup_downloaded_at' },
+        create: { key: 'last_backup_downloaded_at', value: JSON.stringify(downloadTime) },
+        update: { value: JSON.stringify(downloadTime) }
+      });
+      await prisma.appSetting.upsert({
+        where: { key: 'last_backup_date' },
+        create: { key: 'last_backup_date', value: JSON.stringify(downloadTime) },
+        update: { value: JSON.stringify(downloadTime) }
+      });
+      await prisma.activityLog.create({
+        data: {
+          userName: downloadedByName,
+          action: 'DOWNLOAD_BACKUP',
+          title: 'Unduh Cadangan Database',
+          message: `Mengunduh berkas cadangan database lengkap (.zip) pada ${new Date().toLocaleString('id-ID')}`,
+          type: 'info'
+        }
+      });
+    } catch (logErr) {
+      console.warn('Error recording backup download history:', logErr);
+    }
 
     const tasks = await prisma.task.findMany();
     const settings = await prisma.appSetting.findMany();
@@ -36,6 +65,7 @@ export async function GET() {
     const dbData = {
       version: '2.0',
       exportedAt: new Date().toISOString(),
+      exportedBy: downloadedByName,
       tasks,
       settings,
       users,

@@ -7,7 +7,7 @@ import {
   Users, Palette, Layout, Maximize, Save, HelpCircle, MapPin, 
   Pencil, Camera, Clock, RotateCcw, 
   Sparkles, Search, GripVertical, Layers, ChevronRight, HardDrive, Loader2, RefreshCw, AlertTriangle,
-  FileArchive, ShieldCheck, Calendar
+  FileArchive, ShieldCheck, Calendar, User, CheckCircle2
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotifications } from '@/context/NotificationContext';
@@ -743,6 +743,12 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
       broadcastSettingsChange('last_backup_date', newDate);
       window.dispatchEvent(new Event('backupReminderChanged'));
       window.dispatchEvent(new Event('masterUpdated'));
+
+      // Refresh database stats
+      fetch('/api/database/stats')
+        .then(r => r.json())
+        .then(data => { if (data && !data.error) setFileStats(data); })
+        .catch(() => {});
     } catch (err: any) {
       toast.dismiss(toastId);
       toast.error(err.message || 'Gagal mengunduh backup');
@@ -1892,6 +1898,69 @@ export default function SettingsClient({ tasks }: { tasks: Task[] }) {
                     <ShieldCheck size={14} /> 100% Berkas Lampiran Lengkap & Siap Diunduh
                   </div>
                 ) : null}
+              </div>
+              {/* Real-time Status & Audit Trail Card */}
+              <div style={{
+                background: 'var(--input-bg)',
+                borderRadius: '10px',
+                padding: '14px 16px',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                marginTop: '12px'
+              }}>
+                {/* Live Snapshot Confirmation */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: 'var(--text-primary)' }}>
+                  <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong style={{ color: '#10b981' }}>Data Cadangan 100% Real-Time:</strong> Snapshot database diekspor langsung dari PostgreSQL pada saat tombol unduh ditekan, menjamin seluruh pembaruan pekerjaan terbaru otomatis tersimpan lengkap.
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '10px',
+                  marginTop: '4px',
+                  paddingTop: '10px',
+                  borderTop: '1px dashed var(--border-color)',
+                  fontSize: '12.5px'
+                }}>
+                  {/* 1. Terakhir Diunduh */}
+                  <div style={{ background: 'var(--surface-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <User size={13} color="var(--accent-primary)" /> Diunduh Terakhir Oleh
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {fileStats?.lastDownloadedBy || (lastBackupDate ? 'User Admin' : 'Belum pernah diunduh')}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      {fileStats?.lastDownloadedAt || lastBackupDate ? (
+                        new Date(fileStats?.lastDownloadedAt || lastBackupDate).toLocaleString('id-ID', {
+                          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+                        })
+                      ) : '-'}
+                    </div>
+                  </div>
+
+                  {/* 2. Terakhir Diperbarui di Database */}
+                  <div style={{ background: 'var(--surface-color)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <Database size={13} color="#3b82f6" /> Data Terakhir Diperbarui
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {fileStats?.lastDatabaseUpdate?.date ? (
+                        new Date(fileStats.lastDatabaseUpdate.date).toLocaleString('id-ID', {
+                          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+                        })
+                      ) : 'Database aktif'}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={fileStats?.lastDatabaseUpdate?.summary}>
+                      {fileStats?.lastDatabaseUpdate?.summary || 'Pembaruan data pekerjaan'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

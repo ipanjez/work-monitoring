@@ -161,6 +161,71 @@ export async function GET() {
     const totalCount = Math.max(referencedFiles.size, allAvailableFiles.size);
     const availableCount = totalCount - missingFiles.length;
 
+    // Track latest database updates across tables
+    const latestTask = await prisma.task.findFirst({
+      orderBy: { updatedAt: 'desc' },
+      select: { nama: true, updatedAt: true, pic: true, status: true, prioritas: true }
+    });
+
+    const latestLog = await prisma.activityLog.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { userName: true, action: true, title: true, message: true, createdAt: true }
+    });
+
+    const latestSetting = await prisma.appSetting.findFirst({
+      where: {
+        key: { notIn: ['last_backup_downloaded_by', 'last_backup_downloaded_at', 'last_backup_date'] }
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { key: true, updatedAt: true }
+    });
+
+    const lastBackupDownloadedBySetting = await prisma.appSetting.findUnique({
+      where: { key: 'last_backup_downloaded_by' }
+    });
+    const lastBackupDownloadedAtSetting = await prisma.appSetting.findUnique({
+      where: { key: 'last_backup_downloaded_at' }
+    });
+
+    let lastDownloadedBy = '';
+    let lastDownloadedAt = '';
+    if (lastBackupDownloadedBySetting) {
+      try { lastDownloadedBy = JSON.parse(lastBackupDownloadedBySetting.value); } catch { lastDownloadedBy = lastBackupDownloadedBySetting.value; }
+    }
+    if (lastBackupDownloadedAtSetting) {
+      try { lastDownloadedAt = JSON.parse(lastBackupDownloadedAtSetting.value); } catch { lastDownloadedAt = lastBackupDownloadedAtSetting.value; }
+    }
+
+    const updateCandidates: { date: string; summary: string; type: string }[] = [];
+    if (latestTask?.updatedAt) {
+      updateCandidates.push({
+        date: new Date(latestTask.updatedAt).toISOString(),
+        summary: `Pekerjaan: "${latestTask.nama}" (PIC: ${latestTask.pic || 'All Staf'}, Status: ${latestTask.status})`,
+        type: 'task'
+      });
+    }
+    if (latestLog?.createdAt) {
+      updateCandidates.push({
+        date: new Date(latestLog.createdAt).toISOString(),
+        summary: `${latestLog.title ? `${latestLog.title}: ` : ''}${latestLog.message || `Aktivitas oleh ${latestLog.userName}`}`,
+        type: 'activity'
+      });
+    }
+    if (latestSetting?.updatedAt) {
+      updateCandidates.push({
+        date: new Date(latestSetting.updatedAt).toISOString(),
+        summary: `Pengaturan Sistem (${latestSetting.key})`,
+        type: 'setting'
+      });
+    }
+
+    updateCandidates.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const lastDatabaseUpdate = updateCandidates[0] || {
+      date: new Date().toISOString(),
+      summary: 'Data database siap',
+      type: 'general'
+    };
+
     return NextResponse.json({
       totalTasks: taskCount,
       todoCount,
@@ -177,6 +242,9 @@ export async function GET() {
       totalBlobBytes,
       estimatedTotalBytes: totalLocalBytes + totalDbBytes + totalBlobBytes,
       hasBlobStorage: hasBlobToken,
+      lastDownloadedBy,
+      lastDownloadedAt,
+      lastDatabaseUpdate
     });
   } catch (error: any) {
     console.error('Error getting database backup stats:', error);
