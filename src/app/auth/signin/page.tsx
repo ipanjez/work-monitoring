@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, LogIn, Eye, EyeOff, IdCard, User } from 'lucide-react';
+import { Lock, LogIn, Eye, EyeOff, IdCard, User, AlertTriangle, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useMaster } from '@/context/MasterContext';
@@ -18,15 +18,14 @@ function SignInContent() {
   // Status check for password resets
   const [resetStatus, setResetStatus] = useState<'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'>('NONE');
   const [resetNote, setResetNote] = useState<string | null>(null);
+  const [showTimeoutBanner, setShowTimeoutBanner] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (searchParams?.get('reason') === 'timeout') {
-      toast.error('Sesi Anda telah berakhir karena tidak ada aktivitas (idle). Silakan masuk kembali.', {
-        id: 'timeout-toast',
-      });
+      setShowTimeoutBanner(true);
     }
   }, [searchParams]);
 
@@ -160,6 +159,37 @@ function SignInContent() {
             {appSubtitle && appSubtitle !== 'MRK' ? appSubtitle : 'Masuk menggunakan NPK dan Password Anda'}
           </p>
         </div>
+
+        {/* Session Timeout Warning Banner */}
+        {showTimeoutBanner && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            animation: 'fadeIn 0.3s ease',
+          }}>
+            <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: '1px' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444', marginBottom: '2px' }}>
+                Sesi Berakhir
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Anda telah dikeluarkan secara otomatis karena tidak ada aktivitas. Silakan masuk kembali untuk melanjutkan.
+              </div>
+            </div>
+            <button
+              onClick={() => setShowTimeoutBanner(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: 'var(--text-secondary)', flexShrink: 0 }}
+              title="Tutup"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Notifications for reset status */}
         {resetStatus === 'APPROVED' && (
