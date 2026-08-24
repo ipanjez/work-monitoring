@@ -142,11 +142,7 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || '';
 
-  const [roleConfig, setRoleConfig] = useState<RolePermissionsConfig>(defaultRolePermissions);
-  useEffect(() => {
-    fetch('/api/settings/permissions').then(res => res.json()).then(setRoleConfig).catch(() => {});
-  }, []);
-  const { masterColors, appName, appSubtitle, appLogo, isBackupDue } = useMaster();
+  const { masterColors, appName, appSubtitle, appLogo, isBackupDue, roleConfig } = useMaster();
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
@@ -309,7 +305,7 @@ export default function Sidebar() {
 
   const { notifications } = useNotifications();
   const canSeeUserAlerts = hasPermission(roleConfig, 'user_administration', userRole);
-  const canBackup = userRole === 'ADMIN' || hasPermission(roleConfig, 'database_backup', userRole);
+  const canBackup = userRole === 'ADMIN' || hasPermission(roleConfig, 'database_backup', userRole) || hasPermission(roleConfig, 'system_settings', userRole);
   const hasSettingsBackupAlert = canBackup && isBackupDue;
 
   const systemUserUnreads = canSeeUserAlerts ? notifications.filter(n =>
@@ -386,9 +382,9 @@ export default function Sidebar() {
                           justifyContent: 'center',
                           fontSize: '11px',
                           fontWeight: 'bold',
-                          boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+                          boxShadow: '0 0 8px rgba(239, 68, 68, 0.7)'
                         }}
-                        title="Cadangan database belum diunduh"
+                        title="Cadangan database belum diunduh (Jatuh Tempo)"
                       >
                         !
                       </span>
@@ -402,15 +398,15 @@ export default function Sidebar() {
                     <div
                       style={{
                         position: 'absolute',
-                        top: '4px',
-                        right: '4px',
+                        top: '5px',
+                        right: '5px',
                         width: '8px',
                         height: '8px',
                         background: '#ef4444',
                         borderRadius: '50%',
                         boxShadow: '0 0 6px rgba(239, 68, 68, 0.8)'
                       }}
-                      title={isSettings ? "Cadangan database belum diunduh" : undefined}
+                      title={isSettings ? "Cadangan database belum diunduh (Jatuh Tempo)" : undefined}
                     />
                   )}
                 </Link>
