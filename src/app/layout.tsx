@@ -63,7 +63,7 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <NextTopLoader color="var(--accent-primary)" showSpinner={false} height={3} />
+        <NextTopLoader color="var(--accent-primary)" showSpinner={false} height={3} crawlSpeed={100} speed={150} shadow="0 0 10px var(--accent-primary),0 0 5px var(--accent-primary)" />
         <SessionProviderWrapper>
           <ThemeProvider>
             <MasterProvider>

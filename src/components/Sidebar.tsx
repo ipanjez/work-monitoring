@@ -149,6 +149,14 @@ export default function Sidebar() {
   const router = useRouter();
   const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useTheme();
 
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
+
+  const currentActivePath = optimisticPath || pathname;
+
   useEffect(() => {
     setIsMounted(true);
     const mediaQuery = window.matchMedia('(max-width: 1100px)');
@@ -349,7 +357,8 @@ export default function Sidebar() {
           <nav className={styles.nav}>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = currentActivePath === item.href;
+              const isPending = optimisticPath === item.href && pathname !== item.href;
               const isUsers = item.href === '/users';
               const isSettings = item.href === '/settings';
               const hasBadge = (isUsers && systemUserUnreads > 0) || (isSettings && hasSettingsBackupAlert);
@@ -363,13 +372,19 @@ export default function Sidebar() {
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={!showExpanded ? item.label : undefined}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setOptimisticPath(item.href);
+                    setMobileMenuOpen(false);
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Icon size={20} style={{ flexShrink: 0 }} />
+                    <Icon size={20} style={{ flexShrink: 0, opacity: isPending ? 0.7 : 1 }} />
                     {showExpanded && <span className={styles.navText}>{item.label}</span>}
                   </div>
-                  {hasBadge && showExpanded && (
+                  {isPending && showExpanded && (
+                    <Loader2 size={13} className="animate-spin" style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                  )}
+                  {hasBadge && showExpanded && !isPending && (
                     isSettings && hasSettingsBackupAlert ? (
                       <span
                         style={{
@@ -420,9 +435,12 @@ export default function Sidebar() {
                 id="menu-guide"
                 href="/guide"
                 prefetch={true}
-                className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
+                className={`${styles.navItem} ${currentActivePath === '/guide' ? styles.navItemActive : ''}`}
                 title={!showExpanded ? "Panduan" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setOptimisticPath('/guide');
+                  setMobileMenuOpen(false);
+                }}
               >
                 <BookOpen size={20} style={{ flexShrink: 0 }} />
                 {showExpanded && <span className={styles.navText}>Panduan</span>}
