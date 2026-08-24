@@ -61,6 +61,16 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model AppFile {
+  id        String   @id @default(cuid())
+  filename  String   @unique
+  mimeType  String   @default("application/octet-stream")
+  data      String   @db.Text
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id            String    @id @default(cuid())
   npk           String    @unique

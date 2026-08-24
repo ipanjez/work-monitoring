@@ -81,9 +81,32 @@ export async function GET(
       }
     }
 
-    // 3. Check database task & settings records for base64 or remote URLs matching this filename
+    // 3. Check AppFile database table (Primary on-demand cloud storage)
     try {
       const { prisma } = await import('@/lib/prisma');
+      const cleanSearchName = decodedFilename.replace(/^\d+_\d+_/, '');
+
+      const appFile = await prisma.appFile.findFirst({
+        where: {
+          OR: [
+            { filename: decodedFilename },
+            { filename: cleanSearchName },
+            { filename: { contains: cleanSearchName } },
+          ],
+        },
+      });
+
+      if (appFile && appFile.data) {
+        const contentType = appFile.mimeType || MIME_TYPES[path.extname(decodedFilename).toLowerCase()] || 'application/octet-stream';
+        const buffer = Buffer.from(appFile.data, 'base64');
+        return new NextResponse(buffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Content-Disposition': `inline; filename="${encodeURIComponent(decodedFilename)}"`,
+            'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        });
+      }
 
       // Helper function to extract buffer & mime from base64 data URL
       const streamDataUrl = (dataUrl: string, name: string) => {
@@ -102,8 +125,7 @@ export async function GET(
         return null;
       };
 
-      // Search in Tasks
-      const cleanSearchName = decodedFilename.replace(/^\d+_\d+_/, '');
+      // Search in Tasks (fallback)
       const tasks = await prisma.task.findMany({
         where: {
           OR: [

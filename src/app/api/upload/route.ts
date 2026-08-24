@@ -88,10 +88,10 @@ export async function POST(req: Request) {
       });
     }
 
-    // --- DATABASE-EMBEDDED MODE (Render / PostgreSQL without Blob token) ---
-    // Store files as base64 data URLs since Render FS is ephemeral
+    // --- DATABASE-PERSISTENT MODE (Render / PostgreSQL without Blob token) ---
+    // Store files cleanly in AppFile table with dedicated binary storage
     if (!hasBlobToken) {
-      const MAX_FILE_SIZE_MB = 10; // Cap per file at 10 MB for base64 storage
+      const MAX_FILE_SIZE_MB = 15; // 15 MB max per file
       const uploadedResults = [];
 
       for (const file of files) {
@@ -104,17 +104,33 @@ export async function POST(req: Request) {
         }
 
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-          return NextResponse.json({ error: `File ${file.name} melebihi batas ${MAX_FILE_SIZE_MB}MB untuk mode penyimpanan database.` }, { status: 400 });
+          return NextResponse.json({ error: `File ${file.name} melebihi batas ${MAX_FILE_SIZE_MB}MB.` }, { status: 400 });
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
         const ext = '.' + fileName.split('.').pop();
         const mimeType = MIME_MAP[ext] || 'application/octet-stream';
         const base64 = buffer.toString('base64');
-        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const uniqueFileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}_${safeName}`;
+
+        await prisma.appFile.upsert({
+          where: { filename: uniqueFileName },
+          update: {
+            mimeType,
+            data: base64,
+            size: file.size,
+          },
+          create: {
+            filename: uniqueFileName,
+            mimeType,
+            data: base64,
+            size: file.size,
+          },
+        });
 
         uploadedResults.push({
-          url: dataUrl,
+          url: `/uploads/${uniqueFileName}`,
           name: file.name,
           size: file.size,
         });
