@@ -481,15 +481,30 @@ export default function Sidebar() {
                   )}
                 </div>
 
-                {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
-                  const color = masterColors[`status_${status}`] || '#3b82f6';
-                  return (
-                    <div key={status} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>{status}:</span>
-                      <span style={{ fontWeight: 700, color: color }}>{stats[status] || 0}</span>
-                    </div>
-                  );
-                })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)' }}>
+                  {(masterStatuses.length > 0 ? masterStatuses : Object.keys(stats)).map((status, idx) => {
+                    const color = masterColors[`status_${status}`] || '#3b82f6';
+                    return (
+                      <div key={status} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px' }}>
+                        <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                          {status}
+                        </span>
+                        <span style={{ 
+                          fontWeight: 700, 
+                          color: color,
+                          background: `${color}18`,
+                          padding: '1px 7px',
+                          borderRadius: '9999px',
+                          fontSize: '11px',
+                          fontVariantNumeric: 'tabular-nums'
+                        }}>
+                          {stats[status] || 0}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div style={{
