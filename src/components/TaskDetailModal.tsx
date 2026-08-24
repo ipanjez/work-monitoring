@@ -864,9 +864,19 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                             </button>
                           )}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '28px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '28px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           {formattedDate && <span>Diunggah pada {formattedDate}{f.size ? ` (${(f.size / (1024 * 1024)).toFixed(2)} MB)` : ''}</span>}
-                          {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                          {f.uploadedBy && (
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              • oleh <strong style={{ color: 'var(--accent-primary)' }}>{f.uploadedBy}</strong>
+                            </span>
+                          )}
+                          {f.isDeleted && f.deletedAt && (
+                            <span style={{ color: 'var(--danger)' }}>
+                              • Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}
+                              {f.deletedBy ? ` oleh ${f.deletedBy}` : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

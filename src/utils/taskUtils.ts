@@ -5,9 +5,12 @@ export type FileItem = {
   url: string;
   name: string;
   uploadedAt?: string;
+  uploadedBy?: string;
   deletedAt?: string;
+  deletedBy?: string;
   isDeleted?: boolean;
   size?: number;
+  orderIndex?: number;
 };
 
 export type LogItem = {

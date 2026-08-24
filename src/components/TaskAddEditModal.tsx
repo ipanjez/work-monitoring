@@ -318,11 +318,13 @@ export default function TaskAddEditModal({
         if (!res.ok) throw new Error(`Gagal mengunggah ${file.name}`);
 
         const data = await res.json();
+        const currentUserName = session?.user?.name || (session?.user as any)?.username || session?.user?.email || 'Admin';
         newFiles.push({
-          url: data.fileUrl,
-          name: data.fileName,
+          url: data.fileUrl || data.url,
+          name: data.fileName || data.name || file.name,
           size: file.size,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: currentUserName,
         });
       }
 
@@ -363,10 +365,12 @@ export default function TaskAddEditModal({
 
   const handleRemoveFileFromEdit = (idx: number) => {
     if (!editingTask) return;
+    const currentUserName = session?.user?.name || (session?.user as any)?.username || session?.user?.email || 'Admin';
     const updatedList = [...(editingTask.filesList || [])];
     if (updatedList[idx].uploadedAt) {
       updatedList[idx].isDeleted = true;
       updatedList[idx].deletedAt = new Date().toISOString();
+      updatedList[idx].deletedBy = currentUserName;
     } else {
       updatedList.splice(idx, 1);
     }

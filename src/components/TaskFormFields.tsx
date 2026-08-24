@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react';
 import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { EditingTaskType } from './TaskAddEditModal';
@@ -217,6 +218,9 @@ export default function TaskFormFields({
   setPreviewFile,
   isBulkMode = false
 }: TaskFormFieldsProps) {
+  const { data: session } = useSession();
+  const currentUserName = session?.user?.name || (session?.user as any)?.username || session?.user?.email || 'Admin';
+
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [localPreviewFile, setLocalPreviewFile] = useState<{ name: string; url: string } | null>(null);
@@ -393,6 +397,7 @@ export default function TaskFormFields({
           url: data.url,
           name: data.name || file.name,
           uploadedAt: new Date().toISOString(),
+          uploadedBy: currentUserName,
           size: file.size
         });
       } catch (err: any) {
@@ -421,7 +426,8 @@ export default function TaskFormFields({
       updated[idx] = {
         ...file,
         isDeleted: true,
-        deletedAt: new Date().toISOString()
+        deletedAt: new Date().toISOString(),
+        deletedBy: currentUserName
       };
     } else {
       updated.splice(idx, 1);
@@ -1696,18 +1702,25 @@ export default function TaskFormFields({
                         </span>
                       </div>
                       
-                      {/* Diunggah pada metadata */}
+                      {/* Diunggah pada & oleh metadata */}
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         {formattedDate ? (
                           <span>Diunggah pada: <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{formattedDate}</strong></span>
                         ) : (
                           <span>File Baru</span>
                         )}
+                        {(f.uploadedBy || currentUserName) && (
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            • oleh <strong style={{ color: 'var(--accent-primary)' }}>{f.uploadedBy || currentUserName}</strong>
+                          </span>
+                        )}
                         {f.size ? (
                           <span>• {(f.size / (1024 * 1024)).toFixed(2)} MB</span>
                         ) : null}
                         {f.isDeleted && (
-                          <span style={{ color: 'var(--danger)', fontWeight: 600 }}>(Akan dihapus saat disimpan)</span>
+                          <span style={{ color: 'var(--danger)', fontWeight: 600 }}>
+                            (Akan dihapus saat disimpan{f.deletedBy ? ` oleh ${f.deletedBy}` : ''})
+                          </span>
                         )}
                       </div>
                     </div>
