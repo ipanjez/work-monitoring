@@ -316,6 +316,14 @@ export default function Sidebar() {
     )
   ).length : 0;
 
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    if (pathname !== href) {
+      router.push(href);
+    }
+  };
+
   return (
     <>
       <div
@@ -362,7 +370,7 @@ export default function Sidebar() {
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={!showExpanded ? item.label : undefined}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => handleNavClick(e, item.href)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Icon size={20} style={{ flexShrink: 0 }} />
@@ -420,7 +428,7 @@ export default function Sidebar() {
                 href="/guide"
                 className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
                 title={!showExpanded ? "Panduan" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, '/guide')}
               >
                 <BookOpen size={20} style={{ flexShrink: 0 }} />
                 {showExpanded && <span className={styles.navText}>Panduan</span>}
