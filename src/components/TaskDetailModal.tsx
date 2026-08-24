@@ -22,7 +22,14 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], ti
       <div style={{ paddingLeft: '8px', borderLeft: '2px solid var(--border-color)', marginTop: '4px', marginLeft: '4px' }}>
         {logs.map((log: any, lidx: number) => (
           <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+              {(log.user || log.author) && (
+                <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                  • oleh {log.user || log.author}
+                </span>
+              )}
+            </div>
             <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>- {log.status}</span>
           </div>
         ))}
@@ -635,12 +642,28 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                     {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy HH:mm') : '-'}
                   </span>
+                  {(() => {
+                    const firstLog = localHistoryLogs.find(l => l.action?.toLowerCase().includes('dibuat'));
+                    const creator = firstLog?.user || (firstLog as any)?.author || (firstLog as any)?.createdBy;
+                    if (creator) {
+                      return <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 500 }}>oleh {creator}</span>;
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Diedit Terakhir</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                     {task.lastEditedAt ? format(new Date(task.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
                   </span>
+                  {(() => {
+                    const lastEditLog = [...localHistoryLogs].reverse().find(l => l.action?.toLowerCase().includes('diedit') || l.action?.toLowerCase().includes('diubah'));
+                    const editor = lastEditLog?.user || (lastEditLog as any)?.author;
+                    if (task.lastEditedAt && editor) {
+                      return <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 500 }}>oleh {editor}</span>;
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Frekuensi Edit</span>
@@ -657,21 +680,38 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                     Timeline Aktivitas:
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {localHistoryLogs.map((log, idx) => (
-                      <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-secondary)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <span style={{ fontWeight: 600 }}>• {log.action}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                    {localHistoryLogs.map((log, idx) => {
+                      const logUser = log.user || (log as any).author;
+                      return (
+                        <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-secondary)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>• {log.action}</span>
+                              {logUser && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(59, 130, 246, 0.12)',
+                                  color: 'var(--accent-primary)',
+                                  fontWeight: 600
+                                }}>
+                                  oleh {logUser}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                            </div>
                           </div>
+                          {(log as any).details && (
+                            <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                              {formatLogDetails((log as any).details.startsWith('Diubah:') ? (log as any).details : `Diubah: ${(log as any).details}`)}
+                            </div>
+                          )}
                         </div>
-                        {(log as any).details && (
-                          <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                            {formatLogDetails((log as any).details.startsWith('Diubah:') ? (log as any).details : `Diubah: ${(log as any).details}`)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

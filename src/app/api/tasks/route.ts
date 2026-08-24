@@ -100,6 +100,7 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userRole = (session?.user as any)?.role || '';
+    const userName = session?.user?.name || (session?.user as any)?.username || session?.user?.email || 'Admin';
     const isAllowed = await checkServerPermission('manage_task', userRole);
     if (!isAllowed) {
       return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menambah data pekerjaan.' }, { status: 403 });
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
       return isNaN(parsed.getTime()) ? new Date() : parsed;
     };
 
-    const initialLog = JSON.stringify([{ action: "Pekerjaan dibuat", timestamp: new Date().toISOString() }]);
+    const initialLog = JSON.stringify([{ action: "Pekerjaan dibuat", timestamp: new Date().toISOString(), user: userName }]);
 
     // Handle array for bulk import
     if (Array.isArray(body)) {

@@ -18,12 +18,15 @@ export type LogItem = {
   timestamp: string;
   status?: string;
   details?: string;
+  user?: string;
+  author?: string;
 };
 
 export type SubTaskLog = {
   status: string;
   timestamp: string;
   description?: string;
+  user?: string;
 };
 
 export type SubTask = {

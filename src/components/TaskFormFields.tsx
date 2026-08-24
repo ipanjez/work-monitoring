@@ -46,10 +46,15 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status Sub:" }: { logs: any[]
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {visibleLogs.map((log: any, lidx: number) => (
-          <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '100px', flexShrink: 0 }}>
+          <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '95px', flexShrink: 0 }}>
               {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}
             </span>
+            {(log.user || log.author) && (
+              <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600, flexShrink: 0 }}>
+                • oleh {log.user || log.author}
+              </span>
+            )}
             <span
               style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '11px', lineHeight: '1.4' }}
               dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
@@ -1266,6 +1271,14 @@ export default function TaskFormFields({
                       onChange={val => {
                         const updated = [...(task.subTasksList || [])];
                         const newSubStatus = val;
+                        if (updated[idx].status !== newSubStatus) {
+                          if (!updated[idx].logs) updated[idx].logs = [];
+                          updated[idx].logs.push({
+                            status: `Status diubah menjadi "${newSubStatus}"`,
+                            timestamp: new Date().toISOString(),
+                            user: currentUserName
+                          });
+                        }
                         updated[idx].status = newSubStatus;
 
                         let allDone = true;

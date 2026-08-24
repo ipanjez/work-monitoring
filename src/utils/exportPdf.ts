@@ -307,13 +307,14 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
       return [
         format(new Date(log.timestamp), 'dd MMM yyyy HH:mm'),
         log.action,
+        log.user || (log as any).author || '-',
         details || '-'
       ];
     });
 
     autoTable(doc, {
       startY: y,
-      head: [['Waktu', 'Aksi', 'Detail']],
+      head: [['Waktu', 'Aksi', 'Oleh', 'Detail']],
       body: logData,
       theme: 'grid',
       margin: { left: margin, right: margin },
@@ -321,9 +322,10 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
       bodyStyles: { fontSize: 7.5, cellPadding: 2.5, textColor: DARK },
       alternateRowStyles: { fillColor: LIGHT_GRAY },
       columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 'auto' }
+        0: { cellWidth: 28 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 24, halign: 'center' },
+        3: { cellWidth: 'auto' }
       },
     });
     y = (doc as any).lastAutoTable.finalY + 8;

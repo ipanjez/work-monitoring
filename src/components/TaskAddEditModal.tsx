@@ -25,7 +25,14 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
       {visibleLogs.map((log: any, lidx: number) => (
         <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
+            {(log.user || log.author) && (
+              <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                • oleh {log.user || log.author}
+              </span>
+            )}
+          </div>
           <span
             style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
             dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}

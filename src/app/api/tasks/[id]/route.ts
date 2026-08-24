@@ -61,7 +61,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const now = new Date();
     const newCount = ((existingTask?.editCount || 0) + 1);
-    let currentLogs: Array<{ action: string; timestamp: string; details?: string }> = [];
+    let currentLogs: Array<{ action: string; timestamp: string; details?: string; user?: string }> = [];
 
     if (existingTask?.historyLogsJson) {
       try {
@@ -172,6 +172,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
+    const userName = session?.user?.name || (session?.user as any)?.username || session?.user?.email || 'Admin';
+
     if (historyLogsJson !== undefined) {
       // If the client explicitly provided new history logs (e.g. for deletion), use them
       try {
@@ -183,8 +185,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         action: `Diedit ke-${newCount} kali`,
         details: changes.length > 0 ? `${changes.join(', ')}` : 'Memperbarui data',
         timestamp: now.toISOString(),
+        user: userName
       });
     }
+
     const finalStatus = status !== undefined ? status : existingTask.status;
     const currentSubTasksJson = subTasksJson !== undefined ? subTasksJson : existingTask.subTasksJson;
     const finalProgress = await calculateProgress(finalStatus, currentSubTasksJson);
@@ -227,7 +231,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             data: {
               action: `Pembaruan Pekerjaan: ${task.nama}`,
               title: `Status pekerjaan "${task.nama}" diubah menjadi ${status}`,
-              message: `Status pekerjaan "${task.nama}" diubah dari ${existingTask.status} menjadi ${status}`,
+              message: `Status pekerjaan "${task.nama}" diubah oleh ${userName} dari ${existingTask.status} menjadi ${status}`,
               type: 'info'
             }
           });
@@ -238,7 +242,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             data: {
               action: `Pembaruan Pekerjaan: ${task.nama}`,
               title: `Pekerjaan diperbarui`,
-              message: `Perubahan: ${changes.join(', ')}`,
+              message: `Perubahan oleh ${userName}: ${changes.join(', ')}`,
               type: 'info'
             }
           });
@@ -286,7 +290,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               data: {
                 action: 'UPDATE_TASK_STATUS',
                 title: `Status pekerjaan "${existingTask.nama}" diubah menjadi ${status}`,
-                message: `Status pekerjaan "${existingTask.nama}" diubah dari ${existingTask.status} menjadi ${status}`,
+                message: `Status pekerjaan "${existingTask.nama}" diubah oleh ${userName} dari ${existingTask.status} menjadi ${status}`,
                 type: 'info'
               }
             });
@@ -297,7 +301,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
               data: {
                 action: `Pembaruan Pekerjaan: ${task.nama}`,
                 title: `Pekerjaan diperbarui`,
-                message: `Perubahan: ${changes.join(', ')}`,
+                message: `Perubahan oleh ${userName}: ${changes.join(', ')}`,
                 type: 'info'
               }
             });
