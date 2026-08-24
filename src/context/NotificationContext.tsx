@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { hasPermission, defaultRolePermissions, RolePermissionsConfig } from '@/lib/permissions';
+import { X, User, ArrowRight, Bell, Sparkles } from 'lucide-react';
+import { formatLogDetails } from '@/utils/taskUtils';
 
 export type NotificationItem = {
   id: number;
@@ -17,6 +19,9 @@ export type NotificationItem = {
   type?: 'info' | 'success' | 'warning' | 'danger';
   taskId?: number;
   linkUrl?: string;
+  userId?: string | null;
+  userName?: string | null;
+  action?: string | null;
 };
 
 interface NotificationContextType {
@@ -223,15 +228,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           updatedAt: act.createdAt,
           isRead,
           taskId: act.taskId,
-          linkUrl: act.linkUrl
+          linkUrl: act.linkUrl,
+          userId: act.userId,
+          userName: act.userName,
+          action: act.action
         };
 
         updatedList.push(notifItem);
 
+        const currentUserId = (session?.user as any)?.id;
         if (!isInitial && actTime > lastCheckTimeRef.current) {
           const existing = prev.find(p => p.id === act.id);
           if (!existing) {
-            newIncomingForToast.push(notifItem);
+            // If the action was performed by this exact user in this session, avoid duplicating the floating bottom toast (top toast already handled feedback)
+            if (act.userId && currentUserId && act.userId === currentUserId) {
+              // Recorded in bell list, skipped from floating toast
+            } else {
+              newIncomingForToast.push(notifItem);
+            }
           }
         }
       });
@@ -248,48 +262,163 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Play audio chime if sound is enabled
         playNotificationChime(!isSoundEnabledRef.current);
 
+        const currentUserName = session?.user?.name || (session?.user as any)?.npk || 'Anda';
+
         // Native browser notification if tab is in background
         if (typeof document !== 'undefined' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
           try {
-            new Notification('Pembaruan Pekerjaan', {
-              body: newIncomingForToast.length === 1 ? `${newIncomingForToast[0].title}: ${newIncomingForToast[0].message}` : `${newIncomingForToast.length} pembaruan pekerjaan baru.`,
+            new Notification(`Pembaruan untuk ${currentUserName}`, {
+              body: newIncomingForToast.length === 1 ? `${newIncomingForToast[0].title}: ${newIncomingForToast[0].message}` : `${newIncomingForToast.length} pembaruan aktivitas tim baru.`,
               icon: '/favicon.ico'
             });
           } catch (e) { }
         }
 
-        // Anti-flood toast logic
+        // Optimized Personalized Executive Toast (Kanan Bawah)
         if (newIncomingForToast.length === 1) {
           const item = newIncomingForToast[0];
+          const isDanger = item.type === 'danger';
+          const isSuccess = item.type === 'success';
+          const isWarning = item.type === 'warning';
+          const accentColor = isDanger ? '#ef4444' : isSuccess ? '#10b981' : isWarning ? '#f59e0b' : '#3b82f6';
+          const isAssignedToMe = (currentUserName && item.message && item.message.toLowerCase().includes(currentUserName.toLowerCase())) || 
+                                 (currentUserName && item.title && item.title.toLowerCase().includes(currentUserName.toLowerCase()));
+
           toast.custom((t) => (
             <div
               style={{
                 background: 'var(--surface-color)',
                 color: 'var(--text-primary)',
                 padding: '14px 16px',
-                borderRadius: '12px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                borderRadius: '14px',
+                boxShadow: '0 16px 36px rgba(0,0,0,0.22), 0 0 0 1px var(--border-color)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '6px',
-                border: '1px solid var(--border-color)',
-                maxWidth: '360px',
-                animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
+                gap: '8px',
+                borderLeft: `4px solid ${accentColor}`,
+                maxWidth: '370px',
+                width: '100%',
+                backdropFilter: 'blur(12px)',
+                animation: t.visible ? 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)' : 'fadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
-                  {item.title} 🔔
-                </span>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Baru saja</span>
+              {/* Header: Greeting to logged-in user + Dismiss */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                  <span style={{
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    color: 'var(--accent-primary)',
+                    letterSpacing: '0.2px',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Info untuk {currentUserName}
+                  </span>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>• Baru saja</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toast.dismiss(t.id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderRadius: '4px',
+                    opacity: 0.7
+                  }}
+                  title="Tutup Notifikasi"
+                >
+                  <X size={14} />
+                </button>
               </div>
-              <p style={{ fontSize: '12px', margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4, maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {item.message}
+
+              {/* Title & Assignment Tag */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: accentColor, lineHeight: 1.3 }}>
+                  {item.title || 'Pembaruan Tim'} 🔔
+                </span>
+                {isAssignedToMe && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    color: '#f59e0b',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    🎯 Terkait Anda
+                  </span>
+                )}
+              </div>
+
+              {/* Message Body */}
+              <p style={{
+                fontSize: '12px',
+                margin: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.45,
+                maxHeight: '48px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {item.message ? formatLogDetails(item.message) : item.message}
               </p>
+
+              {/* Footer: Actor + Action Link */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '6px',
+                borderTop: '1px solid var(--border-color)',
+                fontSize: '11px',
+                color: 'var(--text-secondary)'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <User size={12} /> {item.userName ? `Oleh: ${item.userName}` : 'Aktivitas Sistem'}
+                </span>
+                {item.taskId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast.dismiss(t.id);
+                      window.location.href = `/tasks?taskId=${item.taskId}`;
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent-primary)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontSize: '11.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px'
+                    }}
+                  >
+                    Buka Tugas <ArrowRight size={12} />
+                  </button>
+                ) : null}
+              </div>
             </div>
-          ), { duration: 4500, position: 'bottom-right' });
+          ), { duration: 5000, position: 'bottom-right' });
         } else if (newIncomingForToast.length <= 3) {
           newIncomingForToast.forEach((item) => {
+            const isDanger = item.type === 'danger';
+            const isSuccess = item.type === 'success';
+            const isWarning = item.type === 'warning';
+            const accentColor = isDanger ? '#ef4444' : isSuccess ? '#10b981' : isWarning ? '#f59e0b' : '#3b82f6';
+
             toast.custom((t) => (
               <div
                 style={{
@@ -297,26 +426,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                   color: 'var(--text-primary)',
                   padding: '12px 14px',
                   borderRadius: '12px',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                  boxShadow: '0 12px 28px rgba(0,0,0,0.18), 0 0 0 1px var(--border-color)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
-                  border: '1px solid var(--border-color)',
-                  maxWidth: '340px',
-                  animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
+                  gap: '6px',
+                  borderLeft: `4px solid ${accentColor}`,
+                  maxWidth: '350px',
+                  width: '100%',
+                  backdropFilter: 'blur(10px)',
+                  animation: t.visible ? 'fadeIn 0.3s ease-out' : 'fadeOut 0.2s ease-in'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: item.type === 'danger' ? 'var(--danger)' : item.type === 'success' ? '#10b981' : 'var(--accent-primary)' }}>
-                    {item.title} 🔔
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-primary)' }}>
+                    Info untuk {currentUserName}
                   </span>
-                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>Baru</span>
+                  <button
+                    type="button"
+                    onClick={() => toast.dismiss(t.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
+                  >
+                    <X size={13} />
+                  </button>
                 </div>
-                <p style={{ fontSize: '11.5px', margin: 0, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: accentColor }}>
+                  {item.title} 🔔
+                </div>
+                <p style={{ fontSize: '11.5px', margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {item.message}
                 </p>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '4px' }}>
+                  <span>{item.userName ? `Oleh: ${item.userName}` : 'Sistem'}</span>
+                  <span>Baru</span>
+                </div>
               </div>
-            ), { duration: 4000, position: 'bottom-right' });
+            ), { duration: 4500, position: 'bottom-right' });
           });
         } else {
           // Batch Summary Toast (Anti-Flood)
@@ -326,19 +470,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 background: 'var(--surface-color)',
                 color: 'var(--text-primary)',
                 padding: '14px 16px',
-                borderRadius: '12px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                borderRadius: '14px',
+                boxShadow: '0 16px 36px rgba(0,0,0,0.2), 0 0 0 1px var(--border-color)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                border: '1px solid var(--border-color)',
-                maxWidth: '360px',
+                borderLeft: '4px solid var(--accent-primary)',
+                maxWidth: '370px',
+                width: '100%',
+                backdropFilter: 'blur(12px)',
                 animation: t.visible ? 'fadeIn 0.3s' : 'fadeOut 0.3s'
               }}
             >
               <div style={{
-                width: '38px',
-                height: '38px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '10px',
                 background: 'rgba(59, 130, 246, 0.15)',
                 color: 'var(--accent-primary)',
@@ -348,18 +494,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 flexShrink: 0,
                 fontSize: '18px'
               }}>
-                🔔
+                <Bell size={20} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {newIncomingForToast.length} Pembaruan Baru
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-primary)' }}>
+                    Info untuk {currentUserName}
+                  </span>
                 </div>
-                <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Terdapat {newIncomingForToast.length} aktivitas tugas baru di dashboard.
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+                  {newIncomingForToast.length} Pembaruan Tim Baru
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '1px' }}>
+                  Aktivitas tim terbaru telah dicatat ke riwayat lonceng notifikasi.
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(t.id)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
+              >
+                <X size={14} />
+              </button>
             </div>
-          ), { duration: 4500, position: 'bottom-right' });
+          ), { duration: 5000, position: 'bottom-right' });
         }
       }
 

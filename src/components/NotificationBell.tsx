@@ -426,6 +426,34 @@ export default function NotificationBell() {
                         </>
                       )}
                     </p>
+
+                    {/* Actor & User Info Chip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                      {notif.userName && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'var(--text-secondary)',
+                          background: 'var(--surface-hover, rgba(0,0,0,0.04))',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)'
+                        }}>
+                          {notif.userName === session?.user?.name ? 'Oleh Anda' : `Oleh: ${notif.userName}`}
+                        </span>
+                      )}
+                      {session?.user?.name && notif.message && notif.message.toLowerCase().includes(session.user.name.toLowerCase()) && (
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          color: '#f59e0b',
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          padding: '1px 6px',
+                          borderRadius: '4px'
+                        }}>
+                          🎯 Terkait Anda
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
