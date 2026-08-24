@@ -8,7 +8,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMaster } from '@/context/MasterContext';
-import { Task, handleExportICS } from '@/utils/taskUtils';
+import { Task, handleExportICS, getTaskLocationString } from '@/utils/taskUtils';
 
 interface CalendarSyncModalProps {
   isOpen: boolean;
@@ -164,8 +164,10 @@ export default function CalendarSyncModal({
         const dateParam = (task.isAllDay || !task.startTime) ? ';VALUE=DATE' : '';
         const cleanDesc = (task.deskripsi || '').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
         const summary = `[${task.kategori || 'Umum'}] ${task.nama} - ${task.pic || 'Unassigned'}`.replace(/,/g, '\\,');
+        const locStr = getTaskLocationString(task);
+        const locLine = locStr ? `LOCATION:${locStr.replace(/,/g, '\\,')}\n` : '';
 
-        icsContent += `BEGIN:VEVENT\nUID:${task.id}-${Date.now()}@workmonitoring.internal\nDTSTAMP:${formatICSDate(new Date())}\nDTSTART${dateParam}:${start}\nDTEND${dateParam}:${end}\nSUMMARY:${summary}\nDESCRIPTION:${cleanDesc}\\nStatus: ${task.status}\\nPrioritas: ${task.prioritas || 'Medium'}\nSTATUS:CONFIRMED\nEND:VEVENT\n`;
+        icsContent += `BEGIN:VEVENT\nUID:${task.id}-${Date.now()}@workmonitoring.internal\nDTSTAMP:${formatICSDate(new Date())}\nDTSTART${dateParam}:${start}\nDTEND${dateParam}:${end}\nSUMMARY:${summary}\n${locLine}DESCRIPTION:${cleanDesc}\\nStatus: ${task.status}\\nPrioritas: ${task.prioritas || 'Medium'}\nSTATUS:CONFIRMED\nEND:VEVENT\n`;
       });
 
       icsContent += `END:VCALENDAR`;

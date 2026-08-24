@@ -240,15 +240,28 @@ export const getTaskDatesForExport = (task: any) => {
   return { localStart, localEnd, startH, startM, endH, endM, startY: start.getFullYear(), startMo: start.getMonth(), startD: start.getDate(), endY: end.getFullYear(), endMo: end.getMonth(), endD: end.getDate() };
 };
 
-export const getTaskLocationString = (task: any) => {
-  if (!task.lokasi) return '';
+export const getTaskLocationString = (task: any): string => {
+  if (!task || !task.lokasi) return '';
   try {
-    const parsed = JSON.parse(task.lokasi);
-    if (parsed.tipe === 'online' && parsed.linkZoom) return parsed.linkZoom;
-    if (parsed.tipe === 'offline' && parsed.lokasiFisik) return parsed.lokasiFisik;
-    return parsed.lokasiFisik || parsed.linkZoom || task.lokasi;
+    const parsed = typeof task.lokasi === 'string' ? JSON.parse(task.lokasi) : task.lokasi;
+    if (typeof parsed === 'object' && parsed !== null) {
+      if (parsed.tipe === 'online') {
+        return parsed.linkZoom ? `Online Meeting (${parsed.linkZoom})` : 'Online Meeting';
+      }
+      if (parsed.tipe === 'offline') {
+        return parsed.lokasiFisik || '';
+      }
+      return parsed.lokasiFisik || parsed.linkZoom || '';
+    }
+    if (typeof task.lokasi === 'string' && task.lokasi.trim().startsWith('{')) {
+      return '';
+    }
+    return String(task.lokasi);
   } catch (e) {
-    return task.lokasi;
+    if (typeof task.lokasi === 'string' && task.lokasi.trim().startsWith('{')) {
+      return '';
+    }
+    return String(task.lokasi);
   }
 };
 

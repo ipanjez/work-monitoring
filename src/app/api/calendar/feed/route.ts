@@ -27,9 +27,24 @@ function parseTaskLocation(lokasi: string | null): string {
   if (!lokasi) return '';
   try {
     const parsed = JSON.parse(lokasi);
-    return parsed.lokasiFisik || parsed.linkZoom || lokasi;
+    if (typeof parsed === 'object' && parsed !== null) {
+      if (parsed.tipe === 'online') {
+        return parsed.linkZoom ? `Online Meeting (${parsed.linkZoom})` : 'Online Meeting';
+      }
+      if (parsed.tipe === 'offline') {
+        return parsed.lokasiFisik || '';
+      }
+      return parsed.lokasiFisik || parsed.linkZoom || '';
+    }
+    if (typeof lokasi === 'string' && lokasi.trim().startsWith('{')) {
+      return '';
+    }
+    return String(lokasi);
   } catch {
-    return lokasi;
+    if (typeof lokasi === 'string' && lokasi.trim().startsWith('{')) {
+      return '';
+    }
+    return String(lokasi);
   }
 }
 
