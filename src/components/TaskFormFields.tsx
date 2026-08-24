@@ -1548,65 +1548,211 @@ export default function TaskFormFields({
 
           {/* Attached Files List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {task.filesList?.map((f, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  background: 'var(--bg-color)',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color)',
-                  opacity: f.isDeleted ? 0.5 : 1
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, marginRight: '10px' }}>
-                  <File size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: f.isDeleted ? 'line-through' : 'none' }} title={f.name}>
-                    {f.name}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                  {!f.isDeleted && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      onClick={() => {
-                        if (setPreviewFile) {
-                          setPreviewFile(f);
-                        } else {
-                          setLocalPreviewFile(f);
-                        }
-                      }}
-                      title="Lihat Pratinjau File"
-                    >
-                      <Eye size={13} />
-                      <span>Preview</span>
-                    </button>
-                  )}
-
-                  {f.isDeleted ? (
-                    <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleRestoreFile(idx)}>
-                      Pulihkan
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', color: 'var(--danger)', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={() => handleRemoveFile(idx)}
-                      title="Hapus File"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
+            {task.filesList && task.filesList.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  URUTAN FILE LAMPIRAN (Gunakan tombol ▲ / ▼ atau seret untuk mengatur urutan tampilan):
+                </span>
               </div>
-            ))}
+            )}
+            {task.filesList?.map((f, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === (task.filesList?.length || 1) - 1;
+              const isBeingDragged = draggedFileIndex === idx;
+              const isOverThis = dragOverFileIndex === idx;
+
+              const uploadDateStr = f.uploadedAt || task.createdAt || task.startDate;
+              let formattedDate = '';
+              if (uploadDateStr) {
+                try {
+                  formattedDate = format(new Date(uploadDateStr), 'dd MMM yyyy, HH:mm');
+                } catch (e) {
+                  formattedDate = '';
+                }
+              }
+
+              return (
+                <div
+                  key={idx}
+                  draggable={!f.isDeleted}
+                  onDragStart={(e) => {
+                    setDraggedFileIndex(idx);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragOverFileIndex !== idx) setDragOverFileIndex(idx);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverFileIndex === idx) setDragOverFileIndex(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropFileReorder(idx);
+                  }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    background: isOverThis 
+                      ? 'rgba(59, 130, 246, 0.1)' 
+                      : 'var(--bg-color)',
+                    borderRadius: '10px',
+                    border: isOverThis 
+                      ? '1.5px dashed var(--accent-primary)' 
+                      : '1px solid var(--border-color)',
+                    opacity: f.isDeleted ? 0.5 : (isBeingDragged ? 0.4 : 1),
+                    transition: 'all 0.15s ease',
+                    boxShadow: isOverThis ? '0 4px 12px rgba(59, 130, 246, 0.15)' : 'none'
+                  }}
+                >
+                  {/* Left Section: Order controls, Order Badge & File Info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, marginRight: '10px' }}>
+                    {/* Move Up / Move Down buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        disabled={isFirst || f.isDeleted}
+                        onClick={() => handleMoveFileOrder(idx, 'up')}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '1px 3px',
+                          cursor: isFirst || f.isDeleted ? 'not-allowed' : 'pointer',
+                          color: isFirst || f.isDeleted ? 'var(--border-color)' : 'var(--text-secondary)',
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '3px'
+                        }}
+                        title="Pindah ke Atas (Urutkan Lebih Awal)"
+                      >
+                        <ArrowUp size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isLast || f.isDeleted}
+                        onClick={() => handleMoveFileOrder(idx, 'down')}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '1px 3px',
+                          cursor: isLast || f.isDeleted ? 'not-allowed' : 'pointer',
+                          color: isLast || f.isDeleted ? 'var(--border-color)' : 'var(--text-secondary)',
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '3px'
+                        }}
+                        title="Pindah ke Bawah (Urutkan Lebih Akhir)"
+                      >
+                        <ArrowDown size={12} />
+                      </button>
+                    </div>
+
+                    {/* Order Badge */}
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      background: 'var(--surface-color)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--accent-primary)',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      flexShrink: 0,
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>
+                      #{idx + 1}
+                    </span>
+
+                    {/* Grip Drag Handle */}
+                    <div 
+                      style={{ cursor: f.isDeleted ? 'default' : 'grab', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', opacity: 0.7 }}
+                      title="Tarik untuk memindahkan urutan"
+                    >
+                      <GripVertical size={14} />
+                    </div>
+
+                    {/* File Icon, Name & Upload Metadata */}
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                        <File size={15} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} style={{ flexShrink: 0 }} />
+                        <span 
+                          style={{ 
+                            fontSize: '12.5px', 
+                            fontWeight: 600, 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            whiteSpace: 'nowrap', 
+                            color: 'var(--text-primary)',
+                            textDecoration: f.isDeleted ? 'line-through' : 'none' 
+                          }} 
+                          title={f.name}
+                        >
+                          {f.name}
+                        </span>
+                      </div>
+                      
+                      {/* Diunggah pada metadata */}
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {formattedDate ? (
+                          <span>Diunggah pada: <strong style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{formattedDate}</strong></span>
+                        ) : (
+                          <span>File Baru</span>
+                        )}
+                        {f.size ? (
+                          <span>• {(f.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        ) : null}
+                        {f.isDeleted && (
+                          <span style={{ color: 'var(--danger)', fontWeight: 600 }}>(Akan dihapus saat disimpan)</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Section: Action Buttons */}
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                    {!f.isDeleted && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 8px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => {
+                          if (setPreviewFile) {
+                            setPreviewFile(f);
+                          } else {
+                            setLocalPreviewFile(f);
+                          }
+                        }}
+                        title="Lihat Pratinjau File"
+                      >
+                        <Eye size={13} />
+                        <span>Preview</span>
+                      </button>
+                    )}
+
+                    {f.isDeleted ? (
+                      <button type="button" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }} onClick={() => handleRestoreFile(idx)}>
+                        Pulihkan
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 8px', color: 'var(--danger)', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        onClick={() => handleRemoveFile(idx)}
+                        title="Hapus File"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

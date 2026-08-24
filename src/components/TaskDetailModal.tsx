@@ -820,32 +820,57 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   })()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {getTaskFiles(task).map((f, idx) => (
-                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none' }}>
-                          <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} />
-                          <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={f.name}>
-                            {f.name}
-                          </span>
+                  {getTaskFiles(task).map((f, idx) => {
+                    const uploadDateStr = f.uploadedAt || task.createdAt || task.startDate;
+                    let formattedDate = '';
+                    if (uploadDateStr) {
+                      try {
+                        formattedDate = format(new Date(uploadDateStr), 'dd MMM yyyy, HH:mm');
+                      } catch (e) {}
+                    }
+
+                    return (
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: f.isDeleted ? 'line-through' : 'none', minWidth: 0 }}>
+                            <span style={{
+                              fontSize: '10.5px',
+                              fontWeight: 700,
+                              background: 'var(--input-bg)',
+                              border: '1px solid var(--border-color)',
+                              color: 'var(--accent-primary)',
+                              padding: '2px 6px',
+                              borderRadius: '6px',
+                              flexShrink: 0,
+                              fontVariantNumeric: 'tabular-nums'
+                            }}>
+                              #{idx + 1}
+                            </span>
+                            <Paperclip size={16} color={f.isDeleted ? "var(--text-secondary)" : "var(--accent-primary)"} style={{ flexShrink: 0 }} />
+                            <span style={{ color: f.isDeleted ? 'var(--text-secondary)' : 'inherit', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }} title={f.name}>
+                              {f.name}
+                            </span>
+                          </div>
+                          {!f.isDeleted && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => setPreviewFile(f)}
+                              title="Lihat Pratinjau File"
+                            >
+                              <Eye size={13} />
+                              <span>Preview</span>
+                            </button>
+                          )}
                         </div>
-                         {!f.isDeleted && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ padding: '4px 8px' }}
-                            onClick={() => setPreviewFile(f)}
-                          >
-                            <Eye size={14} color="var(--text-secondary)" />
-                          </button>
-                        )}
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '28px' }}>
+                          {formattedDate && <span>Diunggah pada {formattedDate}{f.size ? ` (${(f.size / (1024 * 1024)).toFixed(2)} MB)` : ''}</span>}
+                          {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {f.uploadedAt && <span>Diunggah pada {format(new Date(f.uploadedAt), 'dd MMM yyyy, HH:mm')}{f.size ? ` (${(f.size / (1024 * 1024)).toFixed(2)} MB)` : ''}</span>}
-                        {f.isDeleted && f.deletedAt && <span style={{ marginLeft: '6px', color: 'var(--danger)' }}>• Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
