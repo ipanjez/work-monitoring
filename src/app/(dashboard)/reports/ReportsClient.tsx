@@ -188,6 +188,9 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
         matchTime = taskDate >= startOfMonth && taskDate <= endOfMonth;
+      } else if (globalTargetFilter === 'Terlewat') {
+        const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+        matchTime = !isDone && taskDate < now.getTime();
       } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
         const startCustom = new Date(globalCustomStartDate).getTime();
         const endCustom = new Date(globalCustomEndDate);

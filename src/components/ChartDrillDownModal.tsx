@@ -45,7 +45,8 @@ export default function ChartDrillDownModal({
     setGlobalPicFilter, 
     setGlobalFilterPriority, 
     setGlobalFilterCategory,
-    setGlobalTargetFilter
+    setGlobalTargetFilter,
+    setGlobalSearchQuery
   } = useFilter();
   const { masterColors, masterPicAvatars } = useMaster();
 
@@ -68,15 +69,40 @@ export default function ChartDrillDownModal({
   const handleNavigateToTasks = () => {
     if (filterType === 'status' && filterValue) {
       setGlobalFilterStatus(filterValue);
+      setGlobalFilterPriority('All');
+      setGlobalFilterCategory('All');
+      setGlobalPicFilter('Semua PIC');
+      setGlobalTargetFilter('Semua Waktu');
     } else if (filterType === 'pic' && filterValue) {
       setGlobalPicFilter(filterValue);
+      setGlobalFilterStatus('All');
+      setGlobalFilterPriority('All');
+      setGlobalFilterCategory('All');
+      setGlobalTargetFilter('Semua Waktu');
     } else if (filterType === 'priority' && filterValue) {
       setGlobalFilterPriority(filterValue);
+      setGlobalFilterStatus('All');
+      setGlobalFilterCategory('All');
+      setGlobalPicFilter('Semua PIC');
+      setGlobalTargetFilter('Semua Waktu');
     } else if (filterType === 'category' && filterValue) {
       setGlobalFilterCategory(filterValue);
+      setGlobalFilterStatus('All');
+      setGlobalFilterPriority('All');
+      setGlobalPicFilter('Semua PIC');
+      setGlobalTargetFilter('Semua Waktu');
     } else if (filterType === 'overdue') {
       setGlobalTargetFilter('Terlewat');
+      setGlobalFilterStatus('All');
+      setGlobalFilterPriority('All');
+      setGlobalFilterCategory('All');
+      setGlobalPicFilter('Semua PIC');
     }
+
+    if (searchQuery.trim()) {
+      setGlobalSearchQuery(searchQuery.trim());
+    }
+
     onClose();
     router.push('/tasks');
   };

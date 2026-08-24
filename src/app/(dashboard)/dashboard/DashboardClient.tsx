@@ -175,24 +175,28 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
     let startBoundary = today.getTime();
     let endBoundary = today.getTime() + 86400000 - 1;
 
-    if (globalTargetFilter === 'Minggu Ini') {
+    let matchDate = false;
+    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+      matchDate = true;
+    } else if (globalTargetFilter === 'Hari Ini') {
+      matchDate = taskEnd >= startBoundary && taskEnd <= endBoundary;
+    } else if (globalTargetFilter === 'Minggu Ini') {
       const day = today.getDay();
       const diff = today.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(new Date(today).setDate(diff));
       startBoundary = monday.getTime();
       endBoundary = startBoundary + (7 * 86400000) - 1;
+      matchDate = taskEnd >= startBoundary && taskEnd <= endBoundary;
     } else if (globalTargetFilter === 'Bulan Ini') {
       startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
       endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+      matchDate = taskEnd >= startBoundary && taskEnd <= endBoundary;
+    } else if (globalTargetFilter === 'Terlewat') {
+      const isDone = t.status === 'Done' || t.status === 'Selesai';
+      matchDate = !isDone && taskEnd < today.getTime();
     } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
       startBoundary = new Date(globalCustomStartDate).getTime();
       endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-    }
-
-    let matchDate = false;
-    if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-      matchDate = true;
-    } else {
       matchDate = taskEnd >= startBoundary && taskEnd <= endBoundary;
     }
     

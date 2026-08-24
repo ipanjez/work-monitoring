@@ -283,27 +283,29 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       let startBoundary = today.getTime();
       let endBoundary = today.getTime() + 86400000 - 1;
 
-      if (globalTargetFilter === 'Minggu Ini') {
+      let matchesTarget = false;
+      if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
+        matchesTarget = true;
+      } else if (globalTargetFilter === 'Hari Ini') {
+        matchesTarget = end >= startBoundary && end <= endBoundary;
+      } else if (globalTargetFilter === 'Minggu Ini') {
         const day = today.getDay();
         const diff = today.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(new Date(today).setDate(diff));
         startBoundary = monday.getTime();
         endBoundary = startBoundary + (7 * 86400000) - 1;
+        matchesTarget = end >= startBoundary && end <= endBoundary;
       } else if (globalTargetFilter === 'Bulan Ini') {
         startBoundary = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         endBoundary = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+        matchesTarget = end >= startBoundary && end <= endBoundary;
+      } else if (globalTargetFilter === 'Terlewat') {
+        const isDone = t.status === 'Done' || t.status === 'Selesai';
+        matchesTarget = !isDone && end < today.getTime();
       } else if (globalTargetFilter === 'Custom' && globalCustomStartDate && globalCustomEndDate) {
         startBoundary = new Date(globalCustomStartDate).getTime();
         endBoundary = new Date(globalCustomEndDate).setHours(23, 59, 59, 999);
-      }
-
-      let matchesTarget = false;
-      if (globalTargetFilter === 'Semua Waktu' || (globalTargetFilter === 'Custom' && (!globalCustomStartDate || !globalCustomEndDate))) {
-        matchesTarget = true;
-      } else {
-        if (end >= startBoundary && end <= endBoundary) {
-          matchesTarget = true;
-        }
+        matchesTarget = end >= startBoundary && end <= endBoundary;
       }
 
       return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesPic && matchesTarget;

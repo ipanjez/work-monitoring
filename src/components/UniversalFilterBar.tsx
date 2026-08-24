@@ -386,6 +386,7 @@ export default function UniversalFilterBar({
                 { label: 'Hari Ini', value: 'Hari Ini' },
                 { label: 'Minggu Ini', value: 'Minggu Ini' },
                 { label: 'Bulan Ini', value: 'Bulan Ini' },
+                { label: 'Terlewat (Overdue)', value: 'Terlewat' },
                 { label: 'Custom...', value: 'Custom' }
               ]}
               isActive={globalTargetFilter !== 'Semua Waktu'}
