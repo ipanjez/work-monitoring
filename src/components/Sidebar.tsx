@@ -359,6 +359,7 @@ export default function Sidebar() {
                   id={`menu-${item.href === '/' ? 'monitoring' : item.href.split('/').pop()}`}
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={!showExpanded ? item.label : undefined}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
@@ -418,6 +419,7 @@ export default function Sidebar() {
               <Link
                 id="menu-guide"
                 href="/guide"
+                prefetch={true}
                 className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
                 title={!showExpanded ? "Panduan" : undefined}
                 onClick={() => setMobileMenuOpen(false)}
