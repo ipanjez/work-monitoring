@@ -304,10 +304,11 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
       if (details) {
         details = formatLogDetails(details.startsWith('Diubah:') ? details : `Diubah: ${details}`);
       }
+      const author = log.user || (log as any).author || (task.pic && task.pic !== 'Unassigned' ? task.pic : 'PIC / Admin');
       return [
         format(new Date(log.timestamp), 'dd MMM yyyy HH:mm'),
         log.action,
-        log.user || (log as any).author || '-',
+        author,
         details || '-'
       ];
     });

@@ -636,85 +636,114 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <History size={16} color="var(--accent-primary)" /> Log Informasi & Riwayat Perubahan
               </h4>
-              <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy HH:mm') : '-'}
-                  </span>
-                  {(() => {
-                    const firstLog = localHistoryLogs.find(l => l.action?.toLowerCase().includes('dibuat'));
-                    const creator = firstLog?.user || (firstLog as any)?.author || (firstLog as any)?.createdBy;
-                    if (creator) {
-                      return <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 500 }}>oleh {creator}</span>;
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Diedit Terakhir</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {task.lastEditedAt ? format(new Date(task.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
-                  </span>
-                  {(() => {
-                    const lastEditLog = [...localHistoryLogs].reverse().find(l => l.action?.toLowerCase().includes('diedit') || l.action?.toLowerCase().includes('diubah'));
-                    const editor = lastEditLog?.user || (lastEditLog as any)?.author;
-                    if (task.lastEditedAt && editor) {
-                      return <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 500 }}>oleh {editor}</span>;
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Frekuensi Edit</span>
-                  <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
-                    {task.editCount || 0} kali
-                  </span>
-                </div>
-              </div>
 
-              {/* Activity History Timeline List */}
-              {localHistoryLogs.length > 0 && (
-                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                    Timeline Aktivitas:
-                  </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {localHistoryLogs.map((log, idx) => {
-                      const logUser = log.user || (log as any).author;
-                      return (
-                        <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-secondary)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>• {log.action}</span>
-                              {logUser && (
-                                <span style={{
-                                  fontSize: '10px',
-                                  padding: '1px 6px',
-                                  borderRadius: '4px',
-                                  background: 'rgba(59, 130, 246, 0.12)',
-                                  color: 'var(--accent-primary)',
-                                  fontWeight: 600
-                                }}>
-                                  oleh {logUser}
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
-                            </div>
-                          </div>
-                          {(log as any).details && (
-                            <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                              {formatLogDetails((log as any).details.startsWith('Diubah:') ? (log as any).details : `Diubah: ${(log as any).details}`)}
-                            </div>
-                          )}
+              {(() => {
+                const resolveAuthor = (log?: any, isInitial = false) => {
+                  if (log?.user) return log.user;
+                  if (log?.author) return log.author;
+                  if (log?.createdBy) return log.createdBy;
+                  
+                  // Check if details mentions author
+                  if (log?.details) {
+                    const match = log.details.match(/oleh\s+([A-Za-z0-9_\s.-]+?)(?::|\s+dari|\s+untuk|\s*\(|$)/i);
+                    if (match && match[1]) return match[1].trim();
+                  }
+
+                  // Check file attachment uploader
+                  if (task.filesJson) {
+                    try {
+                      const files = JSON.parse(task.filesJson);
+                      const fileWithUploader = files.find((f: any) => f.uploadedBy);
+                      if (fileWithUploader?.uploadedBy) return fileWithUploader.uploadedBy;
+                    } catch (e) {}
+                  }
+
+                  if (task.pic && task.pic !== 'Unassigned') return task.pic;
+                  return isInitial ? 'Pembuat' : 'Admin';
+                };
+
+                const firstLog = localHistoryLogs.find(l => l.action?.toLowerCase().includes('dibuat'));
+                const creatorName = resolveAuthor(firstLog, true);
+
+                const lastEditLog = [...localHistoryLogs].reverse().find(l => l.action?.toLowerCase().includes('diedit') || l.action?.toLowerCase().includes('diubah'));
+                const editorName = resolveAuthor(lastEditLog, false);
+
+                return (
+                  <>
+                    <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', fontSize: '12px' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy HH:mm') : '-'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 600, marginTop: '2px' }}>
+                          oleh {creatorName}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Diedit Terakhir</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {task.lastEditedAt ? format(new Date(task.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
+                        </span>
+                        {task.lastEditedAt && (
+                          <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 600, marginTop: '2px' }}>
+                            oleh {editorName}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Frekuensi Edit</span>
+                        <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
+                          {task.editCount || 0} kali
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Activity History Timeline List */}
+                    {localHistoryLogs.length > 0 && (
+                      <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                          Timeline Aktivitas:
+                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                          {localHistoryLogs.map((log, idx) => {
+                            const isCreation = log.action?.toLowerCase().includes('dibuat');
+                            const logUser = resolveAuthor(log, isCreation);
+
+                            return (
+                              <div key={idx} style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-secondary)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '4px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>• {log.action}</span>
+                                    <span style={{
+                                      fontSize: '10px',
+                                      padding: '1.5px 6px',
+                                      borderRadius: '4px',
+                                      background: 'rgba(59, 130, 246, 0.12)',
+                                      color: 'var(--accent-primary)',
+                                      fontWeight: 600
+                                    }}>
+                                      oleh {logUser}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                                  </div>
+                                </div>
+                                {(log as any).details && (
+                                  <div style={{ paddingLeft: '8px', color: 'var(--text-primary)', fontStyle: 'italic', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                    {formatLogDetails((log as any).details.startsWith('Diubah:') ? (log as any).details : `Diubah: ${(log as any).details}`)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {task.deskripsi && (
