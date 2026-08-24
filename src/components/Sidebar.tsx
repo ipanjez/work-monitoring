@@ -354,14 +354,20 @@ export default function Sidebar() {
               const hasBadge = (isUsers && systemUserUnreads > 0) || (isSettings && hasSettingsBackupAlert);
 
               return (
-                <Link
+                <a
                   id={`menu-${item.href === '/' ? 'monitoring' : item.href.split('/').pop()}`}
                   key={item.href}
                   href={item.href}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   title={!showExpanded ? item.label : undefined}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
-                  onClick={() => setMobileMenuOpen(false)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', textDecoration: 'none', color: 'inherit' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMobileMenuOpen(false);
+                    if (pathname !== item.href) {
+                      window.location.href = item.href;
+                    }
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Icon size={20} style={{ flexShrink: 0 }} />
@@ -408,22 +414,29 @@ export default function Sidebar() {
                       title={isSettings ? "Cadangan database belum diunduh (Jatuh Tempo)" : undefined}
                     />
                   )}
-                </Link>
+                </a>
               );
             })}
 
             <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               {showExpanded && <div style={{ padding: '0 12px 8px', fontSize: '10px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Bantuan</div>}
-              <Link
+              <a
                 id="menu-guide"
                 href="/guide"
                 className={`${styles.navItem} ${pathname === '/guide' ? styles.navItemActive : ''}`}
                 title={!showExpanded ? "Panduan" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileMenuOpen(false);
+                  if (pathname !== '/guide') {
+                    window.location.href = '/guide';
+                  }
+                }}
               >
                 <BookOpen size={20} style={{ flexShrink: 0 }} />
                 {showExpanded && <span className={styles.navText}>Panduan</span>}
-              </Link>
+              </a>
             </div>
           </nav>
         </div>
