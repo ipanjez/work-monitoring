@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { 
   Download, FileText, Copy, Lock, FileSpreadsheet, 
-  Image, Check, Loader2, Sparkles, CalendarDays 
+  Image, Check, Loader2, Sparkles, CalendarDays, SlidersHorizontal 
 } from 'lucide-react';
 import CalendarSyncModal from './CalendarSyncModal';
 import { Task } from '@/utils/taskUtils';
@@ -16,6 +16,8 @@ interface UniversalActionBarProps {
   onCopyImage?: () => void;
   onExportImage?: () => void;
   isExportingImage?: boolean;
+  onCustomizeLayout?: () => void;
+  showCustomizeButton?: boolean;
   showSyncCalendar?: boolean;
   showSyncBadge?: boolean;
   tasks?: Task[];
@@ -30,6 +32,8 @@ export default function UniversalActionBar({
   onCopyImage,
   onExportImage,
   isExportingImage,
+  onCustomizeLayout,
+  showCustomizeButton = false,
   showSyncCalendar = true,
   showSyncBadge = true,
   tasks = [],
@@ -90,6 +94,43 @@ export default function UniversalActionBar({
 
         {/* Custom Actions / Children buttons */}
         {children}
+
+        {/* Customize Layout Button */}
+        {showCustomizeButton && onCustomizeLayout && (
+          <button
+            id="btn-customize-layout"
+            type="button"
+            className="btn btn-secondary"
+            onClick={onCustomizeLayout}
+            title="Atur & Sembunyikan Komponen / Grafik Dashboard"
+            style={{
+              padding: '6px 10px',
+              fontSize: '12px',
+              gap: '6px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--surface-color)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              height: '32px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--accent-primary)';
+              e.currentTarget.style.color = 'var(--accent-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+          >
+            <SlidersHorizontal size={14} color="var(--accent-primary)" />
+            <span className="hide-mobile">Atur Tampilan</span>
+          </button>
+        )}
 
         {/* Sync Calendar Button */}
         {showSyncCalendar && (

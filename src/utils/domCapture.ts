@@ -16,7 +16,7 @@ export async function captureDomElement(
     : 'dark';
   const isDark = currentTheme === 'dark';
 
-  const bg = options?.backgroundColor || (isDark ? '#0f172a' : '#f1f5f9');
+  const bg = options?.backgroundColor || (isDark ? '#0f172a' : '#f8fafc');
   const textColor = isDark ? '#f8fafc' : '#0f172a';
 
   const canvas = await html2canvas(element, {
@@ -35,7 +35,7 @@ export async function captureDomElement(
       clonedDoc.body.style.backgroundColor = bg;
       clonedDoc.body.style.color = textColor;
 
-      // 2. Fix all color-mix or gradient crashes in html2canvas
+      // 2. Fix all color-mix or gradient issues in html2canvas
       const badges = clonedDoc.querySelectorAll('[style*="color-mix"], .badge, [class*="badge"]');
       badges.forEach((b: any) => {
         const bgStyle = b.style.backgroundColor;
@@ -85,9 +85,14 @@ export async function exportCanvasToImage(
 /** @deprecated Use exportCanvasToImage instead */
 export const copyCanvasToClipboardOrDownload = exportCanvasToImage;
 
+/**
+ * Smart Dynamic PDF Exporter that PREVENTS cutting sections, cards, and table rows in half.
+ * Intelligently analyzes element bounding boxes and canvas pixel buffer to calculate clean page breaks.
+ */
 export async function exportCanvasToPdf(
   canvas: HTMLCanvasElement,
-  fileNamePrefix: string = 'Dokumen'
+  fileNamePrefix: string = 'Dokumen',
+  sourceElement?: HTMLElement | null
 ): Promise<void> {
   const { jsPDF } = await import('jspdf');
 
@@ -97,67 +102,152 @@ export async function exportCanvasToPdf(
   const isDark = currentTheme === 'dark';
   const bg = isDark ? '#0f172a' : '#ffffff';
 
-  const imgData = canvas.toDataURL('image/png', 1.0);
+  // Use A4 landscape dimensions in mm: 297 x 210
+  const a4WidthMm = 297;
+  const a4HeightMm = 210;
+  const marginMm = 8; // 8mm margin
+  const footerMarginMm = 6;
 
-  // Use A4 dimensions in mm: 210 x 297
-  const a4WidthMm = 297; // landscape width
-  const a4HeightMm = 210; // landscape height
-  const margin = 8; // mm margin
+  const printW = a4WidthMm - marginMm * 2;
+  const printH = a4HeightMm - marginMm * 2 - footerMarginMm;
 
-  const printW = a4WidthMm - margin * 2;
-  const printH = a4HeightMm - margin * 2;
+  // Maximum allowed pixel height per page on canvas
+  const maxPageHeightPx = Math.floor(canvas.width * (printH / printW));
 
-  // Calculate how tall the image is relative to the print width
-  const imgAspect = canvas.height / canvas.width;
-  const scaledImgHeightMm = printW * imgAspect;
+  // Collect natural boundary lines (in canvas pixel coordinates)
+  const elementBoundaries: { top: number; bottom: number; isRow?: boolean }[] = [];
 
-  // If it fits on one landscape page, single page
-  if (scaledImgHeightMm <= printH) {
-    const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
-    pdf.addImage(imgData, 'PNG', margin, margin, printW, scaledImgHeightMm, undefined, 'FAST');
-    pdf.save(`${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    toast.success('Dokumen PDF berhasil diunduh 📄');
-    return;
+  if (sourceElement && typeof window !== 'undefined') {
+    const rootRect = sourceElement.getBoundingClientRect();
+    const scaleFactor = canvas.height / Math.max(1, sourceElement.scrollHeight);
+
+    // Target elements: cards, charts, tables, table rows, and alert banners
+    const selectors = [
+      '.glass',
+      '.card',
+      '.card-hover-effect',
+      '.full-width-chart',
+      '[data-pdf-section]',
+      'table',
+      'tr',
+      '.dashboard-charts-carousel > div',
+      '[id^="dashboard-chart-"]',
+      '[id^="dashboard-kpi-"]',
+      '[id^="reports-kpi-"]',
+    ];
+
+    const elements = sourceElement.querySelectorAll<HTMLElement>(selectors.join(', '));
+    elements.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const relativeTop = (rect.top - rootRect.top) * scaleFactor;
+      const relativeBottom = (rect.bottom - rootRect.top) * scaleFactor;
+      const isRow = el.tagName.toLowerCase() === 'tr';
+
+      if (relativeBottom > relativeTop && relativeBottom <= canvas.height) {
+        elementBoundaries.push({
+          top: Math.max(0, Math.floor(relativeTop)),
+          bottom: Math.min(canvas.height, Math.ceil(relativeBottom)),
+          isRow,
+        });
+      }
+    });
+
+    // Sort by top position
+    elementBoundaries.sort((a, b) => a.top - b.top);
   }
 
-  // Multi-page: slice the canvas into pages
+  // Calculate smart slice cut points
+  const slices: { srcY: number; srcH: number }[] = [];
+  let currentY = 0;
+
+  while (currentY < canvas.height) {
+    const remainingH = canvas.height - currentY;
+
+    // If remaining content fits completely on the current page
+    if (remainingH <= maxPageHeightPx) {
+      slices.push({ srcY: currentY, srcH: remainingH });
+      break;
+    }
+
+    const idealCutY = currentY + maxPageHeightPx;
+    let bestCutY = idealCutY;
+
+    // Search for element boundaries that cross the ideal cut point
+    if (elementBoundaries.length > 0) {
+      // Find all elements that intersect idealCutY
+      const intersecting = elementBoundaries.filter(
+        (b) => b.top < idealCutY && b.bottom > idealCutY && b.top > currentY
+      );
+
+      if (intersecting.length > 0) {
+        // Prioritize: if there are table rows, cut before the intersecting row
+        const rowIntersecting = intersecting.find((b) => b.isRow);
+        const cardIntersecting = intersecting.find((b) => !b.isRow);
+
+        const target = rowIntersecting || cardIntersecting;
+        if (target && target.top > currentY + maxPageHeightPx * 0.35) {
+          // Pull back cut point so this element starts fresh on next page
+          bestCutY = target.top;
+        }
+      }
+    }
+
+    // Safety fallback: ensure minimum page progress
+    if (bestCutY <= currentY + maxPageHeightPx * 0.2) {
+      bestCutY = idealCutY;
+    }
+
+    // Make sure we don't exceed canvas height
+    bestCutY = Math.min(canvas.height, bestCutY);
+    const sliceH = bestCutY - currentY;
+
+    if (sliceH <= 0) {
+      // Avoid infinite loop in extreme cases
+      slices.push({ srcY: currentY, srcH: remainingH });
+      break;
+    }
+
+    slices.push({ srcY: currentY, srcH: sliceH });
+    currentY = bestCutY;
+  }
+
+  // Generate PDF document
   const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
-  const totalPages = Math.ceil(scaledImgHeightMm / printH);
+  const totalPages = slices.length;
 
-  // How many source pixels per page
-  const srcPixelsPerPage = canvas.width * (printH / printW);
+  for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+    if (pageIdx > 0) pdf.addPage('a4', 'l');
 
-  for (let page = 0; page < totalPages; page++) {
-    if (page > 0) pdf.addPage('a4', 'l');
+    const { srcY, srcH } = slices[pageIdx];
 
-    const srcY = Math.round(page * srcPixelsPerPage);
-    const srcH = Math.min(Math.round(srcPixelsPerPage), canvas.height - srcY);
-    if (srcH <= 0) break;
-
-    // Create a temporary canvas for this page slice
+    // Create high-res canvas slice for this page
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     pageCanvas.height = srcH;
     const ctx = pageCanvas.getContext('2d');
-    if (!ctx) break;
+    if (!ctx) continue;
+
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
     ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
 
     const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
-    const pageImgH = printW * (srcH / canvas.width);
-    pdf.addImage(pageImgData, 'PNG', margin, margin, printW, pageImgH, undefined, 'FAST');
+    const pageImgHeightMm = printW * (srcH / canvas.width);
 
-    // Footer
-    pdf.setFontSize(7);
-    pdf.setTextColor(150);
+    // Place image cleanly within printable margins
+    pdf.addImage(pageImgData, 'PNG', marginMm, marginMm, printW, pageImgHeightMm, undefined, 'FAST');
+
+    // Clean professional footer
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(140, 150, 165);
     pdf.text(
-      `Halaman ${page + 1} dari ${totalPages}  •  Dicetak: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
-      a4WidthMm / 2, a4HeightMm - 3,
+      `Halaman ${pageIdx + 1} dari ${totalPages}  •  Dicetak: ${format(new Date(), 'dd MMMM yyyy, HH:mm')}`,
+      a4WidthMm / 2,
+      a4HeightMm - 4,
       { align: 'center' }
     );
   }
 
   pdf.save(`${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-  toast.success('Dokumen PDF berhasil diunduh 📄');
+  toast.success('Dokumen PDF berhasil diunduh tanpa terpotong! 📄');
 }

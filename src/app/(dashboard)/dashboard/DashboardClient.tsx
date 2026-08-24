@@ -39,6 +39,7 @@ import { useFilter } from '@/context/FilterContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { useTaskModal } from '@/context/TaskModalContext';
 import ChartDrillDownModal from '@/components/ChartDrillDownModal';
+import CustomizeViewModal, { CustomizeSectionItem } from '@/components/CustomizeViewModal';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -57,7 +58,17 @@ ChartJS.register(
   ArcElement
 );
 
-
+const DASHBOARD_SECTION_ITEMS: CustomizeSectionItem[] = [
+  { id: 'kpi_cards', label: 'Kartu Metrik KPI', description: 'Total Pekerjaan, Status per Kategori, Rata-rata Progres', group: 'Ringkasan Eksekutif' },
+  { id: 'pic_analysis', label: 'Widget Analisis PIC Terpilih', description: 'Ringkasan beban kerja saat filter PIC aktif', group: 'Ringkasan Eksekutif' },
+  { id: 'chart_status', label: 'Grafik Status Pekerjaan', description: 'Diagram donat distribusi status tugas', group: 'Grafik & Visualisasi' },
+  { id: 'chart_priority', label: 'Grafik Distribusi Prioritas', description: 'Diagram donat sebaran tingkat urgensi pekerjaan', group: 'Grafik & Visualisasi' },
+  { id: 'chart_pic', label: 'Grafik Beban Kerja per PIC', description: 'Diagram batang beban tugas masing-masing personil', group: 'Grafik & Visualisasi' },
+  { id: 'chart_category', label: 'Grafik Sebaran Kategori', description: 'Diagram batang jumlah pekerjaan per kategori', group: 'Grafik & Visualisasi' },
+  { id: 'chart_timeline', label: 'Grafik Tren Tenggat Waktu', description: 'Grafik garis tren penyelesaian dan deadline', group: 'Grafik & Visualisasi' },
+  { id: 'urgent_tasks', label: 'Pekerjaan Mendesak & Prioritas Tinggi', description: 'Daftar peringatan tugas penting belum selesai', group: 'Tabel & Rincian Data' },
+  { id: 'tasks_table', label: 'Tabel Rincian Pekerjaan Aktif', description: 'Tabel daftar tugas aktif beserta status & tenggat', group: 'Tabel & Rincian Data' },
+];
 
 export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -115,6 +126,50 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
   const [sortField, setSortField] = useState<'endDate' | 'nama' | 'pic' | 'kategori' | 'status'>('endDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showAllActiveTasks, setShowAllActiveTasks] = useState(false);
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+  
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dashboard_visible_sections');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      kpi_cards: true,
+      pic_analysis: true,
+      chart_status: true,
+      chart_priority: true,
+      chart_pic: true,
+      chart_category: true,
+      chart_timeline: true,
+      urgent_tasks: true,
+      tasks_table: true,
+    };
+  });
+
+  const toggleSection = (id: string) => {
+    setVisibleSections(prev => {
+      const next = { ...prev, [id]: prev[id] === false ? true : false };
+      try {
+        localStorage.setItem('dashboard_visible_sections', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const selectAllSections = () => {
+    const next: Record<string, boolean> = {};
+    DASHBOARD_SECTION_ITEMS.forEach(it => { next[it.id] = true; });
+    setVisibleSections(next);
+    try {
+      localStorage.setItem('dashboard_visible_sections', JSON.stringify(next));
+    } catch (e) {}
+  };
+
+  const resetDefaultSections = () => {
+    selectAllSections();
+  };
   
   const { openDetail } = useTaskModal();
 
@@ -799,7 +854,7 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         addActivityLog('EXPORT_PDF', 'Export Laporan', 'Mengekspor laporan Dashboard ke format PDF', 'info');
       }
       const canvas = await captureDomElement(dashboardRef.current);
-      await exportCanvasToPdf(canvas, 'Dashboard_Monitoring');
+      await exportCanvasToPdf(canvas, 'Dashboard_Monitoring', dashboardRef.current);
     } catch (error) {
       console.error('PDF Export error:', error);
       toast.error('Gagal membuat PDF');
@@ -929,6 +984,8 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onExportImage={handleExportImage}
+          onCustomizeLayout={() => setIsCustomizeModalOpen(true)}
+          showCustomizeButton={true}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
@@ -937,86 +994,88 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
       {/* Main Report Container for PDF export and image copy */}
       <div id="dashboard-report-container" ref={dashboardRef}>
         {/* KPI Cards */}
-        <div id="dashboard-kpi-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div 
-            className="glass card-hover-effect" 
-            style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-            title="Klik untuk melihat seluruh rincian pekerjaan"
-            onClick={() => setDrillDownState({
-              isOpen: true,
-              title: 'Seluruh Pekerjaan',
-              subtitle: 'Daftar semua pekerjaan yang sesuai dengan filter aktif.',
-              badgeText: 'Total Pekerjaan',
-              badgeColor: 'var(--accent-primary)',
-              tasks: filteredTasks,
-              filterType: 'all',
-            })}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Total Pekerjaan</span>
-              <ListTodo size={20} color="var(--accent-primary)" />
-            </div>
-            <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{total}</p>
-          </div>
-
-          {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((statusName, idx) => {
-            const sColor = masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length];
-            const matching = filteredTasks.filter(t => t.status === statusName);
-            return (
-              <div 
-                key={statusName} 
-                className="glass card-hover-effect" 
-                style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                title={`Klik untuk melihat rincian pekerjaan dengan status ${statusName}`}
-                onClick={() => setDrillDownState({
-                  isOpen: true,
-                  title: `Pekerjaan Status: ${statusName}`,
-                  subtitle: `Daftar pekerjaan dengan status ${statusName}.`,
-                  badgeText: statusName,
-                  badgeColor: sColor,
-                  tasks: matching,
-                  filterType: 'status',
-                  filterValue: statusName
-                })}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
-                  <CheckCircle size={20} color={sColor} />
-                </div>
-                <p style={{ fontSize: '32px', fontWeight: 'bold', color: sColor }}>{statusCounts[statusName] || 0}</p>
-              </div>
-            );
-          })}
-
-          <div 
-            className="glass card-hover-effect" 
-            style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-            title="Klik untuk melihat rincian progres seluruh pekerjaan"
-            onClick={() => {
-              const sorted = [...filteredTasks].sort((a, b) => (b.progress || 0) - (a.progress || 0));
-              setDrillDownState({
+        {visibleSections.kpi_cards !== false && (
+          <div id="dashboard-kpi-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+            <div 
+              className="glass card-hover-effect" 
+              style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+              title="Klik untuk melihat seluruh rincian pekerjaan"
+              onClick={() => setDrillDownState({
                 isOpen: true,
-                title: 'Progres Pekerjaan',
-                subtitle: `Rata-rata progres penyelesaian: ${avgProgress}%.`,
-                badgeText: `${avgProgress}% Progress`,
+                title: 'Seluruh Pekerjaan',
+                subtitle: 'Daftar semua pekerjaan yang sesuai dengan filter aktif.',
+                badgeText: 'Total Pekerjaan',
                 badgeColor: 'var(--accent-primary)',
-                tasks: sorted,
+                tasks: filteredTasks,
                 filterType: 'all',
-              });
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Rata-rata Progress</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{avgProgress}%</span>
+              })}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Total Pekerjaan</span>
+                <ListTodo size={20} color="var(--accent-primary)" />
+              </div>
+              <p style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{total}</p>
             </div>
-            <div className="progress-container" style={{ marginTop: '16px', height: '10px' }}>
-              <div className="progress-bar" style={{ width: `${avgProgress}%`, backgroundColor: 'var(--accent-primary)' }} />
+
+            {(masterStatuses.length > 0 ? masterStatuses : Object.keys(statusCounts)).map((statusName, idx) => {
+              const sColor = masterColors['status_' + statusName] || defaultColors[idx % defaultColors.length];
+              const matching = filteredTasks.filter(t => t.status === statusName);
+              return (
+                <div 
+                  key={statusName} 
+                  className="glass card-hover-effect" 
+                  style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  title={`Klik untuk melihat rincian pekerjaan dengan status ${statusName}`}
+                  onClick={() => setDrillDownState({
+                    isOpen: true,
+                    title: `Pekerjaan Status: ${statusName}`,
+                    subtitle: `Daftar pekerjaan dengan status ${statusName}.`,
+                    badgeText: statusName,
+                    badgeColor: sColor,
+                    tasks: matching,
+                    filterType: 'status',
+                    filterValue: statusName
+                  })}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>{statusName}</span>
+                    <CheckCircle size={20} color={sColor} />
+                  </div>
+                  <p style={{ fontSize: '32px', fontWeight: 'bold', color: sColor }}>{statusCounts[statusName] || 0}</p>
+                </div>
+              );
+            })}
+
+            <div 
+              className="glass card-hover-effect" 
+              style={{ padding: '20px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+              title="Klik untuk melihat rincian progres seluruh pekerjaan"
+              onClick={() => {
+                const sorted = [...filteredTasks].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+                setDrillDownState({
+                  isOpen: true,
+                  title: 'Progres Pekerjaan',
+                  subtitle: `Rata-rata progres penyelesaian: ${avgProgress}%.`,
+                  badgeText: `${avgProgress}% Progress`,
+                  badgeColor: 'var(--accent-primary)',
+                  tasks: sorted,
+                  filterType: 'all',
+                });
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500 }}>Rata-rata Progress</span>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{avgProgress}%</span>
+              </div>
+              <div className="progress-container" style={{ marginTop: '16px', height: '10px' }}>
+                <div className="progress-bar" style={{ width: `${avgProgress}%`, backgroundColor: 'var(--accent-primary)' }} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Selected PIC Detail Widget if PIC selected */}
-        {globalPicFilter !== 'Semua PIC' && (
+        {visibleSections.pic_analysis !== false && globalPicFilter !== 'Semua PIC' && (
           <div 
             className="glass card-hover-effect" 
             style={{ padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', cursor: 'pointer', transition: 'all 0.2s ease' }}
@@ -1054,49 +1113,59 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
 
         {/* Charts Container (Responsive) */}
         <div className="dashboard-charts-carousel" style={{ marginBottom: '32px', width: '100%', maxWidth: '100%', minWidth: 0 }}>
-          <div className="glass" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
-            <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
-              <Doughnut data={statusData} options={statusOptions} />
+          {visibleSections.chart_status !== false && (
+            <div className="glass" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Status Pekerjaan</h3>
+              <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
+                <Doughnut data={statusData} options={statusOptions} />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="glass" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Distribusi Prioritas</h3>
-            <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
-              <Doughnut data={priorityData} options={priorityOptions} />
+          {visibleSections.chart_priority !== false && (
+            <div className="glass" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Distribusi Prioritas</h3>
+              <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
+                <Doughnut data={priorityData} options={priorityOptions} />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Full Width Bar Charts */}
-          <div id="dashboard-chart-pic" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
-            <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
-              <div style={{ height: '280px', position: 'relative', width: '100%', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
-                <Bar data={picData} options={picOptions} plugins={[picAvatarXAxisPlugin]} />
+          {visibleSections.chart_pic !== false && (
+            <div id="dashboard-chart-pic" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Grafik Beban Kerja per PIC</h3>
+              <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
+                <div style={{ height: '280px', position: 'relative', width: '100%', minWidth: Math.max(100, picLabels.length * 50) + 'px', margin: '0 auto' }}>
+                  <Bar data={picData} options={picOptions} plugins={[picAvatarXAxisPlugin]} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div id="dashboard-chart-category" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
-            <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
-              <div style={{ height: '280px', position: 'relative', width: '100%', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
-                <Bar data={categoryData} options={categoryOptions} />
+          {visibleSections.chart_category !== false && (
+            <div id="dashboard-chart-category" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Sebaran Kategori</h3>
+              <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'auto', overflowY: 'hidden', paddingBottom: '12px' }}>
+                <div style={{ height: '280px', position: 'relative', width: '100%', minWidth: Math.max(100, Object.keys(categoryCounts).length * 40) + 'px', margin: '0 auto' }}>
+                  <Bar data={categoryData} options={categoryOptions} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div id="dashboard-chart-timeline" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu</h3>
-            <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
-              <Line data={timelineData} options={timelineOptions} />
+          {visibleSections.chart_timeline !== false && (
+            <div id="dashboard-chart-timeline" className="glass full-width-chart" style={{ padding: '24px', minHeight: '340px', minWidth: 0, maxWidth: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Tren Tenggat Waktu</h3>
+              <div style={{ height: '240px', position: 'relative', width: '100%', maxWidth: '100%', minWidth: 0, margin: '0 auto' }}>
+                <Line data={timelineData} options={timelineOptions} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Urgent & High Priority Tasks Alert Widget */}
-        {urgentTasks.length > 0 && (
+        {visibleSections.urgent_tasks !== false && urgentTasks.length > 0 && (
           <div className="glass" style={{ padding: '24px', borderRadius: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <AlertTriangle size={20} color="#ef4444" />
@@ -1169,179 +1238,194 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
         )}
 
         {/* Upcoming Deadline Table Widget */}
-        <div id="dashboard-active-table" className="glass" style={{ padding: '24px', borderRadius: '16px', marginTop: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Calendar size={20} color="var(--accent-primary)" />
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Detail Pekerjaan Aktif ({dynamicTableTasks.length})</h3>
+        {visibleSections.tasks_table !== false && (
+          <div id="dashboard-active-table" className="glass" style={{ padding: '24px', borderRadius: '16px', marginTop: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Calendar size={20} color="var(--accent-primary)" />
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Detail Pekerjaan Aktif ({dynamicTableTasks.length})</h3>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <Search size={16} color="var(--text-secondary)" />
+                <input 
+                  type="text" 
+                  placeholder="Cari pekerjaan..." 
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '14px', width: '200px' }}
+                />
+              </div>
+              <button
+                onClick={() => setShowAllActiveTasks(!showAllActiveTasks)}
+                style={{ fontSize: '13px', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--accent-primary)', color: showAllActiveTasks ? '#fff' : 'var(--accent-primary)', background: showAllActiveTasks ? 'var(--accent-primary)' : 'transparent', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+              >
+                {showAllActiveTasks ? 'Tampilkan Top 10' : 'Tampilkan Semua'}
+              </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <Search size={16} color="var(--text-secondary)" />
-              <input 
-                type="text" 
-                placeholder="Cari pekerjaan..." 
-                value={tableSearch}
-                onChange={(e) => setTableSearch(e.target.value)}
-                style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '14px', width: '200px' }}
-              />
-            </div>
-            <button
-              onClick={() => setShowAllActiveTasks(!showAllActiveTasks)}
-              style={{ fontSize: '13px', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--accent-primary)', color: showAllActiveTasks ? '#fff' : 'var(--accent-primary)', background: showAllActiveTasks ? 'var(--accent-primary)' : 'transparent', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-            >
-              {showAllActiveTasks ? 'Tampilkan Top 10' : 'Tampilkan Semua'}
-            </button>
-          </div>
 
-          <div style={{ overflowX: 'auto', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
-              <thead>
-                <tr style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('nama')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Pekerjaan <ArrowUpDown size={14} /></div>
-                  </th>
-                  <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Deskripsi</th>
-                  <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('pic')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>PIC <ArrowUpDown size={14} /></div>
-                  </th>
-                  <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('kategori')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Kategori <ArrowUpDown size={14} /></div>
-                  </th>
-                  <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Prioritas</th>
-                  <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('status')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Status & Progress <ArrowUpDown size={14} /></div>
-                  </th>
-                  <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Lokasi</th>
-                  <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('endDate')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Tenggat Waktu <ArrowUpDown size={14} /></div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
-                  const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
-                  return (
-                    <tr 
-                      key={t.id} 
-                      className="table-row-hover" 
-                      style={{ 
-                        borderBottom: '1px solid var(--border-color)', 
-                        transition: 'background 0.2s', 
-                        cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
-                      }} 
-                      onClick={() => {
-                        if (hasPermission(roleConfig, 'view_detail', userRole)) {
-                          openDetail(t);
-                        } else {
-                          toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
-                        }
-                      }}
-                    >
-                      <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
-                        {t.nama}
-                      </td>
-                      <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top', maxWidth: '200px', whiteSpace: 'normal' }}>
-                        {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
-                      </td>
-                      <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Avatar name={t.pic} src={masterPicAvatars?.[t.pic]} size={20} masterColors={masterColors} />
-                            <span style={{ fontSize: '12px', fontWeight: '500' }}>{t.pic}</span>
+            <div style={{ overflowX: 'auto', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
+                <thead>
+                  <tr style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                    <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('nama')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Pekerjaan <ArrowUpDown size={14} /></div>
+                    </th>
+                    <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Deskripsi</th>
+                    <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('pic')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>PIC <ArrowUpDown size={14} /></div>
+                    </th>
+                    <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('kategori')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Kategori <ArrowUpDown size={14} /></div>
+                    </th>
+                    <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Prioritas</th>
+                    <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('status')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Status & Progress <ArrowUpDown size={14} /></div>
+                    </th>
+                    <th style={{ padding: '16px', fontWeight: 600, whiteSpace: 'nowrap' }}>Lokasi</th>
+                    <th style={{ padding: '16px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('endDate')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>Tenggat Waktu <ArrowUpDown size={14} /></div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).length > 0 ? (showAllActiveTasks ? dynamicTableTasks : dynamicTableTasks.slice(0, 10)).map(t => {
+                    const isOverdue = startOfDay(new Date(t.endDate)).getTime() < startOfDay(new Date()).getTime();
+                    return (
+                      <tr 
+                        key={t.id} 
+                        className="table-row-hover" 
+                        style={{ 
+                          borderBottom: '1px solid var(--border-color)', 
+                          transition: 'background 0.2s', 
+                          cursor: hasPermission(roleConfig, 'view_detail', userRole) ? 'pointer' : 'default' 
+                        }} 
+                        onClick={() => {
+                          if (hasPermission(roleConfig, 'view_detail', userRole)) {
+                            openDetail(t);
+                          } else {
+                            toast.error('Akses ditolak: Anda tidak memiliki izin untuk melihat rincian detail tugas & lampiran.');
+                          }
+                        }}
+                      >
+                        <td style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', verticalAlign: 'top' }}>
+                          {t.nama}
+                        </td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top', maxWidth: '200px', whiteSpace: 'normal' }}>
+                          {t.deskripsi ? t.deskripsi.replace(/<[^>]+>/g, '') : '-'}
+                        </td>
+                        <td style={{ padding: '16px', color: 'var(--text-primary)', fontWeight: 500, verticalAlign: 'top' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Avatar name={t.pic} src={masterPicAvatars?.[t.pic]} size={20} masterColors={masterColors} />
+                              <span style={{ fontSize: '12px', fontWeight: '500' }}>{t.pic}</span>
+                            </div>
+                            {t.additionalPics && (() => {
+                              try {
+                                const arr = JSON.parse(t.additionalPics);
+                                return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
+                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{p}</span>
+                                  </div>
+                                )) : null;
+                              } catch(e) { return null; }
+                            })()}
                           </div>
-                          {t.additionalPics && (() => {
-                            try {
-                              const arr = JSON.parse(t.additionalPics);
-                              return Array.isArray(arr) && arr.length > 0 ? arr.map((p, idx) => (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Avatar name={p} src={masterPicAvatars?.[p]} size={20} masterColors={masterColors} />
-                                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{p}</span>
-                                </div>
-                              )) : null;
-                            } catch(e) { return null; }
-                          })()}
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
-                        {(() => {
-                          const badge = getDynamicBadgeStyle('cat', t.kategori || 'Umum', '', masterColors);
-                          return (
-                            <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', ...badge.style }}>
-                              {t.kategori || 'Umum'}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                      <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                        <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', t.prioritas === 'Urgent' ? 'badge badge-urgent' : t.prioritas === 'High' ? 'badge badge-high' : t.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)}>
-                          {t.prioritas || 'Medium'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '16px', verticalAlign: 'top' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        </td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
                           {(() => {
-                            const badge = getDynamicBadgeStyle('status', t.status, '', masterColors);
+                            const badge = getDynamicBadgeStyle('cat', t.kategori || 'Umum', '', masterColors);
                             return (
-                              <span className={badge.className} style={{ alignSelf: 'flex-start', ...badge.style }}>
-                                {t.status}
+                              <span className={badge.className} style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', ...badge.style }}>
+                                {t.kategori || 'Umum'}
                               </span>
                             );
                           })()}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100px' }}>
-                            <div className="progress-bar-bg" style={{ flex: 1, height: '6px' }}>
-                              <div className="progress-bar-fill" style={{ width: `${t.progress || 0}%`, background: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }}></div>
+                        </td>
+                        <td style={{ padding: '16px', verticalAlign: 'top' }}>
+                          <span {...getDynamicBadgeStyle('priority', t.prioritas || 'Medium', t.prioritas === 'Urgent' ? 'badge badge-urgent' : t.prioritas === 'High' ? 'badge badge-high' : t.prioritas === 'Low' ? 'badge badge-low' : 'badge badge-medium', masterColors)}>
+                            {t.prioritas || 'Medium'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px', verticalAlign: 'top' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {(() => {
+                              const badge = getDynamicBadgeStyle('status', t.status, '', masterColors);
+                              return (
+                                <span className={badge.className} style={{ alignSelf: 'flex-start', ...badge.style }}>
+                                  {t.status}
+                                </span>
+                              );
+                            })()}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100px' }}>
+                              <div className="progress-bar-bg" style={{ flex: 1, height: '6px' }}>
+                                <div className="progress-bar-fill" style={{ width: `${t.progress || 0}%`, background: t.progress === 100 ? '#10b981' : 'var(--accent-primary)' }}></div>
+                              </div>
+                              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
                             </div>
-                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t.progress || 0}%</span>
                           </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top' }}>
-                        {(() => {
-                          if (!t.lokasi) return '-';
-                          try {
-                            const loc = JSON.parse(t.lokasi);
-                            if (loc.tipe === 'online') {
-                              return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
-                                  <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Online</span>
-                                  {loc.linkZoom && <a href={loc.linkZoom} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'underline' }}>Link Zoom</a>}
-                                   {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
-                                </div>
-                              );
-                            } else if (loc.tipe === 'offline') {
-                              return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
-                                  <span style={{ fontWeight: 600 }}>Offline</span>
-                                  <span>{loc.lokasiFisik || '-'}</span>
-                                  {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
-                                </div>
-                              );
+                        </td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '13px', verticalAlign: 'top' }}>
+                          {(() => {
+                            if (!t.lokasi) return '-';
+                            try {
+                              const loc = JSON.parse(t.lokasi);
+                              if (loc.tipe === 'online') {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>Online</span>
+                                    {loc.linkZoom && <a href={loc.linkZoom} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: 'underline' }}>Link Zoom</a>}
+                                     {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
+                                  </div>
+                                );
+                              } else if (loc.tipe === 'offline') {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '100px' }}>
+                                    <span style={{ fontWeight: 600 }}>Offline</span>
+                                    <span>{loc.lokasiFisik || '-'}</span>
+                                    {loc.jam && <span>{loc.jam} {getLocalTimezone()}</span>}
+                                  </div>
+                                );
+                              }
+                              return '-';
+                            } catch(e) {
+                              return t.lokasi;
                             }
-                            return '-';
-                          } catch(e) {
-                            return t.lokasi;
-                          }
-                        })()}
-                      </td>
-                      <td style={{ padding: '16px', color: isOverdue ? 'var(--danger)' : 'var(--text-primary)', fontWeight: isOverdue ? 600 : 500, verticalAlign: 'top' }}>
-                        {format(new Date(t.endDate), 'dd MMM yyyy')}
-                        {isOverdue && t.status !== 'Done' && <span style={{ display: 'block', fontSize: '11px', color: 'var(--danger)', marginTop: '4px' }}>Terlewat</span>}
+                          })()}
+                        </td>
+                        <td style={{ padding: '16px', color: isOverdue ? 'var(--danger)' : 'var(--text-primary)', fontWeight: isOverdue ? 600 : 500, verticalAlign: 'top' }}>
+                          {format(new Date(t.endDate), 'dd MMM yyyy')}
+                          {isOverdue && t.status !== 'Done' && <span style={{ display: 'block', fontSize: '11px', color: 'var(--danger)', marginTop: '4px' }}>Terlewat</span>}
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        <ListTodo size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                        Tidak ada pekerjaan aktif yang ditemukan.
                       </td>
                     </tr>
-                  );
-                }) : (
-                  <tr>
-                    <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                      <ListTodo size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                      Tidak ada pekerjaan aktif yang ditemukan.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Customize Dashboard Sections Modal */}
+      <CustomizeViewModal
+        isOpen={isCustomizeModalOpen}
+        onClose={() => setIsCustomizeModalOpen(false)}
+        title="Atur Tampilan Dashboard"
+        description="Pilih kartu metrik, grafik, dan tabel yang ingin ditampilkan pada Dashboard Utama."
+        items={DASHBOARD_SECTION_ITEMS}
+        visibleMap={visibleSections}
+        onToggle={toggleSection}
+        onSelectAll={selectAllSections}
+        onResetDefaults={resetDefaultSections}
+      />
 
       {/* Chart & Scorecard Drill-down Modal Popup */}
       <ChartDrillDownModal 

@@ -33,10 +33,22 @@ import { hasPermission, RolePermissionsConfig, defaultRolePermissions } from '@/
 import Avatar from '@/components/Avatar';
 import RoleBadge from '@/components/RoleBadge';
 import ChartDrillDownModal from '@/components/ChartDrillDownModal';
+import CustomizeViewModal, { CustomizeSectionItem } from '@/components/CustomizeViewModal';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement
 );
+
+const REPORTS_SECTION_ITEMS: CustomizeSectionItem[] = [
+  { id: 'kpi_cards', label: 'Kartu Metrik KPI Eksekutif', description: 'Tingkat Penyelesaian, Rata-rata Progres, Sedang Dikerjakan, Terlewat', group: 'Metrik & KPI' },
+  { id: 'chart_status', label: 'Grafik Distribusi Status', description: 'Diagram donat sebaran status seluruh tugas', group: 'Grafik & Analisis' },
+  { id: 'chart_pic_workload', label: 'Grafik Beban Kerja PIC (Top 10)', description: 'Diagram batang beban tugas personil tertinggi', group: 'Grafik & Analisis' },
+  { id: 'chart_priority', label: 'Grafik Sebaran Prioritas', description: 'Diagram donat komposisi prioritas pekerjaan', group: 'Grafik & Analisis' },
+  { id: 'chart_cat_progress', label: 'Grafik Progres per Kategori', description: 'Diagram batang rata-rata capaian per divisi/kategori', group: 'Grafik & Analisis' },
+  { id: 'chart_deadline', label: 'Grafik Kepatuhan Tenggat Waktu', description: 'Diagram donat kepatuhan deadline target', group: 'Grafik & Analisis' },
+  { id: 'chart_cat_dist', label: 'Grafik Distribusi per Kategori', description: 'Diagram donat proporsi jumlah tugas per kategori', group: 'Grafik & Analisis' },
+  { id: 'team_summary_table', label: 'Tabel Rekapitulasi Kinerja Tim (PIC)', description: 'Tabel metrik skor kinerja, jumlah selesai, dan overdue PIC', group: 'Tabel & Rekapitulasi' },
+];
 
 type Task = {
   id: number;
@@ -65,6 +77,49 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isPending, startTransition] = useTransition();
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+
+  const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('reports_visible_sections');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      kpi_cards: true,
+      chart_status: true,
+      chart_pic_workload: true,
+      chart_priority: true,
+      chart_cat_progress: true,
+      chart_deadline: true,
+      chart_cat_dist: true,
+      team_summary_table: true,
+    };
+  });
+
+  const toggleSection = (id: string) => {
+    setVisibleSections(prev => {
+      const next = { ...prev, [id]: prev[id] === false ? true : false };
+      try {
+        localStorage.setItem('reports_visible_sections', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const selectAllSections = () => {
+    const next: Record<string, boolean> = {};
+    REPORTS_SECTION_ITEMS.forEach(it => { next[it.id] = true; });
+    setVisibleSections(next);
+    try {
+      localStorage.setItem('reports_visible_sections', JSON.stringify(next));
+    } catch (e) {}
+  };
+
+  const resetDefaultSections = () => {
+    selectAllSections();
+  };
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -730,7 +785,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
     addActivityLog?.('Export', 'Download PDF', `Mengunduh Laporan Kinerja PDF (${filteredTasks.length} pekerjaan)`, 'success');
     try {
       const canvas = await captureDomElement(reportsRef.current);
-      await exportCanvasToPdf(canvas, 'Laporan_Kinerja');
+      await exportCanvasToPdf(canvas, 'Laporan_Kinerja', reportsRef.current);
     } catch (error) {
       console.error('PDF Export error:', error);
       toast.error('Gagal membuat PDF');
@@ -787,380 +842,411 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
           onExportPDF={handleExportPDF}
           isExportingPdf={isExportingPdf}
           onExportImage={handleExportImage}
+          onCustomizeLayout={() => setIsCustomizeModalOpen(true)}
+          showCustomizeButton={true}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
 
       {/* Modern Executive KPI Metric Cards */}
-      <motion.div 
-        id="reports-kpi-cards"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        {/* KPI 1: Completion Rate */}
-        <div 
-          className="glass card-hover-effect" 
-          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
-          title="Klik untuk melihat rincian seluruh pekerjaan yang selesai"
-          onClick={() => setDrillDownState({
-            isOpen: true,
-            title: 'Pekerjaan Selesai',
-            subtitle: 'Seluruh pekerjaan yang telah berstatus selesai.',
-            badgeText: `${completedTasks} Selesai`,
-            badgeColor: '#10b981',
-            tasks: filteredTasks.filter((t: Task) => t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai'),
-            filterType: 'status',
-            filterValue: 'Done'
-          })}
+      {visibleSections.kpi_cards !== false && (
+        <motion.div 
+          id="reports-kpi-cards"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tingkat Penyelesaian</span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-              <CheckCircle2 size={18} />
+          {/* KPI 1: Completion Rate */}
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat rincian seluruh pekerjaan yang selesai"
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: 'Pekerjaan Selesai',
+              subtitle: 'Seluruh pekerjaan yang telah berstatus selesai.',
+              badgeText: `${completedTasks} Selesai`,
+              badgeColor: '#10b981',
+              tasks: filteredTasks.filter((t: Task) => t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai'),
+              filterType: 'status',
+              filterValue: 'Done'
+            })}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tingkat Penyelesaian</span>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <CheckCircle2 size={18} />
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{completionRate}%</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <span style={{ fontWeight: 700, color: '#10b981' }}>{completedTasks}</span> selesai dari <span style={{ fontWeight: 600 }}>{totalTasks}</span> tugas
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{completionRate}%</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <span style={{ fontWeight: 700, color: '#10b981' }}>{completedTasks}</span> selesai dari <span style={{ fontWeight: 600 }}>{totalTasks}</span> tugas
-          </div>
-        </div>
 
-        {/* KPI 2: Average Progress */}
-        <div 
-          className="glass card-hover-effect" 
-          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
-          title="Klik untuk melihat rincian progres pekerjaan"
-          onClick={() => setDrillDownState({
-            isOpen: true,
-            title: 'Progres Seluruh Pekerjaan',
-            subtitle: `Rata-rata progres penyelesaian pekerjaan: ${avgProgress}%.`,
-            badgeText: `${avgProgress}% Progress`,
-            badgeColor: '#3b82f6',
-            tasks: [...filteredTasks].sort((a: Task, b: Task) => (b.progress || 0) - (a.progress || 0)),
-            filterType: 'all'
-          })}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Rata-rata Progress</span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-              <TrendingUp size={18} />
+          {/* KPI 2: Average Progress */}
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat rincian progres pekerjaan"
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: 'Progres Seluruh Pekerjaan',
+              subtitle: `Rata-rata progres penyelesaian pekerjaan: ${avgProgress}%.`,
+              badgeText: `${avgProgress}% Progress`,
+              badgeColor: '#3b82f6',
+              tasks: [...filteredTasks].sort((a: Task, b: Task) => (b.progress || 0) - (a.progress || 0)),
+              filterType: 'all'
+            })}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Rata-rata Progress</span>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                <TrendingUp size={18} />
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent-primary)' }}>{avgProgress}%</div>
+            <div className="progress-container" style={{ marginTop: '8px', height: '6px', borderRadius: '4px' }}>
+              <div className="progress-bar" style={{ width: `${avgProgress}%`, backgroundColor: 'var(--accent-primary)' }} />
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--accent-primary)' }}>{avgProgress}%</div>
-          <div className="progress-container" style={{ marginTop: '8px', height: '6px', borderRadius: '4px' }}>
-            <div className="progress-bar" style={{ width: `${avgProgress}%`, backgroundColor: 'var(--accent-primary)' }} />
-          </div>
-        </div>
 
-        {/* KPI 3: In Progress Workload */}
-        <div 
-          className="glass card-hover-effect" 
-          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
-          title="Klik untuk melihat rincian pekerjaan yang sedang dikerjakan"
-          onClick={() => setDrillDownState({
-            isOpen: true,
-            title: 'Pekerjaan Sedang Dikerjakan',
-            subtitle: 'Seluruh pekerjaan aktif dalam penanganan tim.',
-            badgeText: `${inProgressTasks} In Progress`,
-            badgeColor: '#f59e0b',
-            tasks: filteredTasks.filter((t: Task) => t.status === 'In Progress' || t.status === 'Sedang Dikerjakan'),
-            filterType: 'status',
-            filterValue: 'In Progress'
-          })}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Sedang Dikerjakan</span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-              <Clock size={18} />
+          {/* KPI 3: In Progress Workload */}
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat rincian pekerjaan yang sedang dikerjakan"
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: 'Pekerjaan Sedang Dikerjakan',
+              subtitle: 'Seluruh pekerjaan aktif dalam penanganan tim.',
+              badgeText: `${inProgressTasks} In Progress`,
+              badgeColor: '#f59e0b',
+              tasks: filteredTasks.filter((t: Task) => t.status === 'In Progress' || t.status === 'Sedang Dikerjakan'),
+              filterType: 'status',
+              filterValue: 'In Progress'
+            })}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Sedang Dikerjakan</span>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                <Clock size={18} />
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b' }}>{inProgressTasks}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+              Pekerjaan aktif dalam penanganan tim
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b' }}>{inProgressTasks}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-            Pekerjaan aktif dalam penanganan tim
-          </div>
-        </div>
 
-        {/* KPI 4: Overdue Alert */}
-        <div 
-          className="glass card-hover-effect" 
-          style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
-          title="Klik untuk melihat rincian pekerjaan yang melewati tenggat"
-          onClick={() => setDrillDownState({
-            isOpen: true,
-            title: 'Pekerjaan Terlewat (Overdue)',
-            subtitle: 'Daftar pekerjaan yang telah melewati batas tenggat waktu target.',
-            badgeText: `${overdueCount} Terlewat`,
-            badgeColor: '#ef4444',
-            tasks: filteredTasks.filter((t: Task) => {
-              const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
-              return !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
-            }),
-            filterType: 'overdue'
-          })}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Terlewat (Overdue)</span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: overdueCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: overdueCount > 0 ? '#ef4444' : '#10b981' }}>
-              {overdueCount > 0 ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+          {/* KPI 4: Overdue Alert */}
+          <div 
+            className="glass card-hover-effect" 
+            style={{ padding: '18px 20px', borderRadius: '14px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            title="Klik untuk melihat rincian pekerjaan yang melewati tenggat"
+            onClick={() => setDrillDownState({
+              isOpen: true,
+              title: 'Pekerjaan Terlewat (Overdue)',
+              subtitle: 'Daftar pekerjaan yang telah melewati batas tenggat waktu target.',
+              badgeText: `${overdueCount} Terlewat`,
+              badgeColor: '#ef4444',
+              tasks: filteredTasks.filter((t: Task) => {
+                const isDone = t.status === completedLabel || t.status === 'Done' || t.status === 'Selesai';
+                return !isDone && startOfDay(new Date(t.endDate)).getTime() < todayStart;
+              }),
+              filterType: 'overdue'
+            })}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Terlewat (Overdue)</span>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: overdueCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: overdueCount > 0 ? '#ef4444' : '#10b981' }}>
+                {overdueCount > 0 ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+              </div>
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: overdueCount > 0 ? 'var(--danger)' : '#10b981' }}>
+              {overdueCount}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+              {overdueCount > 0 ? 'Tugas melewati batas tenggat' : 'Semua tugas tepat jadwal 👍'}
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: overdueCount > 0 ? 'var(--danger)' : '#10b981' }}>
-            {overdueCount}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-            {overdueCount > 0 ? 'Tugas melewati batas tenggat' : 'Semua tugas tepat jadwal 👍'}
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Analytics Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         
         {/* 1. Status Doughnut */}
-        <div id="reports-chart-status" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PieChart size={18} color="var(--accent-primary)" />
-            Distribusi Status Pekerjaan
-          </h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={statusData} options={statusChartOptions} />
+        {visibleSections.chart_status !== false && (
+          <div id="reports-chart-status" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PieChart size={18} color="var(--accent-primary)" />
+              Distribusi Status Pekerjaan
+            </h3>
+            <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Doughnut data={statusData} options={statusChartOptions} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 2. Top PIC Workload */}
-        <div id="reports-chart-pic" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={18} color="var(--accent-primary)" />
-            Beban Kerja per PIC (Top 10)
-          </h3>
-          <div style={{ height: '290px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={picWorkloadData} options={picWorkloadChartOptions} plugins={[picAvatarXAxisPlugin]} />
+        {visibleSections.chart_pic_workload !== false && (
+          <div id="reports-chart-pic" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={18} color="var(--accent-primary)" />
+              Beban Kerja per PIC (Top 10)
+            </h3>
+            <div style={{ height: '290px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Bar data={picWorkloadData} options={picWorkloadChartOptions} plugins={[picAvatarXAxisPlugin]} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 3. Priority Breakdown */}
-        <div id="reports-chart-priority" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldAlert size={18} color="#f59e0b" />
-            Sebaran Prioritas Pekerjaan
-          </h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={priorityData} options={priorityChartOptions} />
+        {visibleSections.chart_priority !== false && (
+          <div id="reports-chart-priority" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={18} color="#f59e0b" />
+              Sebaran Prioritas Pekerjaan
+            </h3>
+            <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Doughnut data={priorityData} options={priorityChartOptions} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 4. Category Progress */}
-        <div id="reports-chart-category-progress" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={18} color="#3b82f6" />
-            Rata-rata Progress per Kategori
-          </h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Bar data={catProgressData} options={catProgressChartOptions} />
+        {visibleSections.chart_cat_progress !== false && (
+          <div id="reports-chart-category-progress" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={18} color="#3b82f6" />
+              Rata-rata Progress per Kategori
+            </h3>
+            <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Bar data={catProgressData} options={catProgressChartOptions} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 5. Deadline Compliance */}
-        <div id="reports-chart-deadline" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={18} color="#10b981" />
-            Kepatuhan Tenggat Waktu
-          </h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={deadlineData} options={deadlineChartOptions} />
+        {visibleSections.chart_deadline !== false && (
+          <div id="reports-chart-deadline" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={18} color="#10b981" />
+              Kepatuhan Tenggat Waktu
+            </h3>
+            <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Doughnut data={deadlineData} options={deadlineChartOptions} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 6. Category Distribution */}
-        <div id="reports-chart-category-distribution" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChart3 size={18} color="#8b5cf6" />
-            Distribusi per Kategori
-          </h3>
-          <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
-            <Doughnut data={categoryData} options={categoryDistChartOptions} />
+        {visibleSections.chart_cat_dist !== false && (
+          <div id="reports-chart-category-distribution" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BarChart3 size={18} color="#8b5cf6" />
+              Distribusi per Kategori
+            </h3>
+            <div style={{ height: '260px', display: 'flex', justifyContent: 'center', position: 'relative', width: '100%' }}>
+              <Doughnut data={categoryData} options={categoryDistChartOptions} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Staff Performance & Analytics Matrix Table */}
-      <div className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-              <Award size={20} color="#f59e0b" />
-              Rekapitulasi Kinerja & Beban Anggota Tim (PIC)
-            </h3>
-            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '3px', margin: 0 }}>
-              Peringkat efektivitas kinerja dihitung berdasarkan persentase penyelesaian, rata-rata progres, dan penalti keterlambatan.
-            </p>
+      {visibleSections.team_summary_table !== false && (
+        <div id="reports-team-table" className="glass" style={{ padding: '22px', borderRadius: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <Award size={20} color="#f59e0b" />
+                Rekapitulasi Kinerja & Beban Anggota Tim (PIC)
+              </h3>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '3px', margin: 0 }}>
+                Peringkat efektivitas kinerja dihitung berdasarkan persentase penyelesaian, rata-rata progres, dan penalti keterlambatan.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
+                  <th style={{ padding: '12px 14px', borderRadius: '8px 0 0 8px', cursor: 'pointer' }} onClick={() => handleSort('pic')}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      PIC {sortField === 'pic' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('total')}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Total Tugas {sortField === 'total' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('done')}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Selesai {sortField === 'done' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('inProgress')}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      On Progress {sortField === 'inProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('overdue')}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Overdue {sortField === 'overdue' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => handleSort('avgProgress')}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Rata-rata Progress {sortField === 'avgProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                  <th style={{ padding: '12px 14px', borderRadius: '0 8px 8px 0', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('score')}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Skor Kinerja {sortField === 'score' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {staffPerformanceList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      Tidak ada data performa PIC pada rentang filter ini.
+                    </td>
+                  </tr>
+                ) : (
+                  staffPerformanceList.map((item, idx) => {
+                    const isTop3 = idx < 3 && sortField === 'score' && sortOrder === 'desc';
+                    const scoreColor = item.score >= 80 ? '#10b981' : item.score >= 50 ? '#3b82f6' : item.score >= 30 ? '#f59e0b' : '#ef4444';
+
+                    return (
+                      <tr 
+                        key={item.pic} 
+                        onClick={() => {
+                          const matching = filteredTasks.filter((t: Task) => 
+                            t.pic === item.pic || 
+                            (t.additionalPics && (() => {
+                              try {
+                                const arr = JSON.parse(t.additionalPics);
+                                return Array.isArray(arr) && arr.includes(item.pic);
+                              } catch(e) { return false; }
+                            })())
+                          );
+                          setDrillDownState({
+                            isOpen: true,
+                            title: `Rekapitulasi Tugas: ${item.pic}`,
+                            subtitle: `Daftar seluruh pekerjaan yang ditugaskan kepada ${item.pic}.`,
+                            badgeText: item.pic,
+                            badgeColor: masterColors[item.pic] || 'var(--accent-primary)',
+                            tasks: matching,
+                            filterType: 'pic',
+                            filterValue: item.pic
+                          });
+                        }}
+                        style={{ 
+                          borderBottom: '1px solid var(--border-color)',
+                          transition: 'background 0.15s ease',
+                          cursor: 'pointer'
+                        }}
+                        title={`Klik untuk melihat rincian ${item.total} pekerjaan yang ditugaskan kepada ${item.pic}`}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Avatar 
+                              name={item.pic} 
+                              src={masterPicAvatars?.[item.pic]} 
+                              size={32} 
+                              masterColors={masterColors} 
+                            />
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {item.pic}
+                                {isTop3 && (
+                                  <span title="Top Performer" style={{ fontSize: '11px' }}>
+                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ marginTop: '2px' }}>
+                                <RoleBadge 
+                                  role={getPicRole(item.pic)} 
+                                  config={roleConfig} 
+                                  size="sm" 
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>
+                          {item.total}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center', color: '#10b981', fontWeight: 700 }}>
+                          {item.done}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center', color: '#3b82f6', fontWeight: 600 }}>
+                          {item.inProgress}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          {item.overdue > 0 ? (
+                            <span style={{ padding: '2px 8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700, fontSize: '11.5px' }}>
+                              {item.overdue}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>0</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="progress-container" style={{ flex: 1, height: '6px', borderRadius: '3px' }}>
+                              <div className="progress-bar" style={{ width: `${item.avgProgress}%`, backgroundColor: item.avgProgress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
+                            </div>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', width: '36px', textAlign: 'right' }}>
+                              {item.avgProgress}%
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            background: `${scoreColor}18`,
+                            color: scoreColor,
+                            fontWeight: 800,
+                            fontSize: '12.5px'
+                          }}>
+                            {item.score} / 100
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--input-bg)' }}>
-                <th style={{ padding: '12px 14px', borderRadius: '8px 0 0 8px', cursor: 'pointer' }} onClick={() => handleSort('pic')}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    PIC {sortField === 'pic' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('total')}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    Total Tugas {sortField === 'total' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('done')}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    Selesai {sortField === 'done' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('inProgress')}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    On Progress {sortField === 'inProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('overdue')}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    Overdue {sortField === 'overdue' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => handleSort('avgProgress')}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    Rata-rata Progress {sortField === 'avgProgress' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-                <th style={{ padding: '12px 14px', borderRadius: '0 8px 8px 0', cursor: 'pointer', textAlign: 'center' }} onClick={() => handleSort('score')}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    Skor Kinerja {sortField === 'score' && (sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {staffPerformanceList.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    Tidak ada data performa PIC pada rentang filter ini.
-                  </td>
-                </tr>
-              ) : (
-                staffPerformanceList.map((item, idx) => {
-                  const isTop3 = idx < 3 && sortField === 'score' && sortOrder === 'desc';
-                  const scoreColor = item.score >= 80 ? '#10b981' : item.score >= 50 ? '#3b82f6' : item.score >= 30 ? '#f59e0b' : '#ef4444';
-
-                  return (
-                    <tr 
-                      key={item.pic} 
-                      onClick={() => {
-                        const matching = filteredTasks.filter((t: Task) => 
-                          t.pic === item.pic || 
-                          (t.additionalPics && (() => {
-                            try {
-                              const arr = JSON.parse(t.additionalPics);
-                              return Array.isArray(arr) && arr.includes(item.pic);
-                            } catch(e) { return false; }
-                          })())
-                        );
-                        setDrillDownState({
-                          isOpen: true,
-                          title: `Rekapitulasi Tugas: ${item.pic}`,
-                          subtitle: `Daftar seluruh pekerjaan yang ditugaskan kepada ${item.pic}.`,
-                          badgeText: item.pic,
-                          badgeColor: masterColors[item.pic] || 'var(--accent-primary)',
-                          tasks: matching,
-                          filterType: 'pic',
-                          filterValue: item.pic
-                        });
-                      }}
-                      style={{ 
-                        borderBottom: '1px solid var(--border-color)',
-                        transition: 'background 0.15s ease',
-                        cursor: 'pointer'
-                      }}
-                      title={`Klik untuk melihat rincian ${item.total} pekerjaan yang ditugaskan kepada ${item.pic}`}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--input-bg)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <Avatar 
-                            name={item.pic} 
-                            src={masterPicAvatars?.[item.pic]} 
-                            size={32} 
-                            masterColors={masterColors} 
-                          />
-                          <div>
-                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {item.pic}
-                              {isTop3 && (
-                                <span title="Top Performer" style={{ fontSize: '11px' }}>
-                                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ marginTop: '2px' }}>
-                              <RoleBadge 
-                                role={getPicRole(item.pic)} 
-                                config={roleConfig} 
-                                size="sm" 
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: 700 }}>
-                        {item.total}
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'center', color: '#10b981', fontWeight: 700 }}>
-                        {item.done}
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'center', color: '#3b82f6', fontWeight: 600 }}>
-                        {item.inProgress}
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        {item.overdue > 0 ? (
-                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700, fontSize: '11.5px' }}>
-                            {item.overdue}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>0</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div className="progress-container" style={{ flex: 1, height: '6px', borderRadius: '3px' }}>
-                            <div className="progress-bar" style={{ width: `${item.avgProgress}%`, backgroundColor: item.avgProgress === 100 ? '#10b981' : 'var(--accent-primary)' }} />
-                          </div>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', width: '36px', textAlign: 'right' }}>
-                            {item.avgProgress}%
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '3px 10px',
-                          borderRadius: '12px',
-                          background: `${scoreColor}18`,
-                          color: scoreColor,
-                          fontWeight: 800,
-                          fontSize: '12.5px'
-                        }}>
-                          {item.score} / 100
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Customize Reports Sections Modal */}
+      <CustomizeViewModal
+        isOpen={isCustomizeModalOpen}
+        onClose={() => setIsCustomizeModalOpen(false)}
+        title="Atur Tampilan Analisis Laporan"
+        description="Pilih kartu metrik KPI, grafik analitik, dan tabel kinerja tim yang ingin ditampilkan pada halaman Laporan."
+        items={REPORTS_SECTION_ITEMS}
+        visibleMap={visibleSections}
+        onToggle={toggleSection}
+        onSelectAll={selectAllSections}
+        onResetDefaults={resetDefaultSections}
+      />
 
       {/* Chart & Scorecard Drill-down Modal Popup */}
       <ChartDrillDownModal 
