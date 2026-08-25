@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, 
   Filter, Copy, FileText, FileSpreadsheet, Award, Users, ArrowUpDown,
-  ChevronDown, ChevronUp, BarChart3, PieChart, ShieldAlert, Sparkles
+  ChevronDown, ChevronUp, BarChart3, PieChart, ShieldAlert, Sparkles,
+  SlidersHorizontal, RotateCcw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, startOfDay } from 'date-fns';
@@ -844,10 +845,79 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
           onExportImage={handleExportImage}
           onCustomizeLayout={() => setIsCustomizeModalOpen(true)}
           showCustomizeButton={true}
+          isCustomViewActive={REPORTS_SECTION_ITEMS.some(it => visibleSections[it.id] === false)}
+          hiddenCount={REPORTS_SECTION_ITEMS.filter(it => visibleSections[it.id] === false).length}
+          totalSectionsCount={REPORTS_SECTION_ITEMS.length}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
+
+      {/* Visual Indicator when Custom Report View Filter is Active */}
+      {REPORTS_SECTION_ITEMS.some(it => visibleSections[it.id] === false) && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 14px',
+          marginBottom: '20px',
+          background: 'rgba(59, 130, 246, 0.08)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: '10px',
+          fontSize: '12.5px',
+          color: 'var(--text-primary)',
+          gap: '10px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SlidersHorizontal size={15} color="var(--accent-primary)" />
+            <span>
+              <strong>Filter Tampilan Laporan Aktif:</strong> {REPORTS_SECTION_ITEMS.filter(it => visibleSections[it.id] === false).length} bagian disembunyikan ({REPORTS_SECTION_ITEMS.filter(it => visibleSections[it.id] !== false).length} dari {REPORTS_SECTION_ITEMS.length} ditampilkan).
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setIsCustomizeModalOpen(true)}
+              style={{
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                color: 'var(--accent-primary)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              Ubah Tampilan
+            </button>
+            <button
+              type="button"
+              onClick={resetDefaultSections}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                color: '#ef4444',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Tampilkan Kembali Seluruh Bagian Laporan"
+            >
+              <RotateCcw size={12} /> Tampilkan Semua
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modern Executive KPI Metric Cards */}
       {visibleSections.kpi_cards !== false && (

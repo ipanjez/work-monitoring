@@ -22,6 +22,9 @@ interface UniversalActionBarProps {
   showSyncBadge?: boolean;
   tasks?: Task[];
   canExport?: boolean;
+  isCustomViewActive?: boolean;
+  hiddenCount?: number;
+  totalSectionsCount?: number;
   children?: React.ReactNode;
 }
 
@@ -38,6 +41,9 @@ export default function UniversalActionBar({
   showSyncBadge = true,
   tasks = [],
   canExport = true,
+  isCustomViewActive = false,
+  hiddenCount = 0,
+  totalSectionsCount,
   children 
 }: UniversalActionBarProps) {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -96,41 +102,65 @@ export default function UniversalActionBar({
         {children}
 
         {/* Customize Layout Button */}
-        {showCustomizeButton && onCustomizeLayout && (
-          <button
-            id="btn-customize-layout"
-            type="button"
-            className="btn btn-secondary"
-            onClick={onCustomizeLayout}
-            title="Atur & Sembunyikan Komponen / Grafik Dashboard"
-            style={{
-              padding: '6px 10px',
-              fontSize: '12px',
-              gap: '6px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--surface-color)',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              height: '32px',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-primary)';
-              e.currentTarget.style.color = 'var(--accent-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-          >
-            <SlidersHorizontal size={14} color="var(--accent-primary)" />
-            <span className="hide-mobile">Atur Tampilan</span>
-          </button>
-        )}
+        {showCustomizeButton && onCustomizeLayout && (() => {
+          const isFiltered = isCustomViewActive || hiddenCount > 0;
+          return (
+            <button
+              id="btn-customize-layout"
+              type="button"
+              className={`btn btn-secondary ${isFiltered ? 'customize-view-active' : ''}`}
+              onClick={onCustomizeLayout}
+              title={isFiltered ? `Filter Tampilan Aktif: ${hiddenCount} komponen disembunyikan. Klik untuk mengatur.` : "Atur & Sembunyikan Komponen / Grafik Dashboard"}
+              style={{
+                padding: '6px 10px',
+                fontSize: '12px',
+                gap: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                borderRadius: '8px',
+                border: isFiltered ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                background: isFiltered ? 'rgba(37, 99, 235, 0.12)' : 'var(--surface-color)',
+                color: isFiltered ? 'var(--accent-primary)' : 'var(--text-primary)',
+                fontWeight: isFiltered ? 600 : 500,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                height: '32px',
+                transition: 'all 0.15s ease',
+                position: 'relative'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.color = 'var(--accent-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isFiltered ? 'var(--accent-primary)' : 'var(--border-color)';
+                e.currentTarget.style.color = isFiltered ? 'var(--accent-primary)' : 'var(--text-primary)';
+              }}
+            >
+              <SlidersHorizontal size={14} color="var(--accent-primary)" />
+              <span className="hide-mobile">Atur Tampilan</span>
+              {isFiltered && (
+                <span 
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '1px 5px',
+                    borderRadius: '999px',
+                    lineHeight: 1.2,
+                    marginLeft: '2px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {totalSectionsCount ? `${totalSectionsCount - hiddenCount}/${totalSectionsCount}` : `-${hiddenCount}`}
+                </span>
+              )}
+            </button>
+          );
+        })()}
 
         {/* Sync Calendar Button */}
         {showSyncCalendar && (

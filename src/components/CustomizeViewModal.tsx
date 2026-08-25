@@ -101,10 +101,35 @@ export default function CustomizeViewModal({
                 <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1.3 }}>
                   {title}
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                     Menampilkan <strong style={{ color: 'var(--accent-primary)' }}>{visibleCount}</strong> dari {totalItems} bagian
                   </span>
+                  {visibleCount < totalItems ? (
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: '#f59e0b', 
+                      background: 'rgba(245, 158, 11, 0.12)', 
+                      border: '1px solid rgba(245, 158, 11, 0.25)',
+                      padding: '1px 7px', 
+                      borderRadius: '999px', 
+                      fontWeight: 600 
+                    }}>
+                      {totalItems - visibleCount} Disembunyikan
+                    </span>
+                  ) : (
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: '#10b981', 
+                      background: 'rgba(16, 185, 129, 0.12)', 
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      padding: '1px 7px', 
+                      borderRadius: '999px', 
+                      fontWeight: 600 
+                    }}>
+                      Semua Aktif
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

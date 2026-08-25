@@ -17,7 +17,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut, Pie, Line } from 'react-chartjs-2';
-import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown, Copy, X } from 'lucide-react';
+import { Download, FileText, Filter, AlertTriangle, CheckCircle, Clock, ListTodo, User, Paperclip, Calendar, ArrowRight, Search, ArrowUpDown, Copy, X, SlidersHorizontal, RotateCcw } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -986,10 +986,79 @@ export default function DashboardClient({ tasks: initialTasks }: { tasks: Task[]
           onExportImage={handleExportImage}
           onCustomizeLayout={() => setIsCustomizeModalOpen(true)}
           showCustomizeButton={true}
+          isCustomViewActive={DASHBOARD_SECTION_ITEMS.some(it => visibleSections[it.id] === false)}
+          hiddenCount={DASHBOARD_SECTION_ITEMS.filter(it => visibleSections[it.id] === false).length}
+          totalSectionsCount={DASHBOARD_SECTION_ITEMS.length}
           tasks={filteredTasks}
           canExport={hasPermission(roleConfig, 'export_data', userRole)}
         />
       </UniversalFilterBar>
+
+      {/* Visual Indicator when Custom Dashboard View Filter is Active */}
+      {DASHBOARD_SECTION_ITEMS.some(it => visibleSections[it.id] === false) && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 14px',
+          marginBottom: '20px',
+          background: 'rgba(59, 130, 246, 0.08)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: '10px',
+          fontSize: '12.5px',
+          color: 'var(--text-primary)',
+          gap: '10px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <SlidersHorizontal size={15} color="var(--accent-primary)" />
+            <span>
+              <strong>Filter Tampilan Dashboard Aktif:</strong> {DASHBOARD_SECTION_ITEMS.filter(it => visibleSections[it.id] === false).length} bagian disembunyikan ({DASHBOARD_SECTION_ITEMS.filter(it => visibleSections[it.id] !== false).length} dari {DASHBOARD_SECTION_ITEMS.length} ditampilkan).
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setIsCustomizeModalOpen(true)}
+              style={{
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                color: 'var(--accent-primary)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              Ubah Tampilan
+            </button>
+            <button
+              type="button"
+              onClick={resetDefaultSections}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                fontSize: '11.5px',
+                color: '#ef4444',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Tampilkan Kembali Seluruh Komponen Dashboard"
+            >
+              <RotateCcw size={12} /> Tampilkan Semua
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Report Container for PDF export and image copy */}
       <div id="dashboard-report-container" ref={dashboardRef}>
