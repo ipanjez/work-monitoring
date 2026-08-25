@@ -1,6 +1,57 @@
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
+/**
+ * Universal Mobile-Safe File Downloader
+ * Handles mobile browser security sandboxes (Safari iOS, Chrome Android, Samsung Internet, WebViews).
+ */
+export function downloadBlobSafe(blob: Blob, fileName: string): void {
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+  const url = URL.createObjectURL(blob);
+
+  // Method 1: Standard anchor download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+
+  // Method 2: Fallback for mobile browsers where programmatic a.click() might be blocked
+  if (isMobile) {
+    setTimeout(() => {
+      try {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result && typeof reader.result === 'string') {
+            const tempLink = document.createElement('a');
+            tempLink.href = reader.result;
+            tempLink.download = fileName;
+            tempLink.target = '_blank';
+            tempLink.click();
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        // Direct window open fallback
+        window.open(url, '_blank');
+      }
+    }, 350);
+  }
+
+  // Cleanup blob URL after 60s
+  setTimeout(() => {
+    try {
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
+      URL.revokeObjectURL(url);
+    } catch (e) {}
+  }, 60000);
+}
+
 export async function captureDomElement(
   element: HTMLElement,
   options?: {
@@ -19,14 +70,17 @@ export async function captureDomElement(
   const bg = options?.backgroundColor || (isDark ? '#0f172a' : '#f8fafc');
   const textColor = isDark ? '#f8fafc' : '#0f172a';
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale: isMobile ? 1.5 : 2, // 1.5 scale on mobile prevents GPU/canvas memory overflow
     useCORS: true,
     allowTaint: true,
     logging: false,
     backgroundColor: bg,
     scrollX: 0,
     scrollY: 0,
+    windowWidth: isMobile ? 1280 : undefined, // Render full desktop layout for PDF when on mobile
     onclone: (clonedDoc) => {
       // 1. Synchronize theme attributes & root styles
       clonedDoc.documentElement.setAttribute('data-theme', currentTheme);
@@ -35,7 +89,49 @@ export async function captureDomElement(
       clonedDoc.body.style.backgroundColor = bg;
       clonedDoc.body.style.color = textColor;
 
-      // 2. Fix all color-mix or gradient issues in html2canvas
+      // 2. Fix all inputs (replace input with crystal-clear vertically centered styled div to prevent text clipping)
+      const inputs = clonedDoc.querySelectorAll('input');
+      inputs.forEach((input) => {
+        const text = input.value || input.placeholder || '';
+        if (text) {
+          const div = clonedDoc.createElement('div');
+          div.textContent = text;
+          div.className = input.className;
+          
+          // Copy styles
+          const computed = window.getComputedStyle(input);
+          div.style.cssText = input.style.cssText;
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.boxSizing = 'border-box';
+          div.style.height = `${input.offsetHeight || 36}px`;
+          div.style.lineHeight = '1.3';
+          div.style.paddingLeft = computed.paddingLeft || '30px';
+          div.style.paddingRight = computed.paddingRight || '72px';
+          div.style.fontSize = computed.fontSize || '12px';
+          div.style.color = input.value ? (isDark ? '#f8fafc' : '#0f172a') : (isDark ? '#94a3b8' : '#64748b');
+          div.style.overflow = 'hidden';
+          div.style.textOverflow = 'ellipsis';
+          div.style.whiteSpace = 'nowrap';
+          div.style.background = computed.backgroundColor;
+          div.style.border = computed.border;
+          div.style.borderRadius = computed.borderRadius;
+
+          if (input.parentNode) {
+            input.parentNode.replaceChild(div, input);
+          }
+        }
+      });
+
+      // 3. Reset any temporary "Mengekspor..." button labels back to clean static text
+      const buttons = clonedDoc.querySelectorAll('button');
+      buttons.forEach((btn) => {
+        if (btn.textContent && btn.textContent.includes('Mengekspor')) {
+          btn.innerHTML = '<span>PDF</span>';
+        }
+      });
+
+      // 4. Fix color-mix or gradient issues in badges
       const badges = clonedDoc.querySelectorAll('[style*="color-mix"], .badge, [class*="badge"]');
       badges.forEach((b: any) => {
         const bgStyle = b.style.backgroundColor;
@@ -60,7 +156,7 @@ export async function captureDomElement(
 }
 
 /**
- * Export canvas as PNG image file (always downloads).
+ * Export canvas as PNG image file (always downloads, mobile-safe).
  */
 export async function exportCanvasToImage(
   canvas: HTMLCanvasElement,
@@ -71,14 +167,8 @@ export async function exportCanvasToImage(
     throw new Error('Gagal menghasilkan gambar');
   }
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const fileName = `${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd_HHmm')}.png`;
+  downloadBlobSafe(blob, fileName);
   toast.success('Gambar berhasil diunduh! 📥');
 }
 
@@ -88,6 +178,7 @@ export const copyCanvasToClipboardOrDownload = exportCanvasToImage;
 /**
  * Smart Dynamic PDF Exporter that PREVENTS cutting sections, cards, and table rows in half.
  * Intelligently analyzes element bounding boxes and canvas pixel buffer to calculate clean page breaks.
+ * Fully compatible with Mobile (HP / iOS / Android).
  */
 export async function exportCanvasToPdf(
   canvas: HTMLCanvasElement,
@@ -231,7 +322,7 @@ export async function exportCanvasToPdf(
     ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
     ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
 
-    const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+    const pageImgData = pageCanvas.toDataURL('image/png', 0.95);
     const pageImgHeightMm = printW * (srcH / canvas.width);
 
     // Place image cleanly within printable margins
@@ -248,6 +339,10 @@ export async function exportCanvasToPdf(
     );
   }
 
-  pdf.save(`${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  const fileName = `${fileNamePrefix}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+  const pdfBlob = pdf.output('blob');
+  
+  // Download using mobile-safe method
+  downloadBlobSafe(pdfBlob, fileName);
   toast.success('Dokumen PDF berhasil diunduh tanpa terpotong! 📄');
 }

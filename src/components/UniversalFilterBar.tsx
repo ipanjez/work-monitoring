@@ -202,7 +202,7 @@ export default function UniversalFilterBar({
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: globalSearchQuery ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
           <input
             className="input"
-            style={{ paddingLeft: '30px', width: '100%', paddingRight: '72px', fontSize: '12px', height: '36px', ...getActiveStyle(globalSearchQuery !== '') }}
+            style={{ paddingLeft: '30px', width: '100%', paddingRight: '72px', fontSize: '12px', height: '36px', lineHeight: 'normal', boxSizing: 'border-box', ...getActiveStyle(globalSearchQuery !== '') }}
             placeholder="Cari pekerjaan, PIC, file lampiran..."
             value={globalSearchQuery}
             onChange={e => setGlobalSearchQuery(e.target.value)}
@@ -253,51 +253,84 @@ export default function UniversalFilterBar({
 
               <AnimatePresence>
                 {showSearchInfo && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 5, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      right: 0,
-                      width: '280px',
-                      background: 'var(--modal-bg, #1e293b)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      boxShadow: 'var(--card-shadow, 0 15px 30px rgba(0,0,0,0.3))',
-                      zIndex: 99999,
-                      fontSize: '12px',
-                      lineHeight: 1.5
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Info size={14} /> Cakupan Pencarian
-                      </span>
-                      <button 
-                        type="button"
-                        onClick={() => setShowSearchInfo(false)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
+                  <>
+                    {/* Mobile Backdrop Overlay (fixed full-screen on mobile) */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="search-info-backdrop"
+                      onClick={() => setShowSearchInfo(false)}
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                        backdropFilter: 'blur(3px)',
+                        zIndex: 99998,
+                      }}
+                    />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div>📌 <strong>Pekerjaan:</strong> Judul, deskripsi & catatan</div>
-                      <div>👤 <strong>Personel:</strong> PIC utama & tim PIC tambahan</div>
-                      <div>📎 <strong>File Lampiran:</strong> Nama berkas PDF, Excel, Word, format berkas (.pdf, .xlsx, dll)</div>
-                      <div>💬 <strong>Komentar:</strong> Teks diskusi & lampiran komentar</div>
-                      <div>📋 <strong>Subtask & Lokasi:</strong> Judul subtask & lokasi tugas</div>
-                      <div style={{ marginTop: '4px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        💡 <em>Tekan tombol <strong>Exact</strong> untuk mencari kata persis/utuh.</em>
+                    {/* Pop-up Card (floating on desktop, centered bottom/middle modal on mobile) */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.18 }}
+                      className="search-info-popup-card"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'fixed',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '90vw',
+                        maxWidth: '320px',
+                        background: 'var(--modal-bg, #1e293b)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '16px',
+                        padding: '16px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)',
+                        zIndex: 99999,
+                        fontSize: '12px',
+                        lineHeight: 1.5
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Info size={15} /> Cakupan Pencarian
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => setShowSearchInfo(false)}
+                          style={{
+                            background: 'var(--input-bg)',
+                            border: 'none',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
                       </div>
-                    </div>
-                  </motion.div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                        <div>📌 <strong>Pekerjaan:</strong> Judul, deskripsi & catatan</div>
+                        <div>👤 <strong>Personel:</strong> PIC utama & tim PIC tambahan</div>
+                        <div>📎 <strong>File Lampiran:</strong> Nama berkas PDF, Excel, Word, format berkas (.pdf, .xlsx, dll)</div>
+                        <div>💬 <strong>Komentar:</strong> Teks diskusi & lampiran komentar</div>
+                        <div>📋 <strong>Subtask & Lokasi:</strong> Judul subtask & lokasi tugas</div>
+                        <div style={{ marginTop: '6px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                          💡 <em>Tekan tombol <strong>Exact</strong> untuk mencari kata persis/utuh.</em>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>

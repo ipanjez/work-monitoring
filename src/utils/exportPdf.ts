@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { Task, SubTask, FileItem, LogItem, CommentItem, getAdditionalPics, getTaskFiles, getHistoryLogs, getTaskComments, formatRecurrenceText, formatLogDetails } from './taskUtils';
+import { downloadBlobSafe } from './domCapture';
 
 const ACCENT = [16, 185, 129] as [number, number, number]; // #10b981
 const DARK = [30, 41, 59] as [number, number, number];     // #1e293b
@@ -423,7 +424,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
   const url = typeof window !== 'undefined' ? URL.createObjectURL(blob) : '';
 
   if (autoDownload) {
-    doc.save(fileName);
+    downloadBlobSafe(blob, fileName);
   }
 
   return { blob, url, fileName };
