@@ -25,47 +25,82 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status Sub:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
   if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
-  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
 
   return (
     <div style={{
       fontSize: '11px',
       color: 'var(--text-secondary)',
       background: 'var(--surface-color)',
-      padding: '8px 12px',
+      padding: expanded ? '8px 12px' : '6px 12px',
       borderRadius: '8px',
-      border: '1px dashed var(--border-color)'
+      border: '1px dashed var(--border-color)',
+      transition: 'all 0.2s ease'
     }}>
-      <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>{title}</span>
-        {logs.length > 1 && (
-          <button
-            type="button"
-            style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? 'Sembunyikan' : `Lihat ${logs.length - 1} log lainnya`}
-          </button>
-        )}
+      <div 
+        style={{ 
+          fontWeight: 600, 
+          color: 'var(--text-primary)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>{title}</span>
+          <span style={{
+            fontSize: '10px',
+            fontWeight: 600,
+            color: 'var(--accent-primary)',
+            background: 'rgba(59, 130, 246, 0.1)',
+            padding: '1px 6px',
+            borderRadius: '4px'
+          }}>
+            {logs.length} log
+          </span>
+        </span>
+        <button
+          type="button"
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: 'var(--accent-primary)', 
+            fontSize: '11px', 
+            cursor: 'pointer', 
+            fontWeight: 600,
+            padding: '2px 4px'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(!expanded);
+          }}
+        >
+          {expanded ? 'Sembunyikan' : 'Lihat'}
+        </button>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {visibleLogs.map((log: any, lidx: number) => (
-          <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '95px', flexShrink: 0 }}>
-              {safeFormatDate(log?.timestamp, 'dd/MM/yyyy HH:mm')}
-            </span>
-            {(log?.user || log?.author) && (
-              <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600, flexShrink: 0 }}>
-                • oleh {log.user || log.author}
+
+      {expanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-color)' }}>
+          {logs.map((log: any, lidx: number) => (
+            <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '95px', flexShrink: 0 }}>
+                {safeFormatDate(log?.timestamp, 'dd/MM/yyyy HH:mm')}
               </span>
-            )}
-            <span
-              style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '11px', lineHeight: '1.4' }}
-              dangerouslySetInnerHTML={{ __html: `- ${formatDescription(typeof log === 'string' ? log : (log?.status || ''))}` }}
-            />
-          </div>
-        ))}
-      </div>
+              {(log?.user || log?.author) && (
+                <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600, flexShrink: 0 }}>
+                  • oleh {log.user || log.author}
+                </span>
+              )}
+              <span
+                style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '11px', lineHeight: '1.4' }}
+                dangerouslySetInnerHTML={{ __html: `- ${formatDescription(typeof log === 'string' ? log : (log?.status || ''))}` }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

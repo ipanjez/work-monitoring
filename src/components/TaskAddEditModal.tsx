@@ -19,42 +19,6 @@ import TaskFormFields from './TaskFormFields';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
-const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?: string }) => {
-  const [expanded, setExpanded] = useState(false);
-  if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
-  const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
-
-  return (
-    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{title}</div>
-      {visibleLogs.map((log: any, lidx: number) => (
-        <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '10px' }}>{safeFormatDate(log?.timestamp, 'dd MMM yyyy, HH:mm')}</span>
-            {(log?.user || log?.author) && (
-              <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600 }}>
-                • oleh {log.user || log.author}
-              </span>
-            )}
-          </div>
-          <span
-            style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
-            dangerouslySetInnerHTML={{ __html: `- ${formatDescription(typeof log === 'string' ? log : (log?.status || ''))}` }}
-          />
-        </div>
-      ))}
-      {logs.length > 1 && (
-        <button
-          type="button"
-          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '10px', cursor: 'pointer', padding: 0, marginTop: '2px', textDecoration: 'underline' }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Sembunyikan' : `Tampilkan ${logs.length - 1} log lainnya...`}
-        </button>
-      )}
-    </div>
-  );
-};
 
 export type EditingTaskType = Partial<Task> & {
   filesList?: FileItem[];
