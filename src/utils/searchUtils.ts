@@ -18,7 +18,7 @@ export function checkSearchMatch(task: any, query: string, exactMatch: boolean =
 
   if (task.filesJson) {
     try {
-      const files = JSON.parse(task.filesJson);
+      const files = typeof task.filesJson === 'string' ? JSON.parse(task.filesJson) : task.filesJson;
       if (Array.isArray(files)) {
         files.forEach((f: any) => {
           if (f.name) fileNames.push(f.name);
@@ -36,7 +36,7 @@ export function checkSearchMatch(task: any, query: string, exactMatch: boolean =
 
   if (task.commentsJson) {
     try {
-      const comments = JSON.parse(task.commentsJson);
+      const comments = typeof task.commentsJson === 'string' ? JSON.parse(task.commentsJson) : task.commentsJson;
       if (Array.isArray(comments)) {
         comments.forEach((c: any) => {
           if (c.text) fileNames.push(c.text);
@@ -54,9 +54,10 @@ export function checkSearchMatch(task: any, query: string, exactMatch: boolean =
 
   if (task.subTasksJson) {
     try {
-      const subtasks = JSON.parse(task.subTasksJson);
+      const subtasks = typeof task.subTasksJson === 'string' ? JSON.parse(task.subTasksJson) : task.subTasksJson;
       if (Array.isArray(subtasks)) {
         subtasks.forEach((st: any) => {
+          if (st.text) fileNames.push(st.text);
           if (st.title) fileNames.push(st.title);
           if (st.pic) fileNames.push(st.pic);
         });

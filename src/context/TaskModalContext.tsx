@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Task, FileItem, SubTask, getTaskFiles, getAdditionalPics } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, getTaskFiles, getAdditionalPics, safeParseSubTasks, safeFormatDate } from '@/utils/taskUtils';
 import TaskDetailModal from '@/components/TaskDetailModal';
 import TaskAddEditModal, { EditingTaskType } from '@/components/TaskAddEditModal';
 import FilePreviewModal from '@/components/FilePreviewModal';
@@ -42,6 +42,9 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
   const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null);
 
   const openDetail = (task: Task) => {
+    if (!task) return;
+    setIsEditModalOpen(false);
+    setEditingTask(null);
     setDetailTask(task);
   };
 
@@ -56,13 +59,7 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
     }
     setDetailTask(null);
     let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = JSON.parse(task.subTasksJson);
-        if (Array.isArray(raw)) parsedSubTasks = raw;
-      } catch (e) {}
-    }
+    let parsedSubTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
 
     const startStr = task.startDate 
       ? (typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0]) 
@@ -108,18 +105,10 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
     }
     setDetailTask(null);
     let repetisiValue = task.repetisi || 'Tidak Berulang';
-    let parsedSubTasks: SubTask[] = [];
-    if (task.subTasksJson) {
-      try {
-        const raw = JSON.parse(task.subTasksJson);
-        if (Array.isArray(raw)) {
-          parsedSubTasks = raw.map((st: any) => ({
-            ...st,
-            id: Math.random().toString(36).substring(2, 9),
-          }));
-        }
-      } catch (e) {}
-    }
+    const parsedSubTasks: SubTask[] = safeParseSubTasks(task.subTasksJson).map((st: any) => ({
+      ...st,
+      id: Math.random().toString(36).substring(2, 9),
+    }));
 
     const startStr = task.startDate 
       ? (typeof task.startDate === 'string' ? task.startDate.split('T')[0] : new Date(task.startDate).toISOString().split('T')[0]) 

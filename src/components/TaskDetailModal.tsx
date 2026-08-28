@@ -8,13 +8,19 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, History, ExternalLink, CalendarDays, Paperclip, Eye, Edit, MessageSquare, Send, Trash2, Copy, User, FileDown, Mail, Share2, Users, Tag, Repeat, MapPin, Video } from 'lucide-react';
 import { format } from 'date-fns';
-import { Task, FileItem, SubTask, CommentItem, LogItem, getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, getGoogleCalendarUrl, getTaskFiles, getTaskComments, handleExportICS, formatRecurrenceText, formatDescription, formatLogDetails } from '@/utils/taskUtils';
+import { 
+  Task, FileItem, SubTask, CommentItem, LogItem, 
+  getDynamicBadgeStyle, getAdditionalPics, getHistoryLogs, 
+  getGoogleCalendarUrl, getTaskFiles, getTaskComments, 
+  handleExportICS, formatRecurrenceText, formatDescription, 
+  formatLogDetails, safeFormatDate, safeParseDate, safeParseSubTasks 
+} from '@/utils/taskUtils';
 import TaskTimeline from './TaskTimeline';
 import { exportTaskPdf } from '@/utils/exportPdf';
 import TaskEmailModal from './TaskEmailModal';
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], title?: string }) => {
-  if (!logs || logs.length === 0) return null;
+  if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
 
   return (
     <details style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
@@ -23,14 +29,14 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status:" }: { logs: any[], ti
         {logs.map((log: any, lidx: number) => (
           <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-              {(log.user || log.author) && (
+              <span style={{ fontSize: '10px' }}>{safeFormatDate(log?.timestamp, 'dd MMM yyyy, HH:mm')}</span>
+              {(log?.user || log?.author) && (
                 <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600 }}>
                   • oleh {log.user || log.author}
                 </span>
               )}
             </div>
-            <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>- {log.status}</span>
+            <span style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>- {typeof log === 'string' ? log : (log?.status || '')}</span>
           </div>
         ))}
       </div>
@@ -136,23 +142,18 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     const pics = new Set<string>();
     if (task.pic) pics.add(task.pic);
 
-    if (task.additionalPics) {
-      try {
-        const arr = JSON.parse(task.additionalPics);
-        if (Array.isArray(arr)) arr.forEach((p: string) => pics.add(p));
-      } catch (e) { }
-    }
+    const extraPics = getAdditionalPics(task);
+    extraPics.forEach(p => pics.add(p));
 
-    if (task.subTasksJson) {
-      try {
-        const arr = JSON.parse(task.subTasksJson);
-        if (Array.isArray(arr)) {
-          arr.forEach((st: any) => {
-            if (st.pic) pics.add(st.pic);
-          });
-        }
-      } catch (e) { }
-    }
+    const subTasks = safeParseSubTasks(task.subTasksJson);
+    subTasks.forEach((st: any) => {
+      if (st.pic) pics.add(st.pic);
+      if (Array.isArray(st.additionalPics)) {
+        st.additionalPics.forEach((ap: string) => {
+          if (ap) pics.add(ap);
+        });
+      }
+    });
     return Array.from(pics);
   };
 
@@ -164,12 +165,10 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
 
   let subTasksStr = '';
   if (task?.subTasksJson) {
-    try {
-      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-      if (Array.isArray(subTasks) && subTasks.length > 0) {
-        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
-      }
-    } catch (e) { }
+    const subTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
+    if (subTasks.length > 0) {
+      subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
+    }
   }
 
   const emailBody = task ? `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
@@ -250,7 +249,7 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       let location = '-';
       if (task!.lokasi) {
         try {
-          const loc = JSON.parse(task!.lokasi);
+          const loc = typeof task!.lokasi === 'string' ? JSON.parse(task!.lokasi) : task!.lokasi;
           if (loc.tipe === 'online') {
             location = `Online: ${loc.linkZoom || ''}`;
           } else if (loc.tipe === 'offline') {
@@ -265,8 +264,8 @@ PIC: ${task!.pic}${extraPics}
 Kategori: ${task!.kategori || 'Umum'}
 Status: ${task!.status} (${task!.progress || 0}%)
 Prioritas: ${task!.prioritas || 'Medium'}
-Tanggal Mulai: ${format(new Date(task!.startDate), 'dd MMM yyyy')}${!task!.isAllDay && task!.startTime ? ` Jam ${task!.startTime}` : ''}
-Tenggat Waktu: ${format(new Date(task!.endDate), 'dd MMM yyyy')}${!task!.isAllDay && task!.endTime ? ` Jam ${task!.endTime}` : ''}
+Tanggal Mulai: ${safeFormatDate(task!.startDate, 'dd MMM yyyy')}${!task!.isAllDay && task!.startTime ? ` Jam ${task!.startTime}` : ''}
+Tenggat Waktu: ${safeFormatDate(task!.endDate, 'dd MMM yyyy')}${!task!.isAllDay && task!.endTime ? ` Jam ${task!.endTime}` : ''}
 Lokasi: ${location}
 
 *Deskripsi:*
@@ -471,7 +470,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
           <TaskTimeline
             startDate={task.startDate}
             endDate={task.endDate || task.startDate}
-            subTasks={task.subTasksJson ? JSON.parse(task.subTasksJson) : []}
+            subTasks={safeParseSubTasks(task.subTasksJson)}
             masterColors={masterColors}
             mainPic={task.pic}
           />
@@ -580,7 +579,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   <CalendarDays size={12} color="var(--accent-primary)" /> Jadwal Pelaksanaan:
                 </span>
                 <p style={{ fontWeight: '500', color: 'var(--text-primary)', fontSize: '12.5px' }}>
-                  {format(new Date(task.startDate), 'dd MMM yyyy')} s/d {format(new Date(task.endDate), 'dd MMM yyyy')}
+                  {safeFormatDate(task.startDate, 'dd MMM yyyy')} s/d {safeFormatDate(task.endDate, 'dd MMM yyyy')}
                   {!task.isAllDay && task.startTime ? ` (${task.startTime} - ${task.endTime || 'selesai'})` : ''}
                 </p>
               </div>
@@ -588,7 +587,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               {(() => {
                 if (!task.lokasi) return null;
                 try {
-                  const loc = JSON.parse(task.lokasi);
+                  const loc = typeof task.lokasi === 'string' ? JSON.parse(task.lokasi) : task.lokasi;
                   if (loc.tipe === 'online') {
                     return (
                       <div style={{ gridColumn: '1 / -1', paddingTop: '10px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -652,9 +651,11 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                   // Check file attachment uploader
                   if (task.filesJson) {
                     try {
-                      const files = JSON.parse(task.filesJson);
-                      const fileWithUploader = files.find((f: any) => f.uploadedBy);
-                      if (fileWithUploader?.uploadedBy) return fileWithUploader.uploadedBy;
+                      const files = typeof task.filesJson === 'string' ? JSON.parse(task.filesJson) : task.filesJson;
+                      if (Array.isArray(files)) {
+                        const fileWithUploader = files.find((f: any) => f.uploadedBy);
+                        if (fileWithUploader?.uploadedBy) return fileWithUploader.uploadedBy;
+                      }
                     } catch (e) {}
                   }
 
@@ -674,7 +675,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       <div>
                         <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Dibuat Pada</span>
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {task.createdAt ? format(new Date(task.createdAt), 'dd MMM yyyy HH:mm') : '-'}
+                          {safeFormatDate(task.createdAt, 'dd MMM yyyy HH:mm')}
                         </span>
                         <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 600, marginTop: '2px' }}>
                           oleh {creatorName}
@@ -683,7 +684,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       <div>
                         <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Diedit Terakhir</span>
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {task.lastEditedAt ? format(new Date(task.lastEditedAt), 'dd MMM yyyy HH:mm') : 'Belum pernah'}
+                          {task.lastEditedAt ? safeFormatDate(task.lastEditedAt, 'dd MMM yyyy HH:mm') : 'Belum pernah'}
                         </span>
                         {task.lastEditedAt && (
                           <span style={{ fontSize: '11px', color: 'var(--accent-primary)', display: 'block', fontWeight: 600, marginTop: '2px' }}>
@@ -727,7 +728,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                                     </span>
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}</span>
+                                    <span>{safeFormatDate(log.timestamp, 'dd/MM/yyyy HH:mm')}</span>
                                   </div>
                                 </div>
                                 {(log as any).details && (
@@ -767,16 +768,13 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
               </div>
             )}
             {/* Sub-Tasks Display */}
-            {task.subTasksJson && (() => {
-              let subTasks: SubTask[] = [];
-              try {
-                subTasks = JSON.parse(task.subTasksJson);
-              } catch (e) { }
-
+            {(() => {
+              const subTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
               if (subTasks.length === 0) return null;
 
               const statusCounts = subTasks.reduce((acc, st) => {
-                acc[st.status] = (acc[st.status] || 0) + 1;
+                const s = st.status || 'To Do';
+                acc[s] = (acc[s] || 0) + 1;
                 return acc;
               }, {} as Record<string, number>);
 
@@ -848,16 +846,16 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                               })()}
                               {subTask.tenggatWaktu && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <CalendarDays size={12} /> Tenggat: {format(new Date(subTask.tenggatWaktu), 'dd MMM yyyy')}
+                                  <CalendarDays size={12} /> Tenggat: {safeFormatDate(subTask.tenggatWaktu, 'dd MMM yyyy')}
                                 </span>
                               )}
                             </div>
                           </div>
                           {(() => {
-                            const badge = getDynamicBadgeStyle('status', subTask.status, '', masterColors);
+                            const badge = getDynamicBadgeStyle('status', subTask.status || 'To Do', '', masterColors);
                             return (
                               <span className={badge.className} style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, flexShrink: 0, ...badge.style }}>
-                                {subTask.status}
+                                {subTask.status || 'To Do'}
                               </span>
                             );
                           })()}
@@ -891,12 +889,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {getTaskFiles(task).map((f, idx) => {
                     const uploadDateStr = f.uploadedAt || task.createdAt || task.startDate;
-                    let formattedDate = '';
-                    if (uploadDateStr) {
-                      try {
-                        formattedDate = format(new Date(uploadDateStr), 'dd MMM yyyy, HH:mm');
-                      } catch (e) {}
-                    }
+                    const formattedDate = uploadDateStr ? safeFormatDate(uploadDateStr, 'dd MMM yyyy, HH:mm', '') : '';
 
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--surface-color)', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', opacity: f.isDeleted ? 0.6 : 1 }}>
@@ -942,7 +935,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                           )}
                           {f.isDeleted && f.deletedAt && (
                             <span style={{ color: 'var(--danger)' }}>
-                              • Dihapus pada {format(new Date(f.deletedAt), 'dd MMM yyyy, HH:mm')}
+                              • Dihapus pada {safeFormatDate(f.deletedAt, 'dd MMM yyyy, HH:mm')}
                               {f.deletedBy ? ` oleh ${f.deletedBy}` : ''}
                             </span>
                           )}
@@ -969,7 +962,7 @@ ${task!.deskripsi ? task!.deskripsi.replace(/<[^>]*>?/gm, '').trim() : '-'}`;
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text-primary)' }}>{comment.author}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm')}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{safeFormatDate(comment.createdAt, 'dd MMM yyyy HH:mm')}</span>
                           {hasPermission(currentRoleConfig, 'comment_task', userRole) && (
                             <button
                               type="button"

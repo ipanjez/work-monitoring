@@ -10,7 +10,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
-import { FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
+import { 
+  FileItem, SubTask, handleMarkdownShortcut, 
+  formatDescription, htmlToMarkdownText, safeFormatDate, 
+  safeParseDate, safeParseSubTasks 
+} from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { EditingTaskType } from './TaskAddEditModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -20,7 +24,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 const SubTaskLogViewer = ({ logs, title = "Riwayat Status Sub:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
-  if (!logs || logs.length === 0) return null;
+  if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
   const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
 
   return (
@@ -48,16 +52,16 @@ const SubTaskLogViewer = ({ logs, title = "Riwayat Status Sub:" }: { logs: any[]
         {visibleLogs.map((log: any, lidx: number) => (
           <div key={lidx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '10px', color: 'var(--text-secondary)', minWidth: '95px', flexShrink: 0 }}>
-              {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm')}
+              {safeFormatDate(log?.timestamp, 'dd/MM/yyyy HH:mm')}
             </span>
-            {(log.user || log.author) && (
+            {(log?.user || log?.author) && (
               <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600, flexShrink: 0 }}>
                 • oleh {log.user || log.author}
               </span>
             )}
             <span
               style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '11px', lineHeight: '1.4' }}
-              dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
+              dangerouslySetInnerHTML={{ __html: `- ${formatDescription(typeof log === 'string' ? log : (log?.status || ''))}` }}
             />
           </div>
         ))}
@@ -1368,20 +1372,39 @@ export default function TaskFormFields({
 
               {/* Sub-Pekerjaan Text Description Input */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Rincian Sub Pekerjaan:
-                </label>
-                <div
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Rincian Sub Pekerjaan:
+                  </label>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                    Mendukung baris baru & shortcut <strong>Ctrl+B</strong>
+                  </span>
+                </div>
+                <textarea
                   className="input"
-                  contentEditable
-                  suppressContentEditableWarning
-                  style={{ minHeight: '65px', maxHeight: '180px', overflowY: 'auto', whiteSpace: 'pre-wrap', cursor: 'text', padding: '10px 12px', lineHeight: '1.5', fontSize: '13px' }}
-                  onBlur={e => {
+                  rows={3}
+                  style={{
+                    minHeight: '75px',
+                    maxHeight: '220px',
+                    resize: 'vertical',
+                    padding: '10px 12px',
+                    lineHeight: '1.5',
+                    fontSize: '13px',
+                    fontFamily: 'inherit',
+                    width: '100%'
+                  }}
+                  placeholder="Tuliskan rincian sub pekerjaan di sini..."
+                  value={subTask.text || ''}
+                  onKeyDown={e => handleMarkdownShortcut(e, subTask.text || '', (newVal) => {
                     const updated = [...(task.subTasksList || [])];
-                    updated[idx].text = e.currentTarget.innerHTML;
+                    updated[idx] = { ...updated[idx], text: newVal };
+                    onChange({ ...task, subTasksList: updated });
+                  })}
+                  onChange={e => {
+                    const updated = [...(task.subTasksList || [])];
+                    updated[idx] = { ...updated[idx], text: e.target.value };
                     onChange({ ...task, subTasksList: updated });
                   }}
-                  dangerouslySetInnerHTML={{ __html: formatDescription(subTask.text) || '' }}
                 />
               </div>
 

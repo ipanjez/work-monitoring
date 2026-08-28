@@ -9,7 +9,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Task, SubTask, getGoogleCalendarUrl, getAdditionalPics, formatRecurrenceText } from '@/utils/taskUtils';
+import { Task, SubTask, getGoogleCalendarUrl, getAdditionalPics, formatRecurrenceText, safeParseSubTasks, safeFormatDate } from '@/utils/taskUtils';
 
 interface TaskEmailModalProps {
   isOpen: boolean;
@@ -42,23 +42,13 @@ export default function TaskEmailModal({
     const pics = new Set<string>();
     if (task.pic) pics.add(task.pic);
 
-    if (task.additionalPics) {
-      try {
-        const arr = JSON.parse(task.additionalPics);
-        if (Array.isArray(arr)) arr.forEach((p: string) => pics.add(p));
-      } catch (e) {}
-    }
+    const extraPics = getAdditionalPics(task);
+    extraPics.forEach(p => pics.add(p));
 
-    if (task.subTasksJson) {
-      try {
-        const arr = JSON.parse(task.subTasksJson);
-        if (Array.isArray(arr)) {
-          arr.forEach((st: any) => {
-            if (st.pic) pics.add(st.pic);
-          });
-        }
-      } catch (e) {}
-    }
+    const subTasks = safeParseSubTasks(task.subTasksJson);
+    subTasks.forEach((st: any) => {
+      if (st.pic) pics.add(st.pic);
+    });
 
     const initialEmails = Array.from(pics)
       .map(p => picEmails[p])
@@ -72,7 +62,7 @@ export default function TaskEmailModal({
   const formattedLocation = useMemo(() => {
     if (!task?.lokasi) return '-';
     try {
-      const loc = JSON.parse(task.lokasi);
+      const loc = typeof task.lokasi === 'string' ? JSON.parse(task.lokasi) : task.lokasi;
       if (loc.tipe === 'online') return `Online (Zoom/Teams): ${loc.linkZoom || '-'}`;
       if (loc.tipe === 'offline') return `Offline: ${loc.lokasiFisik || '-'}`;
     } catch (e) {}
@@ -81,13 +71,7 @@ export default function TaskEmailModal({
 
   // Parse Subtasks
   const subTasksList: SubTask[] = useMemo(() => {
-    if (!task?.subTasksJson) return [];
-    try {
-      const parsed = JSON.parse(task.subTasksJson);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
-    }
+    return safeParseSubTasks(task?.subTasksJson);
   }, [task]);
 
   // Generate Google Calendar Link
@@ -122,11 +106,11 @@ export default function TaskEmailModal({
       : 'Tidak ada deskripsi rinci.';
 
     const startFormatted = task.startDate 
-      ? format(new Date(task.startDate), 'dd MMMM yyyy') + (!task.isAllDay && task.startTime ? ` (${task.startTime})` : '')
+      ? safeFormatDate(task.startDate, 'dd MMMM yyyy') + (!task.isAllDay && task.startTime ? ` (${task.startTime})` : '')
       : '-';
     
     const endFormatted = task.endDate 
-      ? format(new Date(task.endDate), 'dd MMMM yyyy') + (!task.isAllDay && task.endTime ? ` (${task.endTime})` : '')
+      ? safeFormatDate(task.endDate, 'dd MMMM yyyy') + (!task.isAllDay && task.endTime ? ` (${task.endTime})` : '')
       : '-';
 
     const subTasksHtml = subTasksList.length > 0 

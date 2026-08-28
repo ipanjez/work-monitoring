@@ -7,7 +7,7 @@ import {
   User, Calendar, ListTodo, Eye, Paperclip, CheckSquare, 
   Filter, Sparkles, ChevronRight, Layers, ArrowUpRight
 } from 'lucide-react';
-import { Task, getDynamicColor, getTaskFiles, getAdditionalPics } from '@/utils/taskUtils';
+import { Task, getDynamicColor, getTaskFiles, getAdditionalPics, safeParseSubTasks, safeFormatDate } from '@/utils/taskUtils';
 import { useTaskModal } from '@/context/TaskModalContext';
 import { useFilter } from '@/context/FilterContext';
 import { useRouter } from 'next/navigation';
@@ -578,17 +578,9 @@ export default function ChartDrillDownModal({
                     const statusColor = resolveStatusColor(t.status, masterColors);
 
                     // Subtasks count
-                    let subTasksCount = 0;
-                    let subTasksDone = 0;
-                    if (t.subTasksJson) {
-                      try {
-                        const parsed = JSON.parse(t.subTasksJson);
-                        if (Array.isArray(parsed)) {
-                          subTasksCount = parsed.length;
-                          subTasksDone = parsed.filter((s: any) => s.status === 'Done' || s.isDone).length;
-                        }
-                      } catch(e) {}
-                    }
+                    const parsedSubs = safeParseSubTasks(t.subTasksJson);
+                    const subTasksCount = parsedSubs.length;
+                    const subTasksDone = parsedSubs.filter((s: any) => s.status === 'Done' || s.isDone).length;
 
                     // Additional PICs count
                     const addPics = getAdditionalPics(t);

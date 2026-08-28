@@ -19,7 +19,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 import { exportToRichExcel } from '@/utils/excelExport';
 import { captureDomElement, exportCanvasToImage, exportCanvasToPdf } from '@/utils/domCapture';
-import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText } from '@/utils/taskUtils';
+import { Task, FileItem, SubTask, LogItem, getTaskFiles, getAdditionalPics, getHistoryLogs, getTaskComments, getDynamicBadgeStyle, getGoogleCalendarUrl, handleExportICS, formatRecurrenceText, safeParseSubTasks, safeParseDate, safeFormatDate } from '@/utils/taskUtils';
 import Avatar from '@/components/Avatar';
 import EmptyState from '@/components/EmptyState';
 import TaskAddEditModal from '@/components/TaskAddEditModal';
@@ -42,7 +42,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Real-Time Background Synchronization Listener
+  // Real-Time Background Synchronization & Event Listener
   useEffect(() => {
     const handleRealtimeTasks = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
@@ -52,9 +52,24 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       }
     };
 
+    const handleTasksUpdated = () => {
+      fetch('/api/tasks')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            startTransition(() => {
+              setTasks(data);
+            });
+          }
+        })
+        .catch(() => {});
+    };
+
     window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
     return () => {
       window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
     };
   }, []);
 
@@ -642,7 +657,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       let processedSubTasks = payloadData.subTasksList ? [...payloadData.subTasksList] : [];
       if (!isNew) {
         const originalTask = tasks.find(t => t.id === payloadData.id);
-        const originalSubTasks = originalTask?.subTasksJson ? JSON.parse(originalTask.subTasksJson) : [];
+        const originalSubTasks = safeParseSubTasks(originalTask?.subTasksJson);
 
         processedSubTasks = processedSubTasks.map((st: any) => {
           const originalSt = originalSubTasks.find((o: any) => o.id === st.id);

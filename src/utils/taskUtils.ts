@@ -77,11 +77,52 @@ export interface Task {
   endDate: string | Date;
 };
 
+export const safeParseDate = (d: any): Date | null => {
+  if (!d) return null;
+  try {
+    const parsed = d instanceof Date ? d : new Date(d);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  } catch {
+    return null;
+  }
+};
+
+export const safeFormatDate = (
+  date: any,
+  formatPattern: string = 'dd MMM yyyy',
+  fallback: string = '-'
+): string => {
+  if (!date) return fallback;
+  try {
+    const parsed = date instanceof Date ? date : new Date(date);
+    if (isNaN(parsed.getTime())) return fallback;
+    return format(parsed, formatPattern);
+  } catch {
+    return fallback;
+  }
+};
+
+export const safeParseSubTasks = (subTasksJson: any): SubTask[] => {
+  if (!subTasksJson) return [];
+  if (Array.isArray(subTasksJson)) return subTasksJson;
+  if (typeof subTasksJson === 'string') {
+    try {
+      const parsed = JSON.parse(subTasksJson);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export const getTaskFiles = (task: Task | Partial<Task>): FileItem[] => {
   if (task.filesJson) {
     try {
-      const allFiles: FileItem[] = JSON.parse(task.filesJson);
-      return allFiles.filter(f => !f.isDeleted);
+      const allFiles: FileItem[] = typeof task.filesJson === 'string' ? JSON.parse(task.filesJson) : task.filesJson;
+      if (Array.isArray(allFiles)) {
+        return allFiles.filter(f => f && !f.isDeleted);
+      }
     } catch (e) {}
   }
   if (task.fileUrl) {
@@ -93,8 +134,8 @@ export const getTaskFiles = (task: Task | Partial<Task>): FileItem[] => {
 export const getAdditionalPics = (task: Task | Partial<Task>): string[] => {
   if (task.additionalPics) {
     try {
-      const parsed = JSON.parse(task.additionalPics);
-      if (Array.isArray(parsed)) return parsed;
+      const parsed = typeof task.additionalPics === 'string' ? JSON.parse(task.additionalPics) : task.additionalPics;
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
     } catch (e) { }
   }
   return [];
@@ -103,7 +144,8 @@ export const getAdditionalPics = (task: Task | Partial<Task>): string[] => {
 export const getTaskComments = (task: Task | Partial<Task>): CommentItem[] => {
   if (task.commentsJson) {
     try {
-      return JSON.parse(task.commentsJson);
+      const parsed = typeof task.commentsJson === 'string' ? JSON.parse(task.commentsJson) : task.commentsJson;
+      if (Array.isArray(parsed)) return parsed;
     } catch (e) {
       return [];
     }
@@ -114,7 +156,7 @@ export const getTaskComments = (task: Task | Partial<Task>): CommentItem[] => {
 export const getHistoryLogs = (task: Task | Partial<Task>): LogItem[] => {
   if (task.historyLogsJson) {
     try {
-      const parsed = JSON.parse(task.historyLogsJson);
+      const parsed = typeof task.historyLogsJson === 'string' ? JSON.parse(task.historyLogsJson) : task.historyLogsJson;
       if (Array.isArray(parsed)) return parsed;
     } catch (e) { }
   }
@@ -218,23 +260,23 @@ export const getPriorityBadgeClass = (p?: string | null) => {
 };
 
 export const getTaskDatesForExport = (task: any) => {
-  const start = new Date(task.startDate);
-  const end = new Date(task.endDate);
+  const start = safeParseDate(task?.startDate) || new Date();
+  const end = safeParseDate(task?.endDate) || start;
 
   let startH = 9, startM = 0;
   let endH = 17, endM = 0;
 
-  if (task.startTime) {
+  if (task?.startTime && typeof task.startTime === 'string') {
     const [h, m] = task.startTime.split(':').map(Number);
     if (!isNaN(h)) startH = h;
     if (!isNaN(m)) startM = m;
   }
   
-  if (task.endTime) {
+  if (task?.endTime && typeof task.endTime === 'string') {
     const [h, m] = task.endTime.split(':').map(Number);
     if (!isNaN(h)) endH = h;
     if (!isNaN(m)) endM = m;
-  } else if (task.startTime) {
+  } else if (task?.startTime) {
     endH = Math.min(23, startH + 1);
     endM = startM;
   }
@@ -273,27 +315,23 @@ export const getTaskLocationString = (task: any): string => {
 
 export const getTaskExportRow = (task: any) => {
   let subPekerjaanStr = '';
-  if (task.subTasksJson) {
-    try {
-      const parsed = JSON.parse(task.subTasksJson);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        subPekerjaanStr = parsed.map((st: any) => {
-          let text = st.text || '';
-          // Convert HTML breaks to real newlines to preserve formatting in Excel cell
-          text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '');
-          // Remove trailing/leading spaces but keep \n
-          text = text.trim();
-          
-          let str = `[${st.status}] ${text}`;
-          const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
-          if (allPics.length > 0) {
-            str += ` | PIC: ${allPics.join(', ')}`;
-          }
-          if (st.tenggatWaktu) str += ` | Tenggat: ${st.tenggatWaktu}`;
-          return str;
-        }).join('\n');
+  const parsedSubTasks = safeParseSubTasks(task?.subTasksJson);
+  if (parsedSubTasks.length > 0) {
+    subPekerjaanStr = parsedSubTasks.map((st: any) => {
+      let text = st.text || '';
+      // Convert HTML breaks to real newlines to preserve formatting in Excel cell
+      text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '');
+      // Remove trailing/leading spaces but keep \n
+      text = text.trim();
+      
+      let str = `[${st.status || 'To Do'}] ${text}`;
+      const allPics = [st.pic, ...(st.additionalPics || [])].filter(Boolean);
+      if (allPics.length > 0) {
+        str += ` | PIC: ${allPics.join(', ')}`;
       }
-    } catch (e) { }
+      if (st.tenggatWaktu) str += ` | Tenggat: ${st.tenggatWaktu}`;
+      return str;
+    }).join('\n');
   }
 
   const extraPics = getAdditionalPics(task);
@@ -308,8 +346,8 @@ export const getTaskExportRow = (task: any) => {
     'Sepanjang Hari': task.isAllDay ? 'Ya' : 'Tidak',
     'Jam Mulai': task.startTime || '',
     'Jam Selesai': task.endTime || '',
-    'Tanggal Mulai': task.startDate ? format(new Date(task.startDate), 'yyyy-MM-dd') : '',
-    'Tenggat Waktu': task.endDate ? format(new Date(task.endDate), 'yyyy-MM-dd') : '',
+    'Tanggal Mulai': safeFormatDate(task.startDate, 'yyyy-MM-dd', ''),
+    'Tenggat Waktu': safeFormatDate(task.endDate, 'yyyy-MM-dd', ''),
     'Repetisi': formatRecurrenceText(task.repetisi),
     'Deskripsi': task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '',
     'Catatan': task.catatan || '',
@@ -319,18 +357,15 @@ export const getTaskExportRow = (task: any) => {
 };
 
 export const getGoogleCalendarUrl = (task: Task) => {
+  if (!task) return '';
   const extraPics = getAdditionalPics(task);
-  const allPicsStr = [task.pic, ...extraPics].join(', ');
-  const title = encodeURIComponent(`[${task.kategori || 'Pekerjaan'}] ${task.nama}`);
+  const allPicsStr = [task.pic, ...extraPics].filter(Boolean).join(', ');
+  const title = encodeURIComponent(`[${task.kategori || 'Pekerjaan'}] ${task.nama || ''}`);
 
   let subTasksStr = '';
-  if (task.subTasksJson) {
-    try {
-      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-      if (Array.isArray(subTasks) && subTasks.length > 0) {
-        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
-      }
-    } catch (e) { }
+  const subTasks = safeParseSubTasks(task.subTasksJson);
+  if (subTasks.length > 0) {
+    subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
   }
 
   const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
@@ -349,19 +384,14 @@ export const getGoogleCalendarUrl = (task: Task) => {
 };
 
 export const handleExportICS = (task: Task) => {
-  const start = new Date(task.startDate);
-  const end = new Date(task.endDate);
+  if (!task) return;
   const extraPics = getAdditionalPics(task);
-  const allPicsStr = [task.pic, ...extraPics].join(', ');
+  const allPicsStr = [task.pic, ...extraPics].filter(Boolean).join(', ');
 
   let subTasksStr = '';
-  if (task.subTasksJson) {
-    try {
-      const subTasks: SubTask[] = JSON.parse(task.subTasksJson);
-      if (Array.isArray(subTasks) && subTasks.length > 0) {
-        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
-      }
-    } catch (e) { }
+  const subTasks = safeParseSubTasks(task.subTasksJson);
+  if (subTasks.length > 0) {
+    subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text}`).join('\n')}`;
   }
 
   const notesStr = task.catatan ? `\n\nCatatan:\n${task.catatan}` : '';
@@ -371,7 +401,7 @@ export const handleExportICS = (task: Task) => {
   const locStr = getTaskLocationString(task);
 
   const event: EventAttributes = {
-    title: `[${task.kategori || 'Pekerjaan'}] ${task.nama}`,
+    title: `[${task.kategori || 'Pekerjaan'}] ${task.nama || ''}`,
     description: `PIC: ${allPicsStr}\nStatus: ${task.status}\nPrioritas: ${task.prioritas || 'Medium'}\nRepetisi: ${formatRecurrenceText(task.repetisi)}\nDeskripsi: ${task.deskripsi ? task.deskripsi.replace(/<[^>]+>/g, '') : '-'}${subTasksStr}${notesStr}${fileStr}`,
     start: [startY, startMo + 1, startD, startH, startM],
     end: [endY, endMo + 1, endD, endH, endM],
@@ -379,7 +409,7 @@ export const handleExportICS = (task: Task) => {
     alarms: [
       {
         action: 'display',
-        description: `Reminder: ${task.nama}`,
+        description: `Reminder: ${task.nama || ''}`,
         trigger: { minutes: 30, before: true }
       }
     ]
@@ -394,7 +424,7 @@ export const handleExportICS = (task: Task) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${task.nama.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
+    a.download = `${(task.nama || 'task').replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
     a.click();
   });
 };
@@ -493,6 +523,30 @@ export const formatDescription = (htmlOrText: string): string => {
   }
   
   return content;
+};
+
+export const htmlToMarkdownText = (content: string): string => {
+  if (!content) return '';
+  if (!/<[a-z][\s\S]*>/i.test(content)) return content;
+  
+  let text = content;
+  text = text.replace(/<(?:strong|b)\b[^>]*>(.*?)<\/(?:strong|b)>/gi, '**$1**');
+  text = text.replace(/<(?:em|i)\b[^>]*>(.*?)<\/(?:em|i)>/gi, '*$1*');
+  text = text.replace(/<(?:strike|del|s)\b[^>]*>(.*?)<\/(?:strike|del|s)>/gi, '~~$1~~');
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<(?:div|p)\b[^>]*>/gi, '');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+
+  return text.trim();
 };
 
 export const handleMarkdownShortcut = (

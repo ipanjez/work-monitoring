@@ -6,7 +6,11 @@ import { X, UserPlus, Users, Plus, Paperclip, File, Eye, ArrowUp, ArrowDown, Inf
 import { format } from 'date-fns';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Task, FileItem, SubTask, handleMarkdownShortcut, formatDescription } from '@/utils/taskUtils';
+import { 
+  Task, FileItem, SubTask, handleMarkdownShortcut, 
+  formatDescription, htmlToMarkdownText, safeParseSubTasks, 
+  safeParseDate, safeFormatDate 
+} from '@/utils/taskUtils';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { useMaster } from '@/context/MasterContext';
@@ -17,7 +21,7 @@ const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?: string }) => {
   const [expanded, setExpanded] = useState(false);
-  if (!logs || logs.length === 0) return null;
+  if (!logs || !Array.isArray(logs) || logs.length === 0) return null;
   const visibleLogs = expanded ? logs : logs.slice(Math.max(logs.length - 1, 0));
 
   return (
@@ -26,8 +30,8 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
       {visibleLogs.map((log: any, lidx: number) => (
         <div key={lidx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '10px' }}>{format(new Date(log.timestamp), 'dd MMM yyyy, HH:mm')}</span>
-            {(log.user || log.author) && (
+            <span style={{ fontSize: '10px' }}>{safeFormatDate(log?.timestamp, 'dd MMM yyyy, HH:mm')}</span>
+            {(log?.user || log?.author) && (
               <span style={{ fontSize: '9.5px', color: 'var(--accent-primary)', fontWeight: 600 }}>
                 • oleh {log.user || log.author}
               </span>
@@ -35,7 +39,7 @@ const SubTaskLogViewer = ({ logs, title = "Log Status:" }: { logs: any[], title?
           </div>
           <span
             style={{ color: 'var(--text-primary)', wordBreak: 'break-word', whiteSpace: 'normal' }}
-            dangerouslySetInnerHTML={{ __html: `- ${formatDescription(log.status)}` }}
+            dangerouslySetInnerHTML={{ __html: `- ${formatDescription(typeof log === 'string' ? log : (log?.status || ''))}` }}
           />
         </div>
       ))}
@@ -149,9 +153,23 @@ export default function TaskAddEditModal({
     }
   }, [isOpen]);
 
+  const lastOpenedTaskKeyRef = useRef<string | number | null>(null);
+
   useEffect(() => {
+    if (!isOpen) {
+      lastOpenedTaskKeyRef.current = null;
+      setEditingTask(null);
+      return;
+    }
+
     if (isOpen && taskToEdit) {
-      console.log('DEBUG taskToEdit:', taskToEdit);
+      const taskKey = taskToEdit.id ? `edit-${taskToEdit.id}` : `new-${taskToEdit.nama || ''}-${taskToEdit.startDate || ''}`;
+      // Prevent resetting the user's active edits on parent re-renders or background sync ticks
+      if (lastOpenedTaskKeyRef.current === taskKey) {
+        return;
+      }
+      lastOpenedTaskKeyRef.current = taskKey;
+
       const cloned = JSON.parse(JSON.stringify(taskToEdit));
 
       if (cloned.repetisi && cloned.repetisi.startsWith('CUSTOM_RECURRENCE:')) {
@@ -172,7 +190,7 @@ export default function TaskAddEditModal({
 
       if (cloned.lokasi) {
         try {
-          cloned.lokasiData = JSON.parse(cloned.lokasi);
+          cloned.lokasiData = typeof cloned.lokasi === 'string' ? JSON.parse(cloned.lokasi) : cloned.lokasi;
           // If old data has lokasiData.jam but startTime is empty, sync it
           if (cloned.lokasiData?.jam && !cloned.startTime) {
             cloned.startTime = cloned.lokasiData.jam;
@@ -209,22 +227,24 @@ export default function TaskAddEditModal({
 
       // Force parsing from subTasksJson to prevent any missing list issues
       if (cloned.subTasksJson) {
-        try {
-          const parsed = typeof cloned.subTasksJson === 'string' ? JSON.parse(cloned.subTasksJson) : cloned.subTasksJson;
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            cloned.subTasksList = parsed;
-          }
-        } catch (e) {
-          console.error("Failed to parse subTasksJson in modal", e);
+        const parsed = safeParseSubTasks(cloned.subTasksJson);
+        if (parsed.length > 0) {
+          cloned.subTasksList = parsed;
         }
       }
 
       if (!cloned.subTasksList) {
-        console.warn('DEBUG: subTasksList was missing in cloned taskToEdit!');
         cloned.subTasksList = [];
       } else if (!Array.isArray(cloned.subTasksList)) {
-        console.warn('DEBUG: subTasksList was not an array in cloned taskToEdit!', cloned.subTasksList);
-        cloned.subTasksList = [];
+        cloned.subTasksList = safeParseSubTasks(cloned.subTasksList);
+      }
+
+      // Normalize subtasks text from HTML to clean plain text/markdown
+      if (cloned.subTasksList && Array.isArray(cloned.subTasksList)) {
+        cloned.subTasksList = cloned.subTasksList.map((st: any) => ({
+          ...st,
+          text: htmlToMarkdownText(st.text || '')
+        }));
       }
 
       // Force parsing from filesJson to ensure filesList is properly populated and order preserved
@@ -247,13 +267,12 @@ export default function TaskAddEditModal({
 
       // Fix date formats for <input type="date"> (expects YYYY-MM-DD)
       if (cloned.startDate) {
-        cloned.startDate = format(new Date(cloned.startDate), 'yyyy-MM-dd');
+        cloned.startDate = safeFormatDate(cloned.startDate, 'yyyy-MM-dd', '');
       }
       if (cloned.endDate) {
-        cloned.endDate = format(new Date(cloned.endDate), 'yyyy-MM-dd');
+        cloned.endDate = safeFormatDate(cloned.endDate, 'yyyy-MM-dd', '');
       }
 
-      console.log('DEBUG FINAL CLONED TASK:', cloned);
       setEditingTask(cloned);
     } else {
       setEditingTask(null);

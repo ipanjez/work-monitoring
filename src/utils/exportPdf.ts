@@ -1,7 +1,12 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
-import { Task, SubTask, FileItem, LogItem, CommentItem, getAdditionalPics, getTaskFiles, getHistoryLogs, getTaskComments, formatRecurrenceText, formatLogDetails } from './taskUtils';
+import { 
+  Task, SubTask, FileItem, LogItem, CommentItem, 
+  getAdditionalPics, getTaskFiles, getHistoryLogs, 
+  getTaskComments, formatRecurrenceText, formatLogDetails, 
+  safeParseSubTasks, safeFormatDate 
+} from './taskUtils';
 import { downloadBlobSafe } from './domCapture';
 
 const ACCENT = [16, 185, 129] as [number, number, number]; // #10b981
@@ -34,7 +39,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
     doc.setTextColor(...GRAY);
     doc.text(`${appName} — Dashboard Monitoring Pekerjaan`, margin, footerY);
     doc.text(`${siteUrl}`, margin, footerY + 3.5);
-    doc.text(`Dicetak: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageW - margin, footerY, { align: 'right' });
+    doc.text(`Dicetak: ${safeFormatDate(new Date(), 'dd MMM yyyy, HH:mm')}`, pageW - margin, footerY, { align: 'right' });
     doc.text(`Halaman ${pageNum} dari ${totalPages}`, pageW - margin, footerY + 3.5, { align: 'right' });
   };
 
@@ -92,10 +97,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
   y += 12;
 
   // ======= RINGKASAN STATUS (Summary) =======
-  let subTasks: SubTask[] = [];
-  if (task.subTasksJson) {
-    try { subTasks = JSON.parse(task.subTasksJson); } catch {}
-  }
+  const subTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
 
   if (subTasks.length > 0) {
     const statusCounts = subTasks.reduce((acc, st) => {
@@ -211,8 +213,8 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
     ['Kategori', task.kategori || 'Umum'],
     ['Status', `${task.status} (${task.progress || 0}%)`],
     ['Repetisi', formatRecurrenceText(task.repetisi)],
-    ['Tanggal Mulai', `${format(new Date(task.startDate), 'dd MMM yyyy')}${!task.isAllDay && task.startTime ? ` ${task.startTime}` : ''}`],
-    ['Tenggat Waktu', `${format(new Date(task.endDate), 'dd MMM yyyy')}${!task.isAllDay && task.endTime ? ` ${task.endTime}` : ''}`],
+    ['Tanggal Mulai', `${safeFormatDate(task.startDate, 'dd MMM yyyy')}${!task.isAllDay && task.startTime ? ` ${task.startTime}` : ''}`],
+    ['Tenggat Waktu', `${safeFormatDate(task.endDate, 'dd MMM yyyy')}${!task.isAllDay && task.endTime ? ` ${task.endTime}` : ''}`],
     ['Lokasi', locationStr],
   ];
 
@@ -265,7 +267,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
         stripHtml(st.text),
         st.status,
         pics || '-',
-        st.tenggatWaktu ? format(new Date(st.tenggatWaktu), 'dd MMM yyyy') : '-',
+        st.tenggatWaktu ? safeFormatDate(st.tenggatWaktu, 'dd MMM yyyy') : '-',
       ];
     });
 
@@ -307,7 +309,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
       }
       const author = log.user || (log as any).author || (task.pic && task.pic !== 'Unassigned' ? task.pic : 'PIC / Admin');
       return [
-        format(new Date(log.timestamp), 'dd MMM yyyy HH:mm'),
+        safeFormatDate(log.timestamp, 'dd MMM yyyy HH:mm'),
         log.action,
         author,
         details || '-'
@@ -346,7 +348,7 @@ export function exportTaskPdf(task: Task, appName: string, siteUrl: string, auto
     const commentData = comments.map(c => [
       c.author,
       c.text,
-      format(new Date(c.createdAt), 'dd MMM yyyy HH:mm')
+      safeFormatDate(c.createdAt, 'dd MMM yyyy HH:mm')
     ]);
 
     autoTable(doc, {

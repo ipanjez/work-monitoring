@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { SubTask, formatDescription } from '@/utils/taskUtils';
+import { SubTask, formatDescription, safeParseDate, safeFormatDate, safeParseSubTasks } from '@/utils/taskUtils';
 import { User } from 'lucide-react';
-import { format, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 
 interface TaskTimelineProps {
   startDate?: string | Date;
   endDate?: string | Date;
-  subTasks: SubTask[];
+  subTasks?: SubTask[] | string | null;
   masterColors?: any;
   mainPic?: string;
 }
@@ -34,10 +34,12 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (!startDate) return null;
+  const parsedStartDate = safeParseDate(startDate);
+  if (!parsedStartDate) return null;
 
-  const start = startOfDay(new Date(startDate));
-  const end = endDate ? startOfDay(new Date(endDate)) : start;
+  const start = startOfDay(parsedStartDate);
+  const parsedEndDate = safeParseDate(endDate);
+  const end = parsedEndDate ? startOfDay(parsedEndDate) : start;
   const today = startOfDay(new Date());
 
   const getStatusColor = (status: string) => {
@@ -85,19 +87,23 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     });
   }
 
-  subTasks.forEach((st) => {
+  const safeSubs = safeParseSubTasks(subTasks);
+  safeSubs.forEach((st) => {
     if (st.tenggatWaktu) {
-      const sdate = startOfDay(new Date(st.tenggatWaktu));
-      events.push({
-        id: st.id || `subtask-${Math.random()}`,
-        type: 'subtask',
-        date: sdate,
-        title: st.text,
-        status: st.status,
-        color: getStatusColor(st.status),
-        pic: st.pic || mainPic,
-        additionalPics: st.additionalPics
-      });
+      const parsedStDate = safeParseDate(st.tenggatWaktu);
+      if (parsedStDate) {
+        const sdate = startOfDay(parsedStDate);
+        events.push({
+          id: st.id || `subtask-${Math.random()}`,
+          type: 'subtask',
+          date: sdate,
+          title: st.text || 'Sub Pekerjaan',
+          status: st.status || 'To Do',
+          color: getStatusColor(st.status || 'To Do'),
+          pic: st.pic || mainPic,
+          additionalPics: st.additionalPics
+        });
+      }
     }
   });
 
@@ -105,8 +111,8 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
 
   const groupedEvents: { id: string; date: Date; color: string; hasSubtasks: boolean; events: TimelineEvent[] }[] = [];
   events.forEach((ev) => {
-    const key = format(ev.date, 'yyyy-MM-dd');
-    let group = groupedEvents.find(g => format(g.date, 'yyyy-MM-dd') === key);
+    const key = safeFormatDate(ev.date, 'yyyy-MM-dd', 'invalid-date');
+    let group = groupedEvents.find(g => safeFormatDate(g.date, 'yyyy-MM-dd') === key);
     if (!group) {
       group = {
         id: key,
@@ -135,8 +141,9 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     });
   });
 
-  const statusCounts = subTasks.reduce((acc, st) => {
-    acc[st.status] = (acc[st.status] || 0) + 1;
+  const statusCounts = safeSubs.reduce((acc, st) => {
+    const s = st.status || 'To Do';
+    acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -188,7 +195,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', textAlign: 'left' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                    {format(group.date, 'dd MMM yyyy')}
+                    {safeFormatDate(group.date, 'dd MMM yyyy')}
                   </span>
                   {group.events.map((ev, evidx) => {
                     const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
@@ -252,7 +259,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                 {isLeft && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
-                      {format(group.date, 'dd MMM yyyy')}
+                      {safeFormatDate(group.date, 'dd MMM yyyy')}
                     </span>
                     {group.events.map((ev, evidx) => {
                       const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
@@ -326,7 +333,7 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
                 {!isLeft && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
-                      {format(group.date, 'dd MMM yyyy')}
+                      {safeFormatDate(group.date, 'dd MMM yyyy')}
                     </span>
                     {group.events.map((ev, evidx) => {
                       const isEvSpecial = ev.type === 'start' || ev.type === 'end' || ev.type === 'today';
