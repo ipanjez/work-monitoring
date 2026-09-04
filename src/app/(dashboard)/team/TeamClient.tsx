@@ -54,11 +54,7 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
     }
     return '';
   };
-  const { 
-    globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
-    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
-  } = useFilter();
-  
+
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks);
   const [selectedPic, setSelectedPic] = useState<string | null>(null);
   const [workloadFilter, setWorkloadFilter] = useState<WorkloadFilter>('all');
@@ -66,7 +62,6 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const { openDetail, openCreate } = useTaskModal();
   
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   
   const [masterPics, setMasterPics] = useState<string[]>([]);
@@ -74,6 +69,11 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
   const [masterPriorities, setMasterPriorities] = useState<string[]>([]);
   const [masterCategories, setMasterCategories] = useState<string[]>([]);
   
+  const { 
+    globalTargetFilter, globalPicFilter, globalCustomStartDate, globalCustomEndDate,
+    globalFilterStatus, globalFilterPriority, globalFilterCategory, globalSearchQuery, globalSearchExactMatch
+  } = useFilter();
+
   useEffect(() => {
     setLocalTasks(initialTasks);
   }, [initialTasks]);
@@ -90,9 +90,31 @@ export default function TeamClient({ tasks: initialTasks }: { tasks: Task[] }) {
         })
         .catch(e => console.error(e));
     };
+
+    const handleTasksUpdated = () => {
+      fetch('/api/tasks')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setLocalTasks(data);
+        })
+        .catch(() => {});
+    };
+
+    const handleRealtimeTasks = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setLocalTasks(e.detail);
+      }
+    };
+
     loadMasterPics();
     window.addEventListener('tasksUpdated', loadMasterPics);
-    return () => window.removeEventListener('tasksUpdated', loadMasterPics);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
+    window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    return () => {
+      window.removeEventListener('tasksUpdated', loadMasterPics);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
+      window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    };
   }, []);
 
   const todayStart = startOfDay(new Date()).getTime();

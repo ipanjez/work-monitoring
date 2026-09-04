@@ -63,7 +63,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   const { openDetail } = useTaskModal();
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<number | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -73,9 +72,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
   useEffect(() => {
     const handleRealtimeTasks = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
-        startTransition(() => {
-          setTasks(e.detail);
-        });
+        setTasks(e.detail);
       }
     };
 
@@ -84,12 +81,6 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
       window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
     };
   }, []);
-
-  useEffect(() => {
-    if (session && !hasPermission(roleConfig, 'view_dashboard', userRole)) {
-      router.replace('/tasks');
-    }
-  }, [session, roleConfig, userRole, router]);
 
   const handleDragStart = (e: React.DragEvent, id: number) => {
     setDraggedTaskId(id);
@@ -257,10 +248,7 @@ export default function BoardClient({ tasks: initialTasks }: { tasks: any[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
-      startTransition(() => {
-        router.refresh();
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-      });
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       console.error('Failed to save reorder', e);
     }

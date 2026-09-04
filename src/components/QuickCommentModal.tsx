@@ -71,7 +71,6 @@ export default function QuickCommentModal({ task, onClose }: QuickCommentModalPr
       if (!res.ok) throw new Error('Gagal menyimpan komentar');
       toast.success('Komentar berhasil dikirim');
       if (addActivityLog) addActivityLog('NEW_COMMENT', 'Komentar Baru', `Komentar ditambahkan oleh ${finalAuthor.trim()} pada pekerjaan "${task!.nama}"`, 'info');
-      router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (e) {
       toast.error('Gagal menyimpan komentar');

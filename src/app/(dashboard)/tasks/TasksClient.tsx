@@ -1,6 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useRef, useEffect, useTransition, useMemo, useDeferredValue } from 'react';
+import { useState, useRef, useEffect, useMemo, useDeferredValue } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { RefreshCw, Filter, Search, Plus, Trash2, Edit, Save, ArrowDownToLine, Upload, X, CheckSquare, CheckCheck, Settings2, Calendar, FileDown, FileSpreadsheet, Download, Pencil, CalendarDays, ExternalLink, FileText, CheckCircle, Clock, AlertCircle, Info, Sparkles, Paperclip, Eye, File, ArrowUpDown, ArrowUp, ArrowDown, Repeat, UserPlus, History, Copy, MessageSquare, Zap, MoreVertical, Video, MapPin, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListOrdered, CheckCircle2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -40,15 +40,12 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   // Real-Time Background Synchronization & Event Listener
   useEffect(() => {
     const handleRealtimeTasks = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
-        startTransition(() => {
-          setTasks(e.detail);
-        });
+        setTasks(e.detail);
       }
     };
 
@@ -57,9 +54,7 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         .then(r => r.json())
         .then(data => {
           if (Array.isArray(data)) {
-            startTransition(() => {
-              setTasks(data);
-            });
+            setTasks(data);
           }
         })
         .catch(() => {});
@@ -134,10 +129,9 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
   }, [initialTasks]);
 
   const refreshData = () => {
-    startTransition(() => {
-      router.refresh();
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
-    });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('tasksUpdated'));
+    }
   };
 
   const handleToggleSelectAll = () => {
@@ -770,10 +764,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
 
       refreshData();
 
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('tasksUpdated'));
-      }
-
       toast.success(`Pekerjaan "${savedTask.nama}" berhasil ${isNew ? 'ditambahkan' : 'diperbarui'}!`);
     } catch (error: any) {
       console.error('Save task error:', error);
@@ -802,10 +792,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
       }
 
       refreshData();
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('tasksUpdated'));
-      }
 
       toast.success('Pekerjaan berhasil dihapus dari daftar.');
     } catch (error: any) {
@@ -1036,10 +1022,6 @@ export default function TasksClient({ initialTasks }: { initialTasks: Task[] }) 
         const updatedTasks = await res.json();
         setTasks(updatedTasks);
         refreshData();
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('tasksUpdated'));
-        }
 
         toast.success(`Berhasil mengimpor ${formattedData.length} data pekerjaan dari Excel!`);
       } catch (err: any) {

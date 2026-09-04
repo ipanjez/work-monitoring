@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -96,7 +96,7 @@ export default function BulkEditModal({
     }
   };
 
-  const getTitle = () => {
+  const modalTitle = useMemo(() => {
     switch (field) {
       case 'status': return 'Ubah Status Massal';
       case 'kategori': return 'Ubah Kategori Massal';
@@ -105,7 +105,7 @@ export default function BulkEditModal({
       case 'jadwal': return 'Ubah Jadwal & Waktu Massal';
       default: return 'Edit Massal';
     }
-  };
+  }, [field]);
 
   if (!isOpen || !field) return null;
 
@@ -119,7 +119,7 @@ export default function BulkEditModal({
           style={{ background: 'var(--surface-color)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>{getTitle()}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>{modalTitle}</h3>
             <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
               <X size={20} />
             </button>

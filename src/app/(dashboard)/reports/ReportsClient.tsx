@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef, useTransition } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { 
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Calendar, 
@@ -77,7 +77,6 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
   const reportsRef = useRef<HTMLDivElement>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [isPending, startTransition] = useTransition();
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
   const [visibleSections, setVisibleSections] = useState<Record<string, boolean>>(() => {
@@ -130,9 +129,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
   useEffect(() => {
     const handleRealtimeTasks = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
-        startTransition(() => {
-          setTasks(e.detail);
-        });
+        setTasks(e.detail);
       }
     };
 
@@ -141,9 +138,7 @@ export default function ReportsClient({ tasks: initialTasks }: { tasks: Task[] }
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
-            startTransition(() => {
-              setTasks(data);
-            });
+            setTasks(data);
           }
         })
         .catch(console.error);

@@ -1,6 +1,6 @@
 'use client';
 import { useMaster } from '@/context/MasterContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useNotifications } from '@/context/NotificationContext';
@@ -127,7 +127,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commentsJson: JSON.stringify(updatedComments) })
       });
-      router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Komentar dihapus');
     } catch (err) {
@@ -136,8 +135,8 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
     }
   };
 
-
-  const getAllPics = () => {
+  // Memoized values placed strictly BEFORE early return to prevent React Hook Violation
+  const allPics = useMemo(() => {
     if (!task) return [];
     const pics = new Set<string>();
     if (task.pic) pics.add(task.pic);
@@ -155,35 +154,47 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
       }
     });
     return Array.from(pics);
-  };
+  }, [task]);
 
-  const allPics = getAllPics();
-  const emailsTo = allPics.map(p => picEmails[p]).filter(Boolean);
+  const emailsTo = useMemo(() => {
+    return allPics.map(p => picEmails[p]).filter(Boolean);
+  }, [allPics, picEmails]);
 
-  const subject = task ? `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}` : '';
-  const calUrl = task ? getGoogleCalendarUrl(task) : '';
+  const subject = useMemo(() => {
+    return task ? `Informasi Pekerjaan: [${task.kategori || 'Umum'}] ${task.nama}` : '';
+  }, [task]);
 
-  let subTasksStr = '';
-  if (task?.subTasksJson) {
-    const subTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
-    if (subTasks.length > 0) {
-      subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
+  const calUrl = useMemo(() => {
+    return task ? getGoogleCalendarUrl(task) : '';
+  }, [task]);
+
+  const emailBody = useMemo(() => {
+    if (!task) return '';
+    let subTasksStr = '';
+    if (task.subTasksJson) {
+      const subTasks: SubTask[] = safeParseSubTasks(task.subTasksJson);
+      if (subTasks.length > 0) {
+        subTasksStr = `\n\nSub-Pekerjaan:\n${subTasks.map(st => `- [${st.status}] ${st.text} (PIC: ${st.pic || '-'})`).join('\n')}`;
+      }
     }
-  }
 
-  const emailBody = task ? `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
-    `Nama Pekerjaan: ${task.nama}\n` +
-    `Kategori: ${task.kategori || 'Umum'}\n` +
-    `Status: ${task.status}\n` +
-    `Prioritas: ${task.prioritas || 'Medium'}\n` +
-    `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
-    `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
-    `${subTasksStr}\n\n` +
-    `---\n` +
-    `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n` : '';
+    return `Berikut adalah detail pekerjaan yang ditugaskan:\n\n` +
+      `Nama Pekerjaan: ${task.nama}\n` +
+      `Kategori: ${task.kategori || 'Umum'}\n` +
+      `Status: ${task.status}\n` +
+      `Prioritas: ${task.prioritas || 'Medium'}\n` +
+      `Repetisi: ${formatRecurrenceText(task.repetisi)}\n\n` +
+      `Deskripsi:\n${task.deskripsi ? task.deskripsi.replace(/<[^>]*>?/gm, '') : '-'}` +
+      `${subTasksStr}\n\n` +
+      `---\n` +
+      `TAMBAHKAN KE GOOGLE CALENDAR:\nKlik tautan berikut untuk menambahkan pekerjaan ini ke kalender Anda:\n${calUrl}\n`;
+  }, [task, calUrl]);
 
   // Use Gmail Web Compose URL explicitly since mailto: is often unreliable or blocked by OS defaults
-  const mailtoLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${emailsTo.join(',')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+  const mailtoLink = useMemo(() => {
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${emailsTo.join(',')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+  }, [emailsTo, subject, emailBody]);
+
   const canSendMail = emailsTo.length > 0;
 
   const handleAddComment = async () => {
@@ -227,7 +238,6 @@ export default function TaskDetailModal({ task, onClose, setPreviewFile, onEdit,
         task!.id
       );
 
-      router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       toast.success('Komentar berhasil ditambahkan');
     } catch (e) {

@@ -70,7 +70,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setTasks(initialTasks);
@@ -80,15 +79,24 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
   useEffect(() => {
     const handleRealtimeTasks = (e: any) => {
       if (e?.detail && Array.isArray(e.detail)) {
-        startTransition(() => {
-          setTasks(e.detail);
-        });
+        setTasks(e.detail);
       }
     };
 
+    const handleTasksUpdated = () => {
+      fetch('/api/tasks')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) setTasks(data);
+        })
+        .catch(() => {});
+    };
+
     window.addEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+    window.addEventListener('tasksUpdated', handleTasksUpdated);
     return () => {
       window.removeEventListener('realtimeTasksUpdated', handleRealtimeTasks);
+      window.removeEventListener('tasksUpdated', handleTasksUpdated);
     };
   }, []);
 
@@ -391,23 +399,6 @@ export default function CalendarClient({ tasks: initialTasks }: { tasks: Task[] 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-      {isPending && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.4)',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backdropFilter: 'blur(1px)',
-          borderRadius: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '12px 24px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-            <Loader2 className="animate-spin" size={20} color="var(--accent-primary)" />
-            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Memperbarui Kalender...</span>
-          </div>
-        </div>
-      )}
 
       {isExportingPdf && (
         <div style={{

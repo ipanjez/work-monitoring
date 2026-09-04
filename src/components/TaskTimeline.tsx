@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SubTask, formatDescription, safeParseDate, safeFormatDate, safeParseSubTasks } from '@/utils/taskUtils';
 import { User } from 'lucide-react';
 import { startOfDay } from 'date-fns';
@@ -34,122 +34,132 @@ export default function TaskTimeline({ startDate, endDate, subTasks, masterColor
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const parsedStartDate = safeParseDate(startDate);
-  if (!parsedStartDate) return null;
+  // Memoize all timeline calculations strictly BEFORE early return to prevent React Hook Violations
+  const timelineData = useMemo(() => {
+    const parsedStartDate = safeParseDate(startDate);
+    if (!parsedStartDate) return null;
 
-  const start = startOfDay(parsedStartDate);
-  const parsedEndDate = safeParseDate(endDate);
-  const end = parsedEndDate ? startOfDay(parsedEndDate) : start;
-  const today = startOfDay(new Date());
+    const start = startOfDay(parsedStartDate);
+    const parsedEndDate = safeParseDate(endDate);
+    const end = parsedEndDate ? startOfDay(parsedEndDate) : start;
+    const today = startOfDay(new Date());
 
-  const getStatusColor = (status: string) => {
-    if (masterColors) {
-      const key = `status_${status}`;
-      const c = masterColors[key];
-      if (c && c !== '#ffffff' && c !== '#ffffff00' && c !== '#fff') {
-        return c.length === 9 ? c.substring(0, 7) : c;
+    const getStatusColor = (status: string) => {
+      if (masterColors) {
+        const key = `status_${status}`;
+        const c = masterColors[key];
+        if (c && c !== '#ffffff' && c !== '#ffffff00' && c !== '#fff') {
+          return c.length === 9 ? c.substring(0, 7) : c;
+        }
       }
+      
+      if (status === 'Done') return '#10b981';
+      if (status === 'In Progress') return '#f59e0b';
+      if (status === 'To Do' || status === 'Pending') return '#ef4444';
+      return '#3b82f6';
+    };
+
+    const events: TimelineEvent[] = [];
+
+    events.push({
+      id: 'start',
+      type: 'start',
+      date: start,
+      title: 'Mulai Pekerjaan',
+      color: 'var(--text-secondary)'
+    });
+
+    if (end.getTime() !== start.getTime()) {
+      events.push({
+        id: 'end',
+        type: 'end',
+        date: end,
+        title: 'Batas Waktu',
+        color: '#dc2626'
+      });
     }
-    
-    if (status === 'Done') return '#10b981';
-    if (status === 'In Progress') return '#f59e0b';
-    if (status === 'To Do' || status === 'Pending') return '#ef4444';
-    return '#3b82f6';
-  };
 
-  const events: TimelineEvent[] = [];
+    if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
+      events.push({
+        id: 'today',
+        type: 'today',
+        date: today,
+        title: 'Hari Ini',
+        color: 'var(--accent-primary)'
+      });
+    }
 
-  events.push({
-    id: 'start',
-    type: 'start',
-    date: start,
-    title: 'Mulai Pekerjaan',
-    color: 'var(--text-secondary)'
-  });
-
-  if (end.getTime() !== start.getTime()) {
-    events.push({
-      id: 'end',
-      type: 'end',
-      date: end,
-      title: 'Batas Waktu',
-      color: '#dc2626'
-    });
-  }
-
-  if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
-    events.push({
-      id: 'today',
-      type: 'today',
-      date: today,
-      title: 'Hari Ini',
-      color: 'var(--accent-primary)'
-    });
-  }
-
-  const safeSubs = safeParseSubTasks(subTasks);
-  safeSubs.forEach((st) => {
-    if (st.tenggatWaktu) {
-      const parsedStDate = safeParseDate(st.tenggatWaktu);
-      if (parsedStDate) {
-        const sdate = startOfDay(parsedStDate);
-        events.push({
-          id: st.id || `subtask-${Math.random()}`,
-          type: 'subtask',
-          date: sdate,
-          title: st.text || 'Sub Pekerjaan',
-          status: st.status || 'To Do',
-          color: getStatusColor(st.status || 'To Do'),
-          pic: st.pic || mainPic,
-          additionalPics: st.additionalPics
-        });
+    const safeSubs = safeParseSubTasks(subTasks);
+    safeSubs.forEach((st) => {
+      if (st.tenggatWaktu) {
+        const parsedStDate = safeParseDate(st.tenggatWaktu);
+        if (parsedStDate) {
+          const sdate = startOfDay(parsedStDate);
+          events.push({
+            id: st.id || `subtask-${st.text}`,
+            type: 'subtask',
+            date: sdate,
+            title: st.text || 'Sub Pekerjaan',
+            status: st.status || 'To Do',
+            color: getStatusColor(st.status || 'To Do'),
+            pic: st.pic || mainPic,
+            additionalPics: st.additionalPics
+          });
+        }
       }
-    }
-  });
-
-  events.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  const groupedEvents: { id: string; date: Date; color: string; hasSubtasks: boolean; events: TimelineEvent[] }[] = [];
-  events.forEach((ev) => {
-    const key = safeFormatDate(ev.date, 'yyyy-MM-dd', 'invalid-date');
-    let group = groupedEvents.find(g => safeFormatDate(g.date, 'yyyy-MM-dd') === key);
-    if (!group) {
-      group = {
-        id: key,
-        date: ev.date,
-        color: ev.color,
-        hasSubtasks: ev.type === 'subtask',
-        events: []
-      };
-      groupedEvents.push(group);
-    }
-    group.events.push(ev);
-    if (ev.type === 'subtask') {
-      group.hasSubtasks = true;
-      group.color = ev.color;
-    } else if (!group.hasSubtasks && (ev.type === 'today' || ev.type === 'end')) {
-      group.color = ev.color;
-    }
-  });
-
-  // Sort events in each group so milestones appear first, then subtasks
-  groupedEvents.forEach(g => {
-    g.events.sort((a, b) => {
-      if (a.type !== 'subtask' && b.type === 'subtask') return -1;
-      if (a.type === 'subtask' && b.type !== 'subtask') return 1;
-      return 0;
     });
-  });
 
-  const statusCounts = safeSubs.reduce((acc, st) => {
-    const s = st.status || 'To Do';
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+    events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const statusSummary = Object.entries(statusCounts)
-    .map(([status, count]) => `${count} ${status}`)
-    .join(', ');
+    const groupedEvents: { id: string; date: Date; color: string; hasSubtasks: boolean; events: TimelineEvent[] }[] = [];
+    events.forEach((ev) => {
+      const key = safeFormatDate(ev.date, 'yyyy-MM-dd', 'invalid-date');
+      let group = groupedEvents.find(g => safeFormatDate(g.date, 'yyyy-MM-dd') === key);
+      if (!group) {
+        group = {
+          id: key,
+          date: ev.date,
+          color: ev.color,
+          hasSubtasks: ev.type === 'subtask',
+          events: []
+        };
+        groupedEvents.push(group);
+      }
+      group.events.push(ev);
+      if (ev.type === 'subtask') {
+        group.hasSubtasks = true;
+        group.color = ev.color;
+      } else if (!group.hasSubtasks && (ev.type === 'today' || ev.type === 'end')) {
+        group.color = ev.color;
+      }
+    });
+
+    // Sort events in each group so milestones appear first, then subtasks
+    groupedEvents.forEach(g => {
+      g.events.sort((a, b) => {
+        if (a.type !== 'subtask' && b.type === 'subtask') return -1;
+        if (a.type === 'subtask' && b.type !== 'subtask') return 1;
+        return 0;
+      });
+    });
+
+    const statusCounts = safeSubs.reduce((acc, st) => {
+      const s = st.status || 'To Do';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const statusSummary = Object.entries(statusCounts)
+      .map(([status, count]) => `${count} ${status}`)
+      .join(', ');
+
+    return { events, groupedEvents, statusSummary };
+  }, [startDate, endDate, subTasks, masterColors, mainPic]);
+
+  // Early return safely placed after all hooks have been invoked
+  if (!timelineData) return null;
+
+  const { events, groupedEvents, statusSummary } = timelineData;
 
   return (
     <div style={{ padding: isMobile ? '16px 12px' : '24px 16px', background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>

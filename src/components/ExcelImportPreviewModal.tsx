@@ -52,6 +52,17 @@ export default function ExcelImportPreviewModal({
     setTasks(initialTasks);
   }, [initialTasks]);
 
+  // Memoized filtered tasks placed strictly BEFORE early return to prevent React Hook Violation
+  const filteredTasks = React.useMemo(() => {
+    if (!searchFilter) return tasks;
+    const lower = searchFilter.toLowerCase();
+    return tasks.filter(t => 
+      t.nama.toLowerCase().includes(lower) ||
+      t.pic.toLowerCase().includes(lower) ||
+      t.kategori.toLowerCase().includes(lower)
+    );
+  }, [tasks, searchFilter]);
+
   if (!isOpen) return null;
 
   const handleDeleteRow = (index: number) => {
@@ -74,14 +85,6 @@ export default function ExcelImportPreviewModal({
       setIsSubmitting(false);
     }
   };
-
-  const filteredTasks = searchFilter
-    ? tasks.filter(t => 
-        t.nama.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        t.pic.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        t.kategori.toLowerCase().includes(searchFilter.toLowerCase())
-      )
-    : tasks;
 
   const parseLocationText = (locStr: string | null | undefined): string => {
     if (!locStr) return '-';

@@ -214,7 +214,6 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
         addActivityLog('DELETE_TASK', 'Pekerjaan Dihapus', `Pekerjaan "${taskName}" telah dihapus`, 'warning');
       }
 
-      router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
       return true;
     } catch (err: any) {
@@ -288,7 +287,6 @@ export function TaskModalProvider({ children }: { children: ReactNode }) {
       setIsEditModalOpen(false);
       setEditingTask(null);
 
-      router.refresh();
       if (typeof window !== 'undefined') window.dispatchEvent(new Event('tasksUpdated'));
     } catch (err: any) {
       console.error(err);

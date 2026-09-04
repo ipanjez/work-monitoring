@@ -138,11 +138,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
   }, [status]);
 
-  // Register Service Worker for Push Notifications
+  // Register Service Worker for Push Notifications with auto-update to prevent aggressive caching
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
         .then(function(reg) {
+          // Periksa pembaruan Service Worker secara proaktif
+          reg.update().catch(() => {});
+
           if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().catch(() => {});
           }

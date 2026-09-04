@@ -1,3 +1,25 @@
+// Siklus hidup PWA Service Worker diperbarui untuk mencegah caching agresif yang tertahan
+self.addEventListener('install', function(event) {
+  // Aktifkan service worker baru seketika tanpa menunggu tab ditutup
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+  // Bersihkan semua cache lama untuk mencegah caching agresif yang tertahan
+  event.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(function() {
+      // Ambil alih kontrol klien (tabs) secara langsung
+      return self.clients.claim();
+    })
+  );
+});
+
 self.addEventListener('push', function(event) {
   let data = { title: 'Notifikasi Pekerjaan', body: 'Ada pembaruan tugas baru.' };
   if (event.data) {
