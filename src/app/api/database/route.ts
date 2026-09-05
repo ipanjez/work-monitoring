@@ -14,6 +14,14 @@ const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized: Harap login terlebih dahulu' }, { status: 401 });
+    }
+    const userRole = ((session.user as any)?.role || '').toUpperCase();
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+      return NextResponse.json({ error: 'Akses ditolak: Hanya Administrator yang berhak mengunduh cadangan database.' }, { status: 403 });
+    }
+
     const downloadedByName = session?.user?.name || session?.user?.email || 'Admin';
     const downloadTime = new Date().toISOString();
 
@@ -232,14 +240,14 @@ export const maxDuration = 60; // Max allowed duration on Vercel Hobby (60 secon
 
 export async function POST(req: Request) {
   try {
-    // Allow import without auth for testing
-    // const userCount = await prisma.user.count();
-    // if (userCount > 0) {
-    //   const session = await getServerSession(authOptions);
-    //   if (!session || (session.user as any)?.role !== 'ADMIN') {
-    //     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    //   }
-    // }
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized: Harap login terlebih dahulu' }, { status: 401 });
+    }
+    const userRole = ((session.user as any)?.role || '').toUpperCase();
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+      return NextResponse.json({ error: 'Akses ditolak: Hanya Administrator yang berhak memulihkan database.' }, { status: 403 });
+    }
 
     let zipBuffer: Buffer | null = null;
 

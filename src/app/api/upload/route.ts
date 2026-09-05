@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimitAsync, recordFailedAttemptAsync } from '@/lib/rateLimit';
 
 const isLocal = process.env.DATABASE_URL?.startsWith('file:');
 
@@ -17,8 +20,30 @@ const MIME_MAP: Record<string, string> = {
   '.csv': 'text/csv',
 };
 
+const DANGEROUS_EXTENSIONS = [
+  '.exe', '.bat', '.cmd', '.sh', '.php', '.phtml', '.php3', '.php4', '.php5',
+  '.js', '.vbs', '.scr', '.msi', '.ps1', '.jar', '.com', '.htm', '.html'
+];
+
 export async function POST(req: Request) {
   try {
+    // 1. Authentication Check
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized: Harap login terlebih dahulu untuk mengunggah berkas.' }, { status: 401 });
+    }
+
+    // 2. Rate Limiting (anti-DDoS / anti-storage exhaustion)
+    const userIdentifier = (session.user as any)?.npk || session.user.email || 'unknown';
+    const rateKey = `upload_rate:${userIdentifier}`;
+    const rateCheck = await checkRateLimitAsync(rateKey, 40, 60000, 120000); // max 40 files/minute
+    if (rateCheck.isBlocked) {
+      return NextResponse.json({
+        error: `Batas kecepatan upload tercapai. Harap tunggu ${rateCheck.waitTimeSeconds || 60} detik sebelum mengunggah kembali.`
+      }, { status: 429 });
+    }
+    await recordFailedAttemptAsync(rateKey, 40, 60000, 120000);
+
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
 
@@ -26,8 +51,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    const allowedExtensions = Object.keys(MIME_MAP);
+    // Validate filenames against dangerous executable patterns
+    for (const file of files) {
+      if (typeof file === 'string') continue;
+      const lower = file.name.toLowerCase();
+      if (DANGEROUS_EXTENSIONS.some(ext => lower.includes(ext))) {
+        return NextResponse.json({
+          error: `File "${file.name}" ditolak demi keamanan server karena mengandung ekstensi terlarang.`
+        }, { status: 400 });
+      }
+    }
 
+    const allowedExtensions = Object.keys(MIME_MAP);
     const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
     // --- LOCAL DISK MODE (SQLite dev) ---

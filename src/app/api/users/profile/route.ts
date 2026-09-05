@@ -54,7 +54,7 @@ export async function PUT(request: Request) {
   const userNpk = (session.user as any).npk;
   const userEmail = session.user.email;
   const body = await request.json();
-  const { name, email, currentPassword, newPassword, image, role } = body;
+  const { name, email, currentPassword, newPassword, image } = body;
 
   // Find user
   const user = await prisma.user.findFirst({
@@ -71,10 +71,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
   }
 
+  // Security: Users can only update their own display name, email, image, or password.
+  // NEVER allow modifying role, status, or administrative permissions via profile endpoint!
   const updateData: any = {};
-  if (name !== undefined) updateData.name = name;
-  if (email !== undefined) updateData.email = email || null;
-  if (role !== undefined) updateData.role = role;
+  if (name !== undefined) updateData.name = typeof name === 'string' ? name.trim() : name;
+  if (email !== undefined) updateData.email = email && typeof email === 'string' ? email.trim() : null;
   if (image !== undefined) updateData.image = image;
 
   // If changing password

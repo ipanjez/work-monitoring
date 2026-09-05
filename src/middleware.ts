@@ -15,11 +15,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/favicon.ico') ||
     pathname === '/icon.svg' ||
     pathname === '/api/favicon' ||
-    pathname === '/sw.js' ||
+    pathname.startsWith('/sw.js') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/calendar') ||
-    pathname.startsWith('/api/settings') ||
-    pathname.startsWith('/api/database') ||
+    (pathname === '/api/settings/permissions' && request.method === 'GET') ||
     pathname === '/api/users/reset-requests' ||
     pathname === '/calendar.ics'
   ) {

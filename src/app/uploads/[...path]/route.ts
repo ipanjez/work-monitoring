@@ -36,19 +36,34 @@ export async function GET(
     const decodedFilename = decodeURIComponent(filename);
 
     // 1. Check local disk in public/uploads/
-    const localFilePath = path.join(process.cwd(), 'public', 'uploads', ...pathSegments);
+    const uploadsBaseDir = path.resolve(process.cwd(), 'public', 'uploads');
+    const localFilePath = path.resolve(uploadsBaseDir, ...pathSegments);
+
+    // SECURITY: Strictly prevent Directory Traversal attacks (e.g. ../../.env)
+    if (!localFilePath.startsWith(uploadsBaseDir)) {
+      return new NextResponse('Access Denied: Path Traversal Detected', { status: 403 });
+    }
+
     if (fs.existsSync(localFilePath) && fs.statSync(localFilePath).isFile()) {
       const fileBuffer = fs.readFileSync(localFilePath);
       const ext = path.extname(localFilePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-      return new NextResponse(fileBuffer, {
-        headers: {
-          'Content-Type': contentType,
-          'Content-Disposition': `inline; filename="${encodeURIComponent(decodedFilename)}"`,
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        },
-      });
+      const headers: Record<string, string> = {
+        'Content-Type': contentType,
+        'Content-Disposition': ext === '.svg'
+          ? `attachment; filename="${encodeURIComponent(decodedFilename)}"`
+          : `inline; filename="${encodeURIComponent(decodedFilename)}"`,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+      };
+
+      // Sanitize/Sandbox SVG files against stored XSS
+      if (ext === '.svg') {
+        headers['Content-Security-Policy'] = "default-src 'none'; style-src 'unsafe-inline'";
+      }
+
+      return new NextResponse(fileBuffer, { headers });
     }
 
     // 2. Check Vercel Blob cloud storage if BLOB_READ_WRITE_TOKEN is configured
@@ -99,13 +114,20 @@ export async function GET(
       if (appFile && appFile.data) {
         const contentType = appFile.mimeType || MIME_TYPES[path.extname(decodedFilename).toLowerCase()] || 'application/octet-stream';
         const buffer = Buffer.from(appFile.data, 'base64');
-        return new NextResponse(buffer, {
-          headers: {
-            'Content-Type': contentType,
-            'Content-Disposition': `inline; filename="${encodeURIComponent(decodedFilename)}"`,
-            'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
-          },
-        });
+        const ext = path.extname(decodedFilename).toLowerCase();
+        const headers: Record<string, string> = {
+          'Content-Type': contentType,
+          'Content-Disposition': ext === '.svg'
+            ? `attachment; filename="${encodeURIComponent(decodedFilename)}"`
+            : `inline; filename="${encodeURIComponent(decodedFilename)}"`,
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+          'X-Content-Type-Options': 'nosniff',
+        };
+        if (ext === '.svg') {
+          headers['Content-Security-Policy'] = "default-src 'none'; style-src 'unsafe-inline'";
+        }
+
+        return new NextResponse(buffer, { headers });
       }
 
       // Helper function to extract buffer & mime from base64 data URL
